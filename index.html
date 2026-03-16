@@ -482,17 +482,17 @@ tbody tr.clickable:hover td{background:var(--bg2)}
 <script>
 // ============================================================
 // SUPABASE CONFIG — REPLACE THESE WITH YOUR OWN VALUES
-// Get them from: supabase.com → your project → Settings → API
+// Get them from: db.com → your project → Settings → API
 // ============================================================
 const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 
-let supabase = null;
+let db = null;
 let offlineMode = false;
 
 function initSupabase(cfg) {
   try {
-    supabase = window.supabase.createClient(cfg.url, cfg.key);
+    db = window.supabase.createClient(cfg.url, cfg.key);
     setSyncStatus('online');
   } catch(e) {
     setSyncStatus('offline');
@@ -504,7 +504,7 @@ async function startApp() {
   // Clear any old demo accounts from localStorage
   try { localStorage.removeItem('mp_users'); } catch(e) {}
   try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     setSyncStatus('online');
   } catch(e) {
     console.warn('Supabase init failed:', e);
@@ -518,7 +518,7 @@ async function startApp() {
     if (saved) {
       const u = JSON.parse(saved);
       // Re-verify still approved in DB
-      const { data: profile } = await supabase.from('profiles').select('*').eq('username', u.username).single();
+      const { data: profile } = await db.from('profiles').select('*').eq('username', u.username).single();
       if (profile && profile.status === 'approved') {
         const isAdmin = u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
         currentUser = { ...u, role: isAdmin ? 'admin' : profile.role };
@@ -619,10 +619,10 @@ async function doRegister() {
   if (!/^[a-zA-Z0-9_]+$/.test(username)) { showErr('Username can only contain letters, numbers and underscores.'); return; }
   try {
     // Check username not taken
-    const { data: existing } = await supabase.from('profiles').select('id').eq('username', username).single();
+    const { data: existing } = await db.from('profiles').select('id').eq('username', username).single();
     if (existing) { showErr('That username is already taken.'); return; }
     // Insert pending profile
-    const { error } = await supabase.from('profiles').insert({
+    const { error } = await db.from('profiles').insert({
       id: crypto.randomUUID(), username, full_name: name,
       role: 'tech', status: 'pending', password_hash: btoa(unescape(encodeURIComponent(pass)))
     });
@@ -674,7 +674,7 @@ async function signOut() {
 // --- Admin: load users ---
 async function renderAdminPanel() {
   try {
-    const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    const { data: profiles } = await db.from('profiles').select('*').order('created_at', { ascending: false });
     const pending  = profiles.filter(p => p.status === 'pending');
     const active   = profiles.filter(p => p.status === 'approved');
     const denied   = profiles.filter(p => p.status === 'denied');
@@ -701,20 +701,20 @@ async function renderAdminPanel() {
 }
 
 async function approveUser(id, name) {
-  await supabase.from('profiles').update({ status: 'approved' }).eq('id', id);
+  await db.from('profiles').update({ status: 'approved' }).eq('id', id);
   showToast(name + ' approved ✓');
   renderAdminPanel();
 }
 async function denyUser(id) {
-  await supabase.from('profiles').update({ status: 'denied' }).eq('id', id);
+  await db.from('profiles').update({ status: 'denied' }).eq('id', id);
   showToast('Request denied');
   renderAdminPanel();
 }
 async function deleteUser(id, name) {
   if (!confirm('Delete ' + name + '? They will no longer be able to log in.')) return;
-  await supabase.from('profiles').delete().eq('id', id);
+  await db.from('profiles').delete().eq('id', id);
   // Also delete from Supabase auth (requires service role - mark as denied instead)
-  await supabase.auth.admin?.deleteUser(id).catch(() => {});
+  await db.auth.admin?.deleteUser(id).catch(() => {});
   showToast(name + ' removed');
   renderAdminPanel();
 }
@@ -739,14 +739,14 @@ let state = { equipment:[], tasks:[], schedules:[], parts:[], monthlyCosts:[] };
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
 async function loadState() {
-  if (supabase && !offlineMode) {
+  if (db && !offlineMode) {
     setSyncStatus('syncing');
     try {
       const [eq, tk, sc, pt] = await Promise.all([
-        supabase.from('equipment').select('*'),
-        supabase.from('tasks').select('*'),
-        supabase.from('schedules').select('*'),
-        supabase.from('parts').select('*'),
+        db.from('equipment').select('*'),
+        db.from('tasks').select('*'),
+        db.from('schedules').select('*'),
+        db.from('parts').select('*'),
       ]);
       // Always use whatever is in Supabase — never overwrite with defaults
       state.equipment    = eq.data  || [];
@@ -798,8 +798,8 @@ async function persist(table, action, record) {
   if (!supabase || offlineMode) { showToast('Saved locally'); return; }
   setSyncStatus('syncing');
   try {
-    if (action === 'upsert') await supabase.from(table).upsert(record);
-    if (action === 'delete') await supabase.from(table).delete().eq('id', record.id);
+    if (action === 'upsert') await db.from(table).upsert(record);
+    if (action === 'delete') await db.from(table).delete().eq('id', record.id);
     setSyncStatus('online');
     showToast('Saved & synced ✓');
   } catch(e) {
