@@ -460,29 +460,12 @@ tbody tr.clickable:hover td{background:var(--bg2)}
 // SUPABASE CONFIG — REPLACE THESE WITH YOUR OWN VALUES
 // Get them from: supabase.com → your project → Settings → API
 // ============================================================
-const SUPABASE_CONFIG_KEY = 'mp_supabase_config';
+const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 
 let supabase = null;
 let offlineMode = false;
 
-function getConfig() {
-  try { return JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || 'null'); } catch { return null; }
-}
-function saveSupabaseConfig() {
-  const url = document.getElementById('cfg-url').value.trim();
-  const key = document.getElementById('cfg-key').value.trim();
-  if (!url || !key) { showErr('Please enter both URL and key.'); return; }
-  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url, key }));
-  initSupabase({ url, key });
-  document.getElementById('setup-banner').style.display = 'none';
-  document.getElementById('auth-form').style.display = 'block';
-  showToast('Connected to Supabase!');
-}
-function useOfflineMode() {
-  offlineMode = true;
-  document.getElementById('setup-banner').style.display = 'none';
-  document.getElementById('auth-form').style.display = 'block';
-}
 function initSupabase(cfg) {
   try {
     supabase = window.supabase.createClient(cfg.url, cfg.key);
@@ -492,16 +475,11 @@ function initSupabase(cfg) {
   }
 }
 
-// Check for existing config on load
+// Auto-connect on load — no setup screen needed
 (function() {
-  const cfg = getConfig();
-  if (cfg && cfg.url && cfg.url !== 'YOUR_SUPABASE_URL') {
-    initSupabase(cfg);
-    document.getElementById('auth-form').style.display = 'block';
-  } else {
-    document.getElementById('setup-banner').style.display = 'block';
-    document.getElementById('auth-form').style.display = 'none';
-  }
+  initSupabase({ url: SUPABASE_URL, key: SUPABASE_KEY });
+  document.getElementById('setup-banner').style.display = 'none';
+  document.getElementById('auth-form').style.display = 'block';
 })();
 
 // ============================================================
