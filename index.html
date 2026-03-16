@@ -577,7 +577,7 @@ async function doLogin() {
       .from('profiles').select('*')
       .eq('username', username).single();
     if (error || !profiles) { showErr('Username not found.'); btn.textContent='Sign In'; btn.disabled=false; return; }
-    if (profiles.password_hash !== btoa(pass)) { showErr('Incorrect password.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+    if ((profiles.password_hash||'').replace(/\s/g,'') !== btoa(unescape(encodeURIComponent(pass)))) { showErr('Incorrect password.'); btn.textContent='Sign In'; btn.disabled=false; return; }
     if (profiles.status === 'pending') { showErr('Your account is pending admin approval.'); btn.textContent='Sign In'; btn.disabled=false; return; }
     if (profiles.status === 'denied')  { showErr('Your access request was denied. Contact your administrator.'); btn.textContent='Sign In'; btn.disabled=false; return; }
     const isAdmin = username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
@@ -602,7 +602,7 @@ async function doRegister() {
     // Insert pending profile
     const { error } = await supabase.from('profiles').insert({
       id: crypto.randomUUID(), username, full_name: name,
-      role: 'tech', status: 'pending', password_hash: btoa(pass)
+      role: 'tech', status: 'pending', password_hash: btoa(unescape(encodeURIComponent(pass)))
     });
     if (error) { showErr('Could not submit request: ' + error.message); return; }
     showPending();
