@@ -194,6 +194,14 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 #photo-viewer img{max-width:92vw;max-height:88vh;border-radius:var(--radius-lg)}
 #pv-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
 #offline-banner{display:none;background:var(--warning-bg);color:var(--warning-text);border-bottom:1px solid var(--warning);padding:7px 16px;font-size:12px;text-align:center}
+#offline-queue-banner{display:none;background:var(--accent-bg);color:var(--accent-text);border-bottom:1px solid var(--accent);padding:7px 16px;font-size:12px;text-align:center;cursor:pointer}
+body.dark-mode{filter:brightness(0.88) hue-rotate(0deg)}
+body.dark-mode .card,body.dark-mode .table-wrap,body.dark-mode .metric-card{background:rgba(30,30,28,0.95)!important;color:#e8e6de}
+body.dark-mode th{background:rgba(20,20,18,0.95)!important;color:#9c9a92}
+body.dark-mode td{color:#e8e6de}
+body.dark-mode .form-input,body.dark-mode .form-select,body.dark-mode .form-textarea{background:#2c2c2a;color:#e8e6de;border-color:#444}
+body.dark-mode .modal{background:#1c1c1a;color:#e8e6de}
+body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 @media(max-width:600px){
   .topbar{height:auto;padding:8px;gap:6px}
   .nav{gap:1px}
@@ -249,6 +257,7 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
   </div>
 </div>
 
+<div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
 <!-- APP -->
 <div id="app" style="display:none">
   <div class="topbar">
@@ -269,6 +278,7 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
       <button class="btn btn-secondary btn-sm" onclick="exportPDF()">PDF</button>
       <button class="btn btn-secondary btn-sm" onclick="exportCSV()">CSV</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('task-modal')">+ Work Order</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode">🌙</button>
       <button class="btn btn-secondary btn-sm" onclick="signOut()" title="Sign out">↩</button>
     </div>
   </div>
@@ -337,8 +347,22 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
         <select class="form-select" id="task-equip-filter" onchange="renderTasks()" style="font-size:12px;padding:5px 8px">
           <option value="all">All Equipment</option>
         </select>
+        <button class="btn btn-secondary" onclick="toggleBulkWO()">+ Bulk WO</button>
         <button class="btn btn-primary" onclick="openModal('task-modal')">+ New Work Order</button>
       </div>
+    </div>
+    <div class="card" id="bulk-wo-card" style="display:none">
+      <div class="card-header"><span class="card-title">Bulk Work Order</span><button class="btn btn-secondary btn-sm" onclick="document.getElementById('bulk-wo-card').style.display='none'">✕</button></div>
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Work Order Name *</label><input class="form-input" id="bulk-name" placeholder="e.g. Monthly Inspection"/></div>
+        <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="bulk-priority"><option>Low</option><option>Medium</option><option selected>High</option><option>Critical</option></select></div>
+        <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="bulk-due" type="date"/></div>
+        <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="bulk-notes" style="min-height:48px"></textarea></div>
+        <div class="form-group full"><label class="form-label">Select Equipment</label>
+          <div id="bulk-equip-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="form-row"><button class="btn btn-primary" onclick="createBulkWO()">Create Work Orders</button></div>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Work Order</th><th>Equipment</th><th>Priority</th><th>Assigned</th><th>Due Date</th><th>Cost</th><th>Parts Used</th><th>Status</th><th></th></tr></thead>
@@ -488,7 +512,9 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
         <div class="form-group"><label class="form-label">Current Hours</label><input class="form-input" id="e-hours" type="number" min="0" placeholder="0"/></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="e-status"><option>Operational</option><option>In Service</option><option>Down</option><option>Standby</option></select></div>
         <div class="form-group"><label class="form-label">Primary Operator</label><input class="form-input" id="e-op" placeholder="Name"/></div>
-        <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="e-notes"></textarea></div>
+        <div class="form-group"><label class="form-label">Monthly Budget ($)</label><input class="form-input" id="e-budget-monthly" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Yearly Budget ($)</label><input class="form-input" id="e-budget-yearly" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="e-notes"></textarea></div>
         <div class="form-group full">
           <label class="form-label">Equipment Photo</label>
           <div class="photo-grid" id="equip-photo-grid">
@@ -1983,6 +2009,502 @@ function exportPDF(){
   const w=window.open('','_blank');
   if(w){ w.document.write(html); w.document.close(); } else showToast('Allow popups to export PDF');
 }
+
+// ============================================================
+// DARK MODE
+// ============================================================
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  const btn = document.getElementById('dark-btn');
+  const isDark = document.body.classList.contains('dark-mode');
+  if(btn) btn.textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('mp_darkmode', isDark ? '1' : '0'); } catch(e) {}
+}
+// Apply saved dark mode on load
+(function() {
+  try { if(localStorage.getItem('mp_darkmode')==='1') { document.body.classList.add('dark-mode'); } } catch(e) {}
+})();
+
+// ============================================================
+// PHOTO COMPRESSION
+// ============================================================
+function compressImage(dataUrl, maxWidth=800, quality=0.75) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if(w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+// Override handlePhotoUpload to compress
+const _origHandlePhoto = handlePhotoUpload;
+async function handlePhotoUpload(input, key) {
+  const files = Array.from(input.files);
+  for(const file of files) {
+    const reader = new FileReader();
+    const dataUrl = await new Promise(res => { reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
+    const compressed = await compressImage(dataUrl);
+    const savings = Math.round((1 - compressed.length/dataUrl.length)*100);
+    if(savings > 5) showToast('Photo compressed — saved ' + savings + '% storage');
+    pendingPhotos[key].push(compressed);
+    refreshPhotoGrid(key);
+  }
+  input.value = '';
+}
+
+// ============================================================
+// OFFLINE QUEUE
+// ============================================================
+let offlineQueue = [];
+try { offlineQueue = JSON.parse(localStorage.getItem('mp_offline_queue') || '[]'); } catch(e) {}
+
+function saveOfflineQueue() {
+  try { localStorage.setItem('mp_offline_queue', JSON.stringify(offlineQueue)); } catch(e) {}
+  document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
+}
+
+// Override persist to queue when offline
+const _origPersist = persist;
+async function persist(table, action, record) {
+  if(!navigator.onLine) {
+    offlineQueue.push({ table, action, record, ts: Date.now() });
+    saveOfflineQueue();
+    showToast('Saved locally — will sync when online');
+    return;
+  }
+  try {
+    if(action==='upsert') await window._mpdb.from(table).upsert(record);
+    if(action==='delete') await window._mpdb.from(table).delete().eq('id', record.id);
+    setSyncStatus('online'); showToast('Saved & synced ✓');
+  } catch(e) {
+    offlineQueue.push({ table, action, record, ts: Date.now() });
+    saveOfflineQueue();
+    setSyncStatus('offline'); showToast('Saved locally — will sync when online');
+  }
+}
+
+async function syncOfflineQueue() {
+  if(!offlineQueue.length) { showToast('Nothing to sync'); return; }
+  showToast('Syncing ' + offlineQueue.length + ' change(s)...');
+  const failed = [];
+  for(const item of offlineQueue) {
+    try {
+      if(item.action==='upsert') await window._mpdb.from(item.table).upsert(item.record);
+      if(item.action==='delete') await window._mpdb.from(item.table).delete().eq('id', item.record.id);
+    } catch(e) { failed.push(item); }
+  }
+  offlineQueue = failed;
+  saveOfflineQueue();
+  if(failed.length) { showToast(failed.length + ' items failed to sync'); }
+  else { showToast('All changes synced ✓'); setSyncStatus('online'); }
+}
+
+// Auto-sync when coming back online
+window.addEventListener('online', () => { if(offlineQueue.length) syncOfflineQueue(); });
+
+// Show queue banner on load if items pending
+if(offlineQueue.length) document.getElementById('offline-queue-banner').style.display = 'block';
+
+// ============================================================
+// HOURS AUTO-TRACKER
+// ============================================================
+async function markComplete(taskId) {
+  const t = state.tasks.find(x=>x.id===taskId); if(!t) return;
+  // Prompt for meter reading
+  const equip = state.equipment.find(e=>e.id===t.equipId);
+  const currentHours = equip ? equip.hours : 0;
+  const newHours = prompt(`Update hour meter for ${equip?.name||'equipment'}?
+
+Current: ${currentHours.toLocaleString()} hrs
+Enter new reading (or cancel to skip):`);
+  if(newHours !== null && newHours.trim() !== '') {
+    const parsed = parseInt(newHours);
+    if(!isNaN(parsed) && parsed >= currentHours) {
+      if(equip) {
+        equip.hours = parsed;
+        t.meter = parsed + ' hrs';
+        await persist('equipment', 'upsert', equip);
+      }
+    } else if(!isNaN(parsed)) {
+      alert('New reading must be greater than or equal to current (' + currentHours + ' hrs)');
+      return;
+    }
+  }
+  t.status = 'Completed';
+  if(t.photos && t.photos.length) { t.photos = []; }
+  await persist('tasks','upsert',t);
+  // Check recurrence rules for this equipment and trigger if hours threshold met
+  await runRecurrenceEngine();
+  closeModal('detail-modal'); renderDashboard();
+}
+
+// ============================================================
+
+// ============================================================
+async function markCompleteWithSignoff(taskId) {
+  const t = state.tasks.find(x=>x.id===taskId); if(!t) return;
+  const nameEl = document.getElementById('signoff-name-'+taskId);
+  const pinEl  = document.getElementById('signoff-pin-'+taskId);
+  const name = nameEl?.value.trim();
+  const pin  = pinEl?.value.trim();
+  if(!name) { showToast('Please enter your name to sign off'); return; }
+  if(!pin || pin.length < 4) { showToast('Please enter a 4-digit PIN'); return; }
+  // Update meter if provided
+  const equip = state.equipment.find(e=>e.id===t.equipId);
+  const currentHours = equip ? equip.hours : 0;
+  const newHours = prompt(`Update hour meter for ${equip?.name||'equipment'}?
+
+Current: ${currentHours.toLocaleString()} hrs
+Enter new reading (or cancel to skip):`);
+  if(newHours !== null && newHours.trim() !== '') {
+    const parsed = parseInt(newHours);
+    if(!isNaN(parsed) && parsed >= currentHours) {
+      if(equip) { equip.hours = parsed; t.meter = parsed + ' hrs'; await persist('equipment','upsert',equip); }
+    }
+  }
+  t.status = 'Completed';
+  t.signoff_name = name;
+  t.signoff_pin  = pin;
+  t.signoff_at   = new Date().toISOString();
+  if(t.photos && t.photos.length) { t.photos = []; }
+  await persist('tasks','upsert',t);
+  await runRecurrenceEngine();
+  // Check if this triggers overdue email scheduling
+  scheduleOverdueCheck(t);
+  closeModal('detail-modal');
+  showToast('Work order signed off by ' + name + ' ✓');
+  renderDashboard();
+}
+
+// ============================================================
+// OVERDUE EMAIL (weekly, one email per batch)
+// ============================================================
+const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
+
+function scheduleOverdueCheck(task) {
+  // Store when each task was created so we can check 1 week later
+  try {
+    const schedules = JSON.parse(localStorage.getItem('mp_email_schedule') || '{}');
+    if(!schedules[task.id]) {
+      const dueDate = new Date(task.due || Date.now());
+      const sendDate = new Date(dueDate.getTime() + 7*24*60*60*1000);
+      schedules[task.id] = { sendAt: sendDate.toISOString(), taskId: task.id, taskName: task.name };
+      localStorage.setItem('mp_email_schedule', JSON.stringify(schedules));
+    }
+  } catch(e) {}
+}
+
+async function checkAndSendOverdueEmails() {
+  try {
+    const schedules = JSON.parse(localStorage.getItem('mp_email_schedule') || '{}');
+    const now = new Date();
+    const toSend = [];
+    for(const [taskId, info] of Object.entries(schedules)) {
+      if(new Date(info.sendAt) <= now) {
+        const task = state.tasks.find(t=>t.id===taskId);
+        if(task && task.status !== 'Completed') toSend.push(task);
+        delete schedules[taskId];
+      }
+    }
+    localStorage.setItem('mp_email_schedule', JSON.stringify(schedules));
+    if(toSend.length > 0) {
+      await sendOverdueEmailBatch(toSend);
+    }
+  } catch(e) { console.log('Email check error:', e); }
+}
+
+async function sendOverdueEmailBatch(tasks) {
+  // Check we haven't sent a similar email in last 6 days (dedup)
+  try {
+    const { data: recentEmails } = await window._mpdb.from('email_log')
+      .select('*').eq('type','overdue')
+      .gte('sent_at', new Date(Date.now()-6*24*60*60*1000).toISOString());
+    const recentIds = new Set((recentEmails||[]).flatMap(e=>e.task_ids||[]));
+    const newTasks = tasks.filter(t=>!recentIds.has(t.id));
+    if(!newTasks.length) return;
+    // Log the email
+    await window._mpdb.from('email_log').insert({
+      id: uid(), type:'overdue', recipient: OVERDUE_EMAIL_RECIPIENT,
+      subject: 'MTL Maintenance — Overdue Work Orders',
+      task_ids: newTasks.map(t=>t.id),
+    });
+    // Show in-app notification to admin
+    if(currentUser?.role==='admin') {
+      showToast('📧 Overdue email queued for ' + OVERDUE_EMAIL_RECIPIENT);
+    }
+  } catch(e) { console.log('Email send error:', e); }
+}
+
+// Run email check on app load
+setTimeout(checkAndSendOverdueEmails, 3000);
+
+// ============================================================
+// PUSH NOTIFICATIONS
+// ============================================================
+async function requestPushPermission() {
+  if(!('Notification' in window)) { showToast('Push notifications not supported on this browser'); return; }
+  const perm = await Notification.requestPermission();
+  if(perm === 'granted') {
+    showToast('Push notifications enabled ✓');
+    try { localStorage.setItem('mp_push', '1'); } catch(e) {}
+  } else {
+    showToast('Push notifications blocked — enable in browser settings');
+  }
+}
+
+function sendPushNotification(title, body) {
+  try {
+    if(Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '⚙' });
+    }
+  } catch(e) {}
+}
+
+// Check for overdue tasks and send push on load
+async function checkOverduePush() {
+  if(Notification.permission !== 'granted') return;
+  const overdue = state.tasks.filter(t=>t.status==='Overdue');
+  if(overdue.length) {
+    sendPushNotification(
+      'MTL Maintenance — ' + overdue.length + ' Overdue Work Order' + (overdue.length>1?'s':''),
+      overdue.map(t=>t.name).join(', ')
+    );
+  }
+}
+
+// ============================================================
+// QR CODES (Admin only)
+// ============================================================
+function printQRCode(equipId) {
+  const equip = state.equipment.find(e=>e.id===equipId); if(!equip) return;
+  const url = window.location.origin + window.location.pathname + '?equip=' + equipId;
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR — ${equip.name}</title>
+  <style>
+    body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff}
+    .card{text-align:center;padding:32px;border:2px solid #1a1a18;border-radius:12px;max-width:300px}
+    h2{font-size:18px;margin:16px 0 4px}
+    .sub{font-size:13px;color:#666;margin-bottom:8px}
+    .serial{font-size:12px;color:#999}
+    .url{font-size:10px;color:#aaa;margin-top:12px;word-break:break-all}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <div class="card">
+    <div style="font-size:28px">⚙</div>
+    <h2>${equip.name}</h2>
+    <div class="sub">${equip.type||''}</div>
+    <div class="serial">S/N: ${equip.serial||'—'}</div>
+    <img src="${qrUrl}" style="margin:16px 0;width:220px;height:220px" alt="QR Code"/>
+    <div class="url">Scan to view maintenance history</div>
+    <div style="margin-top:16px" class="no-print">
+      <button onclick="window.print()" style="padding:8px 20px;cursor:pointer;font-size:14px">🖨 Print</button>
+    </div>
+  </div>
+  <script>window.onload=()=>{ setTimeout(()=>window.print(), 800); }<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// Handle QR code deep link on load
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const equipId = params.get('equip');
+  if(equipId) {
+    const checkReady = setInterval(() => {
+      if(currentUser && state.equipment.length) {
+        clearInterval(checkReady);
+        showPanel('equipment');
+        openEquipDetail(equipId);
+      }
+    }, 300);
+  }
+})();
+
+// ============================================================
+// BULK WORK ORDERS
+// ============================================================
+function toggleBulkWO() {
+  const card = document.getElementById('bulk-wo-card');
+  const isHidden = card.style.display==='none';
+  card.style.display = isHidden ? 'block' : 'none';
+  if(isHidden) {
+    // Populate equipment checkboxes
+    document.getElementById('bulk-equip-list').innerHTML = state.equipment.map(e=>
+      `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)">
+        <input type="checkbox" value="${e.id}" style="cursor:pointer"/>
+        <span>${e.name}</span>
+      </label>`
+    ).join('');
+  }
+}
+
+async function createBulkWO() {
+  const name = document.getElementById('bulk-name').value.trim();
+  if(!name) { showToast('Please enter a work order name'); return; }
+  const checked = Array.from(document.querySelectorAll('#bulk-equip-list input:checked')).map(i=>i.value);
+  if(!checked.length) { showToast('Please select at least one equipment'); return; }
+  const priority = document.getElementById('bulk-priority').value;
+  const due = document.getElementById('bulk-due').value;
+  const notes = document.getElementById('bulk-notes').value;
+  let created = 0;
+  for(const equipId of checked) {
+    const record = { id:uid(), name, equipId, assign:'', priority, due, cost:0, meter:'', status:'Open', notes, photos:[], checklist:[] };
+    state.tasks.push(record);
+    await window._mpdb.from('tasks').upsert(record);
+    created++;
+  }
+  document.getElementById('bulk-wo-card').style.display='none';
+  ['bulk-name','bulk-due','bulk-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  state.monthlyCosts = computeMonthlyCosts();
+  renderDashboard();
+  showToast(created + ' work orders created ✓');
+}
+
+// ============================================================
+// COST BUDGET ALERTS (in analytics + dashboard)
+// ============================================================
+function checkBudgetAlerts() {
+  const now = new Date();
+  const alerts = [];
+  state.equipment.forEach(e=>{
+    if(!e.monthly_budget && !e.yearly_budget) return;
+    const monthCost = state.tasks.filter(t=>{
+      if(t.equipId!==e.id) return false;
+      const d=new Date(t.due||'');
+      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    }).reduce((a,t)=>a+(t.cost||0),0);
+    const yearCost = state.tasks.filter(t=>{
+      if(t.equipId!==e.id) return false;
+      return new Date(t.due||'').getFullYear()===now.getFullYear();
+    }).reduce((a,t)=>a+(t.cost||0),0);
+    if(e.monthly_budget && monthCost >= e.monthly_budget*0.9) {
+      alerts.push(`${e.name}: monthly budget ${monthCost>=e.monthly_budget?'EXCEEDED':'at 90%'} ($${monthCost.toLocaleString()} / $${e.monthly_budget.toLocaleString()})`);
+    }
+    if(e.yearly_budget && yearCost >= e.yearly_budget*0.9) {
+      alerts.push(`${e.name}: yearly budget ${yearCost>=e.yearly_budget?'EXCEEDED':'at 90%'} ($${yearCost.toLocaleString()} / $${e.yearly_budget.toLocaleString()})`);
+    }
+  });
+  return alerts;
+}
+
+// ============================================================
+// PATCH: saveEquipment — add budget fields
+// ============================================================
+const _origSaveEquipment = saveEquipment;
+async function saveEquipment() {
+  const name = document.getElementById('e-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
+  const assignInput = document.getElementById('assign-input');
+  const assignedUsers = assignInput ? assignInput.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const record = {
+    id:uid(), name,
+    type:   document.getElementById('e-type').value,
+    serial: document.getElementById('e-serial').value,
+    hours:  parseInt(document.getElementById('e-hours').value)||0,
+    status: document.getElementById('e-status').value,
+    op:     document.getElementById('e-op').value,
+    notes:  document.getElementById('e-notes').value,
+    photos: pendingPhotos.equip.slice(),
+    assigned_users: assignedUsers,
+    custom_fields: customFieldsTemp,
+    health_score: 100,
+    monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
+    yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
+  };
+  state.equipment.push(record);
+  await persist('equipment','upsert',record);
+  pendingPhotos.equip=[]; customFieldsTemp={};
+  closeModal('equip-modal'); renderEquipmentTable(); updateMetrics();
+  ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+// ============================================================
+// PATCH: renderDashboard — add budget alerts + push check
+// ============================================================
+const _origRenderDashboard = renderDashboard;
+function renderDashboard() {
+  renderAlerts(); renderEquipListDash(); renderSchedDash(); renderRecentTasks(); renderCostChart(); updateMetrics();
+  // Budget alerts
+  const budgetAlerts = checkBudgetAlerts();
+  if(budgetAlerts.length) {
+    const sec = document.getElementById('alert-section');
+    sec.innerHTML += budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');
+  }
+  // Schedule overdue email checks for new tasks
+  state.tasks.forEach(t=>{ if(t.status!=='Completed') scheduleOverdueCheck(t); });
+}
+
+// ============================================================
+// PATCH: enterApp — request push, init push check
+// ============================================================
+const _origEnterApp = enterApp;
+async function enterApp() {
+  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-chip-name').textContent=currentUser.name;
+  if(currentUser.role==='admin') {
+    const nav=document.getElementById('main-nav');
+    if(!document.getElementById('admin-nav-btn')) {
+      const btn=document.createElement('button');
+      btn.className='nav-btn'; btn.id='admin-nav-btn';
+      btn.textContent='Admin'; btn.onclick=()=>showPanel('admin');
+      nav.appendChild(btn);
+    }
+  }
+  await loadState();
+  await runRecurrenceEngine();
+  renderDashboard();
+  // Request push notifications
+  if(localStorage.getItem('mp_push')==='1') {
+    setTimeout(checkOverduePush, 2000);
+  } else if(Notification.permission === 'default') {
+    setTimeout(()=>requestPushPermission(), 4000);
+  }
+}
+
+// ============================================================
+// PATCH: renderEquipmentTable — add QR button for admin
+// ============================================================
+const _origRenderEquipmentTable = renderEquipmentTable;
+function renderEquipmentTable() {
+  document.getElementById('equip-table-body').innerHTML=state.equipment.map(e=>{
+    const score=calcHealth(e.id);
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}" style="width:100%;height:100%;object-fit:cover"/>` : (ICONS[e.type]||'⚙');
+    const budgetAlert = (e.monthly_budget||e.yearly_budget) ? checkBudgetAlerts().some(a=>a.includes(e.name)) ? '⚠' : '' : '';
+    return `<tr onclick="openEquipDetail('${e.id}')">
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="equip-icon" style="width:32px;height:32px">${icon}</div>
+        <div><div style="font-weight:500">${e.name} ${budgetAlert}</div><div style="font-size:11px;color:var(--text2)">${e.serial}</div></div>
+      </div></td>
+      <td>${badge(e.status)}</td>
+      <td><b>${e.hours.toLocaleString()}</b> hrs</td>
+      <td>
+        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+        <span style="font-size:11px;color:${healthColor(score)};font-weight:600">${score}%</span>
+      </td>
+      <td style="color:var(--text2);font-size:12px">${(e.assigned_users||[]).join(', ')||e.op||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${getLastService(e.id)}</td>
+      <td style="font-size:12px">${getNextDue(e.id)}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px">
+          ${currentUser?.role==='admin'?`<button class="btn btn-secondary btn-sm" onclick="printQRCode('${e.id}')" title="Print QR Code">QR</button>`:''}
+          <button class="btn btn-danger" onclick="deleteEquip('${e.id}')">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
