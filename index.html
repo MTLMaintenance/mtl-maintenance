@@ -2257,10 +2257,9 @@ async function sendOverdueEmailBatch(tasks) {
       `• ${t.name}\n  Equipment: ${t.equipName||equipName(t.equipId)}\n  Due: ${t.due}\n  Priority: ${t.priority}\n  Reminder: every ${t.email_freq||7} day(s)`
     ).join('\n\n');
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://mtl-email.tannergalloway75.workers.dev/', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer re_XGMfofgV_8SJsRb7vKhmVt7xGim4arTcK',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
