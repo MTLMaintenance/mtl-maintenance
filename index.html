@@ -940,7 +940,7 @@ async function signOut() {
 // ============================================================
 // STATE
 // ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], downtimeLog:[],
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], downtimeLog:[], observations:[],
   checklistTemplates:[
     {
       id:'tpl-cat320',
@@ -1165,6 +1165,9 @@ async function loadState() {
     state.partUsage       = pu.data||[];
     state.recurrenceRules = rr.data||[];
     state.monthlyCosts    = computeMonthlyCosts();
+    // Load observations
+    const obs = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
+    state.observations = obs.data||[];
     // Load downtime log from localStorage
     try { state.downtimeLog = JSON.parse(localStorage.getItem('mp_downtime')||'[]'); } catch(e) {}
     setSyncStatus('online');
@@ -3516,6 +3519,117 @@ async function saveUserPerms() {
   } catch(e) {
     console.error('Save perms error:', e);
     showToast('Failed to save permissions');
+  }
+}
+
+// ============================================================
+// OBSERVATIONS
+// ============================================================
+async function addObservation(equipId) {
+  const body = document.getElementById('obs-input-'+equipId)?.value.trim();
+  const severity = document.getElementById('obs-severity-'+equipId)?.value||'info';
+  if(!body) { showToast('Please enter an observation'); return; }
+
+  const obs = {
+    id: uid(),
+    equip_id: equipId,
+    author: currentUser.name,
+    body,
+    severity,
+    created_at: new Date().toISOString(),
+  };
+
+  // Save to Supabase
+  try {
+    await window._mpdb.from('observations').insert(obs);
+    state.observations.unshift(obs);
+    showToast('Observation saved ✓');
+
+    // Clear input
+    document.getElementById('obs-input-'+equipId).value = '';
+    document.getElementById('obs-severity-'+equipId).value = 'info';
+
+    // Refresh the obs list in detail view
+    refreshObsList(equipId);
+
+    // If critical — send notifications
+    if(severity === 'critical') {
+      await sendCriticalObsNotification(obs, equipId);
+    }
+
+    // Refresh dashboard alerts
+    renderAlerts();
+  } catch(e) {
+    console.error('Observation save error:', e);
+    showToast('Failed to save observation');
+  }
+}
+
+function refreshObsList(equipId) {
+  const list = document.getElementById('obs-list-'+equipId);
+  if(!list) return;
+  const obs = state.observations.filter(o=>o.equip_id===equipId);
+  if(!obs.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px">No observations recorded yet</div>';
+    return;
+  }
+  list.innerHTML = obs.map(o=>`
+    <div style="background:${o.severity==='critical'?'var(--danger-bg)':o.severity==='watch'?'var(--warning-bg)':'var(--bg2)'};border:1px solid ${o.severity==='critical'?'var(--danger)':o.severity==='watch'?'var(--warning)':'var(--border)'};border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">
+        <span style="font-size:14px">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
+        <span style="font-weight:600;font-size:12px;color:${o.severity==='critical'?'var(--danger-text)':o.severity==='watch'?'var(--warning-text)':'var(--text2)'}">${o.severity==='critical'?'CRITICAL':o.severity==='watch'?'WATCH':'INFO'}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto">${o.author} · ${new Date(o.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+        ${can('canDelete')?`<button class="btn btn-danger" style="padding:2px 6px;font-size:10px" onclick="deleteObservation('${o.id}','${o.equip_id}')">✕</button>`:''}
+      </div>
+      <div style="font-size:13px;color:var(--text)">${o.body}</div>
+    </div>`).join('');
+}
+
+async function deleteObservation(obsId, equipId) {
+  if(!confirm('Delete this observation?')) return;
+  try {
+    await window._mpdb.from('observations').delete().eq('id', obsId);
+    state.observations = state.observations.filter(o=>o.id!==obsId);
+    refreshObsList(equipId);
+    renderAlerts();
+    showToast('Observation deleted');
+  } catch(e) { showToast('Failed to delete'); }
+}
+
+async function sendCriticalObsNotification(obs, equipId) {
+  const equip = state.equipment.find(e=>e.id===equipId);
+  const equipNameStr = equip?.name||'Unknown equipment';
+
+  // Push notification
+  sendPushNotification(
+    '🚨 Critical Observation — ' + equipNameStr,
+    obs.body + ' (reported by ' + obs.author + ')'
+  );
+
+  // Email to admin + managers
+  try {
+    // Get all admin/manager emails from profiles
+    const { data: profiles } = await window._mpdb.from('profiles')
+      .select('full_name, role, username')
+      .in('role',['admin','manager'])
+      .eq('status','approved');
+
+    // Always include admin email
+    const recipients = [OVERDUE_EMAIL_RECIPIENT];
+
+    emailjs.init('n5n6_xxmNNHqk0xrE');
+    await emailjs.send(
+      'service_o320zzu',
+      'template_je3rl4j',
+      {
+        to_email: OVERDUE_EMAIL_RECIPIENT,
+        message: `🚨 CRITICAL OBSERVATION REPORTED\n\nEquipment: ${equipNameStr}\nReported by: ${obs.author}\nDate: ${new Date(obs.created_at).toLocaleDateString()}\n\nObservation:\n${obs.body}\n\nLog in to review:\nhttps://mtlmaintenance.github.io/mtl-maintenance`,
+      }
+    );
+    showToast('🚨 Critical alert sent to admin & managers');
+  } catch(e) {
+    console.error('Critical obs email error:', e);
+    showToast('🚨 Critical — push sent, email failed');
   }
 }
 
