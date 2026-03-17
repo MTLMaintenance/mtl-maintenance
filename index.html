@@ -2253,25 +2253,43 @@ async function checkAndSendOverdueEmails() {
 
 async function sendOverdueEmailBatch(tasks) {
   try {
-    // Log the email send
-    await window._mpdb.from('email_log').insert({
-      id: uid(), type:'overdue', recipient: OVERDUE_EMAIL_RECIPIENT,
-      subject: 'MTL Maintenance — ' + tasks.length + ' Overdue Work Order' + (tasks.length>1?'s':''),
-      task_ids: tasks.map(t=>t.id),
+    const taskList = tasks.map(t =>
+      `• ${t.name}\n  Equipment: ${t.equipName||equipName(t.equipId)}\n  Due: ${t.due}\n  Priority: ${t.priority}\n  Reminder: every ${t.email_freq||7} day(s)`
+    ).join('\n\n');
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer re_XGMfofgV_8SJsRb7vKhmVt7xGim4arTcK',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'MTL Maintenance <onboarding@resend.dev>',
+        to: [OVERDUE_EMAIL_RECIPIENT],
+        subject: `MTL Maintenance — ${tasks.length} Overdue Work Order${tasks.length>1?'s':''}`,
+        text: `The following work orders require attention:\n\n${taskList}\n\nLog in to review:\nhttps://mtlmaintenance.github.io/mtl-maintenance`,
+      }),
     });
-    // Call edge function if available
+
+    const data = await response.json();
+    console.log('Resend response:', data);
+
+    // Log to Supabase
     try {
-      await window._mpdb.functions.invoke('send-overdue-email', {
-        body: {
-          tasks: tasks.map(t=>({ name:t.name, equipName:t.equipName||equipName(t.equipId), due:t.due, priority:t.priority, freq:t.email_freq||7 })),
-          recipient: OVERDUE_EMAIL_RECIPIENT,
-        }
+      await window._mpdb.from('email_log').insert({
+        id: uid(), type:'overdue', recipient: OVERDUE_EMAIL_RECIPIENT,
+        subject: 'MTL Maintenance — Overdue Work Orders',
+        task_ids: tasks.map(t=>t.id),
       });
-    } catch(e) { console.log('Edge function not set up yet:', e); }
-    if(currentUser?.role==='admin') {
+    } catch(e) {}
+
+    if(response.ok) {
       showToast('📧 Overdue reminder sent to ' + OVERDUE_EMAIL_RECIPIENT);
+    } else {
+      console.log('Resend error:', data);
+      showToast('Email failed: ' + (data.message||'unknown error'));
     }
-  } catch(e) { console.log('Email send error:', e); }
+  } catch(e) { console.log('Email send error:', e); showToast('Email send failed'); }
 }
 
 // Run email check on app load
