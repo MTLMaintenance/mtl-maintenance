@@ -262,6 +262,11 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <div id="app" style="display:none">
   <div class="topbar">
     <div class="logo">⚙ MTL Maintenance</div>
+    <div style="display:flex;gap:4px;flex-shrink:0" id="group-filter-bar">
+      <button class="btn btn-secondary btn-sm" id="grp-all" onclick="setGroup('all')" style="font-size:11px">All</button>
+      <button class="btn btn-secondary btn-sm" id="grp-outside" onclick="setGroup('outside')" style="font-size:11px">Outside</button>
+      <button class="btn btn-secondary btn-sm" id="grp-production" onclick="setGroup('production')" style="font-size:11px">Production</button>
+    </div>
     <nav class="nav" id="main-nav">
       <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
@@ -287,6 +292,12 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   <!-- DASHBOARD -->
   <div class="panel active" id="panel-dashboard">
     <div id="alert-section"></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Viewing:</span>
+      <button class="btn btn-secondary btn-sm active-group-btn" id="grp-all" onclick="setGroupFilter('all')" style="background:rgba(255,255,255,0.9);color:#1a1a18;font-weight:600">All</button>
+      <button class="btn btn-secondary btn-sm" id="grp-outside" onclick="setGroupFilter('outside')" style="background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.3)">Outside</button>
+      <button class="btn btn-secondary btn-sm" id="grp-production" onclick="setGroupFilter('production')" style="background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.3)">Production</button>
+    </div>
     <div class="metrics">
       <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-total-sub"></div></div>
       <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">—</div><div class="metric-sub">Work orders</div></div>
@@ -302,6 +313,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div class="grid-2">
       <div class="card"><div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div><div id="recent-tasks"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">Monthly Costs ($)</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div></div>
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Fleet Health Overview</span></div><div id="fleet-health-dash"></div></div>
     </div>
   </div>
 
@@ -328,11 +343,17 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
+    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Filter:</span>
+      <button class="btn btn-secondary btn-sm" id="eq-grp-all" onclick="setEquipGroupFilter('all')" style="background:rgba(255,255,255,0.9);color:#1a1a18;font-weight:600">All</button>
+      <button class="btn btn-secondary btn-sm" id="eq-grp-outside" onclick="setEquipGroupFilter('outside')" style="background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.3)">Outside</button>
+      <button class="btn btn-secondary btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')" style="background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.3)">Production</button>
+    </div>
     <div class="section-header"><span class="section-title">Equipment Registry</span>
       <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()">Export CSV</button><span id="add-equip-btn-wrap"></span></div>
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Equipment</th><th>Status</th><th>Hours</th><th>Health</th><th>Assigned To</th><th>Last Service</th><th>Next Due</th><th></th></tr></thead>
+      <thead><tr><th>Equipment</th><th>Group</th><th>Status</th><th>Hours</th><th>Health</th><th>Assigned To</th><th>Last Service</th><th>Next Due</th><th></th></tr></thead>
       <tbody id="equip-table-body"></tbody>
     </table></div>
   </div>
@@ -490,7 +511,14 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
               <option value="viewer">Viewer</option>
             </select>
           </div>
-          <button class="btn btn-primary" onclick="changeUserRole()">Update Role</button>
+          <div class="form-group"><label class="form-label">Group</label>
+            <select class="form-select" id="group-select">
+              <option value="">— None —</option>
+              <option value="outside">Outside</option>
+              <option value="production">Production</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
         </div>
       </div>
     </div>
@@ -586,6 +614,20 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <div class="form-group"><label class="form-label">Serial / Asset #</label><input class="form-input" id="e-serial" placeholder="SN-00123"/></div>
         <div class="form-group"><label class="form-label">Current Hours</label><input class="form-input" id="e-hours" type="number" min="0" placeholder="0"/></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="e-status"><option>Operational</option><option>In Service</option><option>Down</option><option>Standby</option></select></div>
+      <div class="form-group"><label class="form-label">Group</label>
+        <select class="form-select" id="e-group">
+          <option value="outside">Outside</option>
+          <option value="production">Production</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Group</label>
+        <select class="form-select" id="e-group">
+          <option value="outside">Outside</option>
+          <option value="production">Production</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
         <div class="form-group"><label class="form-label">Primary Operator</label><input class="form-input" id="e-op" placeholder="Name"/></div>
         <div class="form-group"><label class="form-label">Monthly Budget ($)</label><input class="form-input" id="e-budget-monthly" type="number" min="0" placeholder="0"/></div>
       <div class="form-group"><label class="form-label">Yearly Budget ($)</label><input class="form-input" id="e-budget-yearly" type="number" min="0" placeholder="0"/></div>
@@ -883,7 +925,14 @@ async function doLogin() {
       role: isAdmin?'admin':(profile.role||'tech'),
       username,
       custom_permissions: profile.custom_permissions||null,
+      group_tag: profile.group_tag||null,
     };
+    // Set default active group based on user's group
+    if(profile.group_tag && profile.group_tag !== 'both') {
+      activeGroup = profile.group_tag;
+    } else {
+      activeGroup = 'all';
+    }
     enterApp();
   } catch(e) { showErr('Login failed. Try again.'); btn.textContent='Sign In'; btn.disabled=false; }
 }
@@ -1864,7 +1913,13 @@ async function renderAdminPanel(){
     document.getElementById('pending-list').innerHTML=pending.length?pending.map(p=>
       `<div class="parts-row">
         <div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:11px;color:var(--text2)">${p.username} · Requested ${new Date(p.created_at).toLocaleDateString()}</div></div>
-        <button class="btn btn-success btn-sm" onclick="approveUser('${p.id}','${p.full_name}')">Approve</button>
+        <select class="form-select" style="font-size:12px;padding:3px 6px" id="grp-${p.id}">
+          <option value="">No group</option>
+          <option value="outside">Outside</option>
+          <option value="production">Production</option>
+          <option value="both">Both</option>
+        </select>
+        <button class="btn btn-success btn-sm" onclick="approveUserWithGroup('${p.id}','${p.full_name}')">Approve</button>
         <button class="btn btn-danger btn-sm" onclick="denyUser('${p.id}')">Deny</button>
       </div>`
     ).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px 0">No pending requests</div>';
@@ -2825,6 +2880,7 @@ async function saveEquipment() {
     assigned_users: assignedUsers,
     custom_fields: customFieldsTemp,
     health_score: 100,
+    group_tag: document.getElementById('e-group')?.value||'outside',
     monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
     yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
   };
@@ -2929,6 +2985,7 @@ function renderEquipmentTable() {
         <div class="equip-icon" style="width:32px;height:32px">${icon}</div>
         <div><div style="font-weight:500">${e.name} ${budgetAlert}</div><div style="font-size:11px;color:var(--text2)">${e.serial}</div></div>
       </div></td>
+      <td><span class="badge ${e.group_tag==='production'?'bw':e.group_tag==='both'?'bs':'bi'}">${e.group_tag||'outside'}</span></td>
       <td>${badge(e.status)}</td>
       <td><b>${e.hours.toLocaleString()}</b> hrs</td>
       <td>
@@ -3335,6 +3392,12 @@ async function renderUsersTable() {
               <option value="tech" ${(!p.role||p.role==='tech')?'selected':''}>Technician</option>
               <option value="viewer" ${p.role==='viewer'?'selected':''}>Viewer</option>
             </select>
+            <select class="form-select" style="font-size:12px;padding:3px 6px" onchange="quickGroupChange('${p.id}',this.value)" title="Assign group">
+              <option value="" ${!p.group_tag?'selected':''}>No group</option>
+              <option value="outside" ${p.group_tag==='outside'?'selected':''}>Outside</option>
+              <option value="production" ${p.group_tag==='production'?'selected':''}>Production</option>
+              <option value="both" ${p.group_tag==='both'?'selected':''}>Both</option>
+            </select>
             <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Customize</button>
             <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
           </div>
@@ -3631,6 +3694,562 @@ async function sendCriticalObsNotification(obs, equipId) {
     console.error('Critical obs email error:', e);
     showToast('🚨 Critical — push sent, email failed');
   }
+}
+
+// ============================================================
+// GROUP FILTERING
+// ============================================================
+function setGroup(group) {
+  activeGroup = group;
+  // Update button styles
+  ['all','outside','production'].forEach(g => {
+    const btn = document.getElementById('grp-'+g);
+    if(!btn) return;
+    btn.style.background = g===group ? 'rgba(255,255,255,0.35)' : '';
+    btn.style.color = g===group ? '#fff' : '';
+    btn.style.fontWeight = g===group ? '600' : '';
+    btn.style.borderColor = g===group ? 'rgba(255,255,255,0.6)' : '';
+  });
+  // Re-render current panel
+  const activePanel = document.querySelector('.panel.active');
+  if(activePanel) {
+    const id = activePanel.id.replace('panel-','');
+    const renders = {dashboard:renderDashboard,equipment:renderEquipmentTable,tasks:renderTasks,schedule:renderSchedule};
+    if(renders[id]) renders[id]();
+  }
+}
+
+function filterByGroup(items, equipIdKey='equipId') {
+  if(activeGroup==='all') return items;
+  return items.filter(item => {
+    const equipId = item[equipIdKey]||item.id;
+    const equip = state.equipment.find(e=>e.id===equipId);
+    if(!equip) return activeGroup==='all';
+    const gt = equip.group_tag||'outside';
+    return gt===activeGroup || gt==='both';
+  });
+}
+
+function filterEquipByGroup(equip) {
+  if(activeGroup==='all') return equip;
+  return equip.filter(e => {
+    const gt = e.group_tag||'outside';
+    return gt===activeGroup || gt==='both';
+  });
+}
+
+// Patch renderEquipmentTable to filter by group
+const _origRenderEquipTable2 = renderEquipmentTable;
+function renderEquipmentTable() {
+  const filtered = filterEquipByGroup(state.equipment);
+  document.getElementById('equip-table-body').innerHTML=filtered.map(e=>{
+    const score=calcHealth(e.id);
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}" style="width:100%;height:100%;object-fit:cover"/>` : (ICONS[e.type]||'⚙');
+    const budgetAlert = (e.monthly_budget||e.yearly_budget) ? checkBudgetAlerts().some(a=>a.includes(e.name)) ? '⚠' : '' : '';
+    return `<tr onclick="openEquipDetail('${e.id}')">
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="equip-icon" style="width:32px;height:32px">${icon}</div>
+        <div><div style="font-weight:500">${e.name} ${budgetAlert}</div><div style="font-size:11px;color:var(--text2)">${e.serial}</div></div>
+      </div></td>
+      <td><span class="badge ${e.group_tag==='production'?'bw':e.group_tag==='both'?'bs':'bi'}">${e.group_tag||'outside'}</span></td>
+      <td>${badge(e.status)}</td>
+      <td>
+        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+        <span style="font-size:11px;color:${healthColor(score)};font-weight:600">${score}%</span>
+      </td>
+      <td style="color:var(--text2);font-size:12px">${(e.assigned_users||[]).join(', ')||e.op||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${getLastService(e.id)}</td>
+      <td style="font-size:12px">${getNextDue(e.id)}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${e.status!=='Down'?`<button class="btn btn-danger btn-sm" onclick="updateEquipStatus('${e.id}','Down')">↓ Down</button>`:`<button class="btn btn-success btn-sm" onclick="updateEquipStatus('${e.id}','Operational')">↑ Up</button>`}
+          ${currentUser?.role==='admin'?`<button class="btn btn-secondary btn-sm" onclick="printQRCode('${e.id}')">QR</button>`:''}
+          ${can('canDelete')?`<button class="btn btn-danger btn-sm" onclick="deleteEquip('${e.id}')">Del</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Patch renderTasks to filter by group
+const _origRenderTasks2 = renderTasks;
+function renderTasks() {
+  const f=document.getElementById('task-filter')?.value||'all';
+  const ef=document.getElementById('task-equip-filter')?.value||'all';
+  let tasks=[...state.tasks];
+  if(f==='overdue') tasks=tasks.filter(t=>t.status==='Overdue');
+  if(f==='open')    tasks=tasks.filter(t=>t.status==='Open');
+  if(f==='completed') tasks=tasks.filter(t=>t.status==='Completed');
+  if(ef!=='all') tasks=tasks.filter(t=>t.equipId===ef);
+  tasks = filterByGroup(tasks,'equipId');
+  tasks.sort((a,b)=>{const o={Overdue:0,Critical:1,Open:2,Completed:3}; return (o[a.status]||2)-(o[b.status]||2);});
+  document.getElementById('tasks-table-body').innerHTML=tasks.map(t=>{
+    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).reduce((a,p)=>a+p.qty_used,0);
+    return `<tr onclick="openTaskDetail('${t.id}')">
+      <td><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${t.meter||''}</div></td>
+      <td style="font-size:12px">${equipName(t.equipId)}</td>
+      <td>${badge(t.priority)}</td>
+      <td style="color:var(--text2)">${t.assign||'—'}</td>
+      <td style="color:${isOverdue(t.due)&&t.status!=='Completed'?'var(--danger)':'inherit'};font-size:12px">${fmtDate(t.due)}</td>
+      <td style="font-weight:600">${can('canViewCosts')?'$'+(t.cost||0).toLocaleString():'—'}</td>
+      <td style="font-size:12px">${partsUsed?partsUsed+' unit(s)':'—'}</td>
+      <td>${badge(t.status)}</td>
+      <td onclick="event.stopPropagation()">${can('canDelete')?`<button class="btn btn-danger" onclick="deleteTask('${t.id}')">Del</button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Patch renderEquipListDash to filter by group
+const _origRenderEquipListDash = renderEquipListDash;
+function renderEquipListDash() {
+  const filtered = filterEquipByGroup(state.equipment).slice(0,6);
+  const el=document.getElementById('equip-list-dash');
+  el.innerHTML=filtered.map(e=>{
+    const score=calcHealth(e.id);
+    const col=e.status==='Down'?'var(--danger)':e.status==='In Service'?'var(--warning)':'var(--success)';
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>` :(ICONS[e.type]||'⚙');
+    return `<div class="equip-row" onclick="openEquipDetail('${e.id}')">
+      <div class="equip-icon">${icon}</div>
+      <div class="equip-info">
+        <div class="equip-name">${e.name} <span class="badge ${e.group_tag==='production'?'bw':'bi'}" style="font-size:10px">${e.group_tag||'outside'}</span></div>
+        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${badge(e.status)}
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
+      </div>
+    </div>`;
+  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No equipment in this group</div>';
+}
+
+// ============================================================
+// RECENT OBSERVATIONS DASHBOARD WIDGET
+// ============================================================
+function renderRecentObservations() {
+  const el = document.getElementById('recent-obs-list');
+  const badge2 = document.getElementById('obs-count-badge');
+  if(!el) return;
+  let obs = [...state.observations].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  // Filter by group
+  if(activeGroup!=='all') {
+    obs = obs.filter(o=>{
+      const equip=state.equipment.find(e=>e.id===o.equip_id);
+      if(!equip) return false;
+      const gt=equip.group_tag||'outside';
+      return gt===activeGroup||gt==='both';
+    });
+  }
+  const recent = obs.slice(0,5);
+  if(badge2) badge2.textContent = obs.length + ' total';
+  if(!recent.length) { el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:4px 0">No observations yet</div>'; return; }
+  el.innerHTML = recent.map(o=>`
+    <div class="parts-row" onclick="openEquipDetail('${o.equip_id}')" style="cursor:pointer">
+      <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body.slice(0,60)}${o.body.length>60?'...':''}</div>
+        <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
+      </div>
+      <span class="badge ${o.severity==='critical'?'bd':o.severity==='watch'?'bw':'bg'}">${o.severity}</span>
+    </div>`).join('');
+}
+
+// Patch renderDashboard to include recent observations
+function renderDashboard() {
+  renderAlerts(); renderEquipListDash(); renderSchedDash(); renderRecentTasks(); renderCostChart(); updateMetrics(); renderRecentObservations();
+  const budgetAlerts = checkBudgetAlerts();
+  if(budgetAlerts.length) {
+    const sec = document.getElementById('alert-section');
+    sec.innerHTML += budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');
+  }
+  state.tasks.forEach(t=>{ if(t.status!=='Completed') scheduleOverdueCheck(t); });
+}
+
+// ============================================================
+// GROUP ADMIN FUNCTIONS
+// ============================================================
+async function quickGroupChange(userId, group) {
+  try {
+    await window._mpdb.from('profiles').update({ group_tag: group||null }).eq('id', userId);
+    showToast('Group updated ✓');
+  } catch(e) { showToast('Failed to update group'); }
+}
+
+async function approveUserWithGroup(id, name) {
+  const grpSel = document.getElementById('grp-'+id);
+  const group = grpSel?.value||null;
+  try {
+    await window._mpdb.from('profiles').update({ status:'approved', group_tag: group||null }).eq('id', id);
+    showToast(name+' approved ✓');
+    renderAdminPanel();
+  } catch(e) { showToast('Failed to approve'); }
+}
+
+// ============================================================
+// DUPLICATE OBSERVATION CHECK
+// ============================================================
+const _origAddObservation = addObservation;
+async function addObservation(equipId) {
+  const body = document.getElementById('obs-input-'+equipId)?.value.trim();
+  if(!body) { showToast('Please enter an observation'); return; }
+
+  // Check for duplicates in last 24 hours on same machine
+  const yesterday = new Date(Date.now()-24*60*60*1000).toISOString();
+  const recent = state.observations.filter(o=>
+    o.equip_id===equipId &&
+    o.created_at > yesterday &&
+    o.body.toLowerCase().slice(0,30) === body.toLowerCase().slice(0,30)
+  );
+  if(recent.length > 0) {
+    const confirm2 = confirm(
+      'A similar observation was already logged for this machine in the last 24 hours:\n\n"' +
+      recent[0].body.slice(0,80) + (recent[0].body.length>80?'...':'') + '"\n\nAdd another anyway?'
+    );
+    if(!confirm2) return;
+  }
+
+  const severity = document.getElementById('obs-severity-'+equipId)?.value||'info';
+  const obs = {
+    id: uid(),
+    equip_id: equipId,
+    author: currentUser.name,
+    body,
+    severity,
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await window._mpdb.from('observations').insert(obs);
+    state.observations.unshift(obs);
+    showToast('Observation saved ✓');
+    document.getElementById('obs-input-'+equipId).value = '';
+    document.getElementById('obs-severity-'+equipId).value = 'info';
+    refreshObsList(equipId);
+    if(severity === 'critical') await sendCriticalObsNotification(obs, equipId);
+    renderAlerts();
+    renderRecentObservations();
+  } catch(e) {
+    console.error('Observation save error:', e);
+    showToast('Failed to save observation');
+  }
+}
+
+// Init group filter buttons on load
+function initGroupFilter() {
+  const userGroup = currentUser?.group_tag;
+  if(userGroup && userGroup !== 'both') {
+    setGroup(userGroup);
+  } else {
+    setGroup('all');
+  }
+}
+
+// ============================================================
+// GROUP FILTERING
+// ============================================================
+let equipGroupFilter = 'all';
+
+function setGroupFilter(group) {
+  activeGroupFilter = group;
+  // Update button styles
+  ['all','outside','production'].forEach(g => {
+    const btn = document.getElementById('grp-'+g);
+    if(!btn) return;
+    if(g===group) { btn.style.background='rgba(255,255,255,0.9)'; btn.style.color='#1a1a18'; btn.style.fontWeight='600'; }
+    else { btn.style.background='rgba(255,255,255,0.2)'; btn.style.color='#fff'; btn.style.fontWeight='400'; }
+  });
+  renderDashboard();
+}
+
+function setEquipGroupFilter(group) {
+  equipGroupFilter = group;
+  ['all','outside','production'].forEach(g => {
+    const btn = document.getElementById('eq-grp-'+g);
+    if(!btn) return;
+    if(g===group) { btn.style.background='rgba(255,255,255,0.9)'; btn.style.color='#1a1a18'; btn.style.fontWeight='600'; }
+    else { btn.style.background='rgba(255,255,255,0.2)'; btn.style.color='#fff'; btn.style.fontWeight='400'; }
+  });
+  renderEquipmentTable();
+}
+
+function filteredEquipment(filter) {
+  const f = filter || activeGroupFilter;
+  if(f==='all') return state.equipment;
+  return state.equipment.filter(e => e.group_tag===f || e.group_tag==='both');
+}
+
+// Auto-set filter based on user's group on login
+function applyUserGroupFilter() {
+  if(!currentUser) return;
+  const userGroup = currentUser.group_tag;
+  if(userGroup && userGroup !== 'all') {
+    setGroupFilter(userGroup);
+    setEquipGroupFilter(userGroup);
+  }
+}
+
+// ============================================================
+// RECENT OBSERVATIONS DASHBOARD WIDGET
+// ============================================================
+function renderRecentObservations() {
+  const listEl = document.getElementById('recent-obs-list');
+  const badgeEl = document.getElementById('obs-count-badge');
+  if(!listEl) return;
+
+  // Filter by active group
+  let obs = [...state.observations];
+  if(activeGroupFilter !== 'all') {
+    const groupEquipIds = new Set(filteredEquipment(activeGroupFilter).map(e=>e.id));
+    obs = obs.filter(o=>groupEquipIds.has(o.equip_id));
+  }
+
+  if(badgeEl) badgeEl.textContent = obs.length + ' total';
+
+  const recent = obs.slice(0,6);
+  if(!recent.length) {
+    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No observations recorded yet</div>';
+    return;
+  }
+
+  listEl.innerHTML = recent.map(o=>`
+    <div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
+      <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
+        <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author} · ${new Date(o.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+      </div>
+      <span class="badge ${o.severity==='critical'?'bd':o.severity==='watch'?'bw':'bg'}">${o.severity}</span>
+    </div>`).join('');
+}
+
+function renderFleetHealthDash() {
+  const el = document.getElementById('fleet-health-dash');
+  if(!el) return;
+  const equip = filteredEquipment(activeGroupFilter);
+  if(!equip.length) { el.innerHTML='<div style="color:var(--text2);font-size:13px">No equipment in this group</div>'; return; }
+  el.innerHTML = equip.slice(0,6).map(e=>{
+    const score = calcHealth(e.id);
+    const groupBadge = e.group_tag ? `<span class="badge ${e.group_tag==='outside'?'bi':'bg'}" style="font-size:10px">${e.group_tag}</span>` : '';
+    return `<div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name} ${groupBadge}</div>
+        <div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+      </div>
+      <span style="font-size:12px;font-weight:600;color:${healthColor(score)};flex-shrink:0;margin-left:8px">${score}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// DUPLICATE OBSERVATION CHECK
+// ============================================================
+async function addObservation(equipId) {
+  const body = document.getElementById('obs-input-'+equipId)?.value.trim();
+  const severity = document.getElementById('obs-severity-'+equipId)?.value||'info';
+  if(!body) { showToast('Please enter an observation'); return; }
+
+  // Duplicate check — same machine, within 24 hours, similar text
+  const yesterday = new Date(Date.now()-24*60*60*1000);
+  const recentObs = state.observations.filter(o=>
+    o.equip_id===equipId &&
+    new Date(o.created_at)>yesterday
+  );
+  // Simple similarity: check if first 30 chars match any recent obs
+  const snippet = body.slice(0,30).toLowerCase();
+  const duplicate = recentObs.find(o=>o.body.slice(0,30).toLowerCase()===snippet);
+  if(duplicate) {
+    const proceed = confirm(
+      'A similar observation was already logged for this machine in the last 24 hours:\n\n"' +
+      duplicate.body.slice(0,100) + '"\n\nBy: ' + duplicate.author +
+      '\n\nAdd another anyway?'
+    );
+    if(!proceed) return;
+  }
+
+  const obs = {
+    id: uid(),
+    equip_id: equipId,
+    author: currentUser.name,
+    body,
+    severity,
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await window._mpdb.from('observations').insert(obs);
+    state.observations.unshift(obs);
+    showToast('Observation saved ✓');
+    document.getElementById('obs-input-'+equipId).value='';
+    document.getElementById('obs-severity-'+equipId).value='info';
+    refreshObsList(equipId);
+    if(severity==='critical') await sendCriticalObsNotification(obs, equipId);
+    renderAlerts();
+    renderRecentObservations();
+  } catch(e) {
+    console.error('Observation save error:', e);
+    showToast('Failed to save observation');
+  }
+}
+
+// ============================================================
+// ADMIN: GROUP ASSIGNMENT
+// ============================================================
+async function quickGroupChange(userId, newGroup) {
+  try {
+    await window._mpdb.from('profiles').update({ group_tag: newGroup||null }).eq('id', userId);
+    showToast('Group updated ✓');
+  } catch(e) { showToast('Failed to update group'); }
+}
+
+async function changeUserRole() {
+  const userId = document.getElementById('role-user-select')?.value;
+  const newRole = document.getElementById('role-select')?.value;
+  const newGroup = document.getElementById('group-select')?.value;
+  if(!userId) return;
+  try {
+    const updates = {};
+    if(newRole) updates.role = newRole;
+    if(newGroup !== undefined) updates.group_tag = newGroup||null;
+    await window._mpdb.from('profiles').update(updates).eq('id', userId);
+    showToast('User updated ✓');
+    renderUsersTable();
+  } catch(e) { showToast('Failed to update user'); }
+}
+
+// ============================================================
+// PATCH: renderDashboard to include obs + fleet health + group filter
+// ============================================================
+const _origRenderDashboard2 = renderDashboard;
+function renderDashboard() {
+  renderAlerts();
+  renderEquipListDash();
+  renderSchedDash();
+  renderRecentTasks();
+  renderCostChart();
+  updateMetrics();
+  renderRecentObservations();
+  renderFleetHealthDash();
+  const budgetAlerts = checkBudgetAlerts();
+  if(budgetAlerts.length) {
+    const sec = document.getElementById('alert-section');
+    if(sec) sec.innerHTML += budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');
+  }
+  state.tasks.forEach(t=>{ if(t.status!=='Completed') scheduleOverdueCheck(t); });
+}
+
+// ============================================================
+// PATCH: renderEquipListDash to respect group filter
+// ============================================================
+function renderEquipListDash() {
+  const el = document.getElementById('equip-list-dash');
+  if(!el) return;
+  const equip = filteredEquipment(activeGroupFilter).slice(0,6);
+  if(!equip.length) { el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">No equipment in this group</div>'; return; }
+  el.innerHTML = equip.map(e=>{
+    const score=calcHealth(e.id);
+    const col=e.status==='Down'?'var(--danger)':e.status==='In Service'?'var(--warning)':'var(--success)';
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
+    const groupBadge = e.group_tag?`<span class="badge ${e.group_tag==='outside'?'bi':'bg'}" style="font-size:9px;margin-left:4px">${e.group_tag}</span>`:'';
+    return `<div class="equip-row" onclick="openEquipDetail('${e.id}')">
+      <div class="equip-icon">${icon}</div>
+      <div class="equip-info">
+        <div class="equip-name">${e.name}${groupBadge}</div>
+        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${badge(e.status)}
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// PATCH: renderEquipmentTable to respect group filter
+// ============================================================
+function renderEquipmentTable() {
+  const equip = equipGroupFilter==='all' ? state.equipment : state.equipment.filter(e=>e.group_tag===equipGroupFilter||e.group_tag==='both');
+  document.getElementById('equip-table-body').innerHTML=equip.map(e=>{
+    const score=calcHealth(e.id);
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}" style="width:100%;height:100%;object-fit:cover"/>` : (ICONS[e.type]||'⚙');
+    const budgetAlert = (e.monthly_budget||e.yearly_budget) ? checkBudgetAlerts().some(a=>a.includes(e.name)) ? '⚠' : '' : '';
+    const groupBadge = e.group_tag?`<span class="badge ${e.group_tag==='outside'?'bi':'bg'}" style="font-size:10px;margin-left:4px">${e.group_tag}</span>`:'';
+    return `<tr onclick="openEquipDetail('${e.id}')">
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="equip-icon" style="width:32px;height:32px">${icon}</div>
+        <div><div style="font-weight:500">${e.name} ${budgetAlert}${groupBadge}</div><div style="font-size:11px;color:var(--text2)">${e.serial}</div></div>
+      </div></td>
+      <td>${badge(e.status)}</td>
+      <td><b>${e.hours.toLocaleString()}</b> hrs</td>
+      <td>
+        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+        <span style="font-size:11px;color:${healthColor(score)};font-weight:600">${score}%</span>
+      </td>
+      <td style="color:var(--text2);font-size:12px">${(e.assigned_users||[]).join(', ')||e.op||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${getLastService(e.id)}</td>
+      <td style="font-size:12px">${getNextDue(e.id)}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${e.status!=='Down'?`<button class="btn btn-danger btn-sm" onclick="updateEquipStatus('${e.id}','Down')">↓ Down</button>`:`<button class="btn btn-success btn-sm" onclick="updateEquipStatus('${e.id}','Operational')">↑ Up</button>`}
+          ${currentUser?.role==='admin'?`<button class="btn btn-secondary btn-sm" onclick="printQRCode('${e.id}')">QR</button>`:''}
+          ${can('canDelete')?`<button class="btn btn-danger btn-sm" onclick="deleteEquip('${e.id}')">Del</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// PATCH: enterApp to apply user group filter
+// ============================================================
+async function enterApp() {
+  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-chip-name').textContent=currentUser.name;
+
+  // Load group from profile
+  try {
+    const { data: profile } = await window._mpdb.from('profiles').select('group_tag').eq('username', currentUser.username).single();
+    if(profile?.group_tag) currentUser.group_tag = profile.group_tag;
+  } catch(e) {}
+
+  const nav=document.getElementById('main-nav');
+  if(!can('canViewReports')) {
+    const btn=Array.from(nav.querySelectorAll('.nav-btn')).find(b=>b.textContent==='Analytics');
+    if(btn) btn.style.display='none';
+  }
+  if(!can('canManageSuppliers')) {
+    const btn=Array.from(nav.querySelectorAll('.nav-btn')).find(b=>b.textContent==='Suppliers');
+    if(btn) btn.style.display='none';
+  }
+  if(currentUser.role==='admin') {
+    if(!document.getElementById('admin-nav-btn')) {
+      const btn=document.createElement('button');
+      btn.className='nav-btn'; btn.id='admin-nav-btn';
+      btn.textContent='Admin'; btn.onclick=()=>showPanel('admin');
+      nav.appendChild(btn);
+    }
+  }
+  const addWOBtn=document.querySelector('.topbar-right .btn-primary');
+  if(addWOBtn&&!can('canCreate')) addWOBtn.style.display='none';
+  setTimeout(()=>{
+    const aeWrap=document.getElementById('add-equip-btn-wrap');
+    if(aeWrap&&can('canManageEquip')) aeWrap.innerHTML="<button class=\"btn btn-primary\" onclick=\"openModal('equip-modal')\">+ Add Equipment</button>";
+    const apWrap=document.getElementById('add-part-btn-wrap');
+    if(apWrap&&can('canManageParts')) apWrap.innerHTML="<button class=\"btn btn-primary\" onclick=\"openModal('part-modal')\">+ Add Part</button>";
+    const asWrap=document.getElementById('add-supplier-btn-wrap');
+    if(asWrap&&can('canManageSuppliers')) asWrap.innerHTML="<button class=\"btn btn-primary\" onclick=\"openModal('supplier-modal')\">+ Add Supplier</button>";
+  },100);
+
+  await loadState();
+  await runRecurrenceEngine();
+  applyUserGroupFilter();
+  renderDashboard();
+
+  if(localStorage.getItem('mp_push')==='1') { setTimeout(checkOverduePush,2000); }
+  else if(Notification.permission==='default') { setTimeout(()=>requestPushPermission(),4000); }
 }
 
 </script>
