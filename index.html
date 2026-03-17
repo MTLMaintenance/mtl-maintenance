@@ -4718,19 +4718,54 @@ function showBugBtn() {
   if(btn) btn.style.display='flex';
 }
 
+function updateReportType() {
+  const isBug = document.getElementById('type-bug').checked;
+  const titleLabel = document.getElementById('bug-title-label');
+  const descLabel  = document.getElementById('bug-desc-label');
+  const stepsLabel = document.getElementById('bug-steps-label');
+  const pageWrap   = document.getElementById('bug-page-wrap');
+  const descEl     = document.getElementById('bug-desc');
+  const titleEl    = document.getElementById('bug-title');
+  const bugLabel   = document.getElementById('type-bug-label');
+  const sugLabel   = document.getElementById('type-sug-label');
+
+  if(isBug) {
+    if(titleLabel) titleLabel.textContent = 'What were you trying to do? *';
+    if(descLabel)  descLabel.textContent  = 'What happened? *';
+    if(stepsLabel) stepsLabel.textContent = 'Steps to reproduce (optional)';
+    if(pageWrap)   pageWrap.style.display = 'flex';
+    if(descEl)     descEl.placeholder     = 'Describe what went wrong — the more detail the better...';
+    if(titleEl)    titleEl.placeholder    = 'e.g. Adding a new work order';
+    if(bugLabel)   bugLabel.style.borderColor = 'var(--accent)';
+    if(sugLabel)   sugLabel.style.borderColor = 'var(--border2)';
+  } else {
+    if(titleLabel) titleLabel.textContent = `What's your suggestion? *`;
+    if(descLabel)  descLabel.textContent  = 'Describe your idea *';
+    if(stepsLabel) stepsLabel.textContent = 'Any other details (optional)';
+    if(pageWrap)   pageWrap.style.display = 'none';
+    if(descEl)     descEl.placeholder     = 'Tell us more about your idea — what problem does it solve?';
+    if(titleEl)    titleEl.placeholder    = 'e.g. Add ability to export to Excel';
+    if(bugLabel)   bugLabel.style.borderColor = 'var(--border2)';
+    if(sugLabel)   sugLabel.style.borderColor = 'var(--accent)';
+  }
+}
+
 async function submitBugReport() {
   const title = document.getElementById('bug-title').value.trim();
   const desc  = document.getElementById('bug-desc').value.trim();
   if(!title || !desc) { showToast('Please fill in the required fields'); return; }
 
+  const isBug = document.getElementById('type-bug').checked;
+  const reportType = isBug ? 'bug' : 'suggestion';
   const report = {
     id: uid(),
     reporter: currentUser?.name||'Unknown',
     username: currentUser?.username||'',
+    type: reportType,
     title,
     description: desc,
-    page: document.getElementById('bug-page').value,
-    severity: document.getElementById('bug-severity').value,
+    page: isBug ? document.getElementById('bug-page').value : 'N/A',
+    severity: isBug ? document.getElementById('bug-severity').value : 'suggestion',
     steps: document.getElementById('bug-steps').value,
     user_agent: navigator.userAgent,
     created_at: new Date().toISOString(),
@@ -4768,29 +4803,40 @@ async function submitBugReport() {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <!-- Bug Report Button -->
-<button id="bug-btn" onclick="openModal('bug-modal')" title="Report a bug"
+<button id="bug-btn" onclick="openModal('bug-modal')" title="Bug report or suggestion"
   style="position:fixed;bottom:20px;right:20px;width:44px;height:44px;border-radius:50%;background:#1a1a18;color:#fff;border:2px solid rgba(255,255,255,0.2);font-size:20px;cursor:pointer;z-index:400;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;transition:all .2s"
-  onmouseover="this.style.background='#E24B4A';this.style.borderColor='#E24B4A'"
-  onmouseout="this.style.background='#1a1a18';this.style.borderColor='rgba(255,255,255,0.2)'">🐛</button>
+  onmouseover="this.style.background='#185FA5';this.style.borderColor='#185FA5'"
+  onmouseout="this.style.background='#1a1a18';this.style.borderColor='rgba(255,255,255,0.2)'">💬</button>
 
 <!-- Bug Report Modal -->
 <div class="modal-backdrop" id="bug-modal">
   <div class="modal" style="max-width:460px">
     <div class="modal-header">
-      <span class="modal-title">🐛 Report a Bug</span>
+      <span class="modal-title">💬 Bug Report / Suggestion</span>
       <button class="modal-close" onclick="closeModal('bug-modal')">✕</button>
     </div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Found something broken? Let us know and we'll fix it.</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Found a bug or have an idea to improve the app? We'd love to hear it.</div>
     <div class="form-grid">
       <div class="form-group full">
-        <label class="form-label">What were you trying to do? *</label>
+        <label class="form-label">Type</label>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 14px;border:1px solid var(--border2);border-radius:var(--radius);flex:1;justify-content:center" id="type-bug-label">
+            <input type="radio" name="report-type" value="bug" id="type-bug" checked onchange="updateReportType()" style="cursor:pointer"/> 🐛 Bug Report
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 14px;border:1px solid var(--border2);border-radius:var(--radius);flex:1;justify-content:center" id="type-sug-label">
+            <input type="radio" name="report-type" value="suggestion" id="type-sug" onchange="updateReportType()" style="cursor:pointer"/> 💡 Suggestion
+          </label>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label" id="bug-title-label">What were you trying to do? *</label>
         <input class="form-input" id="bug-title" placeholder="e.g. Adding a new work order"/>
       </div>
       <div class="form-group full">
-        <label class="form-label">What happened? *</label>
+        <label class="form-label" id="bug-desc-label">What happened? *</label>
         <textarea class="form-textarea" id="bug-desc" placeholder="Describe what went wrong — the more detail the better..." style="min-height:90px"></textarea>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="bug-page-wrap">
         <label class="form-label">Which page/section?</label>
         <select class="form-select" id="bug-page">
           <option>Dashboard</option>
@@ -4816,14 +4862,14 @@ async function submitBugReport() {
         </select>
       </div>
       <div class="form-group full">
-        <label class="form-label">Steps to reproduce (optional)</label>
+        <label class="form-label" id="bug-steps-label">Steps to reproduce (optional)</label>
         <textarea class="form-textarea" id="bug-steps" placeholder="1. Go to...
 2. Click...
 3. Error appears..." style="min-height:68px"></textarea>
       </div>
     </div>
     <div id="bug-success" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:13px">
-      ✅ Bug report submitted — thanks for helping improve MTL Maintenance!
+      ✅ Submitted — thanks for helping improve MTL Maintenance!
     </div>
     <div class="form-row">
       <button class="btn btn-secondary" onclick="closeModal('bug-modal')">Cancel</button>
