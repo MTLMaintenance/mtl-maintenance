@@ -843,7 +843,7 @@ async function signOut() {
 // ============================================================
 // STATE
 // ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0],
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], downtimeLog:[],
   checklistTemplates:[
     {
       id:'tpl-cat320',
@@ -1068,6 +1068,8 @@ async function loadState() {
     state.partUsage       = pu.data||[];
     state.recurrenceRules = rr.data||[];
     state.monthlyCosts    = computeMonthlyCosts();
+    // Load downtime log from localStorage
+    try { state.downtimeLog = JSON.parse(localStorage.getItem('mp_downtime')||'[]'); } catch(e) {}
     setSyncStatus('online');
   } catch(e) { console.error('Load error:', e); setSyncStatus('offline'); }
 }
@@ -1914,7 +1916,10 @@ function openEquipDetail(id){
     <div id="eq-custom" style="display:none">
       ${Object.entries(e.custom_fields||{}).map(([k,v])=>`<div class="parts-row"><div style="flex:1;font-weight:500">${k}</div><div style="color:var(--text2)">${v}</div></div>`).join('')}
     </div>
-    <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 Print History</button>
+      <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
+    </div>`;
   openModal('detail-modal');
 }
 
@@ -2025,6 +2030,39 @@ async function saveTask(){
   const freqEl=document.getElementById('t-email-freq'); if(freqEl) freqEl.value='7';
   document.getElementById('task-photo-grid').innerHTML='<div class="photo-add" onclick="document.getElementById(\'task-photo-input\').click()">+</div><input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,\'task\')"/>';
   document.getElementById('wo-parts-list').innerHTML='<div style="color:var(--text3);font-size:13px">No parts added yet</div>';
+}
+
+async function logStatusChange(equipId, oldStatus, newStatus) {
+  if(oldStatus === newStatus) return;
+  const now = new Date().toISOString();
+  if(newStatus === 'Down') {
+    // Machine just went down - start timer
+    state.downtimeLog.push({ id:uid(), equipId, status:'started', startedAt:now, endedAt:null });
+  } else if(oldStatus === 'Down') {
+    // Machine came back up - close the downtime entry
+    const open = state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);
+    if(open) {
+      open.endedAt = now;
+      open.status = 'resolved';
+      const mins = Math.round((new Date(now)-new Date(open.startedAt))/60000);
+      open.downtimeMins = mins;
+      showToast('Downtime recorded: ' + formatDuration(mins));
+    }
+  }
+  try { localStorage.setItem('mp_downtime', JSON.stringify(state.downtimeLog)); } catch(e) {}
+}
+
+function formatDuration(mins) {
+  if(mins < 60) return mins + ' min' + (mins!==1?'s':'');
+  const h = Math.floor(mins/60), m = mins%60;
+  return h + 'h ' + (m>0?m+'m':'');
+}
+
+function getEquipDowntime(equipId) {
+  const entries = state.downtimeLog.filter(d=>d.equipId===equipId&&d.status==='resolved');
+  const totalMins = entries.reduce((a,d)=>a+(d.downtimeMins||0),0);
+  const activeDown = state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);
+  return { entries, totalMins, activeDown };
 }
 
 async function saveEquipment(){
@@ -2697,6 +2735,15 @@ async function saveEquipment() {
   ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
+async function updateEquipStatus(equipId, newStatus) {
+  const equip = state.equipment.find(e=>e.id===equipId); if(!equip) return;
+  const oldStatus = equip.status;
+  equip.status = newStatus;
+  await logStatusChange(equipId, oldStatus, newStatus);
+  await persist('equipment','upsert',equip);
+  renderEquipmentTable(); renderDashboard();
+}
+
 // ============================================================
 // PATCH: renderDashboard — add budget alerts + push check
 // ============================================================
@@ -2766,9 +2813,10 @@ function renderEquipmentTable() {
       <td style="font-size:12px;color:var(--text2)">${getLastService(e.id)}</td>
       <td style="font-size:12px">${getNextDue(e.id)}</td>
       <td onclick="event.stopPropagation()">
-        <div style="display:flex;gap:4px">
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${e.status!=='Down'?`<button class="btn btn-danger btn-sm" onclick="updateEquipStatus('${e.id}','Down')" title="Mark as Down">↓ Down</button>`:`<button class="btn btn-success btn-sm" onclick="updateEquipStatus('${e.id}','Operational')" title="Mark as Operational">↑ Up</button>`}
           ${currentUser?.role==='admin'?`<button class="btn btn-secondary btn-sm" onclick="printQRCode('${e.id}')" title="Print QR Code">QR</button>`:''}
-          <button class="btn btn-danger" onclick="deleteEquip('${e.id}')">Del</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteEquip('${e.id}')">Del</button>
         </div>
       </td>
     </tr>`;
@@ -2964,6 +3012,144 @@ function showPanel(id) {
   document.querySelectorAll('.nav-btn').forEach(b=>{ if(b.textContent.trim()==={'dashboard':'Dashboard','calendar':'Calendar','equipment':'Equipment','tasks':'Work Orders','schedule':'Schedule','parts':'Parts','suppliers':'Suppliers','documents':'Docs','analytics':'Analytics','admin':'Admin','checklists':'Checklists'}[id]) b.classList.add('active'); });
   const renders={'dashboard':renderDashboard,'calendar':renderCalendar,'equipment':renderEquipmentTable,'tasks':renderTasks,'schedule':renderSchedule,'parts':renderParts,'suppliers':renderSuppliers,'documents':renderDocuments,'analytics':renderAnalytics,'admin':renderAdminPanel,'checklists':renderChecklistTemplates};
   if(renders[id]) renders[id]();
+}
+
+// ============================================================
+// MACHINE MAINTENANCE HISTORY REPORT
+// ============================================================
+function printMachineHistory(equipId) {
+  const e = state.equipment.find(x=>x.id===equipId); if(!e) return;
+  const tasks = state.tasks.filter(t=>t.equipId===equipId).sort((a,b)=>new Date(b.due)-new Date(a.due));
+  const docs = state.documents.filter(d=>d.equip_id===equipId);
+  const dt = getEquipDowntime(equipId);
+  const score = calcHealth(equipId);
+  const totalCost = tasks.reduce((a,t)=>a+(t.cost||0),0);
+  const completedTasks = tasks.filter(t=>t.status==='Completed');
+  const partsUsed = state.partUsage.filter(p=>tasks.some(t=>t.id===p.task_id));
+  const partsCost = partsUsed.reduce((a,p)=>{
+    const part = state.parts.find(x=>x.id===p.part_id);
+    return a + (part?(part.cost*p.qty_used):0);
+  },0);
+  const date = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+  // Parts summary
+  const partMap = {};
+  partsUsed.forEach(p=>{ partMap[p.part_name]=(partMap[p.part_name]||0)+p.qty_used; });
+  const topParts = Object.entries(partMap).sort((a,b)=>b[1]-a[1]);
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Maintenance History — ${e.name}</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:0}
+    .page{padding:32px;max-width:800px;margin:0 auto}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #1a1a18}
+    .header-left h1{font-size:20px;margin:0 0 4px}
+    .header-left .sub{font-size:12px;color:#666}
+    .header-right{text-align:right;font-size:11px;color:#888}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+    .kpi{background:#f5f5f3;border-radius:6px;padding:10px 12px}
+    .kpi-l{font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.4px;margin-bottom:3px}
+    .kpi-v{font-size:18px;font-weight:700}
+    .kpi-v.danger{color:#E24B4A}.kpi-v.warning{color:#BA7517}.kpi-v.success{color:#3B6D11}
+    h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#185FA5;border-bottom:1.5px solid #185FA5;padding-bottom:4px;margin:20px 0 10px}
+    table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:11px}
+    th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888;padding:5px 7px;border-bottom:2px solid #eee;background:#fafaf8}
+    td{padding:6px 7px;border-bottom:1px solid #eee;vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    .badge{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600}
+    .bd{background:#FCEBEB;color:#A32D2D}.bw{background:#FAEEDA;color:#854F0B}.bs{background:#EAF3DE;color:#27500A}.bi{background:#E6F1FB;color:#185FA5}
+    .health-bar{width:80px;height:8px;background:#eee;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:6px;overflow:hidden}
+    .health-fill{height:100%;border-radius:4px}
+    .doc-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eee;font-size:11px}
+    .doc-row:last-child{border-bottom:none}
+    .parts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .part-item{background:#f5f5f3;border-radius:4px;padding:6px 8px;font-size:11px}
+    .part-name{font-weight:600;margin-bottom:2px}
+    .part-qty{color:#666}
+    .downtime-bar{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eee;font-size:11px}
+    .footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#aaa;display:flex;justify-content:space-between}
+    @media print{.no-print{display:none}body{padding:0}}
+  </style></head><body>
+  <div class="page">
+    <div class="header">
+      <div class="header-left">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">⚙ MTL Maintenance — Machine History Report</div>
+        <h1>${e.name}</h1>
+        <div class="sub">${e.type} &nbsp;·&nbsp; S/N: ${e.serial||'—'} &nbsp;·&nbsp; Operator: ${e.op||'—'}</div>
+      </div>
+      <div class="header-right">
+        <div>Report generated: ${date}</div>
+        <div style="margin-top:4px">Current hours: <b>${e.hours.toLocaleString()} hrs</b></div>
+        <div style="margin-top:4px">Status: <b>${e.status}</b></div>
+        <div style="margin-top:8px">
+          <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+          <b style="color:${healthColor(score)}">${score}% Health</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-l">Total Work Orders</div><div class="kpi-v">${tasks.length}</div></div>
+      <div class="kpi"><div class="kpi-l">Completed</div><div class="kpi-v success">${completedTasks.length}</div></div>
+      <div class="kpi"><div class="kpi-l">Total Maintenance Cost</div><div class="kpi-v">$${totalCost.toLocaleString()}</div></div>
+      <div class="kpi"><div class="kpi-l">Total Downtime</div><div class="kpi-v ${dt.totalMins>0?'warning':'success'}">${formatDuration(dt.totalMins)||'None'}</div></div>
+    </div>
+
+    <h2>Work Order History</h2>
+    ${tasks.length ? `<table><thead><tr>
+      <th>Work Order</th><th>Due Date</th><th>Assigned</th><th>Priority</th><th>Cost</th><th>Status</th><th>Meter</th>
+    </tr></thead><tbody>
+    ${tasks.map(t=>`<tr>
+      <td style="font-weight:600">${t.name}</td>
+      <td>${new Date(t.due||'').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
+      <td>${t.assign||'—'}</td>
+      <td><span class="badge ${t.priority==='Critical'?'bd':t.priority==='High'?'bw':'bi'}">${t.priority}</span></td>
+      <td>$${(t.cost||0).toLocaleString()}</td>
+      <td><span class="badge ${t.status==='Completed'?'bs':t.status==='Overdue'?'bd':'bi'}">${t.status}</span></td>
+      <td>${t.meter||'—'}</td>
+    </tr>`).join('')}
+    </tbody></table>` : '<div style="color:#aaa;font-size:12px;padding:8px 0">No work orders recorded</div>'}
+
+    ${topParts.length ? `<h2>Parts Used on This Machine</h2>
+    <div class="parts-grid">
+      ${topParts.map(([name,qty])=>`<div class="part-item"><div class="part-name">${name}</div><div class="part-qty">× ${qty} used</div></div>`).join('')}
+    </div>` : ''}
+
+    ${dt.entries.length ? `<h2>Downtime History</h2>
+    <table><thead><tr><th>Date</th><th>Start Time</th><th>End Time</th><th>Duration</th></tr></thead><tbody>
+    ${dt.entries.map(d=>`<tr>
+      <td>${new Date(d.startedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
+      <td>${new Date(d.startedAt).toLocaleTimeString()}</td>
+      <td>${new Date(d.endedAt).toLocaleTimeString()}</td>
+      <td><b>${formatDuration(d.downtimeMins)}</b></td>
+    </tr>`).join('')}
+    <tr style="background:#fafaf8"><td colspan="3" style="font-weight:700">Total Downtime</td><td><b>${formatDuration(dt.totalMins)}</b></td></tr>
+    </tbody></table>` : ''}
+
+    ${docs.length ? `<h2>Documents & Warranties</h2>
+    ${docs.map(d=>`<div class="doc-row">
+      <div style="font-size:16px">${d.type==='warranty'?'🛡':d.type==='certificate'?'📜':'📄'}</div>
+      <div style="flex:1"><b>${d.name}</b> <span style="color:#888">(${d.type})</span></div>
+      <div style="color:#888">${d.expiry_date?'Expires: '+new Date(d.expiry_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'No expiry'}</div>
+    </div>`).join('')}` : ''}
+
+    ${e.notes ? `<h2>Notes</h2><div style="font-size:12px;color:#444;padding:8px;background:#f5f5f3;border-radius:4px">${e.notes}</div>` : ''}
+
+    <div class="footer">
+      <div>MTL Maintenance — Confidential</div>
+      <div>Generated ${date} · ${currentUser?.name||'—'}</div>
+    </div>
+  </div>
+  <div class="no-print" style="text-align:center;padding:16px">
+    <button onclick="window.print()" style="padding:10px 24px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button>
+  </div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  if(w) { w.document.write(html); w.document.close(); }
+  else showToast('Allow popups to print report');
 }
 
 </script>
