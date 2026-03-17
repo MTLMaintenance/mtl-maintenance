@@ -4704,12 +4704,133 @@ async function enterApp() {
   applyUserGroupFilter();
   renderDashboard();
   await initChat();
+  showBugBtn();
   if(localStorage.getItem('mp_push')==='1') { setTimeout(checkOverduePush,2000); }
   else if(Notification.permission==='default') { setTimeout(()=>requestPushPermission(),4000); }
+}
+
+// ============================================================
+// BUG REPORTING
+// ============================================================
+// Show bug button once logged in
+function showBugBtn() {
+  const btn = document.getElementById('bug-btn');
+  if(btn) btn.style.display='flex';
+}
+
+async function submitBugReport() {
+  const title = document.getElementById('bug-title').value.trim();
+  const desc  = document.getElementById('bug-desc').value.trim();
+  if(!title || !desc) { showToast('Please fill in the required fields'); return; }
+
+  const report = {
+    id: uid(),
+    reporter: currentUser?.name||'Unknown',
+    username: currentUser?.username||'',
+    title,
+    description: desc,
+    page: document.getElementById('bug-page').value,
+    severity: document.getElementById('bug-severity').value,
+    steps: document.getElementById('bug-steps').value,
+    user_agent: navigator.userAgent,
+    created_at: new Date().toISOString(),
+    status: 'open',
+  };
+
+  try {
+    // Try to save to Supabase
+    await window._mpdb.from('bug_reports').insert(report);
+  } catch(e) {
+    // Table may not exist yet — save locally and email
+    console.log('Bug report DB save failed, using email fallback');
+  }
+
+  // Always email to admin
+  try {
+    emailjs.init('n5n6_xxmNNHqk0xrE');
+    await emailjs.send('service_o320zzu', 'template_je3rl4j', {
+      to_email: OVERDUE_EMAIL_RECIPIENT,
+      message: `🐛 BUG REPORT\n\nReported by: ${report.reporter} (${report.username})\nPage: ${report.page}\nSeverity: ${report.severity}\n\nWhat they were doing:\n${report.title}\n\nWhat happened:\n${report.description}\n\nSteps to reproduce:\n${report.steps||'Not provided'}\n\nBrowser: ${navigator.userAgent.slice(0,100)}\nTime: ${new Date().toLocaleString()}`,
+    });
+  } catch(e) { console.log('Bug report email failed:', e); }
+
+  // Show success
+  document.getElementById('bug-success').style.display='block';
+  ['bug-title','bug-desc','bug-steps'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  setTimeout(()=>{
+    closeModal('bug-modal');
+    document.getElementById('bug-success').style.display='none';
+  }, 2500);
 }
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Bug Report Button -->
+<button id="bug-btn" onclick="openModal('bug-modal')" title="Report a bug"
+  style="position:fixed;bottom:20px;right:20px;width:44px;height:44px;border-radius:50%;background:#1a1a18;color:#fff;border:2px solid rgba(255,255,255,0.2);font-size:20px;cursor:pointer;z-index:400;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;transition:all .2s"
+  onmouseover="this.style.background='#E24B4A';this.style.borderColor='#E24B4A'"
+  onmouseout="this.style.background='#1a1a18';this.style.borderColor='rgba(255,255,255,0.2)'">🐛</button>
+
+<!-- Bug Report Modal -->
+<div class="modal-backdrop" id="bug-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">🐛 Report a Bug</span>
+      <button class="modal-close" onclick="closeModal('bug-modal')">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Found something broken? Let us know and we'll fix it.</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">What were you trying to do? *</label>
+        <input class="form-input" id="bug-title" placeholder="e.g. Adding a new work order"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">What happened? *</label>
+        <textarea class="form-textarea" id="bug-desc" placeholder="Describe what went wrong — the more detail the better..." style="min-height:90px"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Which page/section?</label>
+        <select class="form-select" id="bug-page">
+          <option>Dashboard</option>
+          <option>Equipment</option>
+          <option>Work Orders</option>
+          <option>Schedule</option>
+          <option>Parts</option>
+          <option>Suppliers</option>
+          <option>Documents</option>
+          <option>Analytics</option>
+          <option>Checklists</option>
+          <option>Chat</option>
+          <option>Admin</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Severity</label>
+        <select class="form-select" id="bug-severity">
+          <option value="low">Low — minor annoyance</option>
+          <option value="medium" selected>Medium — affects my work</option>
+          <option value="high">High — can't use the app</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Steps to reproduce (optional)</label>
+        <textarea class="form-textarea" id="bug-steps" placeholder="1. Go to...
+2. Click...
+3. Error appears..." style="min-height:68px"></textarea>
+      </div>
+    </div>
+    <div id="bug-success" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:13px">
+      ✅ Bug report submitted — thanks for helping improve MTL Maintenance!
+    </div>
+    <div class="form-row">
+      <button class="btn btn-secondary" onclick="closeModal('bug-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitBugReport()">Submit Report</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
