@@ -351,7 +351,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
     </div>
     <div class="section-header"><span class="section-title">Equipment Registry</span>
-      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
+      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.15)">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Equipment</th><th>Status</th><th>Hours</th><th>Health</th><th>Assigned To</th><th>Last Service</th><th>Next Due</th><th></th></tr></thead>
@@ -370,7 +370,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <select class="form-select" id="task-equip-filter" onchange="renderTasks()" style="font-size:12px;padding:5px 8px">
           <option value="all">All Equipment</option>
         </select>
-        <button class="btn btn-secondary" onclick="toggleBulkWO()">+ Bulk WO</button>
+        <button class="btn btn-secondary" onclick="toggleBulkWO()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.15)">+ Bulk WO</button>
         <button class="btn btn-primary" onclick="openModal('task-modal')">+ New Work Order</button>
       </div>
     </div>
@@ -433,7 +433,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
   <!-- ANALYTICS -->
   <div class="panel" id="panel-analytics">
-    <div class="section-header"><span class="section-title">Analytics</span><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()">Export Health CSV</button><button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export All CSV</button></div></div>
+    <div class="section-header"><span class="section-title">Analytics</span><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.15)">Export Health CSV</button><button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.15)">Export All CSV</button></div></div>
     <div class="metrics">
       <div class="metric-card"><div class="metric-label">Total YTD Cost</div><div class="metric-value" id="r-ytd">$0</div></div>
       <div class="metric-card"><div class="metric-label">Avg Cost / WO</div><div class="metric-value" id="r-avg">$0</div></div>
@@ -491,8 +491,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--bg)">
           <div id="mention-dropdown" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:6px;max-height:120px;overflow-y:auto"></div>
           <div style="display:flex;gap:8px;align-items:flex-end">
-            <div style="flex:1"><textarea class="form-textarea" id="chat-input" placeholder="Message #general..." style="min-height:40px;max-height:120px;resize:none;margin:0" oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea></div>
-            <div style="display:flex;flex-direction:column;gap:4px">
+            <textarea class="form-textarea" id="chat-input" placeholder="Message #general..." style="flex:1;min-height:40px;max-height:120px;resize:none;margin:0" oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea>
+            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('chat-photo-input').click()" style="padding:6px 8px">📎</button>
               <button class="btn btn-primary btn-sm" onclick="sendChatMessage()">Send</button>
             </div>
@@ -512,7 +512,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   <!-- ADMIN -->
   <div class="panel" id="panel-admin">
     <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
-    <div class="tab-bar" style="background:rgba(255,255,255,0.1);border-radius:var(--radius);padding:4px;border:none;gap:4px">
+    <div class="tab-bar" style="background:rgba(0,0,0,0.4);border-radius:var(--radius);padding:4px;border:none;gap:4px">
       <button class="tab active" onclick="switchAdminTab('approvals',this)" style="color:#fff;background:rgba(255,255,255,0.25);font-weight:600;border:none">Pending Approvals</button>
       <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
       <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
