@@ -3042,6 +3042,48 @@ async function enterApp(){
 }
 
 
+// ============================================================
+// PARTS CATALOG
+// ============================================================
+const PARTS_CATALOG_URLS = {
+  'cat':        'https://parts.cat.com',
+  'caterpillar':'https://parts.cat.com',
+  'komatsu':    'https://parts.komatsu.com',
+  'deere':      'https://parts.deere.com',
+  'john deere': 'https://parts.deere.com',
+  'kubota':     'https://www.kubotausa.com/parts-and-service',
+  'volvo':      'https://www.volvoce.com/united-states/en-us/services/parts/',
+  'bobcat':     'https://www.bobcat.com/en/parts-and-service/parts',
+  'case':       'https://www.caseparts.com',
+  'jcb':        'https://parts.jcb.com',
+  'doosan':     'https://www.doosanequipment.com/en/parts-service',
+  'hitachi':    'https://hcmamericas.com/parts',
+  'liebherr':   'https://www.liebherr.com/en/int/products/product-care/spare-parts',
+  'manitou':    'https://www.manitou.com/en/services/parts',
+  'terex':      'https://www.terex.com/en/products/services/parts',
+};
+
+function getPartsCatalogUrl(equipName, equipType) {
+  const text = (equipName + ' ' + (equipType||'')).toLowerCase();
+  for(const[brand, url] of Object.entries(PARTS_CATALOG_URLS)) {
+    if(text.includes(brand)) return url;
+  }
+  // Fallback — Google search
+  return 'https://www.google.com/search?q=' + encodeURIComponent(equipName + ' parts catalog');
+}
+
+function openPartsCatalog(equipId) {
+  // Only show on desktop
+  if(window.innerWidth < 768) {
+    showToast('Parts catalog is only available on desktop');
+    return;
+  }
+  const equip = state.equipment.find(e=>e.id===equipId);
+  if(!equip) return;
+  const url = getPartsCatalogUrl(equip.name, equip.type);
+  window.open(url, '_blank');
+}
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
