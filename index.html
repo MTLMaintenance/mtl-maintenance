@@ -1105,7 +1105,7 @@ function showPanel(id){
 // ============================================================
 // MODALS
 // ============================================================
-function openModal(id){ populateSelects(); document.getElementById(id).classList.add('open'); }
+function openModal(id){ populateSelects(); document.getElementById(id).classList.add('open'); setTimeout(initLazyImages, 50); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 
@@ -3288,14 +3288,7 @@ function initLazyImages() {
   });
 }
 
-// Auto-init on panel switches and modal opens
-const _origOpenModal = openModal;
-function openModal(id) {
-  _origOpenModal(id);
-  setTimeout(initLazyImages, 50);
-}
-
-// Also init on scroll in chat
+// Auto-init lazy images on scroll in chat
 document.addEventListener('DOMContentLoaded', () => {
   const chatMsgs = document.getElementById('chat-messages');
   if(chatMsgs) chatMsgs.addEventListener('scroll', initLazyImages);
