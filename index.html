@@ -943,6 +943,53 @@ async function loadState() {
     state.monthlyCosts    = computeMonthlyCosts();
     setSyncStatus('online');
   } catch(e) { console.error('Load error:', e); setSyncStatus('offline'); }
+  try{const obs=await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});state.observations=obs.data||[];}catch(e){}
+  // Load downtime log from Supabase
+  try{
+    const{data:dtLog}=await window._mpdb.from('downtime_log').select('*').order('created_at',{ascending:true});
+    if(dtLog&&dtLog.length){
+      state.downtimeLog=dtLog.map(d=>({
+        id:d.id,equipId:d.equip_id,status:d.status,
+        startedAt:d.started_at,endedAt:d.ended_at,downtimeMins:d.downtime_mins
+      }));
+    }
+  }catch(e){
+    // Fallback to localStorage
+    try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e2){}
+  }
+  // Load checklist templates from Supabase
+  try{
+    const{data:tpls}=await window._mpdb.from('checklist_templates').select('*').order('created_at',{ascending:true});
+    if(tpls&&tpls.length){
+      // Merge Supabase templates with built-in ones
+      const builtInIds=new Set(state.checklistTemplates.map(t=>t.id));
+      tpls.forEach(t=>{
+        const parsed={...t,items:typeof t.items==='string'?JSON.parse(t.items):t.items};
+        if(builtInIds.has(t.id)){
+          // Update built-in with saved version
+          const idx=state.checklistTemplates.findIndex(x=>x.id===t.id);
+          if(idx>-1)state.checklistTemplates[idx]=parsed;
+        } else {
+          state.checklistTemplates.push(parsed);
+        }
+      });
+    }
+  }catch(e){
+    // Fallback to localStorage
+    try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e2){}
+  }
+  // Load custom permissions from Supabase
+  try{
+    if(currentUser){
+      const{data:perms}=await window._mpdb.from('user_permissions').select('*');
+      if(perms&&perms.length){
+        // Apply saved permissions to PERMISSIONS object
+        perms.forEach(p=>{
+          const role=state.equipment; // placeholder - handled in profiles
+        });
+      }
+    }
+  }catch(e){}
 }
 
 function computeMonthlyCosts() {
@@ -2543,57 +2590,7 @@ state.checklistTemplates=[
 // Downtime log now loaded from Supabase in loadState
 
 // Patch loadState to also load observations
-const _baseLoadState = loadState;
-async function loadState() {
-  await _baseLoadState();
-  try{const obs=await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});state.observations=obs.data||[];}catch(e){}
-  // Load downtime log from Supabase
-  try{
-    const{data:dtLog}=await window._mpdb.from('downtime_log').select('*').order('created_at',{ascending:true});
-    if(dtLog&&dtLog.length){
-      state.downtimeLog=dtLog.map(d=>({
-        id:d.id,equipId:d.equip_id,status:d.status,
-        startedAt:d.started_at,endedAt:d.ended_at,downtimeMins:d.downtime_mins
-      }));
-    }
-  }catch(e){
-    // Fallback to localStorage
-    try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e2){}
-  }
-  // Load checklist templates from Supabase
-  try{
-    const{data:tpls}=await window._mpdb.from('checklist_templates').select('*').order('created_at',{ascending:true});
-    if(tpls&&tpls.length){
-      // Merge Supabase templates with built-in ones
-      const builtInIds=new Set(state.checklistTemplates.map(t=>t.id));
-      tpls.forEach(t=>{
-        const parsed={...t,items:typeof t.items==='string'?JSON.parse(t.items):t.items};
-        if(builtInIds.has(t.id)){
-          // Update built-in with saved version
-          const idx=state.checklistTemplates.findIndex(x=>x.id===t.id);
-          if(idx>-1)state.checklistTemplates[idx]=parsed;
-        } else {
-          state.checklistTemplates.push(parsed);
-        }
-      });
-    }
-  }catch(e){
-    // Fallback to localStorage
-    try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e2){}
-  }
-  // Load custom permissions from Supabase
-  try{
-    if(currentUser){
-      const{data:perms}=await window._mpdb.from('user_permissions').select('*');
-      if(perms&&perms.length){
-        // Apply saved permissions to PERMISSIONS object
-        perms.forEach(p=>{
-          const role=state.equipment; // placeholder - handled in profiles
-        });
-      }
-    }
-  }catch(e){}
-}
+
 
 // ── DOWNTIME ─────────────────────────────────────────────────
 function formatDuration(mins){if(!mins)return'0 mins';if(mins<60)return mins+' min'+(mins!==1?'s':'');const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m>0?' '+m+'m':'');}
