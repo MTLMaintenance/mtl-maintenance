@@ -289,6 +289,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="btn btn-secondary btn-sm" onclick="exportPDF()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">PDF</button>
       <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.5)">CSV</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('task-modal')">+ Work Order</button>
+      <button class="btn btn-secondary btn-sm" onclick="openNotifPrefs()" title="Notification preferences" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🔔</button>
       <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🌙</button>
       <button class="btn btn-secondary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">💬</button>
       <button class="btn btn-secondary btn-sm btn-icon" onclick="signOut()" title="Sign out" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">↩</button>
@@ -571,6 +572,44 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   </div>
 </div>
 
+<!-- Push Notification Reminder Modal -->
+<div class="modal-backdrop" id="push-reminder-modal">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">🔔</div>
+    <div class="modal-title" style="font-size:18px;margin-bottom:10px">Enable Notifications</div>
+    <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Get notified when teammates send messages, tag you, or log critical observations.
+    </div>
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);text-align:left">
+      <div style="margin-bottom:6px">📱 <b>Android:</b> Tap <b>Allow</b> when your browser asks</div>
+      <div style="margin-bottom:6px">🍎 <b>iPhone:</b> First tap <b>Share → Add to Home Screen</b>, open from home screen, then allow</div>
+      <div>🔋 <b>Samsung:</b> Make sure browser is not in battery saver mode</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn btn-secondary" onclick="dismissPushReminder()">No Thanks</button>
+      <button class="btn btn-primary" onclick="enablePushFromReminder()">Enable Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Preferences Modal -->
+<div class="modal-backdrop" id="notif-prefs-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><span class="modal-title">🔔 Notification Preferences</span><button class="modal-close" onclick="closeModal('notif-prefs-modal')">✕</button></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Choose what you get notified about.</div>
+    <div id="notif-prefs-list"></div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="resetNotifSettings()" style="color:var(--danger);border-color:var(--danger)">Reset Settings</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal('notif-prefs-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNotifPrefs()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
@@ -3711,42 +3750,4 @@ function resetNotifSettings() {
     <div id="bug-success" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:13px">✅ Submitted — thanks!</div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('bug-modal')">Cancel</button><button class="btn btn-primary" onclick="submitBugReport()">Submit</button></div>
   </div>
-</div>
-<!-- Push Notification Reminder Modal -->
-<div class="modal-backdrop" id="push-reminder-modal">
-  <div class="modal" style="max-width:420px;text-align:center">
-    <div style="font-size:48px;margin-bottom:12px">🔔</div>
-    <div class="modal-title" style="font-size:18px;margin-bottom:10px">Enable Notifications</div>
-    <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
-      Get notified when teammates send messages, tag you, or log critical observations.
-    </div>
-    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);text-align:left">
-      <div style="margin-bottom:6px">📱 <b>Android:</b> Tap <b>Allow</b> when your browser asks</div>
-      <div style="margin-bottom:6px">🍎 <b>iPhone:</b> First tap <b>Share → Add to Home Screen</b>, open from home screen, then allow</div>
-      <div>🔋 <b>Samsung:</b> Make sure browser is not in battery saver mode</div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button class="btn btn-secondary" onclick="dismissPushReminder()">No Thanks</button>
-      <button class="btn btn-primary" onclick="enablePushFromReminder()">Enable Now</button>
-    </div>
-  </div>
-</div>
-
-<!-- Notification Preferences Modal -->
-<div class="modal-backdrop" id="notif-prefs-modal">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header"><span class="modal-title">🔔 Notification Preferences</span><button class="modal-close" onclick="closeModal('notif-prefs-modal')">✕</button></div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Choose what you get notified about.</div>
-    <div id="notif-prefs-list"></div>
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-secondary btn-sm" onclick="resetNotifSettings()" style="color:var(--danger);border-color:var(--danger)">Reset Settings</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal('notif-prefs-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveNotifPrefs()">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
+</div>>
