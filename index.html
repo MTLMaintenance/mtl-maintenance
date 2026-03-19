@@ -2756,7 +2756,7 @@ function renderChecklistTemplates(){
       <div><div style="font-weight:600;font-size:14px">${tpl.name}</div>
         <div style="font-size:12px;color:var(--text2);margin-top:2px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''} <span style="margin-left:8px">${tpl.items.length} items</span></div>
       </div>
-      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="previewTemplate('${tpl.id}')">Preview</button><button class="btn btn-danger btn-sm" onclick="deleteTpl('${tpl.id}')">Delete</button></div>
+      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="previewTemplate('${tpl.id}')">Preview</button><button class="btn btn-secondary btn-sm" onclick="printTemplate('${tpl.id}')">🖨 Print</button><button class="btn btn-danger btn-sm" onclick="deleteTpl('${tpl.id}')">Delete</button></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:4px">${tpl.items.slice(0,4).map(item=>`<span style="font-size:11px;background:var(--bg2);border-radius:3px;padding:2px 7px;color:var(--text2)">${item}</span>`).join('')}${tpl.items.length>4?`<span style="font-size:11px;color:var(--text3);padding:2px 4px">+${tpl.items.length-4} more</span>`:''}</div>
     </div>`).join('')||'<div class="card"><div style="color:var(--text2);font-size:13px">No templates yet</div></div>';
@@ -2764,8 +2764,51 @@ function renderChecklistTemplates(){
 function previewTemplate(id){
   const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;
   document.getElementById('detail-title').textContent=tpl.name;
-  document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
+  document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
+}
+
+function printTemplate(id){
+  const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;
+  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tpl.name}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px;max-width:700px}
+    h1{font-size:18px;margin:0 0 4px}
+    .meta{font-size:11px;color:#888;margin-bottom:20px}
+    .item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #eee}
+    .item:last-child{border-bottom:none}
+    .checkbox{width:20px;height:20px;border:2px solid #333;border-radius:3px;flex-shrink:0;margin-top:1px}
+    .num{width:20px;font-size:11px;color:#888;text-align:right;flex-shrink:0;margin-top:2px}
+    .label{flex:1;font-size:13px;line-height:1.4}
+    .notes{margin-top:6px;border:1px solid #ddd;border-radius:3px;min-height:30px;background:#fafaf8}
+    .footer{margin-top:28px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#aaa}
+    .sign-row{display:flex;gap:24px;margin-top:24px}
+    .sign-field{flex:1;border-bottom:1px solid #333;padding-bottom:4px;font-size:11px;color:#888}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <h1>⚙ ${tpl.name}</h1>
+  <div class="meta">${tpl.model?'Model: '+tpl.model+' &nbsp;·&nbsp; ':''}${tpl.type?'Type: '+tpl.type+' &nbsp;·&nbsp; ':''} ${tpl.items.length} items &nbsp;·&nbsp; MTL Maintenance</div>
+  <div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px">
+    <div>Equipment: <span style="border-bottom:1px solid #333;display:inline-block;width:180px">&nbsp;</span></div>
+    <div>Date: <span style="border-bottom:1px solid #333;display:inline-block;width:120px">&nbsp;</span></div>
+    <div>Technician: <span style="border-bottom:1px solid #333;display:inline-block;width:140px">&nbsp;</span></div>
+  </div>
+  ${tpl.items.map((item,i)=>`
+    <div class="item">
+      <div class="num">${i+1}</div>
+      <div class="checkbox"></div>
+      <div class="label">${item}<div class="notes"></div></div>
+    </div>`).join('')}
+  <div class="sign-row">
+    <div class="sign-field">Technician signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+    <div class="sign-field">Supervisor signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+  </div>
+  <div class="footer"><div>MTL Maintenance — ${tpl.name}</div><div>Printed ${date}</div></div>
+  <div class="no-print" style="text-align:center;padding:20px"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script>
+  </body></html>`;
+  const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');
 }
 async function saveTpl(){
   const name=document.getElementById('tpl-name').value.trim();if(!name){showToast('Enter a name');return;}
