@@ -287,12 +287,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div class="topbar-right">
       <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
       <button class="btn btn-secondary btn-sm" onclick="exportPDF()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">PDF</button>
-      <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.5)">CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">CSV</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('task-modal')">+ Work Order</button>
-      <button class="btn btn-secondary btn-sm" onclick="openNotifPrefs()" title="Notification preferences" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🔔</button>
       <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🌙</button>
-      <button class="btn btn-secondary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">💬</button>
-      <button class="btn btn-secondary btn-sm btn-icon" onclick="signOut()" title="Sign out" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">↩</button>
+      <button class="btn btn-secondary btn-sm" onclick="signOut()" title="Sign out">↩</button>
     </div>
   </div>
 
@@ -357,7 +355,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
     </div>
     <div class="section-header"><span class="section-title">Equipment Registry</span>
-      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.5)">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
+      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Equipment</th><th>Status</th><th>Hours</th><th>Health</th><th>Assigned To</th><th>Last Service</th><th>Next Due</th><th></th></tr></thead>
@@ -376,7 +374,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <select class="form-select" id="task-equip-filter" onchange="renderTasks()" style="font-size:12px;padding:5px 8px">
           <option value="all">All Equipment</option>
         </select>
-        <button class="btn btn-secondary" onclick="toggleBulkWO()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.5)">+ Bulk WO</button>
+        <button class="btn btn-secondary" onclick="toggleBulkWO()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">+ Bulk WO</button>
         <button class="btn btn-primary" onclick="openModal('task-modal')">+ New Work Order</button>
       </div>
     </div>
@@ -437,33 +435,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 
-  <!-- ANALYTICS -->
-  <div class="panel" id="panel-analytics">
-    <div class="section-header"><span class="section-title">Analytics</span><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()" style="color:#fff;border-color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.5)">Export Health CSV</button><button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export All CSV</button></div></div>
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Total YTD Cost</div><div class="metric-value" id="r-ytd">$0</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Cost / WO</div><div class="metric-value" id="r-avg">$0</div></div>
-      <div class="metric-card"><div class="metric-label">WOs Completed</div><div class="metric-value v-success" id="r-done">0</div></div>
-      <div class="metric-card"><div class="metric-label">Inventory Value</div><div class="metric-value" id="r-inv">$0</div></div>
-      <div class="metric-card"><div class="metric-label">Parts Consumed</div><div class="metric-value" id="r-parts-used">0</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health Score</div><div class="metric-value" id="r-health">—</div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">Cost by Equipment</span></div><div id="cost-by-equip"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Work Order Breakdown</span></div><div id="task-breakdown"></div></div>
-    </div>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Equipment Health Scores</span></div><div id="health-scores"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Top Parts Consumed</span></div><div id="parts-consumed"></div></div>
-    </div>
-  </div>
-
   <!-- CHECKLIST TEMPLATES -->
   <div class="panel" id="panel-checklists">
-    <div class="section-header">
-      <span class="section-title">Inspection Checklist Templates</span>
-      <button class="btn btn-primary" onclick="openModal('tpl-modal')">+ Add Template</button>
-    </div>
+    <div class="section-header"><span class="section-title">Inspection Checklist Templates</span><button class="btn btn-primary" onclick="openModal('tpl-modal')">+ Add Template</button></div>
     <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-bottom:12px">Templates auto-fill the checklist when you pick a machine on a work order.</div>
     <div id="tpl-list"></div>
   </div>
@@ -471,28 +445,22 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   <!-- CHAT -->
   <div class="panel" id="panel-chat">
     <div class="section-header"><span class="section-title">Team Chat</span></div>
-    <!-- Chat sidebar overlay for mobile -->
     <div id="chat-sidebar-overlay" onclick="toggleChatSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200"></div>
     <div style="display:flex;gap:8px;height:calc(100vh - 180px);min-height:500px;position:relative">
-      <!-- Sidebar -->
       <div id="chat-sidebar" style="width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;transition:transform .25s">
         <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:4px 0">Channels</div>
-        <button class="chat-channel-btn active" id="ch-general" onclick="switchChannel('general',this);closeChatSidebarMobile()"><span style="font-size:14px">#</span> General</button>
-        <button class="chat-channel-btn" id="ch-outside" onclick="switchChannel('outside',this);closeChatSidebarMobile()"><span style="font-size:14px">#</span> Outside</button>
-        <button class="chat-channel-btn" id="ch-production" onclick="switchChannel('production',this);closeChatSidebarMobile()"><span style="font-size:14px">#</span> Production</button>
+        <button class="chat-channel-btn active" id="ch-general" onclick="switchChannel('general',this);closeChatSidebarMobile()"># General</button>
+        <button class="chat-channel-btn" id="ch-outside" onclick="switchChannel('outside',this);closeChatSidebarMobile()"># Outside</button>
+        <button class="chat-channel-btn" id="ch-production" onclick="switchChannel('production',this);closeChatSidebarMobile()"># Production</button>
         <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 4px">Direct Messages</div>
         <div id="dm-list" style="display:flex;flex-direction:column;gap:3px"></div>
-        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 4px">Online</div>
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 4px">Team</div>
         <div id="online-users-list" style="font-size:12px;color:rgba(255,255,255,0.7)"></div>
       </div>
-      <!-- Main chat area -->
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:rgba(255,255,255,0.92);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
         <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(245,245,243,0.95);display:flex;align-items:center;gap:10px">
           <button id="chat-sidebar-toggle" onclick="toggleChatSidebar()" style="display:none;background:none;border:none;cursor:pointer;font-size:20px;padding:0;line-height:1;color:var(--text2)">☰</button>
-          <div style="flex:1">
-            <span style="font-weight:600;font-size:14px" id="chat-channel-title"># general</span>
-            <span style="font-size:12px;color:var(--text2);margin-left:8px" id="chat-channel-desc">General team chat</span>
-          </div>
+          <div style="flex:1"><span style="font-weight:600;font-size:14px" id="chat-channel-title"># general</span><span style="font-size:12px;color:var(--text2);margin-left:8px" id="chat-channel-desc">General team chat</span></div>
         </div>
         <div id="chat-offline-banner" style="display:none;background:var(--warning-bg);color:var(--warning-text);border-bottom:1px solid var(--warning);padding:8px 16px;font-size:13px;text-align:center">Offline — chat unavailable.</div>
         <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:2px"></div>
@@ -522,6 +490,27 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 
+  <!-- ANALYTICS -->
+  <div class="panel" id="panel-analytics">
+    <div class="section-header"><span class="section-title">Analytics</span><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export Health CSV</button><button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export All CSV</button></div></div>
+    <div class="metrics">
+      <div class="metric-card"><div class="metric-label">Total YTD Cost</div><div class="metric-value" id="r-ytd">$0</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Cost / WO</div><div class="metric-value" id="r-avg">$0</div></div>
+      <div class="metric-card"><div class="metric-label">WOs Completed</div><div class="metric-value v-success" id="r-done">0</div></div>
+      <div class="metric-card"><div class="metric-label">Inventory Value</div><div class="metric-value" id="r-inv">$0</div></div>
+      <div class="metric-card"><div class="metric-label">Parts Consumed</div><div class="metric-value" id="r-parts-used">0</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Health Score</div><div class="metric-value" id="r-health">—</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><span class="card-title">Cost by Equipment</span></div><div id="cost-by-equip"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Work Order Breakdown</span></div><div id="task-breakdown"></div></div>
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <div class="card"><div class="card-header"><span class="card-title">Equipment Health Scores</span></div><div id="health-scores"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Top Parts Consumed</span></div><div id="parts-consumed"></div></div>
+    </div>
+  </div>
+
   <!-- ADMIN -->
   <div class="panel" id="panel-admin">
     <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
@@ -544,20 +533,13 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       </table></div>
     </div>
     <div id="admin-deleted-msgs" style="display:none">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Deleted Messages</span><span style="font-size:12px;color:var(--text2)">Recoverable for 30 days</span></div>
-        <div id="deleted-msgs-list"></div>
-      </div>
-      <div class="card" style="margin-top:12px">
-        <div class="card-header"><span class="card-title">Blocked Users</span></div>
-        <div id="blocked-users-list"></div>
-      </div>
+      <div class="card"><div class="card-header"><span class="card-title">Deleted Messages</span><span style="font-size:12px;color:var(--text2)">Recoverable for 30 days</span></div><div id="deleted-msgs-list"></div></div>
+      <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
     </div>
     <div id="admin-permissions" style="display:none">
       <div class="card">
         <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
         <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
-        <div style="margin-top:12px;font-size:12px;color:var(--text2)">✅ Allowed &nbsp;·&nbsp; ❌ Not allowed</div>
       </div>
       <div class="card" style="margin-top:12px">
         <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
@@ -572,44 +554,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   </div>
 </div>
 
-<!-- Push Notification Reminder Modal -->
-<div class="modal-backdrop" id="push-reminder-modal">
-  <div class="modal" style="max-width:420px;text-align:center">
-    <div style="font-size:48px;margin-bottom:12px">🔔</div>
-    <div class="modal-title" style="font-size:18px;margin-bottom:10px">Enable Notifications</div>
-    <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
-      Get notified when teammates send messages, tag you, or log critical observations.
-    </div>
-    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);text-align:left">
-      <div style="margin-bottom:6px">📱 <b>Android:</b> Tap <b>Allow</b> when your browser asks</div>
-      <div style="margin-bottom:6px">🍎 <b>iPhone:</b> First tap <b>Share → Add to Home Screen</b>, open from home screen, then allow</div>
-      <div>🔋 <b>Samsung:</b> Make sure browser is not in battery saver mode</div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button class="btn btn-secondary" onclick="dismissPushReminder()">No Thanks</button>
-      <button class="btn btn-primary" onclick="enablePushFromReminder()">Enable Now</button>
-    </div>
-  </div>
-</div>
-
-<!-- Notification Preferences Modal -->
-<div class="modal-backdrop" id="notif-prefs-modal">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header"><span class="modal-title">🔔 Notification Preferences</span><button class="modal-close" onclick="closeModal('notif-prefs-modal')">✕</button></div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Choose what you get notified about.</div>
-    <div id="notif-prefs-list"></div>
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-secondary btn-sm" onclick="resetNotifSettings()" style="color:var(--danger);border-color:var(--danger)">Reset Settings</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal('notif-prefs-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveNotifPrefs()">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-</body>
-</html
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
@@ -695,7 +639,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <div class="form-group"><label class="form-label">Serial / Asset #</label><input class="form-input" id="e-serial" placeholder="SN-00123"/></div>
         <div class="form-group"><label class="form-label">Current Hours</label><input class="form-input" id="e-hours" type="number" min="0" placeholder="0"/></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="e-status"><option>Operational</option><option>In Service</option><option>Down</option><option>Standby</option></select></div>
-      <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="e-group"><option value="outside">Outside</option><option value="production">Production</option><option value="both">Both</option></select></div>
         <div class="form-group"><label class="form-label">Primary Operator</label><input class="form-input" id="e-op" placeholder="Name"/></div>
         <div class="form-group"><label class="form-label">Monthly Budget ($)</label><input class="form-input" id="e-budget-monthly" type="number" min="0" placeholder="0"/></div>
       <div class="form-group"><label class="form-label">Yearly Budget ($)</label><input class="form-input" id="e-budget-yearly" type="number" min="0" placeholder="0"/></div>
@@ -845,11 +788,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <div id="toast"></div>
 
 <script>
-
 // ============================================================
 // CONFIG
 // ============================================================
-// SHA-256 password hashing
 async function hashPassword(password) {
   const msgBuffer = new TextEncoder().encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -870,9 +811,7 @@ async function startApp() {
   try { localStorage.removeItem('mp_users'); } catch(e) {}
   try {
     window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' }
-      }
+      global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
     });
     setSyncStatus('online');
   } catch(e) { console.warn('Supabase init failed:', e); }
@@ -1021,52 +960,6 @@ async function loadState() {
     setSyncStatus('online');
   } catch(e) { console.error('Load error:', e); setSyncStatus('offline'); }
   try{const obs=await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});state.observations=obs.data||[];}catch(e){}
-  // Load downtime log from Supabase
-  try{
-    const{data:dtLog}=await window._mpdb.from('downtime_log').select('*').order('created_at',{ascending:true});
-    if(dtLog&&dtLog.length){
-      state.downtimeLog=dtLog.map(d=>({
-        id:d.id,equipId:d.equip_id,status:d.status,
-        startedAt:d.started_at,endedAt:d.ended_at,downtimeMins:d.downtime_mins
-      }));
-    }
-  }catch(e){
-    // Fallback to localStorage
-    try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e2){}
-  }
-  // Load checklist templates from Supabase
-  try{
-    const{data:tpls}=await window._mpdb.from('checklist_templates').select('*').order('created_at',{ascending:true});
-    if(tpls&&tpls.length){
-      // Merge Supabase templates with built-in ones
-      const builtInIds=new Set(state.checklistTemplates.map(t=>t.id));
-      tpls.forEach(t=>{
-        const parsed={...t,items:typeof t.items==='string'?JSON.parse(t.items):t.items};
-        if(builtInIds.has(t.id)){
-          // Update built-in with saved version
-          const idx=state.checklistTemplates.findIndex(x=>x.id===t.id);
-          if(idx>-1)state.checklistTemplates[idx]=parsed;
-        } else {
-          state.checklistTemplates.push(parsed);
-        }
-      });
-    }
-  }catch(e){
-    // Fallback to localStorage
-    try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e2){}
-  }
-  // Load custom permissions from Supabase
-  try{
-    if(currentUser){
-      const{data:perms}=await window._mpdb.from('user_permissions').select('*');
-      if(perms&&perms.length){
-        // Apply saved permissions to PERMISSIONS object
-        perms.forEach(p=>{
-          const role=state.equipment; // placeholder - handled in profiles
-        });
-      }
-    }
-  }catch(e){}
 }
 
 function computeMonthlyCosts() {
@@ -1775,34 +1668,10 @@ async function openTaskDetail(id){
 }
 
 function switchDetailTab(tab, btn){
-  // Hide all tab content divs dynamically
-  const modal = document.getElementById('detail-modal');
-  if(modal) {
-    modal.querySelectorAll('div[id]').forEach(el=>{
-      if(el.id.startsWith('eq-')||el.id.startsWith('dt-')) el.style.display='none';
-    });
-  }
+  ['dt-info','dt-checklist','dt-parts','dt-comments','dt-photos'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
   const el=document.getElementById(tab); if(el) el.style.display='block';
-  document.querySelectorAll('#detail-modal .tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#detail-body .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  // Populate downtime tab when clicked
-  if(tab==='eq-downtime') {
-    const dtContent = document.getElementById('eq-downtime-content');
-    if(dtContent && window._currentDetailEquipId) {
-      const dt = getEquipDowntime(window._currentDetailEquipId);
-      const activeMins = dt.activeDown ? Math.round((new Date()-new Date(dt.activeDown.startedAt))/60000) : 0;
-      dtContent.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
-          <div class="metric-card"><div class="metric-label">Total Downtime</div><div class="metric-value ${dt.totalMins>0?'v-warning':'v-success'}">${formatDuration(dt.totalMins)||'None'}</div></div>
-          <div class="metric-card"><div class="metric-label">Events</div><div class="metric-value">${dt.entries.length}</div></div>
-          <div class="metric-card"><div class="metric-label">Status</div><div class="metric-value ${dt.activeDown?'v-danger':'v-success'}">${dt.activeDown?'DOWN ('+formatDuration(activeMins)+')':'Operational'}</div></div>
-        </div>
-        ${dt.entries.length?`<table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead><tr><th style="text-align:left;padding:5px;border-bottom:1px solid var(--border)">Date</th><th style="text-align:left;padding:5px;border-bottom:1px solid var(--border)">Duration</th></tr></thead>
-          <tbody>${dt.entries.map(d=>`<tr><td style="padding:6px 5px;border-bottom:1px solid var(--border)">${new Date(d.startedAt).toLocaleDateString()}</td><td style="padding:6px 5px;border-bottom:1px solid var(--border);font-weight:600">${formatDuration(d.downtimeMins)}</td></tr>`).join('')}</tbody>
-        </table>`:'<div style="color:var(--text3);font-size:13px;padding:8px 0">No downtime recorded</div>'}`;
-    }
-  }
 }
 
 async function postDetailComment(taskId){
@@ -1835,7 +1704,6 @@ async function markComplete(taskId){
 
 function openEquipDetail(id){
   const e=state.equipment.find(x=>x.id===id); if(!e)return;
-  window._currentDetailEquipId = id;
   const tasks=state.tasks.filter(t=>t.equipId===id);
   const docs=state.documents.filter(d=>d.equip_id===id);
   const score=calcHealth(id);
@@ -1848,13 +1716,10 @@ function openEquipDetail(id){
       <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs (${docs.length})</button>
       <button class="tab" onclick="switchDetailTab('eq-photos',this)">Photos</button>
       ${Object.keys(e.custom_fields||{}).length?`<button class="tab" onclick="switchDetailTab('eq-custom',this)">Custom Fields</button>`:''}
-      <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
-      <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
     </div>
     <div id="eq-info">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
         <div><span style="color:var(--text2)">Type:</span> ${e.type}</div>
-        <div><span style="color:var(--text2)">Manufacturer:</span> ${e.manufacturer||'—'}</div>
         <div><span style="color:var(--text2)">Serial:</span> ${e.serial}</div>
         <div><span style="color:var(--text2)">Status:</span> ${badge(e.status)}</div>
         <div><span style="color:var(--text2)">Hours:</span> <b>${e.hours.toLocaleString()} hrs</b></div>
@@ -1881,41 +1746,7 @@ function openEquipDetail(id){
     <div id="eq-custom" style="display:none">
       ${Object.entries(e.custom_fields||{}).map(([k,v])=>`<div class="parts-row"><div style="flex:1;font-weight:500">${k}</div><div style="color:var(--text2)">${v}</div></div>`).join('')}
     </div>
-    <div id="eq-downtime" style="display:none">
-      <div id="eq-downtime-content" style="color:var(--text2);font-size:13px">Loading...</div>
-    </div>
-    <div id="eq-obs" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="Describe your observation..." style="flex:1;min-height:68px"></textarea>
-        <div style="display:flex;flex-direction:column;gap:6px;justify-content:flex-end">
-          <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px">
-            <option value="info">ℹ Info</option>
-            <option value="watch">👀 Watch</option>
-            <option value="critical">🚨 Critical</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Add</button>
-        </div>
-      </div>
-      <div id="obs-list-${e.id}">
-        ${(state.observations||[]).filter(o=>o.equip_id===e.id).length===0
-          ? '<div style="color:var(--text3);font-size:13px">No observations yet</div>'
-          : (state.observations||[]).filter(o=>o.equip_id===e.id).map(o=>`
-            <div style="background:${o.severity==='critical'?'var(--danger-bg)':o.severity==='watch'?'var(--warning-bg)':'var(--bg2)'};border:1px solid ${o.severity==='critical'?'var(--danger)':o.severity==='watch'?'var(--warning)':'var(--border)'};border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-                <span>${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
-                <span style="font-weight:600;font-size:12px">${o.severity.toUpperCase()}</span>
-                <span style="font-size:11px;color:var(--text3);margin-left:auto">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</span>
-              </div>
-              <div style="font-size:13px">${o.body}</div>
-            </div>`).join('')
-        }
-      </div>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-      ${window.innerWidth>=768?`<button class="btn btn-secondary" onclick="openPartsCatalog('${e.id}')">🔍 Parts Catalog</button>`:''}
-      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 Print History</button>
-      <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
-    </div>`;
+    <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
 
@@ -2494,41 +2325,7 @@ setTimeout(checkAndSendOverdueEmails, 3000);
 // ============================================================
 // PUSH NOTIFICATIONS
 // ============================================================
-async function requestPushPermission() {
-  if(!('Notification' in window)) { showToast('Push notifications not supported on this browser'); return; }
-  const perm = await Notification.requestPermission();
-  if(perm === 'granted') {
-    showToast('Push notifications enabled ✓');
-    try {
-      localStorage.setItem('mp_push', '1');
-      localStorage.setItem('mp_push_decision', 'enabled');
-    } catch(e) {}
-  } else {
-    showToast('Notifications blocked — you can enable them in browser settings');
-    try { localStorage.setItem('mp_push_decision', 'denied'); } catch(e) {}
-  }
-}
-
-function sendPushNotification(title, body) {
-  try {
-    if(Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '⚙' });
-    }
-  } catch(e) {}
-}
-
 // Check for overdue tasks and send push on load
-async function checkOverduePush() {
-  if(Notification.permission !== 'granted') return;
-  const overdue = state.tasks.filter(t=>t.status==='Overdue');
-  if(overdue.length) {
-    sendPushNotification(
-      'MTL Maintenance — ' + overdue.length + ' Overdue Work Order' + (overdue.length>1?'s':''),
-      overdue.map(t=>t.name).join(', ')
-    );
-  }
-}
-
 // ============================================================
 // QR CODES (Admin only)
 // ============================================================
@@ -2674,7 +2471,7 @@ async function saveEquipment() {
   await persist('equipment','upsert',record);
   pendingPhotos.equip=[]; customFieldsTemp={};
   closeModal('equip-modal'); renderEquipmentTable(); updateMetrics();
-  ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly','e-manufacturer'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
 // ============================================================
@@ -2730,11 +2527,10 @@ state.checklistTemplates=[
   {id:'tpl-skid',name:'Skid Steer — Daily',model:'General',type:'Skid Steer',items:['Check engine oil','Check hydraulic fluid','Check coolant','Check fuel','Inspect tyres or tracks','Check quick attach','Inspect hydraulic hoses','Grease lubrication points','Test lights and alarm','Test seat bar','Test all controls','Log hours']},
   {id:'tpl-crane',name:'Crane — Daily Pre-Op',model:'General',type:'Crane',items:['Check engine oil','Check hydraulic fluid','Check coolant','Check fuel','Inspect wire rope','Inspect hook and latch','Check load block','Inspect boom','Check outriggers','Test limit switches','Test load indicator','Inspect hydraulic hoses','Grease all points','Test all controls','Verify lift certification','Log hours']},
 ];
-// Templates now loaded from Supabase in loadState
-// Downtime log now loaded from Supabase in loadState
+(function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
+(function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
 
 // Patch loadState to also load observations
-
 
 // ── DOWNTIME ─────────────────────────────────────────────────
 function formatDuration(mins){if(!mins)return'0 mins';if(mins<60)return mins+' min'+(mins!==1?'s':'');const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m>0?' '+m+'m':'');}
@@ -2742,20 +2538,8 @@ function getEquipDowntime(equipId){const entries=state.downtimeLog.filter(d=>d.e
 async function logStatusChange(equipId,oldStatus,newStatus){
   if(oldStatus===newStatus)return;
   const now=new Date().toISOString();
-  if(newStatus==='Down'){
-    const entry={id:uid(),equipId,status:'started',startedAt:now,endedAt:null,downtimeMins:0};
-    state.downtimeLog.push(entry);
-    try{await window._mpdb.from('downtime_log').insert({id:entry.id,equip_id:equipId,status:'started',started_at:now});}catch(e){}
-  } else if(oldStatus==='Down'){
-    const open=state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);
-    if(open){
-      open.endedAt=now;open.status='resolved';
-      open.downtimeMins=Math.round((new Date(now)-new Date(open.startedAt))/60000);
-      showToast('Downtime: '+formatDuration(open.downtimeMins));
-      try{await window._mpdb.from('downtime_log').update({status:'resolved',ended_at:now,downtime_mins:open.downtimeMins}).eq('id',open.id);}catch(e){}
-    }
-  }
-  // Keep localStorage as backup
+  if(newStatus==='Down'){state.downtimeLog.push({id:uid(),equipId,status:'started',startedAt:now,endedAt:null});}
+  else if(oldStatus==='Down'){const open=state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);if(open){open.endedAt=now;open.status='resolved';open.downtimeMins=Math.round((new Date(now)-new Date(open.startedAt))/60000);showToast('Downtime: '+formatDuration(open.downtimeMins));}}
   try{localStorage.setItem('mp_downtime',JSON.stringify(state.downtimeLog));}catch(e){}
 }
 async function updateEquipStatus(equipId,newStatus){const equip=state.equipment.find(e=>e.id===equipId);if(!equip)return;const old=equip.status;equip.status=newStatus;await logStatusChange(equipId,old,newStatus);await persist('equipment','upsert',equip);renderEquipmentTable();renderDashboard();}
@@ -2799,7 +2583,7 @@ function renderChecklistTemplates(){
       <div><div style="font-weight:600;font-size:14px">${tpl.name}</div>
         <div style="font-size:12px;color:var(--text2);margin-top:2px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''} <span style="margin-left:8px">${tpl.items.length} items</span></div>
       </div>
-      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="previewTemplate('${tpl.id}')">Preview</button><button class="btn btn-secondary btn-sm" onclick="printTemplate('${tpl.id}')">🖨 Print</button><button class="btn btn-danger btn-sm" onclick="deleteTpl('${tpl.id}')">Delete</button></div>
+      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="previewTemplate('${tpl.id}')">Preview</button><button class="btn btn-danger btn-sm" onclick="deleteTpl('${tpl.id}')">Delete</button></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:4px">${tpl.items.slice(0,4).map(item=>`<span style="font-size:11px;background:var(--bg2);border-radius:3px;padding:2px 7px;color:var(--text2)">${item}</span>`).join('')}${tpl.items.length>4?`<span style="font-size:11px;color:var(--text3);padding:2px 4px">+${tpl.items.length-4} more</span>`:''}</div>
     </div>`).join('')||'<div class="card"><div style="color:var(--text2);font-size:13px">No templates yet</div></div>';
@@ -2807,65 +2591,18 @@ function renderChecklistTemplates(){
 function previewTemplate(id){
   const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;
   document.getElementById('detail-title').textContent=tpl.name;
-  document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
+  document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
-
-function printTemplate(id){
-  const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;
-  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tpl.name}</title>
-  <style>
-    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px;max-width:700px}
-    h1{font-size:18px;margin:0 0 4px}
-    .meta{font-size:11px;color:#888;margin-bottom:20px}
-    .item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #eee}
-    .item:last-child{border-bottom:none}
-    .checkbox{width:20px;height:20px;border:2px solid #333;border-radius:3px;flex-shrink:0;margin-top:1px}
-    .num{width:20px;font-size:11px;color:#888;text-align:right;flex-shrink:0;margin-top:2px}
-    .label{flex:1;font-size:13px;line-height:1.4}
-    .notes{margin-top:6px;border:1px solid #ddd;border-radius:3px;min-height:30px;background:#fafaf8}
-    .footer{margin-top:28px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#aaa}
-    .sign-row{display:flex;gap:24px;margin-top:24px}
-    .sign-field{flex:1;border-bottom:1px solid #333;padding-bottom:4px;font-size:11px;color:#888}
-    @media print{.no-print{display:none}}
-  </style></head><body>
-  <h1>⚙ ${tpl.name}</h1>
-  <div class="meta">${tpl.model?'Model: '+tpl.model+' &nbsp;·&nbsp; ':''}${tpl.type?'Type: '+tpl.type+' &nbsp;·&nbsp; ':''} ${tpl.items.length} items &nbsp;·&nbsp; MTL Maintenance</div>
-  <div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px">
-    <div>Equipment: <span style="border-bottom:1px solid #333;display:inline-block;width:180px">&nbsp;</span></div>
-    <div>Date: <span style="border-bottom:1px solid #333;display:inline-block;width:120px">&nbsp;</span></div>
-    <div>Technician: <span style="border-bottom:1px solid #333;display:inline-block;width:140px">&nbsp;</span></div>
-  </div>
-  ${tpl.items.map((item,i)=>`
-    <div class="item">
-      <div class="num">${i+1}</div>
-      <div class="checkbox"></div>
-      <div class="label">${item}<div class="notes"></div></div>
-    </div>`).join('')}
-  <div class="sign-row">
-    <div class="sign-field">Technician signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
-    <div class="sign-field">Supervisor signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
-  </div>
-  <div class="footer"><div>MTL Maintenance — ${tpl.name}</div><div>Printed ${date}</div></div>
-  <div class="no-print" style="text-align:center;padding:20px"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div>
-  <script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script>
-  </body></html>`;
-  const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');
-}
-async function saveTpl(){
+function saveTpl(){
   const name=document.getElementById('tpl-name').value.trim();if(!name){showToast('Enter a name');return;}
   const items=document.getElementById('tpl-items').value.split('\n').filter(Boolean);if(!items.length){showToast('Add checklist items');return;}
   const tpl={id:'tpl-'+uid(),name,model:document.getElementById('tpl-model').value.trim(),type:document.getElementById('tpl-type').value.trim(),items};
-  state.checklistTemplates.push(tpl);
-  try{await window._mpdb.from('checklist_templates').insert({...tpl,items:JSON.stringify(tpl.items)});}catch(e){
-    // Fallback to localStorage
-    try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e2){}
-  }
+  state.checklistTemplates.push(tpl);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}
   closeModal('tpl-modal');renderChecklistTemplates();showToast('Template saved ✓');
   ['tpl-name','tpl-model','tpl-type','tpl-items'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
 }
-async function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{await window._mpdb.from('checklist_templates').delete().eq('id',id);}catch(e){try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e2){}}renderChecklistTemplates();showToast('Template deleted');}
+function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}renderChecklistTemplates();showToast('Template deleted');}
 function applyTemplate(){
   const tplId=document.getElementById('tpl-selector')?.value;if(!tplId){showToast('Select a template first');return;}
   const tpl=state.checklistTemplates.find(t=>t.id===tplId);if(!tpl)return;
@@ -2910,7 +2647,7 @@ function refreshObsList(equipId){
 async function deleteObservation(obsId,equipId){if(!confirm('Delete?'))return;try{await window._mpdb.from('observations').delete().eq('id',obsId);state.observations=state.observations.filter(o=>o.id!==obsId);refreshObsList(equipId);renderAlerts();}catch(e){showToast('Failed');}}
 async function sendCriticalObsNotification(obs,equipId){
   const equip=state.equipment.find(e=>e.id===equipId);
-  sendPushNotification('🚨 Critical — '+(equip?.name||'Equipment'),obs.body+' (by '+obs.author+')','critical_obs');
+  
   try{emailjs.init('n5n6_xxmNNHqk0xrE');await emailjs.send('service_o320zzu','template_je3rl4j',{to_email:'tannergalloway75@gmail.com',message:'🚨 CRITICAL OBSERVATION\n\nEquipment: '+(equip?.name||'Unknown')+'\nBy: '+obs.author+'\n\n'+obs.body+'\n\nhttps://mtlmaintenance.github.io/mtl-maintenance'});showToast('🚨 Critical alert sent');}catch(e){showToast('🚨 Critical — push sent');}
 }
 
@@ -2964,22 +2701,7 @@ let editingUserId=null,editingUserRole=null,editingPerms={};
 function openUserPerms(userId,userName,userRole,customPerms){editingUserId=userId;editingUserRole=userRole;editingPerms={...PERMISSIONS[userRole]||PERMISSIONS.tech,...(customPerms||{})};document.getElementById('user-perms-title').textContent=userName+' — Permissions';document.getElementById('user-perms-role').textContent=userRole;renderUserPermsList();openModal('user-perms-modal');}
 function renderUserPermsList(){const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;document.getElementById('user-perms-list').innerHTML=Object.entries(PERM_LABELS).map(([key,label])=>{const def=!!(rd[key]),cur=!!(editingPerms[key]),ov=cur!==def;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">${label}</div><div style="font-size:11px;color:var(--text3)">Default: ${def?'✅':'❌'}${ov?' <span style="color:var(--warning)">● Override</span>':''}</div></div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;margin-left:12px"><span style="font-size:12px;color:${cur?'var(--success)':'var(--danger)'};font-weight:600;min-width:60px;text-align:right">${cur?'Allowed':'Denied'}</span><div style="position:relative;width:40px;height:22px;flex-shrink:0"><input type="checkbox" ${cur?'checked':''} onchange="editingPerms['${key}']=this.checked;renderUserPermsList()" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0;z-index:2"/><div style="width:40px;height:22px;border-radius:11px;background:${cur?'#3B6D11':'#E24B4A'};position:absolute;top:0;left:0"></div><div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${cur?'21px':'3px'};transition:left .2s;pointer-events:none"></div></div></label></div>`;}).join('');}
 function resetUserPerms(){editingPerms={...PERMISSIONS[editingUserRole]||PERMISSIONS.tech};renderUserPermsList();showToast('Reset to defaults');}
-async function saveUserPerms(){
-  try{
-    const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;
-    const ho=Object.entries(editingPerms).some(([k,v])=>v!==rd[k]);
-    const permsToSave=ho?editingPerms:null;
-    // Save to profiles (primary)
-    await window._mpdb.from('profiles').update({custom_permissions:permsToSave}).eq('id',editingUserId);
-    // Also save to user_permissions table (backup)
-    if(permsToSave){
-      await window._mpdb.from('user_permissions').upsert({username:editingUserRole,custom_permissions:permsToSave,updated_at:new Date().toISOString()});
-    } else {
-      await window._mpdb.from('user_permissions').delete().eq('username',editingUserId);
-    }
-    showToast('Permissions saved ✓');closeModal('user-perms-modal');renderUsersTable();
-  }catch(e){showToast('Failed');}
-}
+async function saveUserPerms(){try{const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;const ho=Object.entries(editingPerms).some(([k,v])=>v!==rd[k]);await window._mpdb.from('profiles').update({custom_permissions:ho?editingPerms:null}).eq('id',editingUserId);showToast('Permissions saved ✓');closeModal('user-perms-modal');renderUsersTable();}catch(e){showToast('Failed');}}
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
 function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
 async function quickRoleChange(userId,newRole){try{await window._mpdb.from('profiles').update({role:newRole}).eq('id',userId);showToast('Role updated ✓');}catch(e){showToast('Failed');}}
@@ -3000,7 +2722,6 @@ async function renderUsersTable(){
       <select class="form-select" style="font-size:12px;padding:3px 6px" onchange="quickRoleChange('${p.id}',this.value)"><option value="manager" ${p.role==='manager'?'selected':''}>Manager</option><option value="tech" ${(!p.role||p.role==='tech')?'selected':''}>Tech</option><option value="viewer" ${p.role==='viewer'?'selected':''}>Viewer</option></select>
       <select class="form-select" style="font-size:12px;padding:3px 6px" onchange="quickGroupChange('${p.id}',this.value)"><option value="" ${!p.group_tag?'selected':''}>No group</option><option value="outside" ${p.group_tag==='outside'?'selected':''}>Outside</option><option value="production" ${p.group_tag==='production'?'selected':''}>Production</option></select>
       <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
-      <button class="btn btn-secondary btn-sm" onclick="resetUserPassword('${p.id}','${p.full_name}')">Reset PW</button>
       <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
     </div></td></tr>`).join('')||'<tr><td colspan="5" style="padding:16px;color:var(--text2);text-align:center">No active users yet</td></tr>';
     const sel=document.getElementById('role-user-select');if(sel)sel.innerHTML=active.map(p=>`<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
@@ -3023,40 +2744,12 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 async function initChat(){
   try{const{data}=await window._mpdb.from('chat_messages').select('id,channel,created_at,author').order('created_at',{ascending:false}).limit(100);state.chatMessages=data||[];updateUnreadBadge();}catch(e){}
-  showPushReminder();
-  try{window._mpdb.channel('chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>{const msg=payload.new;state.chatMessages.unshift(msg);
-        if(msg.channel===currentChannel){
-          // Skip if sent by current user — already shown optimistically
-          if(msg.author !== currentUser?.username) {
-            appendChatMessage(msg);
-          }
-          markChannelRead(currentChannel);
-        } else {
-          updateUnreadBadge();
-          // Push notification for messages in other channels
-          if(Notification.permission==='granted') {
-            sendPushNotification(
-              '💬 ' + (msg.author_name||msg.author) + ' in #' + msg.channel,
-              msg.body ? msg.body.slice(0,80) : '📎 Photo',
-              'chat_messages'
-            );
-          }
-        }
-        // Push notification for @mentions regardless of channel
-        if(msg.mentions && msg.mentions.includes(currentUser?.username)) {
-          sendPushNotification(
-            '💬 ' + (msg.author_name||msg.author) + ' mentioned you',
-            msg.body ? msg.body.slice(0,80) : '📎 Photo',
-            'mentions'
-          );
-        }}).subscribe();}catch(e){}
+  try{window._mpdb.channel('chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>{const msg=payload.new;state.chatMessages.unshift(msg);if(msg.channel===currentChannel){appendChatMessage(msg);markChannelRead(currentChannel);}else{updateUnreadBadge();}}).subscribe();}catch(e){}
 }
 async function renderChat(){
   const banner=document.getElementById('chat-offline-banner');if(banner)banner.style.display=!navigator.onLine?'block':'none';
   if(!navigator.onLine){const c=document.getElementById('chat-messages');if(c)c.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 20px">Offline — chat unavailable</div>';return;}
-  populateChatTagSelects();
-  await Promise.all([loadChatMessages(currentChannel), renderOnlineUsers(), renderDmList()]);
-  updateUnreadBadge();
+  populateChatTagSelects();await loadChatMessages(currentChannel);updateUnreadBadge();renderOnlineUsers();
 }
 function populateChatTagSelects(){
   const esel=document.getElementById('tag-equip-select');const tsel=document.getElementById('tag-task-select');
@@ -3085,18 +2778,15 @@ function buildChatMsgHtml(msg){
   const taskN=state.tasks.find(t=>t.id===msg.task_id)?.name||'Work Order';
   const taskTag=msg.task_id?`<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);color:var(--text2);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openTaskDetail('${msg.task_id}')">📋 ${taskN}</div>`:'';
   const photoHtml=msg.photo?`<img src="${msg.photo}" style="max-width:240px;border-radius:var(--radius);margin-top:6px;cursor:pointer;border:1px solid var(--border)" onclick="viewPhoto('${msg.photo}')"/>`:'';
-  const canDelete = isMe || currentUser?.role==='admin' || currentUser?.role==='manager';
-  const canBlock = !isMe && (currentUser?.role==='admin' || currentUser?.role==='manager');
+  const canDelete=isMe||currentUser?.role==='admin'||currentUser?.role==='manager';
+  const canBlock=!isMe&&(currentUser?.role==='admin'||currentUser?.role==='manager');
   return `<div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start;${isMe?'flex-direction:row-reverse':''}" onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
     <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--success-bg)':'var(--accent-bg)'};color:${isMe?'var(--success-text)':'var(--accent-text)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${initials}</div>
     <div style="flex:1;min-width:0;${isMe?'align-items:flex-end;display:flex;flex-direction:column':''}">
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;${isMe?'flex-direction:row-reverse':''}">
         <span style="font-weight:600;font-size:13px">${isMe?'You':msg.author_name||msg.author}</span>
         <span style="font-size:11px;color:var(--text3)">${time}</span>
-        ${canDelete||canBlock?`<span class="msg-actions" style="opacity:0;transition:opacity .15s;display:flex;gap:4px;margin-left:4px">
-          ${canDelete?`<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}','${(msg.body||'').replace(/'/g,'&apos;').slice(0,100)}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px" title="Delete message">🗑</button>`:''}
-          ${canBlock?`<button onclick="blockChatUser('${msg.author}','${msg.author_name||msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px" title="Block from chat">🚫</button>`:''}
-        </span>`:''}
+        ${canDelete||canBlock?`<span class="msg-actions" style="opacity:0;transition:opacity .15s;display:flex;gap:4px;margin-left:4px">${canDelete?`<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px" title="Delete">🗑</button>`:''}${canBlock?`<button onclick="blockChatUser('${msg.author}','${msg.author_name||msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px" title="Block">🚫</button>`:''}</span>`:''}
       </div>
       <div style="background:${isMe?'var(--success-bg)':'var(--bg2)'};border-radius:${isMe?'12px 12px 2px 12px':'12px 12px 12px 2px'};padding:8px 12px">
         ${body?`<div style="font-size:13px;color:var(--text);line-height:1.5;word-break:break-word">${body}</div>`:''}${photoHtml}
@@ -3109,15 +2799,11 @@ function appendChatMessage(msg){const c=document.getElementById('chat-messages')
 async function sendChatMessage(){
   const input=document.getElementById('chat-input');const body=input?.value.trim();if(!body&&!chatPhotoData)return;
   if(!navigator.onLine){showToast('Offline');return;}
-  // Check if user is blocked from chat
   try{const{data:p}=await window._mpdb.from('profiles').select('blocked_from_chat').eq('username',currentUser.username).single();if(p?.blocked_from_chat){showToast('You have been blocked from sending messages. Contact your admin.');return;}}catch(e){}
   const mentions=[];const re=/@([\w]+)/g;let m;while((m=re.exec(body||''))!==null)mentions.push(m[1]);
   const msg={id:uid(),channel:currentChannel,author:currentUser.username,author_name:currentUser.name,body:body||null,photo:chatPhotoData||null,equip_id:chatTagEquipId||null,task_id:chatTagTaskId||null,mentions,created_at:new Date().toISOString()};
   appendChatMessage(msg);if(input)input.value='';clearTag('equip');clearTag('task');chatPhotoData=null;document.getElementById('chat-photo-preview').textContent='';
-  try{
-    const{error}=await window._mpdb.from('chat_messages').insert(msg);
-    if(error){console.error('Chat insert error:',error);showToast('Message failed: '+error.message);}
-  }catch(e){showToast('Message failed');console.error(e);}
+  try{await window._mpdb.from('chat_messages').insert(msg);}catch(e){showToast('Message failed');}
 }
 function handleChatInput(el){
   el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';
@@ -3139,23 +2825,7 @@ function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.
 async function handleChatPhoto(input){const file=input.files[0];if(!file)return;const compressed=await compressImage(await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);}),600,0.7);chatPhotoData=compressed;document.getElementById('chat-photo-preview').textContent='📎 Photo attached';input.value='';}
 function markChannelRead(channel){lastReadAt[channel]=new Date().toISOString();try{localStorage.setItem('mp_chat_read',JSON.stringify(lastReadAt));}catch(e){}updateUnreadBadge();}
 function updateUnreadBadge(){let total=0;['general','outside','production'].forEach(ch=>{const lr=lastReadAt[ch]?new Date(lastReadAt[ch]):new Date(0);total+=(state.chatMessages||[]).filter(m=>m.channel===ch&&new Date(m.created_at)>lr&&m.author!==currentUser?.username).length;});const b=document.getElementById('chat-unread-badge');if(b){b.textContent=total;b.style.display=total>0?'inline':'none';}}
-async function renderOnlineUsers(){
-  const el=document.getElementById('online-users-list');if(!el)return;
-  try{
-    const{data:profiles}=await window._mpdb.from('profiles').select('full_name,username').eq('status','approved');
-    const users=profiles||[];
-    el.innerHTML=users.map(p=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)">
-      <div style="width:7px;height:7px;border-radius:50%;background:${p.username===currentUser.username?'#3B6D11':'rgba(255,255,255,0.4)'};flex-shrink:0"></div>
-      ${p.full_name}${p.username===currentUser.username?' (you)':''}
-    </div>`).join('');
-  }catch(e){
-    // Fallback to chat-based list
-    const recent=new Date(Date.now()-30*60*1000);
-    const active=[...new Set((state.chatMessages||[]).filter(m=>new Date(m.created_at)>recent).map(m=>m.author_name||m.author))];
-    if(!active.includes(currentUser.name))active.unshift(currentUser.name);
-    el.innerHTML=active.slice(0,8).map(n=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)"><div style="width:7px;height:7px;border-radius:50%;background:#3B6D11;flex-shrink:0"></div>${n}${n===currentUser.name?' (you)':''}</div>`).join('');
-  }
-}
+function renderOnlineUsers(){const el=document.getElementById('online-users-list');if(!el)return;const recent=new Date(Date.now()-30*60*1000);const active=[...new Set((state.chatMessages||[]).filter(m=>new Date(m.created_at)>recent).map(m=>m.author_name||m.author))];if(!active.includes(currentUser.name))active.unshift(currentUser.name);el.innerHTML=active.slice(0,8).map(n=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)"><div style="width:7px;height:7px;border-radius:50%;background:#3B6D11;flex-shrink:0"></div>${n}${n===currentUser.name?' (you)':''}</div>`).join('');}
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
 
@@ -3280,446 +2950,124 @@ async function enterApp(){
   applyUserGroupFilter();
   renderDashboard();
   await initChat();
-  if(localStorage.getItem('mp_push')==='1'){setTimeout(checkOverduePush,2000);}
-  else if(Notification.permission==='default'){setTimeout(()=>requestPushPermission(),4000);}
 }
 
+// ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
+function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
+function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
 
-// ============================================================
-// PARTS CATALOG
-// ============================================================
-const PARTS_CATALOG_URLS = {
-  'cat':        'https://parts.cat.com',
-  'caterpillar':'https://parts.cat.com',
-  'komatsu':    'https://parts.komatsu.com',
-  'deere':      'https://parts.deere.com',
-  'john deere': 'https://parts.deere.com',
-  'kubota':     'https://www.kubotausa.com/parts-and-service',
-  'volvo':      'https://www.volvoce.com/united-states/en-us/services/parts/',
-  'bobcat':     'https://www.bobcat.com/en/parts-and-service/parts',
-  'case':       'https://www.caseparts.com',
-  'jcb':        'https://parts.jcb.com',
-  'doosan':     'https://www.doosanequipment.com/en/parts-service',
-  'hitachi':    'https://hcmamericas.com/parts',
-  'liebherr':   'https://www.liebherr.com/en/int/products/product-care/spare-parts',
-  'manitou':    'https://www.manitou.com/en/services/parts',
-  'terex':      'https://www.terex.com/en/products/services/parts',
-};
-
-function getPartsCatalogUrl(equipName, equipType, manufacturer) {
-  const text = ((manufacturer||'') + ' ' + equipName + ' ' + (equipType||'')).toLowerCase();
-  for(const[brand, url] of Object.entries(PARTS_CATALOG_URLS)) {
-    if(text.includes(brand)) return url;
-  }
-  // Fallback — Google search
-  const searchTerm = (manufacturer||equipName) + ' parts catalog';
-  return 'https://www.google.com/search?q=' + encodeURIComponent(searchTerm);
-}
-
-function openPartsCatalog(equipId) {
-  // Only show on desktop
-  if(window.innerWidth < 768) {
-    showToast('Parts catalog is only available on desktop');
-    return;
-  }
-  const equip = state.equipment.find(e=>e.id===equipId);
-  if(!equip) return;
-  const url = getPartsCatalogUrl(equip.name, equip.type, equip.manufacturer);
-  window.open(url, '_blank');
-}
-
-// ── PUSH NOTIFICATION REMINDER ───────────────────────────────
-function showPushReminder() {
-  // Never show if already decided
-  if(Notification.permission === 'granted') return;
-  if(Notification.permission === 'denied') return; // Browser blocked it
-  // Never show if user explicitly dismissed or enabled
-  try {
-    const decision = localStorage.getItem('mp_push_decision');
-    if(decision) return; // Already made a choice
-  } catch(e) {}
-  setTimeout(() => openModal('push-reminder-modal'), 2000);
-}
-
-function dismissPushReminder() {
-  closeModal('push-reminder-modal');
-  try { localStorage.setItem('mp_push_decision', 'dismissed'); } catch(e) {}
-}
-
-async function enablePushFromReminder() {
-  closeModal('push-reminder-modal');
-  await requestPushPermission();
-  try { localStorage.setItem('mp_push_decision', 'enabled'); } catch(e) {}
+// ── ONLINE USERS (all team members) ──────────────────────────
+async function renderOnlineUsers(){
+  const el=document.getElementById('online-users-list');if(!el)return;
+  try{const{data:profiles}=await window._mpdb.from('profiles').select('full_name,username').eq('status','approved');
+    el.innerHTML=(profiles||[]).map(p=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)"><div style="width:7px;height:7px;border-radius:50%;background:${p.username===currentUser.username?'#3B6D11':'rgba(255,255,255,0.4)'};flex-shrink:0"></div>${p.full_name}${p.username===currentUser.username?' (you)':''}</div>`).join('');
+  }catch(e){}
 }
 
 // ── DIRECT MESSAGES ──────────────────────────────────────────
-let activeDmUser = null;
-
-async function renderDmList() {
-  const dmListEl = document.getElementById('dm-list');
-  if(!dmListEl) return;
-  try {
-    // Get all approved users except current user
-    const { data: profiles } = await window._mpdb.from('profiles')
-      .select('username, full_name')
-      .eq('status', 'approved')
-      .neq('username', currentUser.username);
-    
-    if(!profiles || !profiles.length) {
-      dmListEl.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.5);padding:2px 4px">No other users</div>';
-      return;
-    }
-
-    dmListEl.innerHTML = profiles.map(p => {
-      const dmChannel = getDmChannel(currentUser.username, p.username);
-      // Count unread DMs
-      const lastRead = lastReadAt[dmChannel] ? new Date(lastReadAt[dmChannel]) : new Date(0);
-      const unread = (state.chatMessages||[]).filter(m => m.channel===dmChannel && new Date(m.created_at)>lastRead && m.author!==currentUser.username).length;
-      return `<button class="chat-channel-btn" id="dm-${p.username}" onclick="switchToDm('${p.username}','${p.full_name}',this)" style="font-size:12px;padding:5px 10px">
-        <div style="width:24px;height:24px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${p.full_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.full_name}</span>
-        ${unread>0?`<span style="background:#E24B4A;color:#fff;border-radius:20px;padding:1px 5px;font-size:10px">${unread}</span>`:''}
-      </button>`;
+let activeDmUser=null;
+function getDmChannel(u1,u2){return 'dm-'+[u1,u2].sort().join('-');}
+async function renderDmList(){
+  const el=document.getElementById('dm-list');if(!el)return;
+  try{const{data:profiles}=await window._mpdb.from('profiles').select('username,full_name').eq('status','approved').neq('username',currentUser.username);
+    if(!profiles||!profiles.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,0.5);padding:2px 4px">No other users</div>';return;}
+    el.innerHTML=profiles.map(p=>{const ch=getDmChannel(currentUser.username,p.username);const lr=lastReadAt[ch]?new Date(lastReadAt[ch]):new Date(0);const unread=(state.chatMessages||[]).filter(m=>m.channel===ch&&new Date(m.created_at)>lr&&m.author!==currentUser.username).length;
+      return`<button class="chat-channel-btn" id="dm-${p.username}" onclick="switchToDm('${p.username}','${p.full_name}',this)" style="font-size:12px;padding:5px 10px"><div style="width:24px;height:24px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${p.full_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.full_name}</span>${unread>0?`<span style="background:#E24B4A;color:#fff;border-radius:20px;padding:1px 5px;font-size:10px">${unread}</span>`:''}</button>`;
     }).join('');
-  } catch(e) { console.log('DM list error:', e); }
+  }catch(e){}
+}
+function switchToDm(username,fullName,btn){
+  activeDmUser=username;currentChannel=getDmChannel(currentUser.username,username);
+  document.querySelectorAll('.chat-channel-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  const t=document.getElementById('chat-channel-title');const d=document.getElementById('chat-channel-desc');
+  if(t)t.textContent='@ '+fullName;if(d)d.textContent='Direct message';
+  const i=document.getElementById('chat-input');if(i)i.placeholder='Message '+fullName+'...';
+  loadChatMessages(currentChannel);closeChatSidebarMobile();
 }
 
-function getDmChannel(user1, user2) {
-  // Create consistent channel name regardless of order
-  return 'dm-' + [user1, user2].sort().join('-');
+// Override renderChat to load DM list and online users
+const _baseRenderChat = renderChat;
+async function renderChat(){
+  await _baseRenderChat();
+  await Promise.all([renderDmList(), renderOnlineUsers()]);
 }
-
-function switchToDm(username, fullName, btn) {
-  activeDmUser = username;
-  const dmChannel = getDmChannel(currentUser.username, username);
-  currentChannel = dmChannel;
-
-  // Update button styles
-  document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-
-  const titleEl = document.getElementById('chat-channel-title');
-  const descEl = document.getElementById('chat-channel-desc');
-  if(titleEl) titleEl.textContent = '@ ' + fullName;
-  if(descEl) descEl.textContent = 'Direct message';
-
-  const input = document.getElementById('chat-input');
-  if(input) input.placeholder = 'Message ' + fullName + '...';
-
-  loadChatMessages(dmChannel);
-}
-
-// Show push reminder after login
-function triggerPushReminder() {
-  showPushReminder();
-}
-
-// ── RESET USER PASSWORD ──────────────────────────────────────
-async function resetUserPassword(userId, userName) {
-  const newPass = prompt('Set a new password for ' + userName + ':');
-  if(!newPass || newPass.trim().length < 4) {
-    if(newPass !== null) showToast('Password must be at least 4 characters');
-    return;
-  }
-  const confirm = prompt('Confirm new password for ' + userName + ':');
-  if(newPass !== confirm) {
-    showToast('Passwords do not match');
-    return;
-  }
-  try {
-    const hashed = await hashPassword(newPass.trim());
-    await window._mpdb.from('profiles').update({ password_hash: hashed }).eq('id', userId);
-    showToast(userName + ' password reset ✓');
-  } catch(e) {
-    showToast('Failed to reset password');
-    console.error(e);
-  }
-}
-
 
 // ── DELETE CHAT MESSAGE ──────────────────────────────────────
-async function deleteChatMessage(msgId, channel, author, bodyPreview) {
-  if(!confirm('Delete this message? Admins can recover it for 30 days.')) return;
-  try {
-    // Get full message first
-    const { data: msgs } = await window._mpdb.from('chat_messages').select('*').eq('id', msgId);
-    const msg = msgs?.[0];
-    if(msg) {
-      // Save to deleted_messages
-      await window._mpdb.from('deleted_messages').insert({
-        id: uid(),
-        original_id: msgId,
-        channel: msg.channel,
-        author: msg.author,
-        author_name: msg.author_name,
-        body: msg.body,
-        photo: msg.photo,
-        deleted_by: currentUser.username,
-        deleted_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
-      });
-    }
-    // Delete from chat_messages
-    await window._mpdb.from('chat_messages').delete().eq('id', msgId);
-    // Remove from local state and re-render
-    state.chatMessages = state.chatMessages.filter(m => m.id !== msgId);
-    // Remove from DOM
-    const container = document.getElementById('chat-messages');
-    if(container) {
-      // Reload messages to reflect deletion
-      await loadChatMessages(currentChannel);
-    }
+async function deleteChatMessage(msgId,channel,author){
+  if(!confirm('Delete this message?')) return;
+  try{
+    const{data:msgs}=await window._mpdb.from('chat_messages').select('*').eq('id',msgId);
+    const msg=msgs?.[0];
+    if(msg){await window._mpdb.from('deleted_messages').insert({id:uid(),original_id:msgId,channel:msg.channel,author:msg.author,author_name:msg.author_name,body:msg.body,photo:msg.photo,deleted_by:currentUser.username,deleted_at:new Date().toISOString(),expires_at:new Date(Date.now()+30*24*60*60*1000).toISOString()});}
+    await window._mpdb.from('chat_messages').delete().eq('id',msgId);
+    state.chatMessages=state.chatMessages.filter(m=>m.id!==msgId);
+    await loadChatMessages(currentChannel);
     showToast('Message deleted');
-  } catch(e) {
-    console.error('Delete message error:', e);
-    showToast('Failed to delete message');
-  }
+  }catch(e){showToast('Failed to delete');}
 }
 
-// ── BLOCK/UNBLOCK CHAT USER ───────────────────────────────────
-async function blockChatUser(username, displayName) {
-  if(!confirm('Block ' + displayName + ' from sending chat messages?')) return;
-  try {
-    await window._mpdb.from('profiles').update({ blocked_from_chat: true }).eq('username', username);
-    showToast(displayName + ' blocked from chat');
-    renderDmList();
-  } catch(e) {
-    showToast('Failed to block user');
-  }
+// ── BLOCK CHAT USER ───────────────────────────────────────────
+async function blockChatUser(username,displayName){
+  if(!confirm('Block '+displayName+' from sending chat messages?'))return;
+  try{await window._mpdb.from('profiles').update({blocked_from_chat:true}).eq('username',username);showToast(displayName+' blocked from chat');}catch(e){showToast('Failed');}
+}
+async function unblockChatUser(username,displayName){
+  try{await window._mpdb.from('profiles').update({blocked_from_chat:false}).eq('username',username);showToast(displayName+' unblocked');renderDeletedMessages();}catch(e){showToast('Failed');}
 }
 
-async function unblockChatUser(username, displayName) {
-  try {
-    await window._mpdb.from('profiles').update({ blocked_from_chat: false }).eq('username', username);
-    showToast(displayName + ' unblocked');
-    renderDeletedMessages();
-  } catch(e) {
-    showToast('Failed to unblock');
-  }
+// ── DELETED MESSAGES ADMIN ────────────────────────────────────
+async function renderDeletedMessages(){
+  const listEl=document.getElementById('deleted-msgs-list');const blockedEl=document.getElementById('blocked-users-list');if(!listEl)return;
+  try{const{data:deleted}=await window._mpdb.from('deleted_messages').select('*').gte('expires_at',new Date().toISOString()).order('deleted_at',{ascending:false});
+    listEl.innerHTML=!deleted||!deleted.length?'<div style="color:var(--text2);font-size:13px;padding:8px 0">No deleted messages</div>':deleted.map(m=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap"><span style="font-weight:600;font-size:13px">${m.author_name||m.author}</span><span class="badge bg">#${m.channel}</span><span style="font-size:11px;color:var(--text3)">${new Date(m.deleted_at).toLocaleDateString()} · Deleted by ${m.deleted_by}</span><span style="font-size:11px;color:var(--danger);margin-left:auto">Expires ${new Date(m.expires_at).toLocaleDateString()}</span><button class="btn btn-secondary btn-sm" onclick="recoverMessage('${m.id}')">Recover</button></div><div style="font-size:13px;color:var(--text);background:var(--bg2);padding:8px 10px;border-radius:var(--radius)">${m.body||'[photo]'}</div></div>`).join('');
+  }catch(e){if(listEl)listEl.innerHTML='<div style="color:var(--text2);font-size:13px">Could not load</div>';}
+  if(!blockedEl)return;
+  try{const{data:blocked}=await window._mpdb.from('profiles').select('username,full_name').eq('blocked_from_chat',true);
+    blockedEl.innerHTML=!blocked||!blocked.length?'<div style="color:var(--text2);font-size:13px;padding:8px 0">No blocked users</div>':blocked.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:12px;color:var(--text2)">${p.username}</div></div><button class="btn btn-success btn-sm" onclick="unblockChatUser('${p.username}','${p.full_name}')">Unblock</button></div>`).join('');
+  }catch(e){}
+}
+async function recoverMessage(deletedId){
+  if(!confirm('Restore this message?'))return;
+  try{const{data:dm}=await window._mpdb.from('deleted_messages').select('*').eq('id',deletedId);const m=dm?.[0];if(!m)return;
+    await window._mpdb.from('chat_messages').insert({id:m.original_id||uid(),channel:m.channel,author:m.author,author_name:m.author_name,body:m.body,photo:m.photo,created_at:new Date().toISOString()});
+    await window._mpdb.from('deleted_messages').delete().eq('id',deletedId);
+    showToast('Message recovered ✓');renderDeletedMessages();
+  }catch(e){showToast('Failed');}
 }
 
-// ── DELETED MESSAGES ADMIN VIEW ───────────────────────────────
-async function renderDeletedMessages() {
-  const listEl = document.getElementById('deleted-msgs-list');
-  const blockedEl = document.getElementById('blocked-users-list');
-  if(!listEl) return;
-
-  // Load deleted messages
-  try {
-    const { data: deleted } = await window._mpdb.from('deleted_messages')
-      .select('*')
-      .gte('expires_at', new Date().toISOString())
-      .order('deleted_at', { ascending: false });
-
-    if(!deleted || !deleted.length) {
-      listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No deleted messages</div>';
-    } else {
-      listEl.innerHTML = deleted.map(m => `
-        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-            <span style="font-weight:600;font-size:13px">${m.author_name||m.author}</span>
-            <span class="badge bg">#${m.channel}</span>
-            <span style="font-size:11px;color:var(--text3)">${new Date(m.deleted_at).toLocaleDateString()} · Deleted by ${m.deleted_by}</span>
-            <span style="font-size:11px;color:var(--danger);margin-left:auto">Expires ${new Date(m.expires_at).toLocaleDateString()}</span>
-            <button class="btn btn-secondary btn-sm" onclick="recoverMessage('${m.id}','${m.original_id}')">Recover</button>
-          </div>
-          <div style="font-size:13px;color:var(--text);background:var(--bg2);padding:8px 10px;border-radius:var(--radius)">${m.body||'[photo]'}</div>
-        </div>`).join('');
-    }
-  } catch(e) { listEl.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load</div>'; }
-
-  // Load blocked users
-  if(!blockedEl) return;
-  try {
-    const { data: blocked } = await window._mpdb.from('profiles')
-      .select('username, full_name')
-      .eq('blocked_from_chat', true);
-
-    if(!blocked || !blocked.length) {
-      blockedEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No blocked users</div>';
-    } else {
-      blockedEl.innerHTML = blocked.map(p => `
-        <div class="parts-row">
-          <div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:12px;color:var(--text2)">${p.username}</div></div>
-          <button class="btn btn-success btn-sm" onclick="unblockChatUser('${p.username}','${p.full_name}')">Unblock</button>
-        </div>`).join('');
-    }
-  } catch(e) {}
+// ── ADMIN TAB SWITCHER ────────────────────────────────────────
+function switchAdminTab(tab,btn){
+  ['admin-approvals','admin-users','admin-permissions','admin-deleted-msgs'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const el=document.getElementById('admin-'+tab);if(el)el.style.display='block';
+  document.querySelectorAll('#panel-admin .tab').forEach(b=>{b.classList.remove('active');b.style.background='transparent';b.style.color='rgba(255,255,255,0.8)';b.style.fontWeight='400';});
+  btn.classList.add('active');btn.style.background='rgba(255,255,255,0.25)';btn.style.color='#fff';btn.style.fontWeight='600';
+  if(tab==='users')renderUsersTable();if(tab==='permissions')renderPermissionsMatrix();if(tab==='deleted-msgs')renderDeletedMessages();
 }
 
-async function recoverMessage(deletedId, originalId) {
-  if(!confirm('Restore this message to the chat?')) return;
-  try {
-    const { data: dm } = await window._mpdb.from('deleted_messages').select('*').eq('id', deletedId);
-    const m = dm?.[0]; if(!m) return;
-    // Re-insert into chat_messages with original ID
-    await window._mpdb.from('chat_messages').insert({
-      id: m.original_id || uid(),
-      channel: m.channel,
-      author: m.author,
-      author_name: m.author_name,
-      body: m.body,
-      photo: m.photo,
-      created_at: new Date().toISOString(),
-    });
-    // Remove from deleted
-    await window._mpdb.from('deleted_messages').delete().eq('id', deletedId);
-    showToast('Message recovered ✓');
-    renderDeletedMessages();
-  } catch(e) { showToast('Failed to recover'); }
+// ── RESET USER PASSWORD ───────────────────────────────────────
+async function resetUserPassword(userId,userName){
+  const newPass=prompt('Set a new password for '+userName+':');
+  if(!newPass||newPass.trim().length<4){if(newPass!==null)showToast('Password must be at least 4 characters');return;}
+  const confirm2=prompt('Confirm new password for '+userName+':');
+  if(newPass!==confirm2){showToast('Passwords do not match');return;}
+  try{const hashed=await hashPassword(newPass.trim());await window._mpdb.from('profiles').update({password_hash:hashed}).eq('id',userId);showToast(userName+' password reset ✓');}catch(e){showToast('Failed');}
 }
 
-// Update switchAdminTab to handle deleted-msgs tab
-const _baseSwitchAdminTab = switchAdminTab;
-function switchAdminTab(tab, btn) {
-  ['admin-approvals','admin-users','admin-permissions','admin-deleted-msgs'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.style.display='none';
-  });
-  document.getElementById('admin-'+tab).style.display='block';
-  document.querySelectorAll('#panel-admin .tab').forEach(b=>{
-    b.classList.remove('active');b.style.background='transparent';
-    b.style.color='rgba(255,255,255,0.8)';b.style.fontWeight='400';
-  });
-  btn.classList.add('active');btn.style.background='rgba(255,255,255,0.25)';
-  btn.style.color='#fff';btn.style.fontWeight='600';
-  if(tab==='users') renderUsersTable();
-  if(tab==='permissions') renderPermissionsMatrix();
-  if(tab==='deleted-msgs') renderDeletedMessages();
-}
+// ── PARTS CATALOG ─────────────────────────────────────────────
+const PARTS_CATALOG_URLS={'cat':'https://parts.cat.com','caterpillar':'https://parts.cat.com','komatsu':'https://parts.komatsu.com','deere':'https://parts.deere.com','john deere':'https://parts.deere.com','kubota':'https://www.kubotausa.com/parts-and-service','volvo':'https://www.volvoce.com/united-states/en-us/services/parts/','bobcat':'https://www.bobcat.com/en/parts-and-service/parts','case':'https://www.caseparts.com','jcb':'https://parts.jcb.com'};
+function getPartsCatalogUrl(name,type,mfr){const text=((mfr||'')+' '+name+' '+(type||'')).toLowerCase();for(const[brand,url]of Object.entries(PARTS_CATALOG_URLS)){if(text.includes(brand))return url;}return 'https://www.google.com/search?q='+encodeURIComponent((mfr||name)+' parts catalog');}
+function openPartsCatalog(equipId){if(window.innerWidth<768){showToast('Parts catalog is only available on desktop');return;}const e=state.equipment.find(x=>x.id===equipId);if(!e)return;window.open(getPartsCatalogUrl(e.name,e.type,e.manufacturer),'_blank');}
 
-// ── CHAT SIDEBAR MOBILE TOGGLE ───────────────────────────────
-function toggleChatSidebar() {
-  const sidebar = document.getElementById('chat-sidebar');
-  const overlay = document.getElementById('chat-sidebar-overlay');
-  if(!sidebar) return;
-  const isOpen = sidebar.classList.contains('open');
-  if(isOpen) {
-    sidebar.classList.remove('open');
-    if(overlay) overlay.style.display = 'none';
-  } else {
-    sidebar.classList.add('open');
-    if(overlay) overlay.style.display = 'block';
-  }
-}
+// ── BUG REPORT ────────────────────────────────────────────────
+function updateReportType(){const isBug=document.getElementById('type-bug').checked;const tl=document.getElementById('bug-title-label'),dl=document.getElementById('bug-desc-label');const tw=document.getElementById('bug-title-wrap'),pw=document.getElementById('bug-page-wrap'),sw=document.getElementById('bug-steps-wrap'),sevw=document.getElementById('bug-severity-wrap');const de=document.getElementById('bug-desc'),bl=document.getElementById('type-bug-label'),sugl=document.getElementById('type-sug-label');if(isBug){if(tl)tl.textContent='What were you trying to do? *';if(dl)dl.textContent='What happened? *';if(de)de.placeholder='Describe what went wrong...';if(tw)tw.style.display='block';if(pw)pw.style.display='block';if(sw)sw.style.display='block';if(sevw)sevw.style.display='block';if(bl)bl.style.borderColor='var(--accent)';if(sugl)sugl.style.borderColor='var(--border2)';}else{if(dl)dl.textContent='What would you like to add or change in the app? *';if(de)de.placeholder='Describe your idea...';if(tw)tw.style.display='none';if(pw)pw.style.display='none';if(sw)sw.style.display='none';if(sevw)sevw.style.display='none';if(bl)bl.style.borderColor='var(--border2)';if(sugl)sugl.style.borderColor='var(--accent)';}}
+async function submitBugReport(){const isBug=document.getElementById('type-bug').checked;const desc=document.getElementById('bug-desc').value.trim();if(!desc){showToast('Please fill in the required fields');return;}const title=isBug?document.getElementById('bug-title').value.trim():'Suggestion';if(isBug&&!title){showToast('Please fill in the required fields');return;}const report={id:uid(),reporter:currentUser?.name||'Unknown',username:currentUser?.username||'',type:isBug?'bug':'suggestion',title,description:desc,page:isBug?document.getElementById('bug-page').value:'N/A',severity:isBug?document.getElementById('bug-severity').value:'suggestion',steps:isBug?(document.getElementById('bug-steps').value||''):'',created_at:new Date().toISOString()};try{await window._mpdb.from('bug_reports').insert(report);}catch(e){}try{emailjs.init('n5n6_xxmNNHqk0xrE');await emailjs.send('service_o320zzu','template_je3rl4j',{to_email:'tannergalloway75@gmail.com',message:(isBug?'🐛 BUG REPORT':'💡 SUGGESTION')+'\n\nBy: '+report.reporter+'\nTitle: '+title+'\n\nDetails:\n'+desc});}catch(e){}document.getElementById('bug-success').style.display='block';['bug-title','bug-desc','bug-steps'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});setTimeout(()=>{closeModal('bug-modal');document.getElementById('bug-success').style.display='none';},2500);}
 
-function closeChatSidebarMobile() {
-  if(window.innerWidth <= 640) {
-    const sidebar = document.getElementById('chat-sidebar');
-    const overlay = document.getElementById('chat-sidebar-overlay');
-    if(sidebar) sidebar.classList.remove('open');
-    if(overlay) overlay.style.display = 'none';
-  }
-}
-
-// ── NOTIFICATION PREFERENCES ─────────────────────────────────
-const DEFAULT_NOTIF_PREFS = {
-  chat_messages:    { label: 'New chat messages', default: true },
-  mentions:         { label: '@mentions in chat', default: true },
-  critical_obs:     { label: 'Critical observations', default: true },
-  overdue_wo:       { label: 'Overdue work orders', default: true },
-  direct_messages:  { label: 'Direct messages', default: true },
-};
-
-function getNotifPrefs() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('mp_notif_prefs') || 'null');
-    if(saved) return saved;
-  } catch(e) {}
-  // Return defaults
-  const prefs = {};
-  Object.entries(DEFAULT_NOTIF_PREFS).forEach(([key, val]) => { prefs[key] = val.default; });
-  return prefs;
-}
-
-function canNotify(type) {
-  if(Notification.permission !== 'granted') return false;
-  const prefs = getNotifPrefs();
-  return prefs[type] !== false;
-}
-
-function openNotifPrefs() {
-  const prefs = getNotifPrefs();
-  document.getElementById('notif-prefs-list').innerHTML = Object.entries(DEFAULT_NOTIF_PREFS).map(([key, val]) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:500">${val.label}</div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <span style="font-size:12px;color:${prefs[key]?'var(--success)':'var(--text3)'};min-width:40px;text-align:right">${prefs[key]?'On':'Off'}</span>
-        <div style="position:relative;width:40px;height:22px;flex-shrink:0">
-          <input type="checkbox" id="notif-${key}" ${prefs[key]?'checked':''} 
-            onchange="this.previousElementSibling && (this.closest('label').querySelector('span').textContent=this.checked?'On':'Off') && (this.closest('label').querySelector('span').style.color=this.checked?'var(--success)':'var(--text3)')"
-            style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0;z-index:2"/>
-          <div style="width:40px;height:22px;border-radius:11px;background:${prefs[key]?'#3B6D11':'#ccc'};position:absolute;top:0;left:0;transition:background .2s" id="notif-bg-${key}"></div>
-          <div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${prefs[key]?'21px':'3px'};transition:left .2s;pointer-events:none" id="notif-dot-${key}"></div>
-        </div>
-      </label>
-    </div>`).join('');
-  // Add toggle background update
-  Object.keys(DEFAULT_NOTIF_PREFS).forEach(key => {
-    const cb = document.getElementById('notif-'+key);
-    if(cb) cb.addEventListener('change', () => {
-      const bg = document.getElementById('notif-bg-'+key);
-      const dot = document.getElementById('notif-dot-'+key);
-      if(bg) bg.style.background = cb.checked ? '#3B6D11' : '#ccc';
-      if(dot) dot.style.left = cb.checked ? '21px' : '3px';
-    });
-  });
-  openModal('notif-prefs-modal');
-}
-
-function saveNotifPrefs() {
-  const prefs = {};
-  Object.keys(DEFAULT_NOTIF_PREFS).forEach(key => {
-    const cb = document.getElementById('notif-'+key);
-    prefs[key] = cb ? cb.checked : true;
-  });
-  try { localStorage.setItem('mp_notif_prefs', JSON.stringify(prefs)); } catch(e) {}
-  closeModal('notif-prefs-modal');
-  showToast('Notification preferences saved ✓');
-}
-
-// Override sendPushNotification to respect prefs
-const _baseSendPush = sendPushNotification;
-function sendPushNotification(title, body, type) {
-  if(type && !canNotify(type)) return;
-  _baseSendPush(title, body);
-}
-
-// ── RESET NOTIFICATION SETTINGS ──────────────────────────────
-function resetNotifSettings() {
-  try {
-    localStorage.removeItem('mp_push_decision');
-    localStorage.removeItem('mp_push');
-    localStorage.removeItem('mp_notif_prefs');
-  } catch(e) {}
-  closeModal('notif-prefs-modal');
-
-  // Show instructions based on current permission state
-  const perm = Notification.permission;
-  let msg = '';
-  if(perm === 'denied') {
-    msg = `Notifications are blocked in your browser. To fix this:\n\n` +
-      `📱 Android (Chrome):\n` +
-      `1. Tap the lock icon in the address bar\n` +
-      `2. Tap Notifications → Allow\n` +
-      `3. Refresh the app\n\n` +
-      `📱 Samsung Internet:\n` +
-      `1. Tap menu → Settings → Sites and downloads → Notifications\n` +
-      `2. Find mtlmaintenance.github.io and set to Allow\n` +
-      `3. Refresh the app\n\n` +
-      `💻 Desktop Chrome:\n` +
-      `1. Click the lock icon in the address bar\n` +
-      `2. Set Notifications to Ask or Allow\n` +
-      `3. Refresh the app`;
-  } else {
-    msg = 'Notification settings reset ✓\n\nRefresh the app and you will be asked again.';
-  }
-  alert(msg);
-}
+// ── PRINT TEMPLATE ────────────────────────────────────────────
+function printTemplate(id){const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tpl.name}</title><style>body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px;max-width:700px}h1{font-size:18px;margin:0 0 4px}.meta{font-size:11px;color:#888;margin-bottom:20px}.item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #eee}.checkbox{width:20px;height:20px;border:2px solid #333;border-radius:3px;flex-shrink:0;margin-top:1px}.num{width:20px;font-size:11px;color:#888;text-align:right;flex-shrink:0;margin-top:2px}.label{flex:1;font-size:13px;line-height:1.4}.notes{margin-top:6px;border:1px solid #ddd;border-radius:3px;min-height:30px}.footer{margin-top:28px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#aaa}.sign-row{display:flex;gap:24px;margin-top:24px}.sign-field{flex:1;border-bottom:1px solid #333;padding-bottom:4px;font-size:11px;color:#888}@media print{.no-print{display:none}}</style></head><body><h1>⚙ ${tpl.name}</h1><div class="meta">${tpl.model?'Model: '+tpl.model+' · ':''}${tpl.type?'Type: '+tpl.type+' · ':''}${tpl.items.length} items · MTL Maintenance</div><div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px"><div>Equipment: <span style="border-bottom:1px solid #333;display:inline-block;width:180px">&nbsp;</span></div><div>Date: <span style="border-bottom:1px solid #333;display:inline-block;width:120px">&nbsp;</span></div><div>Technician: <span style="border-bottom:1px solid #333;display:inline-block;width:140px">&nbsp;</span></div></div>${tpl.items.map((item,i)=>`<div class="item"><div class="num">${i+1}</div><div class="checkbox"></div><div class="label">${item}<div class="notes"></div></div></div>`).join('')}<div class="sign-row"><div class="sign-field">Technician signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div><div class="sign-field">Supervisor signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></div><div class="footer"><div>MTL Maintenance — ${tpl.name}</div><div>Printed ${date}</div></div><div class="no-print" style="text-align:center;padding:20px"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div><script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script></body></html>`;const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');}
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
@@ -3739,7 +3087,6 @@ function resetNotifSettings() {
 <div class="modal-backdrop" id="user-perms-modal">
   <div class="modal" style="max-width:500px">
     <div class="modal-header"><span class="modal-title" id="user-perms-title">Custom Permissions</span><button class="modal-close" onclick="closeModal('user-perms-modal')">✕</button></div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px" id="user-perms-sub"></div>
     <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:var(--text2)">Base role:</span><span class="badge bi" id="user-perms-role"></span></div>
     <div id="user-perms-list"></div>
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap">
@@ -3771,4 +3118,6 @@ function resetNotifSettings() {
     <div id="bug-success" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:13px">✅ Submitted — thanks!</div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('bug-modal')">Cancel</button><button class="btn btn-primary" onclick="submitBugReport()">Submit</button></div>
   </div>
-</div>>
+</div>
+</body>
+</html>
