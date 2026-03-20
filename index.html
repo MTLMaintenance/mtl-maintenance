@@ -1057,8 +1057,23 @@ async function runRecurrenceEngine() {
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const ICONS={Excavator:'🦾',Tractor:'🚜','Wheel Loader':'⚙','Skid Steer':'🔧',Compressor:'💨',Crane:'🏗',Compactor:'🔩',Truck:'🚛',Forklift:'🏭'};
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
-function fmtDate(d){ if(!d)return'—'; return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
-function isOverdue(d){ return d && new Date(d)<TODAY; }
+function fmtDate(d){ 
+  if(!d)return'—'; 
+  // Parse YYYY-MM-DD as local date to avoid UTC timezone shift
+  if(typeof d==='string' && /^\d{4}-\d{2}-\d{2}$/.test(d)){
+    const [y,m,day]=d.split('-').map(Number);
+    return new Date(y,m-1,day).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); 
+}
+function isOverdue(d){ 
+  if(!d) return false;
+  if(typeof d==='string' && /^\d{4}-\d{2}-\d{2}$/.test(d)){
+    const [y,m,day]=d.split('-').map(Number);
+    return new Date(y,m-1,day)<TODAY;
+  }
+  return new Date(d)<TODAY;
+}
 function equipName(id){ const e=state.equipment.find(x=>x.id===id); return e?e.name:'—'; }
 function supplierName(id){ const s=state.suppliers.find(x=>x.id===id); return s?s.name:'—'; }
 function badge(s){
@@ -1237,7 +1252,8 @@ function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
   const up=state.schedules.filter(s=>new Date(s.date)>=TODAY).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
   el.innerHTML=up.map(s=>{
-    const d=new Date(s.date);
+    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
+    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
     return `<div class="sched-item">
       <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div></div>
       <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'} · ${s.dur}h</div></div>
@@ -1308,7 +1324,7 @@ function renderCalendar(){
   // Month schedule list
   const n30=new Date(TODAY); n30.setDate(n30.getDate()+30);
   const sorted=[...state.schedules].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  document.getElementById('sched-month-list').innerHTML=sorted.filter(s=>new Date(s.date)>=TODAY&&new Date(s.date)<=n30).map(s=>{
+  document.getElementById('sched-month-list').innerHTML=sorted.filter(s=>{const [fy,fm,fd]=(s.date||'').split('-').map(Number);const fd2=fy?new Date(fy,fm-1,fd):new Date(s.date);return fd2>=TODAY&&fd2<=n30;}).map(s=>{
     const d=new Date(s.date);
     return `<div class="sched-item">
       <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div></div>
@@ -1478,7 +1494,7 @@ function renderSchedule(){
     </div>`;
   };
   const none='<div style="color:var(--text2);font-size:13px;padding:8px 0">Nothing scheduled</div>';
-  document.getElementById('sched-week').innerHTML=sorted.filter(s=>new Date(s.date)>=TODAY&&new Date(s.date)<=nw).map(mk).join('')||none;
+  document.getElementById('sched-week').innerHTML=sorted.filter(s=>{const [fy,fm,fd]=(s.date||'').split('-').map(Number);const fd2=fy?new Date(fy,fm-1,fd):new Date(s.date);return fd2>=TODAY&&fd2<=nw;}).map(mk).join('')||none;
   document.getElementById('sched-next30').innerHTML=sorted.filter(s=>new Date(s.date)>=TODAY&&new Date(s.date)<=n30).map(mk).join('')||none;
 }
 async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!==id); await persist('schedules','delete',{id}); renderSchedule(); renderCalendar(); }
