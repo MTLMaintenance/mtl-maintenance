@@ -1715,6 +1715,10 @@ function switchDetailTab(tab, btn){
   const el=document.getElementById(tab);if(el)el.style.display='block';
   document.querySelectorAll('#detail-modal .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  // Populate obs tab
+  if(tab==='eq-obs'&&window._currentDetailEquipId){
+    refreshObsList(window._currentDetailEquipId);
+  }
   // Populate downtime tab
   if(tab==='eq-downtime'&&window._currentDetailEquipId){
     const dtContent=document.getElementById('eq-downtime-content');
@@ -1816,7 +1820,7 @@ function openEquipDetail(id){
     </div>`;
   window._currentDetailEquipId = id;
   openModal('detail-modal');
-  setTimeout(()=>refreshObsList(id), 50);
+  setTimeout(()=>refreshObsList(id), 300);
 }
 
 function openSupplierDetail(id){
