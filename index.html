@@ -1432,19 +1432,25 @@ function renderTasks(){
 }
 async function deleteTask(id){
   if(!confirm('Delete this work order?'))return;
-  // Delete linked critical observation if auto-created
   const task = state.tasks.find(t=>t.id===id);
+  // Delete linked observation - try obs_id first, then fallback to name matching
   if(task && task.notes && task.notes.startsWith('Auto-created from critical obs')) {
-    // Find matching observation by equip and content
-    const obsToDelete = state.observations.find(o=>
-      o.equip_id===task.equipId &&
-      task.notes.includes(o.author) &&
-      task.notes.includes(o.body.slice(0,30))
-    );
+    let obsToDelete = null;
+    if(task.obs_id) {
+      obsToDelete = state.observations.find(o=>o.id===task.obs_id);
+    }
+    if(!obsToDelete) {
+      // Fallback: match by equip and author in notes
+      obsToDelete = state.observations.find(o=>
+        o.equip_id===task.equipId && o.severity==='critical' &&
+        task.notes.includes(o.author)
+      );
+    }
     if(obsToDelete) {
       try {
         await window._mpdb.from('observations').delete().eq('id', obsToDelete.id);
         state.observations = state.observations.filter(o=>o.id!==obsToDelete.id);
+        showToast('Work order and linked observation deleted');
       } catch(e) {}
     }
   }
@@ -3202,6 +3208,7 @@ async function autoCreateCriticalWO(obs, equipId) {
     assign: '',
     cost: 0,
     notes: 'Auto-created from critical obs by '+obs.author+': '+obs.body.slice(0,100),
+    obs_id: obs.id,
     checklist: '',
     photos: [],
     email_freq: 1,
