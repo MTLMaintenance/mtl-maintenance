@@ -1758,6 +1758,10 @@ function switchDetailTab(tab, btn){
   if(tab==='eq-obs'&&window._currentDetailEquipId){
     refreshObsList(window._currentDetailEquipId);
   }
+  // Populate invoices tab
+  if(tab==='eq-invoices'&&window._currentDetailEquipId){
+    renderInvoicesList(window._currentDetailEquipId);
+  }
   // Populate downtime tab
   if(tab==='eq-downtime'&&window._currentDetailEquipId){
     const dtContent=document.getElementById('eq-downtime-content');
@@ -1811,6 +1815,7 @@ function openEquipDetail(id){
       ${Object.keys(e.custom_fields||{}).length?`<button class="tab" onclick="switchDetailTab('eq-custom',this)">Custom Fields</button>`:''}
       <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
       <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
+      <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
     </div>
     <div id="eq-info">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
@@ -1851,6 +1856,13 @@ function openEquipDetail(id){
         </div>
       </div>
       <div id="obs-list-${e.id}"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
+    </div>
+    <div id="eq-invoices" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:var(--text2)">Upload an invoice photo and the app will read it automatically</span>
+        <button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button>
+      </div>
+      <div id="invoices-list"><div style="color:var(--text3);font-size:13px">No invoices yet</div></div>
     </div>
     <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
       ${window.innerWidth>=768?`<button class="btn btn-secondary" onclick="openPartsCatalog('${e.id}')">🔍 Parts Catalog</button>`:''}
@@ -3390,6 +3402,219 @@ async function sendCriticalObsEmail(obs, equipId) {
   } catch(e) { console.log('Email failed:', e); }
 }
 
+// ── INVOICES ─────────────────────────────────────────────────
+let _currentInvoiceEquipId = null;
+let _invoicePhotoData = null;
+
+function openAddInvoice() {
+  _invoicePhotoData = null;
+  _currentInvoiceEquipId = window._currentDetailEquipId;
+  // Reset form
+  ['inv-supplier','inv-number','inv-date','inv-amount','inv-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('invoice-scanning').style.display='none';
+  document.getElementById('invoice-extracted-badge').style.display='none';
+  document.getElementById('inv-clear-photo-wrap').style.display='none';
+  document.getElementById('invoice-photo-preview-area').innerHTML=`
+    <div style="font-size:32px;margin-bottom:8px">📄</div>
+    <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>`;
+  openModal('invoice-modal');
+}
+
+async function handleInvoicePhoto(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    _invoicePhotoData = await compressImage(dataUrl, 1200, 0.85);
+    
+    // Show preview
+    document.getElementById('invoice-photo-preview-area').innerHTML=`
+      <img src="${_invoicePhotoData}" style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border)"/>
+      <div style="font-size:12px;color:var(--success);margin-top:8px;font-weight:500">✓ Photo ready — scanning now...</div>`;
+    document.getElementById('inv-clear-photo-wrap').style.display='block';
+    
+    // Auto-scan with Claude API
+    await scanInvoiceWithAI(_invoicePhotoData);
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function handleInvoiceDrop(event) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if(!file || !file.type.startsWith('image/')) return;
+  const input = document.getElementById('invoice-photo-input');
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  handleInvoicePhoto(input);
+}
+
+async function scanInvoiceWithAI(imageData) {
+  document.getElementById('invoice-scanning').style.display='block';
+  
+  try {
+    const base64Data = imageData.split(',')[1];
+    const mediaType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64Data }
+            },
+            {
+              type: 'text',
+              text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text:\n{"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}'
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.map(c=>c.text||'').join('') || '';
+    
+    let extracted = {};
+    try {
+      const clean = text.replace(/```json|```/g, '').trim();
+      extracted = JSON.parse(clean);
+    } catch(e) {
+      // Try to extract with regex if JSON parse fails
+      const amountMatch = text.match(/"amount"\s*:\s*([\d.]+)/);
+      const supplierMatch = text.match(/"supplier"\s*:\s*"([^"]+)"/);
+      const dateMatch = text.match(/"date"\s*:\s*"([^"]+)"/);
+      const numMatch = text.match(/"invoice_number"\s*:\s*"([^"]+)"/);
+      const notesMatch = text.match(/"notes"\s*:\s*"([^"]+)"/);
+      if(amountMatch) extracted.amount = parseFloat(amountMatch[1]);
+      if(supplierMatch) extracted.supplier = supplierMatch[1];
+      if(dateMatch) extracted.date = dateMatch[1];
+      if(numMatch) extracted.invoice_number = numMatch[1];
+      if(notesMatch) extracted.notes = notesMatch[1];
+    }
+
+    // Populate form fields
+    if(extracted.supplier) document.getElementById('inv-supplier').value = extracted.supplier;
+    if(extracted.invoice_number) document.getElementById('inv-number').value = extracted.invoice_number;
+    if(extracted.date) document.getElementById('inv-date').value = extracted.date;
+    if(extracted.amount) document.getElementById('inv-amount').value = extracted.amount.toFixed(2);
+    if(extracted.notes) document.getElementById('inv-notes').value = extracted.notes;
+
+    document.getElementById('invoice-extracted-badge').style.display = 'block';
+    showToast('✅ Invoice details extracted');
+
+  } catch(e) {
+    console.error('Invoice scan error:', e);
+    showToast('Could not read invoice — please fill in manually');
+  } finally {
+    document.getElementById('invoice-scanning').style.display = 'none';
+  }
+}
+
+async function saveInvoice() {
+  const amount = parseFloat(document.getElementById('inv-amount').value) || 0;
+  const supplier = document.getElementById('inv-supplier').value.trim();
+  const date = document.getElementById('inv-date').value;
+  
+  if(!supplier && !amount) { showToast('Please fill in at least supplier or amount'); return; }
+  
+  const clearPhoto = document.getElementById('inv-clear-photo')?.checked;
+  const photoToSave = (clearPhoto || !_invoicePhotoData) ? null : _invoicePhotoData;
+  
+  const invoice = {
+    id: uid(),
+    equip_id: _currentInvoiceEquipId,
+    supplier,
+    amount,
+    invoice_date: date || null,
+    invoice_number: document.getElementById('inv-number').value.trim(),
+    notes: document.getElementById('inv-notes').value.trim(),
+    photo: photoToSave,
+    created_by: currentUser.name,
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await window._mpdb.from('invoices').insert(invoice);
+    showToast('Invoice saved ✓');
+    closeModal('invoice-modal');
+    _invoicePhotoData = null;
+    renderInvoicesList(_currentInvoiceEquipId);
+  } catch(e) {
+    showToast('Failed to save invoice');
+    console.error(e);
+  }
+}
+
+async function renderInvoicesList(equipId) {
+  const listEl = document.getElementById('invoices-list');
+  if(!listEl) return;
+  
+  try {
+    const { data: invoices } = await window._mpdb.from('invoices')
+      .select('*')
+      .eq('equip_id', equipId)
+      .order('invoice_date', { ascending: false });
+
+    if(!invoices || !invoices.length) {
+      listEl.innerHTML = '<div style="color:var(--text3);font-size:13px">No invoices yet</div>';
+      return;
+    }
+
+    const total = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+    listEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;margin-bottom:8px;border-bottom:2px solid var(--border)">
+        <span style="font-size:13px;font-weight:600">${invoices.length} invoice${invoices.length!==1?'s':''}</span>
+        <span style="font-size:14px;font-weight:700;color:var(--accent)">Total: $${total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+      </div>
+      ${invoices.map(inv => `
+        <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+                <span style="font-weight:600;font-size:14px">$${(inv.amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+                ${inv.supplier?`<span style="font-size:13px;color:var(--text2)">${inv.supplier}</span>`:''}
+                ${inv.invoice_number?`<span class="badge bg" style="font-size:11px">#${inv.invoice_number}</span>`:''}
+              </div>
+              <div style="font-size:12px;color:var(--text3)">
+                ${inv.invoice_date?fmtDate(inv.invoice_date)+' · ':''}Added by ${inv.created_by}
+              </div>
+              ${inv.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${inv.notes}</div>`:''}
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              ${inv.photo?`<button class="btn btn-secondary btn-sm" onclick="viewPhoto('${inv.photo}')">📎 Photo</button>`:''}
+              ${can('canDelete')?`<button class="btn btn-danger btn-sm" onclick="deleteInvoice('${inv.id}','${equipId}')">Delete</button>`:''}
+            </div>
+          </div>
+        </div>`).join('')}`;
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load invoices</div>';
+  }
+}
+
+async function deleteInvoice(invoiceId, equipId) {
+  if(!confirm('Delete this invoice?')) return;
+  try {
+    await window._mpdb.from('invoices').delete().eq('id', invoiceId);
+    showToast('Invoice deleted');
+    renderInvoicesList(equipId);
+  } catch(e) {
+    showToast('Failed to delete');
+  }
+}
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3442,6 +3667,50 @@ async function sendCriticalObsEmail(obs, equipId) {
     </div>
     <div id="bug-success" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:13px">✅ Submitted — thanks!</div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('bug-modal')">Cancel</button><button class="btn btn-primary" onclick="submitBugReport()">Submit</button></div>
+  </div>
+</div>
+
+<!-- Invoice Modal -->
+<div class="modal-backdrop" id="invoice-modal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header"><span class="modal-title">Add Invoice</span><button class="modal-close" onclick="closeModal('invoice-modal')">✕</button></div>
+    
+    <!-- Photo upload area -->
+    <div id="invoice-photo-area" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
+      <div id="invoice-photo-preview-area">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>
+      </div>
+      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
+    </div>
+
+    <!-- Scanning status -->
+    <div id="invoice-scanning" style="display:none;text-align:center;padding:16px;background:var(--accent-bg);border-radius:var(--radius);margin-bottom:16px">
+      <div style="font-size:20px;margin-bottom:6px">🔍</div>
+      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">Reading invoice...</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">Extracting details automatically</div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
+      <div class="form-group"><label class="form-label">Invoice Number</label><input class="form-input" id="inv-number" placeholder="INV-00123"/></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="inv-date" type="date"/></div>
+      <div class="form-group"><label class="form-label">Total Amount ($)</label><input class="form-input" id="inv-amount" type="number" min="0" step="0.01" placeholder="0.00"/></div>
+      <div class="form-group full"><label class="form-label">Notes / Line Items</label><textarea class="form-textarea" id="inv-notes" style="min-height:80px" placeholder="Parts ordered, services rendered..."></textarea></div>
+    </div>
+    <div id="invoice-extracted-badge" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:8px 12px;font-size:12px;margin-bottom:12px">
+      ✅ Details auto-filled from invoice photo — please verify before saving
+    </div>
+    <div style="display:none" id="inv-clear-photo-wrap">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:12px">
+        <input type="checkbox" id="inv-clear-photo" checked/> Remove photo after saving (recommended — keeps data, removes image)
+      </label>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+    </div>
   </div>
 </div>
 </body>
