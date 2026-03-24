@@ -1305,15 +1305,41 @@ function renderEquipListDash(){
 }
 function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
-  const up=state.schedules.filter(s=>new Date(s.date)>=TODAY).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
-  el.innerHTML=up.map(s=>{
+  // Combine scheduled maintenance + open/overdue work orders
+  const schedItems = state.schedules.filter(s=>{
     const [sy,sm,sd]=(s.date||'').split('-').map(Number);
     const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
-    return `<div class="sched-item">
-      <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div></div>
-      <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'} · ${s.dur}h</div></div>
+    return d>=TODAY;
+  }).map(s=>({...s, _type:'schedule'}));
+  
+  const woItems = state.tasks.filter(t=>t.status!=='Completed'&&t.due).map(t=>({
+    id:t.id, name:t.name, date:t.due, equipId:t.equipId,
+    tech:t.assign, _type:'wo', status:t.status, priority:t.priority
+  }));
+
+  const combined = [...schedItems, ...woItems]
+    .sort((a,b)=>{
+      const [ay,am,ad]=(a.date||'').split('-').map(Number);
+      const [by,bm,bd]=(b.date||'').split('-').map(Number);
+      return new Date(ay,am-1,ad)-new Date(by,bm-1,bd);
+    }).slice(0,6);
+
+  el.innerHTML=combined.map(s=>{
+    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
+    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
+    const isWO = s._type==='wo';
+    const isOverdueItem = isWO && isOverdue(s.date);
+    return `<div class="sched-item" onclick="${isWO?`openTaskDetail('${s.id}')`:''}" style="${isWO?'cursor:pointer':''}">
+      <div class="sched-date" style="background:${isOverdueItem?'var(--danger-bg)':isWO?'var(--accent-bg)':'var(--bg2)'}">
+        <div class="sched-day" style="color:${isOverdueItem?'var(--danger)':isWO?'var(--accent)':''}">${d.getDate()}</div>
+        <div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div>
+      </div>
+      <div class="sched-body">
+        <div class="sched-title">${s.name} ${isWO?`<span class="badge ${isOverdueItem?'bd':s.status==='Open'?'bi':'bg'}" style="font-size:10px">${isOverdueItem?'Overdue':s.status}</span>`:''}</div>
+        <div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'}${isWO&&s.priority?' · '+s.priority:s.dur?' · '+s.dur+'h':''}</div>
+      </div>
     </div>`;
-  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance</div>';
+  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
 }
 function renderRecentTasks(){
   const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
