@@ -811,7 +811,7 @@ async function hashPassword(password) {
 }
 
 const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
+const SUPABASE_KEY = 'proxy'; // Key hidden in Cloudflare Worker
 const ADMIN_USERNAME = 'tangal99';
 let currentUser = null;
 let calDate = new Date();
@@ -822,8 +822,19 @@ let calDate = new Date();
 async function startApp() {
   try { localStorage.removeItem('mp_users'); } catch(e) {}
   try {
-    window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
+    // Use Cloudflare Worker proxy to hide Supabase keys
+    const PROXY_URL = 'https://mtl-proxy.tannergalloway75.workers.dev/proxy';
+    window._mpdb = window.supabase.createClient(PROXY_URL, 'proxy-key', {
+      global: { 
+        headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' },
+        fetch: (url, opts) => {
+          // Route all Supabase calls through the Worker proxy
+          const proxiedUrl = url.replace(SUPABASE_URL, PROXY_URL);
+          return fetch(proxiedUrl, opts);
+        }
+      },
+      db: { schema: 'public' },
+      auth: { persistSession: false },
     });
     setSyncStatus('online');
   } catch(e) { console.warn('Supabase init failed:', e); }
