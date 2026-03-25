@@ -3183,6 +3183,9 @@ async function enterApp(){
   applyUserGroupFilter();
   renderDashboard();
   await initChat();
+  // Update last_seen immediately and every 2 minutes
+  updateLastSeen();
+  setInterval(updateLastSeen, 2*60*1000);
 }
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
@@ -3192,8 +3195,24 @@ function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.ge
 // ── ONLINE USERS (all team members) ──────────────────────────
 async function renderOnlineUsers(){
   const el=document.getElementById('online-users-list');if(!el)return;
-  try{const{data:profiles}=await window._mpdb.from('profiles').select('full_name,username').eq('status','approved');
-    el.innerHTML=(profiles||[]).map(p=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)"><div style="width:7px;height:7px;border-radius:50%;background:${p.username===currentUser.username?'#3B6D11':'rgba(255,255,255,0.4)'};flex-shrink:0"></div>${p.full_name}${p.username===currentUser.username?' (you)':''}</div>`).join('');
+  try{
+    const{data:profiles}=await window._mpdb.from('profiles').select('full_name,username,last_seen').eq('status','approved');
+    const fiveMinAgo=new Date(Date.now()-5*60*1000);
+    el.innerHTML=(profiles||[]).map(p=>{
+      const isMe=p.username===currentUser.username;
+      const isOnline=isMe||(p.last_seen&&new Date(p.last_seen)>fiveMinAgo);
+      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)">
+        <div style="width:7px;height:7px;border-radius:50%;background:${isOnline?'#3B6D11':'rgba(255,255,255,0.25)'};flex-shrink:0"></div>
+        ${p.full_name}${isMe?' (you)':''}
+      </div>`;
+    }).join('');
+  }catch(e){}
+}
+
+// Update last_seen every 2 minutes while app is open
+async function updateLastSeen(){
+  try{
+    await window._mpdb.from('profiles').update({last_seen:new Date().toISOString()}).eq('username',currentUser.username);
   }catch(e){}
 }
 
