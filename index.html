@@ -520,6 +520,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
       <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
       <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
+      <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
     </div>
     <div id="admin-approvals">
       <div class="grid-2">
@@ -536,6 +537,19 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div id="admin-deleted-msgs" style="display:none">
       <div class="card"><div class="card-header"><span class="card-title">Deleted Messages</span><span style="font-size:12px;color:var(--text2)">Recoverable for 30 days</span></div><div id="deleted-msgs-list"></div></div>
       <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
+    </div>
+    <div id="admin-settings" style="display:none">
+      <div class="card">
+        <div class="card-header"><span class="card-title">AI Settings</span></div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Configure the Gemini API key for invoice scanning and tool suggestions. Get a free key at <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">aistudio.google.com</a></div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1"><label class="form-label">Gemini API Key</label>
+            <input class="form-input" id="gemini-key-input" type="password" placeholder="AIza..." style="font-family:monospace"/>
+          </div>
+          <button class="btn btn-primary" onclick="saveGeminiKey()">Save Key</button>
+        </div>
+        <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
+      </div>
     </div>
     <div id="admin-permissions" style="display:none">
       <div class="card">
@@ -875,6 +889,9 @@ let calDate = new Date();
 // ============================================================
 async function startApp() {
   try { localStorage.removeItem('mp_users'); } catch(e) {}
+  // Load Gemini key from secure storage
+  try { window._geminiKey = localStorage.getItem('mp_gemini_key') || ''; } catch(e) {}
+  
   try {
     window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
@@ -3341,7 +3358,7 @@ async function recoverMessage(deletedId){
 
 // ── ADMIN TAB SWITCHER ────────────────────────────────────────
 function switchAdminTab(tab,btn){
-  ['admin-approvals','admin-users','admin-permissions','admin-deleted-msgs'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['admin-approvals','admin-users','admin-permissions','admin-deleted-msgs','admin-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const el=document.getElementById('admin-'+tab);if(el)el.style.display='block';
   document.querySelectorAll('#panel-admin .tab').forEach(b=>{b.classList.remove('active');b.style.background='transparent';b.style.color='rgba(255,255,255,0.8)';b.style.fontWeight='400';});
   btn.classList.add('active');btn.style.background='rgba(255,255,255,0.25)';btn.style.color='#fff';btn.style.fontWeight='600';
@@ -3601,30 +3618,27 @@ async function scanInvoiceWithAI(imageData) {
     const base64Data = imageData.split(',')[1];
     const mediaType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const GEMINI_KEY = 'AIzaSyPlaceholderReplaceWithYourKey'; // Set via app config
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
+        contents: [{
+          parts: [
             {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64Data }
+              inline_data: { mime_type: mediaType, data: base64Data }
             },
             {
-              type: 'text',
-              text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text:\n{"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}'
+              text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text: {"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}'
             }
           ]
-        }]
+        }],
+        generationConfig: { maxOutputTokens: 500, temperature: 0 }
       })
     });
 
     const data = await response.json();
-    const text = data.content?.map(c=>c.text||'').join('') || '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     let extracted = {};
     try {
@@ -3829,6 +3843,17 @@ async function deleteInvoice(invoiceId, equipId) {
   } catch(e) {
     showToast('Failed to delete');
   }
+}
+
+// ── GEMINI KEY MANAGEMENT ─────────────────────────────────────
+function saveGeminiKey() {
+  const key = document.getElementById('gemini-key-input')?.value.trim();
+  if(!key || key.startsWith('•')) { showToast('Enter a valid API key'); return; }
+  window._geminiKey = key;
+  try { localStorage.setItem('mp_gemini_key', key); } catch(e) {}
+  document.getElementById('gemini-key-status').textContent = '✅ Gemini key saved';
+  document.getElementById('gemini-key-input').value = '••••••••••••••••';
+  showToast('Gemini API key saved ✓');
 }
 
 </script>
