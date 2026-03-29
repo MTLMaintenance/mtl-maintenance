@@ -890,7 +890,7 @@ async function validateSession() {
   if(!token) return null;
   try {
     const { data } = await window._mpdb.from('app_sessions')
-      .select('*, profiles!app_sessions_username_fkey(*)')
+     .select('*, profiles(*)')
       .eq('token', token)
       .single();
     if(!data) return null;
