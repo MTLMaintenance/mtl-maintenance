@@ -1306,15 +1306,18 @@ function getUserNames(){ return []; }
 // NAV
 // ============================================================
 function showPanel(id){
-  // 1. Hide all panels and deactivate all nav buttons
+  console.log("Switching to panel:", id); // This will show in F12
+  
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   
-  // 2. Show the requested panel
   const panel = document.getElementById('panel-' + id);
-  if(panel) panel.classList.add('active');
+  if(panel) {
+    panel.classList.add('active');
+  } else {
+    console.error("Could not find HTML element with ID: panel-" + id);
+  }
 
-  // 3. Highlight the correct Nav Button
   const labels = {
     'dashboard': 'Dashboard',
     'calendar': 'Calendar',
@@ -1328,16 +1331,15 @@ function showPanel(id){
     'admin': 'Admin',
     'checklists': 'Checklists',
     'chat': 'Chat',
-    'memorial': 'In Memory' // <--- Make sure this is here
+    'memorial': 'In Memory' 
   };
 
   document.querySelectorAll('.nav-btn').forEach(b => {
-    if(b.textContent.trim() === labels[id] || b.textContent.trim().startsWith(labels[id])) {
+    if(b.textContent.trim() === labels[id]) {
       b.classList.add('active');
     }
   });
 
-  // 4. Run the data-drawing function for that panel
   const renders = {
     'dashboard': renderDashboard,
     'calendar': renderCalendar,
@@ -1351,11 +1353,14 @@ function showPanel(id){
     'admin': renderAdminPanel,
     'checklists': renderChecklistTemplates,
     'chat': renderChat,
-    'memorial': renderMemorials // <--- THIS is what was missing!
+    'memorial': renderMemorials 
   };
 
   if(renders[id]) {
+    console.log("Running render function for:", id);
     renders[id]();
+  } else {
+    console.warn("No render function found for:", id);
   }
   
   setTimeout(initLazyImages, 100);
