@@ -38,16 +38,33 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   <input type="text" id="global-search" class="form-input" placeholder="Search S/N, Parts, Techs..." style="width:100%; height:32px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:12px" oninput="handleGlobalSearch()"/>
   <div id="search-results" style="display:none; position:absolute; top:36px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.2); z-index:1000; max-height:400px; overflow-y:auto"></div>
 </div>
-  .logo{font-size:16px;font-weight:600;white-space:nowrap;color:#fff;display:flex;align-items:center;gap:6px}
-.nav{display:flex;gap:2px;flex:1;flex-wrap:wrap}
-.nav-btn{padding:5px 11px;border:1px solid transparent;border-radius:var(--radius);font-size:12px;cursor:pointer;background:transparent;color:rgba(255,255,255,0.75);white-space:nowrap;font-family:inherit}
-.nav-btn:hover{background:rgba(255,255,255,0.15);color:#fff}
-.nav-btn.active{background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.3);font-weight:500}
-.topbar-right{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.user-chip{font-size:11px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:3px 10px;color:#fff}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:#639922;display:inline-block;margin-right:4px}
-.sync-dot.syncing{background:#EF9F27;animation:pulse 1s infinite}
-.sync-dot.offline{background:#E24B4A}
+.logo {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #ffffff !important; /* Brightest white */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15); /* Subtle "button" background */
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logo:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.logo:active {
+  transform: translateY(0px);
+} 
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -275,8 +292,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <!-- APP -->
 <div id="app" style="display:none">
   <div class="topbar">
-    <div class="logo">⚙ MTL Maintenance</div>
-
+<div class="logo" onclick="showPanel('dashboard')" title="Go to Dashboard">⚙ MTL Maintenance</div>
   <!-- NEW SEARCH BAR AREA -->
   <div style="position:relative; margin-left:15px; flex:1; max-width:280px">
     <input type="text" id="global-search" class="form-input" placeholder="Search S/N, Parts, Techs..." style="width:100%; height:30px; background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.2); color:#fff; font-size:12px; padding-left:30px" oninput="handleGlobalSearch()"/>
