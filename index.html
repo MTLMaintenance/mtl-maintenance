@@ -325,13 +325,41 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   font-weight: 500;
 }
 
-.chat-channel-btn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--radius);font-size:13px;cursor:pointer;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);border:1px solid transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s}
-.chat-channel-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
-.chat-channel-btn.active{background:rgba(255,255,255,0.25);color:#fff;font-weight:600;border-color:rgba(255,255,255,0.3)}
-@media(max-width:640px){
-  #chat-sidebar{position:fixed;left:0;top:0;bottom:0;z-index:201;background:rgba(20,20,20,0.97);padding:60px 12px 20px;width:220px!important;transform:translateX(-100%);overflow-y:auto}
-  #chat-sidebar.open{transform:translateX(0)}
-  #chat-sidebar-toggle{display:flex!important}
+/* FIX FOR CHAT CHANNEL AND DM BUTTONS */
+.chat-channel-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  border-radius: var(--radius) !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  background: transparent !important; /* Removes the white box */
+  color: rgba(255, 255, 255, 0.8) !important; /* Semi-white text */
+  border: 1px solid transparent !important;
+  width: 100% !important;
+  text-align: left !important;
+  font-family: inherit !important;
+  transition: all 0.15s !important;
+  margin-bottom: 2px !important;
+}
+
+.chat-channel-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important; /* Subtle highlight */
+  color: #ffffff !important;
+}
+
+.chat-channel-btn.active {
+  background: rgba(255, 255, 255, 0.2) !important; /* Stronger highlight for active */
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Ensure the text inside buttons (like DM names) is also white */
+.chat-channel-btn span {
+  color: inherit !important;
+}
 }
 </style>
 </head>
