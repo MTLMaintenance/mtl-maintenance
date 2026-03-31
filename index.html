@@ -453,20 +453,20 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
     </div>
 
-    <nav class="nav" id="main-nav">
-      <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
-      <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
-      <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
-      <button class="nav-btn" onclick="showPanel('equipment')">Equipment</button>
-      <button class="nav-btn" onclick="showPanel('tasks')">Work Orders</button>
-      <button class="nav-btn" onclick="showPanel('schedule')">Schedule</button>
-      <button class="nav-btn" onclick="showPanel('parts')">Parts</button>
-      <button class="nav-btn" onclick="showPanel('suppliers')">Suppliers</button>
-      <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
+   <nav class="nav" id="main-nav">
       <button class="nav-btn" onclick="showPanel('analytics')">Analytics</button>
+      <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
+      <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">Chat <span id="chat-unread-badge" style="display:none;background:#E24B4A;color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:3px">0</span></button>
       <button class="nav-btn" onclick="showPanel('checklists')">Checklists</button>
-      <button class="nav-btn" onclick="showPanel('chat')" id="chat-nav-btn">Chat <span id="chat-unread-badge" style="display:none;background:#E24B4A;color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:3px">0</span></button>
-     </nav>
+      <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
+      <button class="nav-btn" onclick="showPanel('equipment')">Equipment</button>
+      <button class="nav-btn" onclick="showPanel('parts')">Parts</button>
+      <button class="nav-btn" onclick="showPanel('schedule')">Schedule</button>
+      <button class="nav-btn" onclick="showPanel('suppliers')">Suppliers</button>
+      <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
+      <button class="nav-btn" onclick="showPanel('tasks')">Work Orders</button>
+    </nav>
     <div class="topbar-right">
       <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
       <button class="btn btn-secondary btn-sm" onclick="exportPDF()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">PDF</button>
@@ -3457,51 +3457,88 @@ function openModal(id){
 
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
-  try{localStorage.setItem('mp_session',JSON.stringify(currentUser));}catch(e){}
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('user-chip-name').textContent=currentUser.name;
-  try{
-    const{data:profile}=await window._mpdb.from('profiles').select('group_tag,custom_permissions,role').eq('username',currentUser.username).single();
-    if(profile?.group_tag)currentUser.group_tag=profile.group_tag;
-    if(profile?.custom_permissions)currentUser.custom_permissions=profile.custom_permissions;
-    if(profile?.role&&currentUser.username.toLowerCase()!==ADMIN_USERNAME.toLowerCase())currentUser.role=profile.role;
-  }catch(e){}
-  const nav=document.getElementById('main-nav');
-  if(!can('canViewReports')){const btn=Array.from(nav.querySelectorAll('.nav-btn')).find(b=>b.textContent.trim()==='Analytics');if(btn)btn.style.display='none';}
-  if(!can('canManageSuppliers')){const btn=Array.from(nav.querySelectorAll('.nav-btn')).find(b=>b.textContent.trim()==='Suppliers');if(btn)btn.style.display='none';}
-  if(currentUser.role==='admin'){
-    if(!document.getElementById('admin-nav-btn')){
-      const btn=document.createElement('button');btn.className='nav-btn';btn.id='admin-nav-btn';btn.textContent='Admin';btn.onclick=()=>showPanel('admin');nav.appendChild(btn);
+  // 1. UI Setup
+  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-chip-name').textContent = currentUser.name;
+
+  // 2. Fetch User Profile & Permissions from Database
+  try {
+    const { data: profile } = await window._mpdb.from('profiles')
+      .select('group_tag, custom_permissions, role')
+      .eq('username', currentUser.username)
+      .single();
+    
+    if (profile) {
+      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
+      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
+      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
+        currentUser.role = profile.role;
+      }
     }
+  } catch(e) { console.error("Error loading user profile:", e); }
+
+  // 3. Handle Navigation Buttons
+  const nav = document.getElementById('main-nav');
+  
+  // A. Hide buttons based on permissions
+  if(!can('canViewReports')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
+    if(btn) btn.remove();
   }
-  const addWOBtn=document.querySelector('.topbar-right .btn-primary');if(addWOBtn&&!can('canCreate'))addWOBtn.style.display='none';
-  setTimeout(()=>{
-    const aeWrap=document.getElementById('add-equip-btn-wrap');
-    if(aeWrap&&can('canManageEquip'))aeWrap.innerHTML='<button class="btn btn-primary" onclick="openModal(\'equip-modal\')">+ Add Equipment</button>';
-    const apWrap=document.getElementById('add-part-btn-wrap');
-    if(apWrap&&can('canManageParts'))apWrap.innerHTML='<button class="btn btn-primary" onclick="openModal(\'part-modal\')">+ Add Part</button>';
-    const asWrap=document.getElementById('add-supplier-btn-wrap');
-    if(asWrap&&can('canManageSuppliers'))asWrap.innerHTML='<button class="btn btn-primary" onclick="openModal(\'supplier-modal\')">+ Add Supplier</button>';
-  },100);
+  if(!can('canManageSuppliers')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
+    if(btn) btn.remove();
+  }
+
+  // B. Alphabetize the remaining main buttons
+  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
+  
+  // We filter out 'Admin' if it's already there so it doesn't get sorted into the middle
+  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
+
+  // Sort A to Z
+  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
+
+  // Clear the nav and re-add sorted buttons
+  nav.innerHTML = '';
+  buttons.forEach(btn => nav.appendChild(btn));
+
+  // C. Add the Admin button AT THE END (Only for Admin users)
+  if(currentUser.role === 'admin'){
+      const adminBtn = document.createElement('button');
+      adminBtn.className = 'nav-btn';
+      adminBtn.id = 'admin-nav-btn';
+      adminBtn.textContent = 'Admin';
+      adminBtn.onclick = () => showPanel('admin');
+      nav.appendChild(adminBtn); // Adding it here puts it after 'Work Orders'
+  }
+
+  // 4. Initialize App Data & Services
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
   renderDashboard();
   await initChat();
-  // Update last_seen immediately and every 2 minutes
+  
+  // 5. Heartbeat / Session Management
   updateLastSeen();
-  setInterval(updateLastSeen, 2*60*1000);
+  setInterval(updateLastSeen, 2 * 60 * 1000); // Update presence every 2 mins
+  
   // Refresh session token every 30 minutes
-  setInterval(async ()=>{
+  setInterval(async () => {
     const token = localStorage.getItem('mp_session_token');
     if(token) {
-      const newExpiry = new Date(Date.now() + 8*60*60*1000).toISOString();
-      try { await window._mpdb.from('app_sessions').update({
-        last_active: new Date().toISOString(), expires_at: newExpiry
-      }).eq('token', token); } catch(e) {}
+      const newExpiry = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+      try { 
+        await window._mpdb.from('app_sessions').update({
+          last_active: new Date().toISOString(), 
+          expires_at: newExpiry
+        }).eq('token', token); 
+      } catch(e) {}
     }
-  }, 30*60*1000);
+  }, 30 * 60 * 1000);
 }
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
