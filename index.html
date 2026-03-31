@@ -292,6 +292,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🌙</button>
       <button class="btn btn-secondary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">💬</button>
       <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign out">↩ Sign Out</button>
+      <button class="btn btn-secondary btn-sm" onclick="startQRScanner()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">📷 Scan QR</button>
     </div>
   </div>
 
@@ -822,6 +823,20 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div id="detail-body"></div>
   </div>
 </div>
+  <!-- QR Scanner Modal -->
+<div class="modal-backdrop" id="scan-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Scan Equipment QR</span>
+      <button class="modal-close" onclick="stopQRScanner()">✕</button>
+    </div>
+    <div id="qr-reader" style="width:100%; border-radius: 8px; overflow: hidden;"></div>
+    <div id="qr-status" style="text-align:center; margin-top:10px; font-size:13px; color:var(--text2)">Point camera at the equipment QR code</div>
+    <div class="form-row">
+      <button class="btn btn-secondary" style="width:100%; justify-content:center" onclick="stopQRScanner()">Cancel</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- Photo Viewer -->
@@ -1093,6 +1108,72 @@ async function signOut() {
   document.getElementById('auth-screen').style.display='flex';
   showLogin();
 }
+ let html5QrCode = null;
+
+async function startQRScanner() {
+  openModal('scan-modal');
+  html5QrCode = new Html5Qrcode("qr-reader");
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      (decodedText) => {
+        // Success: Parse the URL to find the equipment ID
+        console.log("QR Detected:", decodedText);
+        const url = new URL(decodedText);
+        const equipId = url.searchParams.get("equip");
+        
+        if (equipId) {
+          stopQRScanner();
+          openEquipDetail(equipId);
+        } else {
+          showToast("Invalid QR Code for this app");
+        }
+      }
+    );
+  } catch (err) {
+    console.error("Camera error:", err);
+    document.getElementById('qr-status').textContent = "Camera access denied or not found.";
+  }
+}
+
+function stopQRScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+      closeModal('scan-modal');
+    }).catch(err => console.log(err));
+  } else {
+    closeModal('scan-modal');
+  }
+}
+ async function quickLogHours(equipId) {
+  const e = state.equipment.find(x => x.id === equipId);
+  if (!e) return;
+
+  const newHours = prompt(`Log hours for ${e.name}\nCurrent: ${e.hours.toLocaleString()} hrs\nEnter new reading:`);
+  
+  if (newHours === null || newHours.trim() === '') return;
+  
+  const val = parseInt(newHours);
+  if (isNaN(val) || val < e.hours) {
+    alert("Please enter a valid number greater than or equal to current hours.");
+    return;
+  }
+
+  e.hours = val;
+  try {
+    await persist('equipment', 'upsert', e);
+    // Trigger recurrence engine in case this hits a maintenance threshold
+    await runRecurrenceEngine();
+    renderDashboard();
+    showToast(`${e.name} updated to ${val} hrs ✓`);
+  } catch (err) {
+    showToast("Update failed");
+  }
+} 
 
 // ============================================================
 // STATE
@@ -1465,18 +1546,17 @@ function renderEquipListDash(){
   const el=document.getElementById('equip-list-dash');
   el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
     const score=calcHealth(e.id);
-    const col=e.status==='Down'?'var(--danger)':e.status==='In Service'?'var(--warning)':'var(--success)';
     const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
-    return `<div class="equip-row" onclick="openEquipDetail('${e.id}')">
-      <div class="equip-icon">${icon}</div>
-      <div class="equip-info">
+    return `<div class="equip-row">
+      <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
+      <div class="equip-info" onclick="openEquipDetail('${e.id}')">
         <div class="equip-name">${e.name}</div>
         <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
         <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        ${badge(e.status)}
-        <div style="font-size:11px;color:var(--text2);margin-top:3px">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
+      <div style="text-align:right;flex-shrink:0; display:flex; flex-direction:column; gap:4px; align-items:flex-end">
+        <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size:10px" onclick="quickLogHours('${e.id}')">⏱ Log Hours</button>
+        <div style="font-size:11px;color:var(--text2)">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
       </div>
     </div>`;
   }).join('');
@@ -4156,6 +4236,7 @@ function acceptToolSuggestion() {
     </div>
   </div>
 </div>
+<script src="https://unpkg.com/html5-qrcode"></script>
 </body>
 </html>
 }
