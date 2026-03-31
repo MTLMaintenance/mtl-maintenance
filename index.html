@@ -1295,7 +1295,7 @@ async function stopQRScanner() {
   if(reader) reader.innerHTML = ""; 
 }
 function quickLogHours(equipId) {
-  console.log("Quick Log triggered for:", equipId);
+  
   const e = state.equipment.find(x => x.id === equipId);
   if (!e) return;
 
@@ -1316,59 +1316,12 @@ function quickLogHours(equipId) {
   
   openModal('log-hours-modal');
 }
-
-async function saveQuickLogHours() {
-  const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value;
-  const val = parseInt(document.getElementById('lh-val').value);
-  
-  const e = state.equipment.find(x => x.id === equipId);
-  if (!e) return;
-
-  if (isNaN(val) || val < e.hours) {
-    alert("New reading must be a number and cannot be less than current (" + e.hours + ").");
-    return;
-  }
-
-  e.hours = val;
-  // We save the date into a new field called last_meter_date
-  e.last_meter_date = date; 
-
-  try {
-    await persist('equipment', 'upsert', e);
-    await runRecurrenceEngine();
-    closeModal('log-hours-modal');
-    renderDashboard();
-    showToast(`Updated ${e.name} ✓`);
-  } catch (err) {
-    console.error(err);
-    showToast("Save failed");
-  }
-}
 // ============================================================
 // STATE
 // ============================================================
 let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools: []}; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-
-function computeMonthlyCosts() {
-  const now = new Date();
-  return [3,2,1,0].map(ago => {
-    const d = new Date(now.getFullYear(), now.getMonth()-ago, 1);
-    const y = d.getFullYear(), m = d.getMonth();
-    return state.tasks.filter(t => {
-      if(!t.due) return false;
-      // Parse date string as local time to avoid UTC shift
-      let td;
-      if(typeof t.due==='string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due)){
-        const [ty,tm,tday]=t.due.split('-').map(Number);
-        td=new Date(ty,tm-1,tday);
-      } else { td=new Date(t.due); }
-      return td.getFullYear()===y && td.getMonth()===m;
-    }).reduce((a,t) => a+(t.cost||0), 0);
-  });
-}
 async function loadState() {
   setSyncStatus('syncing');
   try {
@@ -1417,14 +1370,6 @@ function computeMonthlyCosts() {
       return td.getFullYear()===y && td.getMonth()===m;
     }).reduce((a,t)=>a+(t.cost||0),0);
   });
-}
-
-async function persist(table, action, record) {
-  try {
-    if (action==='upsert') await window._mpdb.from(table).upsert(record);
-    if (action==='delete') await window._mpdb.from(table).delete().eq('id', record.id);
-    setSyncStatus('online'); showToast('Saved ✓');
-  } catch(e) { setSyncStatus('offline'); showToast('Sync failed — check connection'); }
 }
 
 function setSyncStatus(s) {
@@ -1528,73 +1473,13 @@ function calcHealth(equipId){
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
-function getUserNames(){ return []; }
 
 // ============================================================
 // NAV
 // ============================================================
-function showPanel(id){
-  console.log("Switching to panel:", id); // This will show in F12
-  
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  
-  const panel = document.getElementById('panel-' + id);
-  if(panel) {
-    panel.classList.add('active');
-  } else {
-    console.error("Could not find HTML element with ID: panel-" + id);
-  }
-
-  const labels = {
-    'dashboard': 'Dashboard',
-    'calendar': 'Calendar',
-    'equipment': 'Equipment',
-    'tasks': 'Work Orders',
-    'schedule': 'Schedule',
-    'parts': 'Parts',
-    'suppliers': 'Suppliers',
-    'documents': 'Docs',
-    'analytics': 'Analytics',
-    'admin': 'Admin',
-    'checklists': 'Checklists',
-    'chat': 'Chat',
-  };
-
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    if(b.textContent.trim() === labels[id]) {
-      b.classList.add('active');
-    }
-  });
-
-  const renders = {
-    'dashboard': renderDashboard,
-    'calendar': renderCalendar,
-    'equipment': renderEquipmentTable,
-    'tasks': renderTasks,
-    'schedule': renderSchedule,
-    'parts': renderParts,
-    'suppliers': renderSuppliers,
-    'documents': renderDocuments,
-    'analytics': renderAnalytics,
-    'admin': renderAdminPanel,
-    'checklists': renderChecklistTemplates,
-    'chat': renderChat,
-  };
-
-  if(renders[id]) {
-    console.log("Running render function for:", id);
-    renders[id]();
-  } else {
-    console.warn("No render function found for:", id);
-  }
-  
-  setTimeout(initLazyImages, 100);
-}
 // ============================================================
 // MODALS
 // ============================================================
-function openModal(id){ populateSelects(); document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 
@@ -1640,13 +1525,6 @@ function switchTab(group, tab, btn){
 // ============================================================
 let pendingPhotos={task:[],equip:[]};
 let pendingDocFile=null;
-function handlePhotoUpload(input,key){
-  Array.from(input.files).forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{ pendingPhotos[key].push(e.target.result); refreshPhotoGrid(key); };
-    reader.readAsDataURL(file);
-  }); input.value='';
-}
 function refreshPhotoGrid(key){
   const gridId=key==='task'?'task-photo-grid':'equip-photo-grid';
   const grid=document.getElementById(gridId); if(!grid) return;
@@ -1667,9 +1545,6 @@ function handleDocUpload(input){
 // ============================================================
 // DASHBOARD
 // ============================================================
-function renderDashboard(){
-  renderAlerts(); renderEquipListDash(); renderSchedDash(); renderRecentTasks(); renderCostChart(); updateMetrics();
-}
 function updateMetrics(){
   const overdue=state.tasks.filter(t=>t.status==='Overdue').length;
   const open=state.tasks.filter(t=>t.status==='Open').length;
@@ -1700,25 +1575,6 @@ function updateMetrics(){
   document.getElementById('m-health').textContent=avgHealth+'%';
   document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
   document.getElementById('m-open').textContent=open;
-}
-function renderAlerts(){
-  const od=state.tasks.filter(t=>t.status==='Overdue'||isOverdue(t.due)&&t.status!=='Completed');
-  const op=state.tasks.filter(t=>t.status==='Open'&&!isOverdue(t.due));
-  const lp=state.parts.filter(p=>p.qty<=p.reorder);
-  const exp=state.documents.filter(d=>d.expiry_date && new Date(d.expiry_date)<=new Date(Date.now()+30*24*60*60*1000));
-  // Only show critical obs alert if no linked WO already exists for it
-  const critObs=(state.observations||[]).filter(o=>{
-    if(o.severity!=='critical') return false;
-    const hasWO = state.tasks.some(t=>t.equipId===o.equip_id && t.status!=='Completed' && t.notes && t.notes.includes(o.body.slice(0,30)));
-    return !hasWO;
-  });
-  let h='';
-  if(od.length) h+=`<div class="alert alert-d"><span class="dot"></span><b>${od.length} overdue:</b> ${od.map(t=>t.name).join(', ')}</div>`;
-  if(op.length) h+=`<div class="alert alert-w">📋 <b>${op.length} open work order${op.length>1?'s':''}:</b> ${op.map(t=>t.name).join(', ')}</div>`;
-  if(lp.length) h+=`<div class="alert alert-w">⚠ <b>${lp.length} part${lp.length>1?'s':''} low/out of stock:</b> ${lp.map(p=>p.name).join(', ')}</div>`;
-  if(exp.length) h+=`<div class="alert alert-w">📄 <b>${exp.length} document${exp.length>1?'s':''} expiring soon:</b> ${exp.map(d=>d.name).join(', ')}</div>`;
-  if(critObs.length) h+=`<div class="alert alert-d">🚨 <b>${critObs.length} critical observation${critObs.length>1?'s':''}:</b> ${critObs.map(o=>equipName(o.equip_id)+' — '+o.body.slice(0,50)).join(' | ')}</div>`;
-  document.getElementById('alert-section').innerHTML=h;
 }
 function renderEquipListDash(){
   const el=document.getElementById('equip-list-dash');
@@ -2174,32 +2030,6 @@ function renderAnalytics(){
 // ============================================================
 // ADMIN
 // ============================================================
-async function renderAdminPanel(){
-  try {
-    const { data: profiles }=await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
-    const pending=profiles.filter(p=>p.status==='pending');
-    const active=profiles.filter(p=>p.status==='approved');
-    const denied=profiles.filter(p=>p.status==='denied');
-    document.getElementById('pending-count').textContent=pending.length||'0';
-    document.getElementById('pending-list').innerHTML=pending.length?pending.map(p=>
-      `<div class="parts-row">
-        <div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:11px;color:var(--text2)">${p.username} · Requested ${new Date(p.created_at).toLocaleDateString()}</div></div>
-        <button class="btn btn-success btn-sm" onclick="approveUser('${p.id}','${p.full_name}')">Approve</button>
-        <button class="btn btn-danger btn-sm" onclick="denyUser('${p.id}')">Deny</button>
-      </div>`
-    ).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px 0">No pending requests</div>';
-    document.getElementById('active-list').innerHTML=[...active,...denied].map(p=>
-      `<div class="parts-row">
-        <div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:11px;color:var(--text2)">${p.username}</div></div>
-        <span class="badge ${p.status==='approved'?'bs':'bd'}">${p.status==='approved'?'Active':'Denied'}</span>
-        <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
-      </div>`
-    ).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No users yet</div>';
-  } catch(e){ console.error('Admin panel error',e); }
-}
-async function approveUser(id,name){ await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id); showToast(name+' approved ✓'); renderAdminPanel(); }
-async function denyUser(id){ await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id); showToast('Request denied'); renderAdminPanel(); }
-async function deleteUser(id,name){ if(!confirm('Delete '+name+'?'))return; await window._mpdb.from('profiles').delete().eq('id',id); showToast(name+' removed'); renderAdminPanel(); }
 
 // ============================================================
 // DETAIL VIEWS
@@ -2330,41 +2160,6 @@ async function toggleCheck(taskId,idx){
   const t=state.tasks.find(x=>x.id===taskId); if(!t)return;
   t.checklist[idx].done=!t.checklist[idx].done;
   await persist('tasks','upsert',t); openTaskDetail(taskId);
-}
-async function markComplete(taskId) {
-  const t = state.tasks.find(x => x.id === taskId);
-  if (!t) return;
-
-  const equip = state.equipment.find(e => e.id === t.equipId);
-  const currentHours = equip ? equip.hours : 0;
-  
-  // Optional hour update prompt
-  const newHours = prompt(`Update hour meter for ${equip?.name || 'equipment'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
-  
-  if (newHours !== null && newHours.trim() !== '') {
-    const parsed = parseInt(newHours);
-    if (!isNaN(parsed) && parsed >= currentHours) {
-      if (equip) {
-        equip.hours = parsed;
-        t.meter = parsed + ' hrs';
-        await persist('equipment', 'upsert', equip);
-      }
-    }
-  }
-
-  t.status = 'Completed';
-  // Clear temporary photos to save space on completed orders
-  if (t.photos && t.photos.length) {
-    t.photos = [];
-  }
-
-  await persist('tasks', 'upsert', t);
-  await runRecurrenceEngine();
-  
-  closeModal('detail-modal');
-  showToast('Work Order Completed ✓');
-  renderDashboard();
-  renderTasks();
 }
 
 function openEquipDetail(id){
@@ -2564,30 +2359,6 @@ async function saveTask(){
   ['t-name','t-due','t-cost','t-meter','t-checklist','t-notes','t-tools','wo-comment-input'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('task-photo-grid').innerHTML='<div class="photo-add" onclick="document.getElementById(\'task-photo-input\').click()">+</div><input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,\'task\')"/>';
   document.getElementById('wo-parts-list').innerHTML='<div style="color:var(--text3);font-size:13px">No parts added yet</div>';
-}
-
-async function saveEquipment(){
-  const name=document.getElementById('e-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const assignInput=document.getElementById('assign-input');
-  const assignedUsers=assignInput?assignInput.value.split(',').map(s=>s.trim()).filter(Boolean):[];
-  const record={
-    id:uid(), name,
-    type:   document.getElementById('e-type').value,
-    serial: document.getElementById('e-serial').value,
-    hours:  parseInt(document.getElementById('e-hours').value)||0,
-    status: document.getElementById('e-status').value,
-    op:     document.getElementById('e-op').value,
-    notes:  document.getElementById('e-notes').value,
-    photos: pendingPhotos.equip.slice(),
-    assigned_users: assignedUsers,
-    custom_fields: customFieldsTemp,
-    health_score: 100,
-  };
-  state.equipment.push(record);
-  await persist('equipment','upsert',record);
-  pendingPhotos.equip=[]; customFieldsTemp={};
-  closeModal('equip-modal'); renderEquipmentTable(); updateMetrics();
-  ['e-name','e-type','e-serial','e-hours','e-op','e-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
 async function saveSched(){
@@ -2942,40 +2713,6 @@ Enter new reading (or cancel to skip):`);
 // ============================================================
 // SIGN OFF & COMPLETE
 // ============================================================
-async function markCompleteWithSignoff(taskId) {
-  const t = state.tasks.find(x=>x.id===taskId); if(!t) return;
-  const nameEl = document.getElementById('signoff-name-'+taskId);
-  const pinEl  = document.getElementById('signoff-pin-'+taskId);
-  const name = nameEl?.value.trim();
-  const pin  = pinEl?.value.trim();
-  if(!name) { showToast('Please enter your name to sign off'); return; }
-  if(!pin || pin.length < 4) { showToast('Please enter a 4-digit PIN'); return; }
-  // Update meter if provided
-  const equip = state.equipment.find(e=>e.id===t.equipId);
-  const currentHours = equip ? equip.hours : 0;
-  const newHours = prompt(`Update hour meter for ${equip?.name||'equipment'}?
-
-Current: ${currentHours.toLocaleString()} hrs
-Enter new reading (or cancel to skip):`);
-  if(newHours !== null && newHours.trim() !== '') {
-    const parsed = parseInt(newHours);
-    if(!isNaN(parsed) && parsed >= currentHours) {
-      if(equip) { equip.hours = parsed; t.meter = parsed + ' hrs'; await persist('equipment','upsert',equip); }
-    }
-  }
-  t.status = 'Completed';
-  t.signoff_name = name;
-  t.signoff_pin  = pin;
-  t.signoff_at   = new Date().toISOString();
-  if(t.photos && t.photos.length) { t.photos = []; }
-  await persist('tasks','upsert',t);
-  await runRecurrenceEngine();
-  // Check if this triggers overdue email scheduling
-  scheduleOverdueCheck(t);
-  closeModal('detail-modal');
-  showToast('Work order signed off by ' + name + ' ✓');
-  renderDashboard();
-}
 
 // ============================================================
 // OVERDUE EMAIL (weekly, one email per batch)
@@ -3196,17 +2933,6 @@ async function saveEquipment() {
 // PATCH: renderDashboard — add budget alerts + push check
 // ============================================================
 const _origRenderDashboard = renderDashboard;
-function renderDashboard() {
-  renderAlerts(); renderEquipListDash(); renderSchedDash(); renderRecentTasks(); renderCostChart(); updateMetrics();
-  // Budget alerts
-  const budgetAlerts = checkBudgetAlerts();
-  if(budgetAlerts.length) {
-    const sec = document.getElementById('alert-section');
-    sec.innerHTML += budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');
-  }
-  // Schedule overdue email checks for new tasks
-  state.tasks.forEach(t=>{ if(t.status!=='Completed') scheduleOverdueCheck(t); });
-}
 
 // ============================================================
 // PATCH: enterApp — request push, init push check
@@ -3402,9 +3128,6 @@ async function sendCriticalObsNotification(obs,equipId){
 }
 
 // ── OVERDUE EMAIL ────────────────────────────────────────────
-// scheduleOverdueCheck removed - handled by cron
-// Overdue emails now handled by Cloudflare cron Worker (mtl-cron)
-// EmailJS overdue email system removed
 
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
@@ -3464,13 +3187,6 @@ async function renderUsersTable(){
     </div></td></tr>`).join('')||'<tr><td colspan="5" style="padding:16px;color:var(--text2);text-align:center">No active users yet</td></tr>';
     const sel=document.getElementById('role-user-select');if(sel)sel.innerHTML=active.map(p=>`<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
   }catch(e){}
-}
-function switchAdminTab(tab,btn){
-  ['admin-approvals','admin-users','admin-permissions'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-  document.getElementById('admin-'+tab).style.display='block';
-  document.querySelectorAll('#panel-admin .tab').forEach(b=>{b.classList.remove('active');b.style.background='transparent';b.style.color='rgba(255,255,255,0.8)';b.style.fontWeight='400';});
-  btn.classList.add('active');btn.style.background='rgba(255,255,255,0.25)';btn.style.color='#fff';btn.style.fontWeight='600';
-  if(tab==='users')renderUsersTable();if(tab==='permissions')renderPermissionsMatrix();
 }
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
@@ -3569,31 +3285,10 @@ function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.
 async function handleChatPhoto(input){const file=input.files[0];if(!file)return;const compressed=await compressImage(await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);}),600,0.7);chatPhotoData=compressed;document.getElementById('chat-photo-preview').textContent='📎 Photo attached';input.value='';}
 function markChannelRead(channel){lastReadAt[channel]=new Date().toISOString();try{localStorage.setItem('mp_chat_read',JSON.stringify(lastReadAt));}catch(e){}updateUnreadBadge();}
 function updateUnreadBadge(){let total=0;['general','outside','production'].forEach(ch=>{const lr=lastReadAt[ch]?new Date(lastReadAt[ch]):new Date(0);total+=(state.chatMessages||[]).filter(m=>m.channel===ch&&new Date(m.created_at)>lr&&m.author!==currentUser?.username).length;});const b=document.getElementById('chat-unread-badge');if(b){b.textContent=total;b.style.display=total>0?'inline':'none';}}
-function renderOnlineUsers(){const el=document.getElementById('online-users-list');if(!el)return;const recent=new Date(Date.now()-30*60*1000);const active=[...new Set((state.chatMessages||[]).filter(m=>new Date(m.created_at)>recent).map(m=>m.author_name||m.author))];if(!active.includes(currentUser.name))active.unshift(currentUser.name);el.innerHTML=active.slice(0,8).map(n=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)"><div style="width:7px;height:7px;border-radius:50%;background:#3B6D11;flex-shrink:0"></div>${n}${n===currentUser.name?' (you)':''}</div>`).join('');}
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
 
 // ── BUG / SUGGESTION ─────────────────────────────────────────
-function updateReportType(){
-  const isBug=document.getElementById('type-bug').checked;
-  const tl=document.getElementById('bug-title-label'),dl=document.getElementById('bug-desc-label');
-  const tw=document.getElementById('bug-title-wrap'),pw=document.getElementById('bug-page-wrap'),sw=document.getElementById('bug-steps-wrap'),sevw=document.getElementById('bug-severity-wrap');
-  const de=document.getElementById('bug-desc'),bl=document.getElementById('type-bug-label'),sugl=document.getElementById('type-sug-label');
-  if(isBug){if(tl)tl.textContent='What were you trying to do? *';if(dl)dl.textContent='What happened? *';if(de)de.placeholder='Describe what went wrong...';if(tw)tw.style.display='block';if(pw)pw.style.display='block';if(sw)sw.style.display='block';if(sevw)sevw.style.display='block';if(bl)bl.style.borderColor='var(--accent)';if(sugl)sugl.style.borderColor='var(--border2)';}
-  else{if(dl)dl.textContent='What would you like to add or change in the app? *';if(de)de.placeholder='Describe your idea...';if(tw)tw.style.display='none';if(pw)pw.style.display='none';if(sw)sw.style.display='none';if(sevw)sevw.style.display='none';if(bl)bl.style.borderColor='var(--border2)';if(sugl)sugl.style.borderColor='var(--accent)';}
-}
-async function submitBugReport(){
-  const isBug=document.getElementById('type-bug').checked;
-  const desc=document.getElementById('bug-desc').value.trim();if(!desc){showToast('Please fill in the required fields');return;}
-  const title=isBug?document.getElementById('bug-title').value.trim():'Suggestion';
-  if(isBug&&!title){showToast('Please fill in the required fields');return;}
-  const report={id:uid(),reporter:currentUser?.name||'Unknown',username:currentUser?.username||'',type:isBug?'bug':'suggestion',title,description:desc,page:isBug?document.getElementById('bug-page').value:'N/A',severity:isBug?document.getElementById('bug-severity').value:'suggestion',steps:isBug?(document.getElementById('bug-steps').value||''):'',created_at:new Date().toISOString()};
-  try{await window._mpdb.from('bug_reports').insert(report);}catch(e){}
-  try{emailjs.init('n5n6_xxmNNHqk0xrE');await emailjs.send('service_o320zzu','template_je3rl4j',{to_email:'tannergalloway75@gmail.com',message:(isBug?'🐛 BUG REPORT':'💡 SUGGESTION')+'\n\nBy: '+report.reporter+'\n'+(isBug?'Page: '+report.page+'\nSeverity: '+report.severity+'\n':'')+'Title: '+title+'\n\nDetails:\n'+desc+'\n\nSteps: '+(report.steps||'N/A')});}catch(e){}
-  document.getElementById('bug-success').style.display='block';
-  ['bug-title','bug-desc','bug-steps'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  setTimeout(()=>{closeModal('bug-modal');document.getElementById('bug-success').style.display='none';},2500);
-}
 
 // ── PULLEQUIPSUPPLIERS with template selector ─────────────────
 function pullEquipSuppliers(){
@@ -3665,8 +3360,7 @@ function showPanel(id) {
 function renderDashboard(){
   renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
   const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
-  // Overdue email scheduling handled by Cloudflare cron
-  if(document.getElementById('recent-obs-list'))renderRecentObservations();
+    if(document.getElementById('recent-obs-list'))renderRecentObservations();
   if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
 }
 
@@ -4260,17 +3954,6 @@ async function renderInvoicesList(equipId) {
         </div>`).join('')}`;
   } catch(e) {
     listEl.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load invoices</div>';
-  }
-}
-
-async function deleteInvoice(invoiceId, equipId) {
-  if(!confirm('Delete this invoice?')) return;
-  try {
-    await window._mpdb.from('invoices').delete().eq('id', invoiceId);
-    showToast('Invoice deleted');
-    renderInvoicesList(equipId);
-  } catch(e) {
-    showToast('Failed to delete');
   }
 }
 
