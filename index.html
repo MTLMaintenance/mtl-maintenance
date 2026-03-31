@@ -1232,7 +1232,7 @@ async function saveQuickLogHours() {
 // ============================================================
 // STATE
 // ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools []}; 
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools: []}; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
@@ -1256,6 +1256,7 @@ function computeMonthlyCosts() {
 async function loadState() {
   setSyncStatus('syncing');
   try {
+    // Note the = sign before await
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
@@ -1265,7 +1266,7 @@ async function loadState() {
       window._mpdb.from('documents').select('*'),
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('shop_tools').select('*') // <--- New line
+      window._mpdb.from('shop_tools').select('*')
     ]);
     state.equipment       = eq.data||[];
     state.tasks           = tk.data||[];
@@ -1275,11 +1276,17 @@ async function loadState() {
     state.documents       = docs.data||[];
     state.partUsage       = pu.data||[];
     state.recurrenceRules = rr.data||[];
-    state.tools           = tl.data||[]; // <--- New line
+    state.tools           = tl.data||[];
     state.monthlyCosts    = computeMonthlyCosts();
     setSyncStatus('online');
-  } catch(e) { console.error('Load error:', e); setSyncStatus('offline'); }
-  try{const obs=await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});state.observations=obs.data||[];}catch(e){}
+  } catch(e) { 
+    console.error('Load error:', e); 
+    setSyncStatus('offline'); 
+  }
+  try{
+    const obs = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
+    state.observations = obs.data||[];
+  } catch(e) {}
 }
 
 
@@ -3530,7 +3537,7 @@ function showPanel(id) {
         'admin': renderAdminPanel,
         'checklists': renderChecklistTemplates,
         'chat': renderChat,
-        'tools': renderTools  // <--- This is the new one
+        'tools': renderTools  
     };
 
     if (renderMap[id]) {
