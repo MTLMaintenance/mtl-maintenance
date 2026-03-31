@@ -3091,8 +3091,24 @@ function printMachineHistory(equipId){
   const partMap={};state.partUsage.filter(p=>tasks.some(t=>t.id===p.task_id)).forEach(p=>{partMap[p.part_name]=(partMap[p.part_name]||0)+p.qty_used;});
   const topParts=Object.entries(partMap).sort((a,b)=>b[1]-a[1]);
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>History — ${e.name}</title>
-  <style>body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}h1{font-size:20px;margin-bottom:3px}h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#185FA5;border-bottom:1.5px solid #185FA5;padding-bottom:4px;margin:18px 0 8px}.meta{font-size:11px;color:#888;margin-bottom:16px}.kpis{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}.kpi{background:#f5f5f3;border-radius:6px;padding:10px 12px;min-width:100px}.kpi-l{font-size:10px;text-transform:uppercase;color:#888}.kpi-v{font-size:18px;font-weight:700;margin-top:2px}table{width:100%;border-collapse:collapse}th{font-size:10px;text-align:left;text-transform:uppercase;color:#888;padding:5px 7px;border-bottom:2px solid #eee}td{padding:6px 7px;border-bottom:1px solid #eee;font-size:11px}.footer{margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#aaa;display:flex;justify-content:space-between}@media print{.no-print{display:none}}</style></head><body>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}
+    h1{font-size:20px;margin-bottom:3px}
+    h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#185FA5;border-bottom:1.5px solid #185FA5;padding-bottom:4px;margin:22px 0 8px}
+    .meta{font-size:11px;color:#888;margin-bottom:16px}
+    .kpis{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .kpi{background:#f5f5f3;border-radius:6px;padding:10px 14px;min-width:100px}
+    .kpi-l{font-size:10px;text-transform:uppercase;color:#888}
+    .kpi-v{font-size:18px;font-weight:700;margin-top:2px}
+    table{width:100%;border-collapse:collapse}
+    th{font-size:10px;text-align:left;text-transform:uppercase;color:#888;padding:5px 7px;border-bottom:2px solid #eee}
+    td{padding:6px 7px;border-bottom:1px solid #eee;font-size:11px}
+    .footer{margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#aaa;display:flex;justify-content:space-between}
+    @media print{.no-print{display:none}}
+    .print-btn{padding:10px 24px;font-size:14px;cursor:pointer;border:1px solid #000;border-radius:8px;background:#fff;font-weight:bold}
+  </style></head><body>
   <h1>⚙ ${e.name}</h1>
   <div class="meta">${e.type} · S/N: ${e.serial||'—'} · ${e.hours.toLocaleString()} hrs · ${e.status} · Health: ${score}%<br>Generated ${date} by ${currentUser?.name||'—'}</div>
   <div class="kpis">
@@ -3107,9 +3123,18 @@ function printMachineHistory(equipId){
   ${dt.entries.length?`<h2>Downtime History</h2><table><thead><tr><th>Date</th><th>Duration</th></tr></thead><tbody>${dt.entries.map(d=>`<tr><td>${new Date(d.startedAt).toLocaleDateString()}</td><td><b>${formatDuration(d.downtimeMins)}</b></td></tr>`).join('')}</tbody></table>`:''}
   ${docs.length?`<h2>Documents</h2>${docs.map(d=>`<div style="padding:4px 0;border-bottom:1px solid #eee;font-size:11px"><b>${d.name}</b> (${d.type})${d.expiry_date?' · Expires: '+fmtDate(d.expiry_date):''}</div>`).join('')}`:''}
   <div class="footer"><div>MTL Maintenance — Confidential</div><div>${date}</div></div>
-  <div class="no-print" style="text-align:center;padding:16px"><button onclick="window.print()" style="padding:10px 24px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div>
-  window.onload=()=>setTimeout(()=>window.print(),600)<\/script></body></html>`;
-  const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');
+  <div class="no-print" style="text-align:center;padding:24px">
+    <button class="print-btn" onclick="window.print()">🖨 Print / Save PDF</button>
+  </div>
+  </body></html>`;
+  
+  const w=window.open('','_blank');
+  if(w){
+    w.document.write(html);
+    w.document.close();
+  } else {
+    showToast('Allow popups to print');
+  }
 }
 
 // ── CHECKLIST TEMPLATES ──────────────────────────────────────
