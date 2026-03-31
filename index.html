@@ -2581,7 +2581,6 @@ function exportEquipCSV(){
   a.download='mtl-equipment-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
   showToast('Equipment CSV downloaded');
 }
-
 function exportPDF(){
   const completed=state.tasks.filter(t=>t.status==='Completed');
   const totalCost=state.tasks.reduce((a,t)=>a+(t.cost||0),0);
@@ -2590,16 +2589,25 @@ function exportPDF(){
   const lp=state.parts.filter(p=>p.qty<=p.reorder);
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   const avgH=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):0;
+  
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MTL Maintenance Report</title>
-  <style>body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}
-  h1{font-size:22px;margin-bottom:3px}h2{font-size:14px;color:#185FA5;border-bottom:2px solid #185FA5;padding-bottom:4px;margin:22px 0 8px}
-  .meta{font-size:11px;color:#888;margin-bottom:18px}.kpis{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-  .kpi{background:#f5f5f3;border-radius:6px;padding:10px 14px;min-width:100px}.kpi-l{font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.4px}
-  .kpi-v{font-size:20px;font-weight:700;margin-top:2px}
-  table{width:100%;border-collapse:collapse;margin-bottom:6px}th{font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.4px;color:#888;padding:5px 7px;border-bottom:2px solid #eee}
-  td{padding:6px 7px;border-bottom:1px solid #eee;font-size:12px}
-  .alert{background:#FAEEDA;border:1px solid #FAC775;border-radius:4px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#854F0B}
-  @media print{*{-webkit-print-color-adjust:exact}}</style></head><body>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}
+    h1{font-size:22px;margin-bottom:3px}
+    h2{font-size:14px;color:#185FA5;border-bottom:2px solid #185FA5;padding-bottom:4px;margin:22px 0 8px}
+    .meta{font-size:11px;color:#888;margin-bottom:18px}
+    .kpis{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+    .kpi{background:#f5f5f3;border-radius:6px;padding:10px 14px;min-width:100px}
+    .kpi-l{font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.4px}
+    .kpi-v{font-size:20px;font-weight:700;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-bottom:6px}
+    th{font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.4px;color:#888;padding:5px 7px;border-bottom:2px solid #eee}
+    td{padding:6px 7px;border-bottom:1px solid #eee;font-size:12px}
+    .alert{background:#FAEEDA;border:1px solid #FAC775;border-radius:4px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#854F0B}
+    @media print{.no-print{display:none} *{-webkit-print-color-adjust:exact}}
+    .print-footer{margin-top:30px; text-align:center; padding:20px; border-top:1px solid #eee}
+    .btn-print{padding:10px 25px; font-weight:bold; cursor:pointer; background:#fff; border:2px solid #1a1a18; border-radius:8px}
+  </style></head><body>
   <h1>⚙ MTL Maintenance Report</h1>
   <div class="meta">Generated ${date} · ${currentUser?.name||'—'}</div>
   ${od.length?`<div class="alert">⚠ ${od.length} overdue work order(s): ${od.map(t=>t.name).join(', ')}</div>`:''}
@@ -2610,29 +2618,28 @@ function exportPDF(){
     <div class="kpi"><div class="kpi-l">Completed</div><div class="kpi-v" style="color:#3B6D11">${completed.length}</div></div>
     <div class="kpi"><div class="kpi-l">Overdue</div><div class="kpi-v" style="color:#E24B4A">${od.length}</div></div>
     <div class="kpi"><div class="kpi-l">Total Cost</div><div class="kpi-v">$${totalCost.toLocaleString()}</div></div>
-    <div class="kpi"><div class="kpi-l">Inventory</div><div class="kpi-v">$${invValue.toLocaleString()}</div></div>
     <div class="kpi"><div class="kpi-l">Avg Health</div><div class="kpi-v">${avgH}%</div></div>
-    <div class="kpi"><div class="kpi-l">Suppliers</div><div class="kpi-v">${state.suppliers.length}</div></div>
   </div>
   <h2>Work Orders</h2>
   <table><thead><tr><th>Name</th><th>Equipment</th><th>Assigned</th><th>Priority</th><th>Due</th><th>Cost</th><th>Status</th></tr></thead><tbody>
-  ${state.tasks.map(t=>`<tr><td>${t.name}</td><td>${equipName(t.equipId)}</td><td>${t.assign||'—'}</td><td>${t.priority}</td><td>${fmtDate(t.due)}</td><td>$${(t.cost||0).toLocaleString()}</td><td>${t.status}</td></tr>`).join('')}
-  </tbody></table>
-  <h2>Equipment Registry</h2>
-  <table><thead><tr><th>Name</th><th>Type</th><th>Serial</th><th>Hours</th><th>Status</th><th>Health</th><th>Operator</th></tr></thead><tbody>
-  ${state.equipment.map(e=>`<tr><td>${e.name}</td><td>${e.type}</td><td>${e.serial}</td><td>${e.hours.toLocaleString()} hrs</td><td>${e.status}</td><td>${calcHealth(e.id)}%</td><td>${e.op||'—'}</td></tr>`).join('')}
+  ${state.tasks.map(t=>`<tr><td><b>${t.name}</b></td><td>${equipName(t.equipId)}</td><td>${t.assign||'—'}</td><td>${t.priority}</td><td>${fmtDate(t.due)}</td><td>$${(t.cost||0).toLocaleString()}</td><td>${t.status}</td></tr>`).join('')}
   </tbody></table>
   <h2>Parts & Inventory</h2>
   <table><thead><tr><th>Part Name</th><th>Part #</th><th>Supplier</th><th>Qty</th><th>Reorder At</th><th>Unit Cost</th><th>Total Value</th></tr></thead><tbody>
   ${state.parts.map(p=>`<tr><td>${p.name}</td><td>${p.num}</td><td>${supplierName(p.supplier_id)}</td><td>${p.qty}</td><td>${p.reorder}</td><td>$${p.cost}</td><td>$${(p.qty*p.cost).toLocaleString()}</td></tr>`).join('')}
   </tbody></table>
-  <h2>Suppliers</h2>
-  <table><thead><tr><th>Name</th><th>Contact</th><th>Email</th><th>Phone</th></tr></thead><tbody>
-  ${state.suppliers.map(s=>`<tr><td>${s.name}</td><td>${s.contact||'—'}</td><td>${s.email||'—'}</td><td>${s.phone||'—'}</td></tr>`).join('')}
-  </tbody></table>
-  <'+'script>window.onload=()=>window.print()<\/script></body></html>`;
+  <div class="print-footer no-print">
+    <button class="btn-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+  </div>
+  </body></html>`;
+
   const w=window.open('','_blank');
-  if(w){ w.document.write(html); w.document.close(); } else showToast('Allow popups to export PDF');
+  if(w){ 
+    w.document.write(html); 
+    w.document.close(); 
+  } else {
+    showToast('Allow popups to export PDF');
+  }
 }
 
 // ============================================================
