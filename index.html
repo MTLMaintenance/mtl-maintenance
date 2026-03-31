@@ -1112,7 +1112,13 @@ async function signOut() {
 
 async function startQRScanner() {
   openModal('scan-modal');
-  html5QrCode = new Html5Qrcode("qr-reader");
+  document.getElementById('qr-status').textContent = "Initializing camera...";
+  
+  // Create instance if it doesn't exist
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("qr-reader");
+  }
+
   const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
   try {
@@ -1120,60 +1126,79 @@ async function startQRScanner() {
       { facingMode: "environment" }, 
       config, 
       (decodedText) => {
-        // Success: Parse the URL to find the equipment ID
-        console.log("QR Detected:", decodedText);
         const url = new URL(decodedText);
         const equipId = url.searchParams.get("equip");
-        
         if (equipId) {
           stopQRScanner();
           openEquipDetail(equipId);
         } else {
-          showToast("Invalid QR Code for this app");
+          showToast("Invalid QR Code");
         }
       }
     );
+    document.getElementById('qr-status').textContent = "Camera active. Point at QR code.";
   } catch (err) {
     console.error("Camera error:", err);
-    document.getElementById('qr-status').textContent = "Camera access denied or not found.";
+    document.getElementById('qr-status').textContent = "⚠️ Camera Error: " + err;
   }
 }
 
-function stopQRScanner() {
-  if (html5QrCode) {
-    html5QrCode.stop().then(() => {
-      html5QrCode.clear();
-      closeModal('scan-modal');
-    }).catch(err => console.log(err));
-  } else {
-    closeModal('scan-modal');
+// Fixed stop function to ensure modal ALWAYS closes
+async function stopQRScanner() {
+  if (html5QrCode && html5QrCode.isScanning) {
+    try {
+      await html5QrCode.stop();
+    } catch (e) {
+      console.warn("Scanner was already stopped or failed to stop.");
+    }
   }
+  closeModal('scan-modal');
+  // Clear the internal state of the reader
+  const reader = document.getElementById('qr-reader');
+  if(reader) reader.innerHTML = ""; 
 }
- async function quickLogHours(equipId) {
+function quickLogHours(equipId) {
   const e = state.equipment.find(x => x.id === equipId);
   if (!e) return;
 
-  const newHours = prompt(`Log hours for ${e.name}\nCurrent: ${e.hours.toLocaleString()} hrs\nEnter new reading:`);
+  // Setup the modal
+  document.getElementById('lh-equip-id').value = equipId;
+  document.getElementById('lh-date').value = new Date().toISOString().split('T')[0]; // Default to today
+  document.getElementById('lh-val').value = e.hours;
+  document.getElementById('lh-current-display').textContent = `Currently logged: ${e.hours.toLocaleString()} hrs`;
   
-  if (newHours === null || newHours.trim() === '') return;
+  openModal('log-hours-modal');
+}
+
+async function saveQuickLogHours() {
+  const equipId = document.getElementById('lh-equip-id').value;
+  const date = document.getElementById('lh-date').value;
+  const val = parseInt(document.getElementById('lh-val').value);
   
-  const val = parseInt(newHours);
+  const e = state.equipment.find(x => x.id === equipId);
+  if (!e) return;
+
   if (isNaN(val) || val < e.hours) {
-    alert("Please enter a valid number greater than or equal to current hours.");
+    alert("New reading must be a number and cannot be less than the current reading (" + e.hours + ").");
     return;
   }
 
+  // Update the equipment record
   e.hours = val;
+  // We can store the date in the notes or a metadata field if you have one, 
+  // but most importantly we update the meter.
+  e.last_meter_update = date; 
+
   try {
     await persist('equipment', 'upsert', e);
-    // Trigger recurrence engine in case this hits a maintenance threshold
     await runRecurrenceEngine();
+    closeModal('log-hours-modal');
     renderDashboard();
-    showToast(`${e.name} updated to ${val} hrs ✓`);
+    showToast(`Updated ${e.name} to ${val} hrs ✓`);
   } catch (err) {
-    showToast("Update failed");
+    showToast("Save failed");
   }
-} 
+}
 
 // ============================================================
 // STATE
@@ -4197,7 +4222,31 @@ function acceptToolSuggestion() {
 <div class="modal-backdrop" id="invoice-modal">
   <div class="modal" style="max-width:540px">
     <div class="modal-header"><span class="modal-title">Add Invoice</span><button class="modal-close" onclick="closeModal('invoice-modal')">✕</button></div>
-    
+    <!-- Log Hours Modal -->
+<div class="modal-backdrop" id="log-hours-modal">
+  <div class="modal" style="max-width:350px">
+    <div class="modal-header">
+      <span class="modal-title">Log Equipment Hours</span>
+      <button class="modal-close" onclick="closeModal('log-hours-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Date of Reading</label>
+        <input type="date" id="lh-date" class="form-input"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">New Meter Reading (Total Hours)</label>
+        <input type="number" id="lh-val" class="form-input" placeholder="Enter hours..."/>
+        <div id="lh-current-display" style="font-size:11px; color:var(--text3); margin-top:4px"></div>
+      </div>
+    </div>
+    <input type="hidden" id="lh-equip-id"/>
+    <div class="form-row" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeModal('log-hours-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuickLogHours()">Update Meter</button>
+    </div>
+  </div>
+</div>
     <!-- Photo upload area -->
     <div id="invoice-photo-area" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
       <div id="invoice-photo-preview-area">
