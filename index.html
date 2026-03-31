@@ -2862,6 +2862,7 @@ function printQRCode(equipId) {
   const url = window.location.origin + window.location.pathname + '?equip=' + equipId;
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
   const win = window.open('','_blank');
+  
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR — ${equip.name}</title>
   <style>
     body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff}
@@ -2880,11 +2881,11 @@ function printQRCode(equipId) {
     <img src="${qrUrl}" style="margin:16px 0;width:220px;height:220px" alt="QR Code"/>
     <div class="url">Scan to view maintenance history</div>
     <div style="margin-top:16px" class="no-print">
-      <button onclick="window.print()" style="padding:8px 20px;cursor:pointer;font-size:14px">🖨 Print</button>
+      <button onclick="window.print()" style="padding:8px 20px;cursor:pointer;font-size:14px;border:1px solid #000;border-radius:8px;background:#fff">🖨 Print</button>
     </div>
   </div>
-  <'+'script>window.onload=()=>{ setTimeout(()=>window.print(), 800); }<\/script>
   </body></html>`);
+  
   win.document.close();
 }
 
