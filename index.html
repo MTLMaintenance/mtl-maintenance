@@ -223,17 +223,30 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 @media(max-width:600px){
   .topbar{height:auto;padding:8px;gap:6px}
   .nav{gap:1px}
- .nav-btn {
+ 
+  .nav-btn {
   padding: 5px 11px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   font-size: 12px;
   cursor: pointer;
-  background: transparent !important; /* Force no background */
-  color: rgba(255, 255, 255, 0.75) !important; /* Semi-white text */
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.75) !important;
   white-space: nowrap;
   font-family: inherit;
   transition: all .15s;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
+
+.nav-btn.active {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  font-weight: 500;
 }
 
 .nav-btn:hover {
