@@ -361,6 +361,39 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   color: inherit !important;
 }
 }
+/* --- CHAT SIDEBAR BUTTON OVERRIDES --- */
+#chat-sidebar button, 
+#chat-sidebar .chat-channel-btn, 
+#dm-list button,
+.chat-channel-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  opacity: 0.8;
+}
+
+#chat-sidebar button:hover, 
+.chat-channel-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  opacity: 1;
+}
+
+#chat-sidebar button.active, 
+.chat-channel-btn.active {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  opacity: 1;
+}
+
+/* Fix the circle icon for DM names */
+#dm-list .chat-channel-btn div {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
 </style>
 </head>
 <body>
