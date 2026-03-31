@@ -3100,7 +3100,7 @@ function printMachineHistory(equipId){
   ${docs.length?`<h2>Documents</h2>${docs.map(d=>`<div style="padding:4px 0;border-bottom:1px solid #eee;font-size:11px"><b>${d.name}</b> (${d.type})${d.expiry_date?' · Expires: '+fmtDate(d.expiry_date):''}</div>`).join('')}`:''}
   <div class="footer"><div>MTL Maintenance — Confidential</div><div>${date}</div></div>
   <div class="no-print" style="text-align:center;padding:16px"><button onclick="window.print()" style="padding:10px 24px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div>
-  <'+'script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script></body></html>`;
+  window.onload=()=>setTimeout(()=>window.print(),600)<\/script></body></html>`;
   const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');
 }
 
