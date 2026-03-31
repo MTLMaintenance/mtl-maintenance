@@ -223,11 +223,29 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 @media(max-width:600px){
   .topbar{height:auto;padding:8px;gap:6px}
   .nav{gap:1px}
-  .nav-btn{padding:4px 7px;font-size:11px}
-  .form-grid{grid-template-columns:1fr}
-  .form-group.full{grid-column:1}
-  .metrics{grid-template-columns:repeat(2,1fr)}
-  th,td{padding:6px 8px;font-size:12px}
+ .nav-btn {
+  padding: 5px 11px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent !important; /* Force no background */
+  color: rgba(255, 255, 255, 0.75) !important; /* Semi-white text */
+  white-space: nowrap;
+  font-family: inherit;
+  transition: all .15s;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important; /* Subtle glow on hover */
+  color: #fff !important;
+}
+
+.nav-btn.active {
+  background: rgba(255, 255, 255, 0.2) !important; /* Slightly brighter for active */
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  font-weight: 500;
 }
 
 .chat-channel-btn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--radius);font-size:13px;cursor:pointer;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);border:1px solid transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s}
