@@ -4351,38 +4351,40 @@ function switchToolTab(view) {
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
-    if(!tableBody) return;
+    
+    if(!tableBody) {
+        console.error("CRITICAL ERROR: Could not find HTML element with ID 'tools-table-body'. Check your HTML tags!");
+        return;
+    }
 
-    // Sort: Put "Lost" and "Low Health" tools at the top
-    const sortedTools = [...state.tools].sort((a, b) => {
-        const aCrit = a.is_lost || a.health <= 40;
-        const bCrit = b.is_lost || b.health <= 40;
-        return bCrit - aCrit;
-    });
+    console.log("Artist found the canvas! Drawing " + state.tools.length + " tools.");
 
-    tableBody.innerHTML = sortedTools.map(t => {
+    if (state.tools.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">No tools in database. Click "+ Add to Inventory" to start.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = state.tools.map(t => {
         const isCritical = t.health <= 40 || t.is_lost;
-        const healthBarColor = healthColor(t.health);
+        const color = healthColor(t.health);
         
         return `
         <tr onclick="editTool('${t.id}')" style="cursor:pointer">
-            <td style="font-weight:600">${t.name}</td>
-            <td style="color:var(--text2); font-size:12px">${t.category || 'Other'}</td>
-            <td style="color:var(--text2); font-size:12px">${t.location || '—'}</td>
+            <td><b>${t.name}</b></td>
+            <td>${t.category || 'Other'}</td>
+            <td>${t.location || '—'}</td>
             <td>
                 <div style="display:flex; align-items:center; gap:8px">
                     <div class="health-bar" style="width:60px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden">
-                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${healthBarColor}"></div>
+                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${color}"></div>
                     </div>
-                    <span style="font-size:11px; font-weight:600; color:${healthBarColor}">${t.health}%</span>
+                    <span style="font-size:11px; font-weight:600; color:${color}">${t.health}%</span>
                 </div>
             </td>
             <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
-            <td>
-                ${isCritical ? '<span class="badge bd" style="animation: pulse 2s infinite">🛒 REPLACE</span>' : '<span style="color:var(--text3)">—</span>'}
-            </td>
+            <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : '<span style="color:var(--text3)">—</span>'}</td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text3)">No tools in inventory yet. Click "+ Add to Inventory" to start.</td></tr>';
+    }).join('');
 }
 
 async function saveTool() {
