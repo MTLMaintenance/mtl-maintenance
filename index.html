@@ -685,45 +685,41 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   <!-- THE ONLY TOOL CRIB PANEL -->
 <div class="panel" id="panel-tools">
   <div class="section-header">
-  <span class="section-title">Tool Crib & Wishlist</span>
-  <div style="display:flex; gap:8px">
-      <!-- Changed btn-secondary to btn-primary to make it black -->
-      <button class="btn btn-primary btn-sm" onclick="openModal('wishlist-modal')">💡 Suggest New Tool</button>
-      <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
+    <span class="section-title">Tool Crib & Wishlist</span>
+    <div style="display:flex; gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
+        <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
+    </div>
   </div>
-</div>
 
+  <!-- THREE TABS -->
   <div class="tab-bar">
     <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
     <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
+    <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
   </div>
-<!-- Inventory View -->
-  <div id="tool-inventory-view" style="display: block;"> <!-- Note: explicitly set to block -->
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Tool Name</th>
-            <th>Category</th>
-            <th>Location</th>
-            <th>Condition</th>
-            <th>Status</th>
-            <th>Procurement</th>
-          </tr>
-        </thead>
-        <tbody id="tools-table-body">
-           <!-- Data MUST land here -->
-        </tbody>
-      </table>
-    </div>
+
+  <!-- Inventory View -->
+  <div id="tool-inventory-view">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
+      <tbody id="tools-table-body"></tbody>
+    </table></div>
   </div>
 
   <!-- Wishlist View -->
   <div id="tool-wishlist-view" style="display:none">
     <div class="grid-2" id="wishlist-container"></div>
   </div>
-</div>
 
+  <!-- Denied View -->
+  <div id="tool-denied-view" style="display:none">
+    <div style="background:var(--danger-bg); color:var(--danger-text); padding:10px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:12px; border:1px solid var(--danger)">
+        <b>Note to Crew:</b> Please review this list before submitting new suggestions to avoid duplicates.
+    </div>
+    <div class="grid-2" id="denied-container"></div>
+  </div>
+</div>
   
   <!-- ADMIN -->
   <div class="panel" id="panel-admin">
@@ -4356,47 +4352,46 @@ async function toggleToolStatus(id) {
   renderTools();
 }  
 function switchToolTab(view) {
-    const invView = document.getElementById('tool-inventory-view');
-    const wishView = document.getElementById('tool-wishlist-view');
-    const invTab = document.getElementById('tool-inv-tab');
-    const wishTab = document.getElementById('tool-wish-tab');
-
-    if(invView) invView.style.display = (view === 'inventory' ? 'block' : 'none');
-    if(wishView) wishView.style.display = (view === 'wishlist' ? 'block' : 'none');
+    // Hide all views
+    document.getElementById('tool-inventory-view').style.display = 'none';
+    document.getElementById('tool-wishlist-view').style.display = 'none';
+    document.getElementById('tool-denied-view').style.display = 'none';
     
-    if(invTab) invTab.classList.toggle('active', view === 'inventory');
-    if(wishTab) wishTab.classList.toggle('active', view === 'wishlist');
+    // Deactivate all tabs
+    document.getElementById('tool-inv-tab').classList.remove('active');
+    document.getElementById('tool-wish-tab').classList.remove('active');
+    document.getElementById('tool-denied-tab').classList.remove('active');
 
-    if(view === 'wishlist') renderWishlist();
+    // Show selected
+    if (view === 'inventory') {
+        document.getElementById('tool-inventory-view').style.display = 'block';
+        document.getElementById('tool-inv-tab').classList.add('active');
+        renderTools();
+    } else if (view === 'wishlist') {
+        document.getElementById('tool-wishlist-view').style.display = 'block';
+        document.getElementById('tool-wish-tab').classList.add('active');
+        renderWishlist();
+    } else if (view === 'denied') {
+        document.getElementById('tool-denied-view').style.display = 'block';
+        document.getElementById('tool-denied-tab').classList.add('active');
+        renderDeniedList();
+    }
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
     if(!tableBody) return;
 
-    if (!state.tools || state.tools.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">No tools in inventory. Click "+ Add Tool" to start.</td></tr>';
-        return;
-    }
-
     tableBody.innerHTML = state.tools.map(t => {
-        const isCritical = t.health <= 40 || t.is_lost;
-        const color = healthColor(t.health);
+        const isOnOrder = t.location && t.location.includes('ON ORDER');
+        const critical = (t.health <= 40 || t.is_lost) && !isOnOrder;
         
-        return `
-        <tr onclick="editTool('${t.id}')" style="cursor:pointer">
-            <td style="font-weight:600">${t.name}</td>
-            <td style="color:var(--text2); font-size:12px">${t.category || 'Other'}</td>
-            <td style="color:var(--text2); font-size:12px">${t.location || '—'}</td>
-            <td>
-                <div style="display:flex; align-items:center; gap:8px">
-                    <div class="health-bar" style="width:60px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden">
-                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${color}"></div>
-                    </div>
-                    <span style="font-size:11px; font-weight:600; color:${color}">${t.health}%</span>
-                </div>
-            </td>
-            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
-            <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : '—'}</td>
+        return `<tr onclick="editTool('${t.id}')" style="cursor:pointer; ${isOnOrder ? 'background: var(--accent-bg)' : ''}">
+            <td><b>${t.name}</b></td>
+            <td>${t.category}</td>
+            <td><span style="${isOnOrder ? 'font-weight:700; color:var(--accent-text)' : ''}">${t.location || '—'}</span></td>
+            <td>${isOnOrder ? '—' : t.health + '%'}</td>
+            <td>${isOnOrder ? '<span class="badge bi">ORDERED</span>' : t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
+            <td>${critical ? '<span class="badge bd">🛒 REPLACE</span>' : isOnOrder ? '<span style="font-size:11px; color:var(--accent-text)">Arriving soon</span>' : '—'}</td>
         </tr>`;
     }).join('');
 }
@@ -4425,46 +4420,40 @@ async function saveTool() {
 
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
-    if(!container) return;
-
+    // Only show PENDING items here
+    const pending = state.wishlist.filter(w => w.status === 'pending');
     const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
 
-    container.innerHTML = state.wishlist.map(w => {
-        // Fix for "undefined": Check both possible field names
-        const tName = w.tool_name || w.name || "Unknown Tool";
-        const requester = w.requested_by || w.author || "Unknown";
-        const status = w.status || "pending";
-        
-        // Color coding for the card border
-        const borderColor = status === 'approved' ? '#3B6D11' : status === 'denied' ? '#E24B4A' : '#BA7517';
-
-        return `
-        <div class="card" style="border-left: 5px solid ${borderColor}; background: rgba(255,255,255,0.95)">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start">
-                <div>
-                    <div style="font-weight:700; font-size:15px; color:var(--text)">${tName}</div>
-                    <div style="font-size:11px; color:var(--text3); margin-top:2px">Requested by <b>${requester}</b></div>
-                </div>
-                <span class="badge ${status === 'approved' ? 'bs' : status === 'denied' ? 'bd' : 'bw'}">
-                    ${status.toUpperCase()}
-                </span>
+    container.innerHTML = pending.map(w => `
+        <div class="card" style="border-left: 5px solid var(--warning)">
+            <div style="display:flex; justify-content:space-between">
+                <div><b>${w.tool_name}</b><div style="font-size:11px; color:var(--text3)">By ${w.requested_by}</div></div>
+                <span class="badge bw">PENDING</span>
             </div>
-            
-            ${w.denial_reason ? `
-                <div style="margin-top:10px; font-size:12px; color:var(--danger-text); background:var(--danger-bg); padding:8px 10px; border-radius:var(--radius); border:1px solid rgba(226,75,74,0.2)">
-                    <b>Reason:</b> ${w.denial_reason}
-                </div>` : ''}
-
-            ${isManager && status === 'pending' ? `
-                <div style="margin-top:12px; display:flex; gap:6px">
-                    <button class="btn btn-success btn-sm" onclick="handleWish('${w.id}', 'approved')">Approve</button>
-                    <button class="btn btn-danger btn-sm" onclick="handleWish('${w.id}', 'denied')">Deny</button>
+            ${isManager ? `
+                <div style="margin-top:12px; display:flex; gap:8px">
+                    <button class="btn btn-success btn-sm" onclick="handleWishApproval('${w.id}')">Approve & Add to Order</button>
+                    <button class="btn btn-danger btn-sm" onclick="handleWishDenial('${w.id}')">Deny</button>
                 </div>
             ` : ''}
-        </div>`;
-    }).join('') || '<div style="color:rgba(255,255,255,0.7); padding:20px; text-align:center">No tool suggestions yet.</div>';
-
+        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No pending suggestions.</div>';
     updateWishCount();
+}
+
+function renderDeniedList() {
+    const container = document.getElementById('denied-container');
+    const denied = state.wishlist.filter(w => w.status === 'denied');
+    
+    container.innerHTML = denied.map(w => `
+        <div class="card" style="border-left: 5px solid var(--danger); opacity: 0.8">
+            <div style="display:flex; justify-content:space-between">
+                <div><b>${w.tool_name}</b><div style="font-size:11px; color:var(--text3)">Requested by ${w.requested_by}</div></div>
+                <span class="badge bd">DENIED</span>
+            </div>
+            <div style="margin-top:10px; font-size:12px; color:var(--danger-text); background:var(--danger-bg); padding:8px 10px; border-radius:4px">
+                <b>Reason:</b> ${w.denial_reason || 'No reason provided.'}
+            </div>
+        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No denied tools in history.</div>';
 }
 
 async function handleWish(id, status) {
@@ -4754,6 +4743,55 @@ async function deleteToolObservation(obsId) {
         showToast("Error: Could not delete note");
     }
 }
+async function handleWishApproval(id) {
+    const req = state.wishlist.find(x => x.id === id);
+    if (!req) return;
+
+    // 1. Mark wish as approved
+    req.status = 'approved';
+    await window._mpdb.from('tool_requests').update({status: 'approved'}).eq('id', id);
+
+    // 2. Create the tool in Inventory as "On Order"
+    const newTool = {
+        id: uid(),
+        name: req.tool_name,
+        category: 'Other',
+        location: '📦 ON ORDER', // This marks it as not here yet
+        health: 100,
+        is_lost: false,
+        last_updated: new Date().toISOString()
+    };
+    
+    state.tools.push(newTool);
+    await window._mpdb.from('shop_tools').insert(newTool);
+
+    await notifyManagers(`✅ Tool Approved & Ordered: "${req.tool_name}" (Requested by ${req.requested_by})`);
+    
+    showToast("Approved! Tool added to Inventory as 'On Order'");
+    switchToolTab('inventory');
+}
+
+async function handleWishDenial(id) {
+    const reason = prompt("Why is this tool being denied? (This will be shown to the crew)");
+    if (reason === null) return;
+
+    const req = state.wishlist.find(x => x.id === id);
+    req.status = 'denied';
+    req.denial_reason = reason;
+
+    await window._mpdb.from('tool_requests').update({status: 'denied', denial_reason: reason}).eq('id', id);
+    
+    await sendDM(req.requested_by, `❌ Your tool request for "${req.tool_name}" was denied. Reason: ${reason}`);
+    
+    showToast("Request denied and moved to history");
+    renderWishlist();
+}
+
+function promptWishlistCheck() {
+    alert("Please ensure you have checked the 'Denied History' tab to see if this tool was previously rejected before submitting your suggestion.");
+    openModal('wishlist-modal');
+}
+    
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
