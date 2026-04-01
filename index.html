@@ -1380,7 +1380,7 @@ function quickLogHours(equipId) {
 // ============================================================
 // STATE
 // ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools: []}; 
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: [] }; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 async function loadState() {
@@ -1396,7 +1396,9 @@ async function loadState() {
       window._mpdb.from('documents').select('*'),
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('shop_tools').select('*')
+      window._mpdb.from('shop_tools').select('*'),
+      window._mpdb.from('shop_tools').select('*'),
+    window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
     ]);
     state.equipment       = eq.data||[];
     state.tasks           = tk.data||[];
@@ -1408,6 +1410,8 @@ async function loadState() {
     state.recurrenceRules = rr.data||[];
     state.tools           = tl.data||[];
     state.monthlyCosts    = computeMonthlyCosts();
+    state.tools = tl.data || [];
+    state.wishlist = wl.data || [];
     setSyncStatus('online');
   } catch(e) { 
     console.error('Load error:', e); 
@@ -4256,7 +4260,165 @@ async function toggleToolStatus(id) {
   t.last_updated = new Date().toISOString();
   await persist('shop_tools', 'upsert', t);
   renderTools();
-}  
+}
+  // --- TAB SWITCHING ---
+function switchToolTab(view) {
+    document.getElementById('tool-inventory-view').style.display = view === 'inventory' ? 'block' : 'none';
+    document.getElementById('tool-wishlist-view').style.display = view === 'wishlist' ? 'block' : 'none';
+    document.getElementById('tool-inv-tab').classList.toggle('active', view === 'inventory');
+    document.getElementById('tool-wish-tab').classList.toggle('active', view === 'wishlist');
+    if(view === 'wishlist') renderWishlist(); else renderTools();
+}
+
+// --- INVENTORY LOGIC ---
+function renderTools() {
+    const tableBody = document.getElementById('tools-table-body');
+    if(!tableBody) return;
+    tableBody.innerHTML = state.tools.map(t => {
+        const needsAttention = t.health <= 40 || t.is_lost;
+        return `
+        <tr onclick="editTool('${t.id}')">
+            <td><b>${t.name}</b></td>
+            <td>${t.category}</td>
+            <td>${t.location || '—'}</td>
+            <td>
+                <div class="health-bar" style="width:60px"><div class="health-fill" style="width:${t.health}%; background:${healthColor(t.health)}"></div></div>
+                <span style="font-size:11px">${t.health}%</span>
+            </td>
+            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
+            <td>${needsAttention ? '<span class="badge bd">🛒 SHOPPING LIST</span>' : '—'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function resetToolForm() {
+    document.getElementById('tool-edit-id').value = '';
+    document.getElementById('tool-name').value = '';
+    document.getElementById('tool-loc').value = '';
+    document.getElementById('tool-health').value = 100;
+    document.getElementById('health-val-display').textContent = '100%';
+    document.getElementById('tool-lost').checked = false;
+    document.getElementById('tool-delete-btn').style.display = 'none';
+}
+
+function editTool(id) {
+    const t = state.tools.find(x => x.id === id);
+    if(!t) return;
+    document.getElementById('tool-edit-id').value = t.id;
+    document.getElementById('tool-name').value = t.name;
+    document.getElementById('tool-cat').value = t.category;
+    document.getElementById('tool-loc').value = t.location || '';
+    document.getElementById('tool-health').value = t.health;
+    document.getElementById('health-val-display').textContent = t.health + '%';
+    document.getElementById('tool-lost').checked = t.is_lost;
+    document.getElementById('tool-delete-btn').style.display = 'block';
+    openModal('tool-modal');
+}
+
+async function saveTool() {
+    const id = document.getElementById('tool-edit-id').value;
+    const name = document.getElementById('tool-name').value.trim();
+    if(!name) return;
+    const tool = {
+        id: id || uid(),
+        name,
+        category: document.getElementById('tool-cat').value,
+        location: document.getElementById('tool-loc').value,
+        health: parseInt(document.getElementById('tool-health').value),
+        is_lost: document.getElementById('tool-lost').checked,
+        last_updated: new Date().toISOString()
+    };
+    await window._mpdb.from('shop_tools').upsert(tool);
+    const idx = state.tools.findIndex(x => x.id === tool.id);
+    if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+    
+    if(tool.health <= 40 || tool.is_lost) {
+        await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'condition is CRITICAL ('+tool.health+'%)'}. It is on the shopping list.`);
+    }
+    closeModal('tool-modal'); renderTools(); showToast("Saved ✓");
+}
+
+async function deleteTool() {
+    const id = document.getElementById('tool-edit-id').value;
+    if(!id || !confirm("Delete this tool forever?")) return;
+    await window._mpdb.from('shop_tools').delete().eq('id', id);
+    state.tools = state.tools.filter(t => t.id !== id);
+    closeModal('tool-modal'); renderTools(); showToast("Deleted");
+}
+
+// --- WISHLIST LOGIC ---
+function renderWishlist() {
+    const container = document.getElementById('wishlist-container');
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
+    container.innerHTML = state.wishlist.map(w => `
+        <div class="card" style="border-left: 4px solid ${w.status === 'approved' ? 'var(--success)' : w.status === 'denied' ? 'var(--danger)' : 'var(--warning)'}">
+            <div style="display:flex; justify-content:space-between">
+                <div><b>${w.tool_name}</b><div style="font-size:11px; color:var(--text3)">By ${w.requested_by}</div></div>
+                <span class="badge ${w.status === 'approved' ? 'bs' : w.status === 'denied' ? 'bd' : 'bw'}">${w.status}</span>
+            </div>
+            ${w.denial_reason ? `<div style="font-size:12px; color:var(--danger-text); margin-top:8px">Reason: ${w.denial_reason}</div>` : ''}
+            ${isManager && w.status === 'pending' ? `<div style="margin-top:10px; display:flex; gap:6px">
+                <button class="btn btn-success btn-sm" onclick="handleWish('${w.id}', 'approved')">Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="handleWish('${w.id}', 'denied')">Deny</button>
+            </div>` : ''}
+        </div>`).join('') || '<div style="color:var(--text3)">Wishlist empty</div>';
+    updateWishCount();
+}
+
+async function handleWish(id, status) {
+    let reason = "";
+    if (status === 'denied') {
+        reason = prompt("Reason for denial:");
+        if (reason === null) return;
+    }
+    const req = state.wishlist.find(x => x.id === id);
+    await window._mpdb.from('tool_requests').update({status, denial_reason: reason}).eq('id', id);
+    req.status = status;
+    req.denial_reason = reason;
+
+    if (status === 'denied') {
+        await sendDM(req.requested_by, `❌ Your request for "${req.tool_name}" was denied. Reason: ${reason}`);
+    } else {
+        await notifyManagers(`✅ New tool approved for purchase: "${req.tool_name}" (Requested by ${req.requested_by})`);
+    }
+    renderWishlist();
+}
+
+async function saveWishRequest() {
+    const name = document.getElementById('wish-name').value.trim();
+    if(!name) return;
+    const req = { id: uid(), tool_name: name, requested_by: currentUser.name, status: 'pending', created_at: new Date().toISOString() };
+    state.wishlist.unshift(req);
+    await window._mpdb.from('tool_requests').insert(req);
+    closeModal('wishlist-modal'); switchToolTab('wishlist'); showToast("Submitted ✓");
+}
+
+function updateWishCount() {
+    const count = state.wishlist.filter(w => w.status === 'pending').length;
+    const badge = document.getElementById('wish-count');
+    if(badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none'; }
+}
+
+// --- NOTIFICATION HELPERS ---
+async function notifyManagers(text) {
+    const { data: managers } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
+    for (const m of managers) {
+        if (m.username === currentUser.username) continue;
+        await sendDMToUsername(m.username, text);
+    }
+}
+
+async function sendDM(fullName, text) {
+    const { data: p } = await window._mpdb.from('profiles').select('username').eq('full_name', fullName).single();
+    if (p) await sendDMToUsername(p.username, text);
+}
+
+async function sendDMToUsername(username, text) {
+    const channel = 'dm-' + [currentUser.username, username].sort().join('-');
+    await window._mpdb.from('chat_messages').insert({
+        id: uid(), channel, author: 'System', author_name: 'Tool Monitor', body: text, created_at: new Date().toISOString()
+    });
+}
 
 
 
@@ -4380,6 +4542,77 @@ async function toggleToolStatus(id) {
       <button class="btn btn-secondary" onclick="closeModal('log-hours-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveQuickLogHours()">Update Meter</button>
     </div>
+  </div>
+</div>
+<div class="panel" id="panel-tools">
+  <div class="section-header">
+    <span class="section-title">Tool Crib & Wishlist</span>
+    <div style="display:flex; gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="openModal('wishlist-modal')">💡 Suggest New Tool</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('tool-modal'); resetToolForm();">+ Add to Inventory</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
+    <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
+  </div>
+
+  <!-- Inventory View -->
+  <div id="tool-inventory-view">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
+      <tbody id="tools-table-body"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Wishlist View -->
+  <div id="tool-wishlist-view" style="display:none">
+    <div class="grid-2" id="wishlist-container"></div>
+  </div>
+</div>
+<!-- Inventory Edit/Add Modal -->
+<div class="modal-backdrop" id="tool-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span class="modal-title">Tool Details</span><button class="modal-close" onclick="closeModal('tool-modal')">✕</button></div>
+    <div class="form-grid">
+      <div class="form-group full"><label class="form-label">Tool Name *</label><input class="form-input" id="tool-name" placeholder="e.g. Torque Wrench"/></div>
+      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Specialty Hydraulic</option><option>Precision/Torque</option><option>Other</option></select></div>
+      <div class="form-group"><label class="form-label">Location / Area</label><input class="form-input" id="tool-loc" placeholder="e.g. Shelf A-1"/></div>
+      <div class="form-group full"><label class="form-label">Condition (Health %)</label>
+        <input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%" oninput="document.getElementById('health-val-display').textContent = this.value + '%'"/>
+        <div id="health-val-display" style="text-align:center; font-weight:bold; font-size:14px">100%</div>
+      </div>
+      <div class="form-group full">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+          <input type="checkbox" id="tool-lost"/> This tool is missing / lost
+        </label>
+      </div>
+    </div>
+    <input type="hidden" id="tool-edit-id"/>
+    <div class="form-row" style="margin-top:20px; justify-content: space-between;">
+      <button class="btn btn-danger btn-sm" id="tool-delete-btn" style="display:none" onclick="deleteTool()">Delete Tool</button>
+      <div style="display:flex; gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveTool()">Save Tool</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wishlist Request Modal -->
+<div class="modal-backdrop" id="wishlist-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span class="modal-title">Suggest a Tool</span><button class="modal-close" onclick="closeModal('wishlist-modal')">✕</button></div>
+    <div class="form-group">
+      <label class="form-label">What tool do we need? *</label>
+      <input class="form-input" id="wish-name" placeholder="e.g. 1/2 inch Impact Wrench"/>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Why is this needed? (optional)</label>
+      <textarea class="form-textarea" id="wish-notes" placeholder="Current one is weak..."></textarea>
+    </div>
+    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit Request</button></div>
   </div>
 </div>
 </body>
