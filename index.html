@@ -3389,51 +3389,72 @@ function openModal(id){
 
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
-  try{localStorage.setItem('mp_session',JSON.stringify(currentUser));}catch(e){}
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('user-chip-name').textContent=currentUser.name;
-  try{
-    const{data:profile}=await window._mpdb.from('profiles').select('group_tag,custom_permissions,role').eq('username',currentUser.username).single();
-    if(profile?.group_tag)currentUser.group_tag=profile.group_tag;
-    if(profile?.custom_permissions)currentUser.custom_permissions=profile.custom_permissions;
-    if(profile?.role&&currentUser.username.toLowerCase()!==ADMIN_USERNAME.toLowerCase())currentUser.role=profile.role;
-  }catch(e){}
-  const nav=document.getElementById('main-nav');
-  if(!can('canViewReports')){const btn=Array.from(nav.querySelectorAll('.nav-btn')).find(b=>b.textContent.trim()==='Analytics');if(btn)btn.style.display='none';}
-  if(!can('canManageSuppliers')){const btn=Array.from(nav.querySelectorAll('.nav-btn')).find(b=>b.textContent.trim()==='Suppliers');if(btn)btn.style.display='none';}
-  if(currentUser.role==='admin'){
-    if(!document.getElementById('admin-nav-btn')){
-      const btn=document.createElement('button');btn.className='nav-btn';btn.id='admin-nav-btn';btn.textContent='Admin';btn.onclick=()=>showPanel('admin');nav.appendChild(btn);
+  // 1. Session & UI Setup
+  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-chip-name').textContent = currentUser.name;
+
+  // 2. Fetch Profile & Permissions
+  try {
+    const { data: profile } = await window._mpdb.from('profiles')
+      .select('group_tag, custom_permissions, role')
+      .eq('username', currentUser.username)
+      .single();
+    
+    if (profile) {
+      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
+      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
+      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
+        currentUser.role = profile.role;
+      }
     }
+  } catch(e) { console.error("Error loading profile:", e); }
+
+  const nav = document.getElementById('main-nav');
+
+  // 3. Handle Navigation Permissions
+  if(!can('canViewReports')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
+    if(btn) btn.remove();
   }
-  const addWOBtn=document.querySelector('.topbar-right .btn-primary');if(addWOBtn&&!can('canCreate'))addWOBtn.style.display='none';
-  setTimeout(()=>{
-    const aeWrap=document.getElementById('add-equip-btn-wrap');
-    if(aeWrap&&can('canManageEquip'))aeWrap.innerHTML='<button class="btn btn-primary" onclick="openModal(\'equip-modal\')">+ Add Equipment</button>';
-    const apWrap=document.getElementById('add-part-btn-wrap');
-    if(apWrap&&can('canManageParts'))apWrap.innerHTML='<button class="btn btn-primary" onclick="openModal(\'part-modal\')">+ Add Part</button>';
-    const asWrap=document.getElementById('add-supplier-btn-wrap');
-    if(asWrap&&can('canManageSuppliers'))asWrap.innerHTML='<button class="btn btn-primary" onclick="openModal(\'supplier-modal\')">+ Add Supplier</button>';
-  },100);
+  if(!can('canManageSuppliers')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
+    if(btn) btn.remove();
+  }
+
+  // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
+  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
+  
+  // Filter out Admin if it exists so it doesn't get sorted into the middle
+  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
+
+  // Sort remaining buttons A to Z
+  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
+
+  // Re-build the Nav bar
+  nav.innerHTML = '';
+  buttons.forEach(btn => nav.appendChild(btn));
+
+  // 5. Add Admin button last for Admin users
+  if(currentUser.role === 'admin' && !document.getElementById('admin-nav-btn')){
+      const adminBtn = document.createElement('button');
+      adminBtn.className = 'nav-btn';
+      adminBtn.id = 'admin-nav-btn';
+      adminBtn.textContent = 'Admin';
+      adminBtn.onclick = () => showPanel('admin');
+      nav.appendChild(adminBtn);
+  }
+
+  // 6. Final Initialization
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
   renderDashboard();
   await initChat();
-  // Update last_seen immediately and every 2 minutes
+  
   updateLastSeen();
-  setInterval(updateLastSeen, 2*60*1000);
-  // Refresh session token every 30 minutes
-  setInterval(async ()=>{
-    const token = localStorage.getItem('mp_session_token');
-    if(token) {
-      const newExpiry = new Date(Date.now() + 8*60*60*1000).toISOString();
-      try { await window._mpdb.from('app_sessions').update({
-        last_active: new Date().toISOString(), expires_at: newExpiry
-      }).eq('token', token); } catch(e) {}
-    }
-  }, 30*60*1000);
+  setInterval(updateLastSeen, 2 * 60 * 1000);
 }
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
