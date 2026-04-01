@@ -5,7 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
+/* 1. Hide the Invoice Modal backdrop unless it's open */
+#invoice-modal:not(.open) {
+    display: none !important;
+}
+
+/* 2. Hide any stray form rows or grids that might be loose at the bottom */
+body > .form-row, 
+body > .form-grid, 
+body > .modal,
+body > #invoice-scanning,
+body > #invoice-photo-area {
+    display: none !important;
+}
+
+/* 3. Ensure the main app doesn't have extra bottom padding */
+#app {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+  /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
 #main-nav .nav-btn {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.8) !important;
@@ -4278,10 +4297,6 @@ async function toggleToolStatus(id) {
       <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:12px">
         <input type="checkbox" id="inv-clear-photo" checked/> Remove photo after saving (recommended — keeps data, removes image)
       </label>
-    </div>
-    <div class="form-row">
-      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
     </div>
   </div>
 </div>
