@@ -4546,13 +4546,25 @@ function renderToolObsList() {
     const container = document.getElementById('tool-obs-list');
     if(!toolId || !container) return;
 
+    // Check if the current user has permission to delete
+    const canDeleteNotes = currentUser.role === 'admin' || currentUser.role === 'manager';
+
     const obs = state.observations.filter(o => o.tool_id === toolId);
+    
     container.innerHTML = obs.map(o => `
-        <div style="padding:8px; border-bottom:1px solid var(--border); font-size:12px">
-            <div style="color:var(--text3); margin-bottom:2px">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
-            <div>${o.body}</div>
+        <div style="padding:10px; border-bottom:1px solid var(--border); font-size:13px; position:relative">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                <div style="font-size:11px; color:var(--text3); font-weight:600">
+                    ${o.author} · ${new Date(o.created_at).toLocaleDateString()}
+                </div>
+                ${canDeleteNotes ? 
+                    `<button class="btn btn-danger" style="padding:2px 6px; font-size:10px" 
+                        onclick="deleteToolObservation('${o.id}')" title="Delete Note">✕</button>` 
+                    : ''}
+            </div>
+            <div style="line-height:1.4; color:var(--text)">${o.body}</div>
         </div>
-    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No notes yet</div>';
+    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:20px; text-align:center">No notes recorded for this tool.</div>';
 }
 
 // 3. Add an observation to a tool
@@ -4666,6 +4678,34 @@ async function deleteTool() {
         showToast("Tool deleted");
     } catch(e) {
         showToast("Delete failed");
+    }
+}
+async function deleteToolObservation(obsId) {
+    if (!confirm("Are you sure you want to permanently delete this note?")) return;
+
+    try {
+        // 1. Remove from Supabase
+        const { error } = await window._mpdb
+            .from('observations')
+            .delete()
+            .eq('id', obsId);
+
+        if (error) throw error;
+
+        // 2. Remove from local memory
+        state.observations = state.observations.filter(o => o.id !== obsId);
+
+        // 3. Log the action to the audit log (optional but recommended)
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Deleted Tool Note", `A tool observation was removed by ${currentUser.name}`);
+        }
+
+        // 4. Refresh the list on screen
+        renderToolObsList();
+        showToast("Note deleted");
+    } catch (e) {
+        console.error("Delete failed:", e);
+        showToast("Error: Could not delete note");
     }
 }
 </script>
