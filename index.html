@@ -5,7 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
+/* FORCE HIDE ALL INVOICE ELEMENTS BY DEFAULT */
+#invoice-modal, 
+#invoice-photo-area, 
+#invoice-scanning, 
+#invoice-extracted-badge,
+[id^="inv-"] { 
+  display: none !important; 
+}
+
+/* ONLY SHOW THEM WHEN THE MODAL IS OPEN */
+#invoice-modal.open { 
+  display: flex !important; 
+}
+
+#invoice-modal.open #invoice-photo-area,
+#invoice-modal.open .form-grid,
+#invoice-modal.open [id^="inv-"] { 
+  display: block !important; 
+}
+  /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
   #main-nav .nav-btn {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.8) !important;
