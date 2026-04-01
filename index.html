@@ -4351,21 +4351,29 @@ function switchToolTab(view) {
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
+    const inventoryView = document.getElementById('tool-inventory-view');
     
+    // 1. Force the container to be visible
+    if (inventoryView) {
+        inventoryView.style.display = 'block';
+    }
+
     if(!tableBody) {
-        console.error("CRITICAL ERROR: Could not find HTML element with ID 'tools-table-body'. Check your HTML tags!");
+        console.error("CANNOT FIND TABLE BODY ID: tools-table-body");
         return;
     }
 
-    console.log("Artist found the canvas! Drawing " + state.tools.length + " tools.");
+    // 2. Clear and Redraw
+    tableBody.innerHTML = ''; 
 
-    if (state.tools.length === 0) {
+    if (!state.tools || state.tools.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">No tools in database. Click "+ Add to Inventory" to start.</td></tr>';
         return;
     }
 
-    tableBody.innerHTML = state.tools.map(t => {
-        const isCritical = t.health <= 40 || t.is_lost;
+    // 3. Loop through tools and build rows
+    const rows = state.tools.map(t => {
+        const isCritical = (t.health <= 40) || t.is_lost;
         const color = healthColor(t.health);
         
         return `
@@ -4384,7 +4392,9 @@ function renderTools() {
             <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
             <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : '<span style="color:var(--text3)">—</span>'}</td>
         </tr>`;
-    }).join('');
+    });
+
+    tableBody.innerHTML = rows.join('');
 }
 
 async function saveTool() {
