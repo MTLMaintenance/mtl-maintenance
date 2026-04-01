@@ -1047,54 +1047,48 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 </div>
-  <div class="modal-backdrop" id="tool-modal">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header"><span class="modal-title">Add Shop Tool</span><button class="modal-close" onclick="closeModal('tool-modal')">✕</button></div>
-    <div class="form-group"><label class="form-label">Tool Name</label><input class="form-input" id="tool-name" placeholder="e.g. Cummins Inline 7 Scanner"/></div>
-    <div class="form-group" style="margin-top:10px"><label class="form-label">Category</label><select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Specialty Hydraulic</option><option>Precision/Torque</option><option>Other</option></select></div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTool()">Add to Crib</button></div>
-  </div>
-</div>
-
 
 <!-- Photo Viewer -->
 <div id="photo-viewer" onclick="closePhotoViewer()">
   <button id="pv-close" onclick="closePhotoViewer()">✕</button>
   <img id="pv-img" src="" alt=""/>
 </div>
-<div id="toast"></div>
-<!-- THE PRO TOOL MODAL -->
+
+    <div id="toast"></div>
+<!-- THE MASTER TOOL MODAL -->
 <div class="modal-backdrop" id="tool-modal" style="display:none">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:480px">
     <div class="modal-header">
       <span class="modal-title" id="tool-modal-title">Tool Details</span>
       <button class="modal-close" onclick="closeModal('tool-modal')">✕</button>
     </div>
 
-    <!-- Tab Bar inside the Modal -->
+    <!-- Inner Tabs -->
     <div class="tab-bar">
       <button class="tab active" id="btn-tool-details" onclick="switchToolModalTab('details')">Details</button>
-      <button class="tab" id="btn-tool-obs" onclick="switchToolModalTab('observations')">Observations</button>
+      <button class="tab" id="btn-tool-obs" onclick="switchToolModalTab('observations')">Notes / Obs</button>
     </div>
 
     <!-- 1. Details Tab -->
     <div id="tool-tab-details">
       <div class="form-grid">
         <div class="form-group full"><label class="form-label">Tool Name *</label><input class="form-input" id="tool-name"/></div>
-        <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Hydraulic</option><option>Torque</option><option>Other</option></select></div>
-        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tool-loc" placeholder="Shelf, Truck #, etc"/></div>
+        <div class="form-group"><label class="form-label">Category</label>
+            <select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Hydraulic</option><option>Torque</option><option>Other</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tool-loc" placeholder="Shelf, Truck, etc"/></div>
         <div class="form-group full"><label class="form-label">Condition (Health %)</label>
           <input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%" oninput="document.getElementById('health-val-display').textContent = this.value + '%'"/>
-          <div id="health-val-display" style="text-align:center; font-weight:bold; font-size:16px; color:var(--accent)">100%</div>
+          <div id="health-val-display" style="text-align:center; font-weight:bold; color:var(--accent)">100%</div>
         </div>
-        <div class="form-group full"><label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px"><input type="checkbox" id="tool-lost"/> This tool is missing / lost</label></div>
+        <div class="form-group full"><label style="cursor:pointer; display:flex; align-items:center; gap:8px"><input type="checkbox" id="tool-lost"/> This tool is lost</label></div>
       </div>
     </div>
 
     <!-- 2. Observations Tab -->
     <div id="tool-tab-obs" style="display:none">
       <div style="background:var(--bg2); padding:10px; border-radius:var(--radius); border:1px solid var(--border); margin-bottom:12px">
-        <textarea class="form-textarea" id="tool-obs-input" placeholder="Add a note about this tool's condition..." style="min-height:60px"></textarea>
+        <textarea class="form-textarea" id="tool-obs-input" placeholder="Add a note about this tool..." style="min-height:60px"></textarea>
         <button class="btn btn-secondary btn-sm" style="margin-top:8px; width:100%" onclick="addToolObservation()">Post Note</button>
       </div>
       <div id="tool-obs-list" style="max-height:200px; overflow-y:auto"></div>
@@ -1105,7 +1099,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="btn btn-danger btn-sm" id="tool-delete-btn" style="display:none" onclick="deleteTool()">Delete Tool</button>
       <div style="display:flex; gap:8px">
         <button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveTool()">Save Changes</button>
+        <button class="btn btn-primary" onclick="saveTool()">Save</button>
       </div>
     </div>
   </div>
@@ -4499,29 +4493,6 @@ async function sendDMToUsername(username, text) {
     await window._mpdb.from('chat_messages').insert({ id: uid(), channel: ch, author: 'System', author_name: 'Tool Monitor', body: text, created_at: new Date().toISOString() });
 }
 
-function resetToolForm() {
-    document.getElementById('tool-edit-id').value = '';
-    document.getElementById('tool-name').value = '';
-    document.getElementById('tool-loc').value = '';
-    document.getElementById('tool-health').value = 100;
-    document.getElementById('health-val-display').textContent = '100%';
-    document.getElementById('tool-lost').checked = false;
-    document.getElementById('tool-delete-btn').style.display = 'none';
-}
-
-function editTool(id) {
-    const t = state.tools.find(x => x.id === id);
-    if(!t) return;
-    document.getElementById('tool-edit-id').value = t.id;
-    document.getElementById('tool-name').value = t.name;
-    document.getElementById('tool-cat').value = t.category;
-    document.getElementById('tool-loc').value = t.location || '';
-    document.getElementById('tool-health').value = t.health;
-    document.getElementById('health-val-display').textContent = t.health + '%';
-    document.getElementById('tool-lost').checked = t.is_lost;
-    document.getElementById('tool-delete-btn').style.display = 'block';
-    openModal('tool-modal');
-}
 function renderEquipTimeline(equipId) {
   const container = document.getElementById('eq-timeline-content');
   if(!container) return;
@@ -4573,8 +4544,7 @@ function healthColor(score) {
     if (score <= 70) return '#BA7517'; // Orange
     return '#3B6D11'; // Green
 }
-
-// 1. Tab Switcher for the Tool Modal
+// Switches between Details and Observations inside the tool popup
 function switchToolModalTab(tab) {
     document.getElementById('tool-tab-details').style.display = tab === 'details' ? 'block' : 'none';
     document.getElementById('tool-tab-obs').style.display = tab === 'observations' ? 'block' : 'none';
@@ -4622,14 +4592,24 @@ async function addToolObservation() {
     } catch(e) { showToast("Failed to save note"); }
 }
 
-// 4. Update editTool to reset the tabs
+// Clears the form when adding a NEW tool
+function resetToolForm() {
+    document.getElementById('tool-modal-title').textContent = "Add Shop Tool";
+    document.getElementById('tool-edit-id').value = '';
+    document.getElementById('tool-name').value = '';
+    document.getElementById('tool-loc').value = '';
+    document.getElementById('tool-health').value = 100;
+    document.getElementById('health-val-display').textContent = '100%';
+    document.getElementById('tool-lost').checked = false;
+    document.getElementById('tool-delete-btn').style.display = 'none';
+    switchToolModalTab('details');
+}
+
+// Fills the form when clicking an EXISTING tool
 function editTool(id) {
     const t = state.tools.find(x => x.id === id);
     if(!t) return;
-    
-    // Reset to Details tab every time we open
-    switchToolModalTab('details');
-
+    document.getElementById('tool-modal-title').textContent = "Edit Tool: " + t.name;
     document.getElementById('tool-edit-id').value = t.id;
     document.getElementById('tool-name').value = t.name;
     document.getElementById('tool-cat').value = t.category;
@@ -4638,12 +4618,10 @@ function editTool(id) {
     document.getElementById('health-val-display').textContent = t.health + '%';
     document.getElementById('tool-lost').checked = t.is_lost;
     document.getElementById('tool-delete-btn').style.display = 'block';
-    
+    switchToolModalTab('details');
     openModal('tool-modal');
 }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
@@ -4782,7 +4760,10 @@ function editTool(id) {
     </div>
   </div>
 </div>
-      <script src="https://unpkg.com/html5-qrcode"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+        <script src="https://unpkg.com/html5-qrcode"></script>
     </div>
   </div>
 </div>
