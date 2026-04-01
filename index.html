@@ -3482,29 +3482,38 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 
 // ── OVERRIDDEN showPanel ──────────────────────────────────────
 function showPanel(id) {
-     window.scrollTo(0, 0);
-    // 1. Hide all panels
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(p => p.style.display = 'none');
+    console.log("Navigation: Moving to", id);
+    
+    // 1. Reset the scroll to the top of the page
+    window.scrollTo(0, 0);
 
-    // 2. Deactivate all nav buttons
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
+    // 2. FIND EVERY PANEL AND HIDE IT
+    const allPanels = document.querySelectorAll('.panel');
+    allPanels.forEach(panel => {
+        panel.style.display = 'none';      // Force hide
+        panel.classList.remove('active'); // Remove the active class
+    });
 
-    // 3. Show the specific panel
+    // 3. SHOW ONLY THE SELECTED PANEL
     const targetPanel = document.getElementById('panel-' + id);
     if (targetPanel) {
         targetPanel.style.display = 'block';
+        targetPanel.classList.add('active');
+    } else {
+        console.error("Could not find panel-" + id);
     }
 
-    // 4. Highlight the button that was clicked
+    // 4. Update Navigation Buttons
+    const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(btn => {
+        btn.classList.remove('active');
+        // Match the button to the ID (handles various button formats)
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 5. Mapping of panel names to their JavaScript "Draw" functions
+    // 5. Trigger the specific Drawing Functions
     const renderMap = {
         'dashboard': renderDashboard,
         'calendar': renderCalendar,
@@ -3518,35 +3527,21 @@ function showPanel(id) {
         'admin': renderAdminPanel,
         'checklists': renderChecklistTemplates,
         'chat': renderChat,
-      'tools': () => { 
-            console.log("Switchboard: Preparing Tool Crib...");
-            renderTools(); // <--- Ensure this matches the function name above exactly
-            if (typeof updateWishCount === 'function') updateWishCount(); 
-            
-           // 1. Force the HTML divs to show/hide
-            const invView = document.getElementById('tool-inventory-view');
-            const wishView = document.getElementById('tool-wishlist-view');
-            if(invView) invView.style.display = 'block';
-            if(wishView) wishView.style.display = 'none';
-
-            // 2. Force the tabs to look correct
-            const invTab = document.getElementById('tool-inv-tab');
-            const wishTab = document.getElementById('tool-wish-tab');
-            if(invTab) invTab.classList.add('active');
-            if(wishTab) wishTab.classList.remove('active');
-
-            // 3. Draw the data
+        'tools': () => { 
+            // Force the Tool Crib sub-views
+            const invV = document.getElementById('tool-inventory-view');
+            const wishV = document.getElementById('tool-wishlist-view');
+            if(invV) invV.style.display = 'block';
+            if(wishV) wishV.style.display = 'none';
             renderTools(); 
             updateWishCount(); 
-        },
-};
-    
+        }
+    };
 
     if (renderMap[id]) {
         renderMap[id]();
     }
 }
-
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
   renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
