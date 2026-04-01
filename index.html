@@ -2158,36 +2158,28 @@ async function openTaskDetail(id){
 
 function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
-  
-  // 1. Hide all content divs (anything starting with eq- or dt-)
-  if(modal){
-    modal.querySelectorAll('div[id]').forEach(el => {
-      if(el.id.startsWith('eq-') || el.id.startsWith('dt-')) el.style.display = 'none';
-    });
-  }
+  if(!modal) return;
 
-  // 2. Show the specific tab the user clicked
+  // 1. Hide all tab content divs inside the modal
+  const contents = modal.querySelectorAll('.tab-content');
+  contents.forEach(c => c.style.display = 'none');
+
+  // 2. Show the specific tab div
   const el = document.getElementById(tab);
   if(el) el.style.display = 'block';
 
-  // 3. Highlight the active tab button
-  document.querySelectorAll('#detail-modal .tab').forEach(b => b.classList.remove('active'));
+  // 3. Set active class on button
+  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // 4. TRIGGER DATA RELOADS (Runs specific code for specific tabs)
-  if(window._currentDetailEquipId) {
-      if(tab === 'eq-timeline') {
-        renderEquipTimeline(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-obs') {
-        refreshObsList(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-invoices') {
-        renderInvoicesList(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-downtime') {
-        renderDowntimeTab(window._currentDetailEquipId);
-      }
+  // 4. Trigger specific data loads
+  const equipId = window._currentDetailEquipId;
+  if(!equipId) return;
+
+  if(tab === 'eq-timeline') renderEquipTimeline(equipId);
+  if(tab === 'eq-obs') refreshObsList(equipId);
+  if(tab === 'eq-downtime') renderDowntimeTab(equipId);
+}
   }
 }
 
@@ -2228,84 +2220,92 @@ async function toggleCheck(taskId,idx){
 }
 
 function openEquipDetail(id){
-  const e=state.equipment.find(x=>x.id===id); if(!e)return;
-  const tasks=state.tasks.filter(t=>t.equipId===id);
-  const docs=state.documents.filter(d=>d.equip_id===id);
-  const score=calcHealth(id);
-  const photoHtml=e.photos&&e.photos.length?`<div class="photo-grid">${e.photos.map(src=>`<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>`:'<div style="color:var(--text3);font-size:13px">No photos</div>';
-  document.getElementById('detail-title').textContent=e.name;
-  document.getElementById('detail-body').innerHTML=`
+  const e = state.equipment.find(x => x.id === id); 
+  if(!e) return;
+  
+  // CRITICAL: Set the global ID so other functions know which machine we are looking at
+  window._currentDetailEquipId = id;
+
+  const tasks = state.tasks.filter(t => t.equipId === id);
+  const docs = state.documents.filter(d => d.equip_id === id);
+  const score = calcHealth(id);
+  const photoHtml = e.photos && e.photos.length ? 
+    `<div class="photo-grid">${e.photos.map(src => `<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>` : 
+    '<div style="color:var(--text3); font-size:13px">No photos uploaded</div>';
+
+  document.getElementById('detail-title').textContent = e.name;
+  document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar">
-      <div class="tab-bar">
       <button class="tab active" onclick="switchDetailTab('eq-info',this)">Info</button>
-      <button class="tab" onclick="switchDetailTab('eq-timeline',this)">Timeline</button> <!-- Add this -->
-      <button class="tab" onclick="switchDetailTab('eq-history',this)">History (${tasks.length})</button>
-      <button class="tab active" onclick="switchDetailTab('eq-info',this)">Info</button>
+      <button class="tab" onclick="switchDetailTab('eq-timeline',this)">Timeline</button>
       <button class="tab" onclick="switchDetailTab('eq-history',this)">History (${tasks.length})</button>
       <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs (${docs.length})</button>
       <button class="tab" onclick="switchDetailTab('eq-photos',this)">Photos</button>
-      ${Object.keys(e.custom_fields||{}).length?`<button class="tab" onclick="switchDetailTab('eq-custom',this)">Custom Fields</button>`:''}
       <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
       <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
-      <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
     </div>
-    <div id="eq-info">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
+
+    <!-- Info Tab -->
+    <div id="eq-info" class="tab-content">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:13px">
         <div><span style="color:var(--text2)">Type:</span> ${e.type}</div>
         <div><span style="color:var(--text2)">Serial:</span> ${e.serial}</div>
         <div><span style="color:var(--text2)">Status:</span> ${badge(e.status)}</div>
         <div><span style="color:var(--text2)">Hours:</span> <b>${e.hours.toLocaleString()} hrs</b></div>
         <div><span style="color:var(--text2)">Operator:</span> ${e.op||'—'}</div>
         <div><span style="color:var(--text2)">Health:</span> <b style="color:${healthColor(score)}">${score}%</b></div>
-        ${(e.assigned_users||[]).length?`<div style="grid-column:1/-1"><span style="color:var(--text2)">Assigned Users:</span> ${e.assigned_users.join(', ')}</div>`:''}
       </div>
-      ${e.notes?`<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius)">${e.notes}</div>`:''}
+      ${e.notes ? `<div style="font-size:13px; color:var(--text2); background:var(--bg2); padding:9px 11px; border-radius:var(--radius)">${e.notes}</div>` : ''}
     </div>
-    <div id="eq-history" style="display:none">
-      ${tasks.length?tasks.map(t=>`<div class="parts-row" onclick="openTaskDetail('${t.id}');closeModal('detail-modal')">
-        <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${fmtDate(t.due)} · $${t.cost||0}</div></div>
+
+    <!-- Timeline Tab -->
+    <div id="eq-timeline" class="tab-content" style="display:none">
+        <div id="eq-timeline-content" style="padding-top:10px">Building timeline...</div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="eq-history" class="tab-content" style="display:none">
+      ${tasks.length ? tasks.map(t => `<div class="parts-row" onclick="openTaskDetail('${t.id}'); closeModal('detail-modal')">
+        <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px; color:var(--text2)">${fmtDate(t.due)} · $${t.cost||0}</div></div>
         ${badge(t.status)}
-      </div>`).join(''):'<div style="color:var(--text3);font-size:13px">No work orders yet</div>'}
+      </div>`).join('') : '<div style="color:var(--text3); font-size:13px">No work orders recorded</div>'}
     </div>
-    <div id="eq-docs" style="display:none">
-      ${docs.length?docs.map(d=>`<div class="doc-item">
+
+    <!-- Docs Tab -->
+    <div id="eq-docs" class="tab-content" style="display:none">
+      ${docs.length ? docs.map(d => `<div class="doc-item">
         <div class="doc-icon">${d.type==='warranty'?'🛡':'📄'}</div>
         <div class="doc-info"><div class="doc-name">${d.name}</div><div class="doc-meta">${d.expiry_date?'Expires: '+fmtDate(d.expiry_date):'No expiry'}</div></div>
-      </div>`).join(''):'<div style="color:var(--text3);font-size:13px">No documents linked</div>'}
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="closeModal('detail-modal');document.getElementById('d-equip').value='${id}';openModal('doc-modal')">+ Add Document</button>
+      </div>`) : '<div style="color:var(--text3); font-size:13px">No documents linked</div>'}
     </div>
-    <div id="eq-photos" style="display:none">${photoHtml}</div>
-    <div id="eq-custom" style="display:none">
-      ${Object.entries(e.custom_fields||{}).map(([k,v])=>`<div class="parts-row"><div style="flex:1;font-weight:500">${k}</div><div style="color:var(--text2)">${v}</div></div>`).join('')}
+
+    <!-- Photos Tab -->
+    <div id="eq-photos" class="tab-content" style="display:none">${photoHtml}</div>
+
+    <!-- Downtime Tab -->
+    <div id="eq-downtime" class="tab-content" style="display:none">
+        <div id="eq-downtime-content" style="color:var(--text2); font-size:13px">Loading downtime...</div>
     </div>
-    <div id="eq-downtime" style="display:none"><div id="eq-downtime-content" style="color:var(--text2);font-size:13px">Loading...</div></div>
-    <div id="eq-obs" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="Describe your observation..." style="flex:1;min-height:68px"></textarea>
-        <div style="display:flex;flex-direction:column;gap:6px;justify-content:flex-end">
-          <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px"><option value="info">ℹ Info</option><option value="watch">👀 Watch</option><option value="critical">🚨 Critical</option></select>
+
+    <!-- Observations Tab -->
+    <div id="eq-obs" class="tab-content" style="display:none">
+      <div style="display:flex; gap:8px; margin-bottom:12px">
+        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="Describe observation..." style="flex:1; min-height:60px"></textarea>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px"><option value="info">Info</option><option value="watch">Watch</option><option value="critical">Critical</option></select>
           <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Add</button>
         </div>
       </div>
-      <div id="obs-list-${e.id}"><div style="color:var(--text3);font-size:13px">Loading...</div></div>
+      <div id="obs-list-${e.id}">Loading...</div>
     </div>
-    <div id="eq-invoices" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span style="font-size:13px;color:var(--text2)">Upload an invoice photo and the app will read it automatically</span>
-        <button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button>
-      </div>
-      <div id="invoices-list"><div style="color:var(--text3);font-size:13px">No invoices yet</div></div>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-      ${window.innerWidth>=768?`<button class="btn btn-secondary" onclick="openPartsCatalog('${e.id}')">🔍 Parts Catalog</button>`:''}
+
+    <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end">
       <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 Print History</button>
       <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
     </div>`;
-  window._currentDetailEquipId = id;
-  openModal('detail-modal');
-  setTimeout(()=>refreshObsList(id), 300);
-}
 
+  openModal('detail-modal');
+}
 function openSupplierDetail(id){
   const s=state.suppliers.find(x=>x.id===id); if(!s)return;
   const parts=state.parts.filter(p=>p.supplier_id===id);
