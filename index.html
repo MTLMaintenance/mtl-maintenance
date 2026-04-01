@@ -1591,14 +1591,21 @@ function switchTab(group, tab, btn){
 let pendingPhotos={task:[],equip:[], obs:[]};
 let pendingDocFile=null;
 function refreshPhotoGrid(key){
-  const gridId=key==='task'?'task-photo-grid':'equip-photo-grid';
-  const grid=document.getElementById(gridId); if(!grid) return;
-  grid.innerHTML=pendingPhotos[key].map(src=>`<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')+
+  // Logic for work orders and equipment
+  const gridId = key==='task'?'task-photo-grid':'equip-photo-grid';
+  const grid = document.getElementById(gridId); 
+  if(grid) {
+    grid.innerHTML=pendingPhotos[key].map(src=>`<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')+
     `<div class="photo-add" onclick="document.getElementById('${key}-photo-input').click()">+</div>`+
     `<input type="file" id="${key}-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'${key}')"/>`;
-if(key === 'obs') {
-      const status = document.getElementById('obs-photo-status');
-      if(status) status.textContent = pendingPhotos.obs.length > 0 ? "📸 Photo attached" : "";
+  }
+
+  // LOGIC FOR OBSERVATIONS
+  if(key === 'obs') {
+      const statusLabel = document.getElementById('obs-photo-status');
+      if(statusLabel) {
+          statusLabel.textContent = pendingPhotos.obs.length > 0 ? "✓ Attached" : "";
+      }
   }
 }
 function handleDocUpload(input){
@@ -2225,144 +2232,70 @@ function openEquipDetail(id){
   const e = state.equipment.find(x => x.id === id); 
   if(!e) return;
   
-  // CRITICAL: Set the global ID so other functions know which machine we are looking at
   window._currentDetailEquipId = id;
-
   const tasks = state.tasks.filter(t => t.equipId === id);
   const docs = state.documents.filter(d => d.equip_id === id);
   const score = calcHealth(id);
-  const photoHtml = e.photos && e.photos.length ? 
-    `<div class="photo-grid">${e.photos.map(src => `<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>` : 
-    '<div style="color:var(--text3); font-size:13px">No photos uploaded</div>';
-
+  
   document.getElementById('detail-title').textContent = e.name;
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar">
       <button class="tab active" onclick="switchDetailTab('eq-info',this)">Info</button>
       <button class="tab" onclick="switchDetailTab('eq-timeline',this)">Timeline</button>
       <button class="tab" onclick="switchDetailTab('eq-history',this)">History (${tasks.length})</button>
-      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs (${docs.length})</button>
+      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs</button>
       <button class="tab" onclick="switchDetailTab('eq-photos',this)">Photos</button>
-      <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
       <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
     </div>
 
-    <!-- Info Tab -->
     <div id="eq-info" class="tab-content">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:13px">
         <div><span style="color:var(--text2)">Type:</span> ${e.type}</div>
         <div><span style="color:var(--text2)">Serial:</span> ${e.serial}</div>
         <div><span style="color:var(--text2)">Status:</span> ${badge(e.status)}</div>
         <div><span style="color:var(--text2)">Hours:</span> <b>${e.hours.toLocaleString()} hrs</b></div>
-        <div><span style="color:var(--text2)">Operator:</span> ${e.op||'—'}</div>
         <div><span style="color:var(--text2)">Health:</span> <b style="color:${healthColor(score)}">${score}%</b></div>
       </div>
       ${e.notes ? `<div style="font-size:13px; color:var(--text2); background:var(--bg2); padding:9px 11px; border-radius:var(--radius)">${e.notes}</div>` : ''}
     </div>
 
-    <!-- Timeline Tab -->
-    <div id="eq-timeline" class="tab-content" style="display:none">
-        <div id="eq-timeline-content" style="padding-top:10px">Building timeline...</div>
-    </div>
+    <div id="eq-timeline" class="tab-content" style="display:none"><div id="eq-timeline-content"></div></div>
+    <div id="eq-history" class="tab-content" style="display:none"></div>
+    <div id="eq-docs" class="tab-content" style="display:none"></div>
+    <div id="eq-photos" class="tab-content" style="display:none"></div>
+    <div id="eq-downtime" class="tab-content" style="display:none"><div id="eq-downtime-content"></div></div>
 
-    <!-- History Tab -->
-    <div id="eq-history" class="tab-content" style="display:none">
-      ${tasks.length ? tasks.map(t => `<div class="parts-row" onclick="openTaskDetail('${t.id}'); closeModal('detail-modal')">
-        <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px; color:var(--text2)">${fmtDate(t.due)} · $${t.cost||0}</div></div>
-        ${badge(t.status)}
-      </div>`).join('') : '<div style="color:var(--text3); font-size:13px">No work orders recorded</div>'}
-    </div>
-
-    <!-- Docs Tab -->
-    <div id="eq-docs" class="tab-content" style="display:none">
-      ${docs.length ? docs.map(d => `<div class="doc-item">
-        <div class="doc-icon">${d.type==='warranty'?'🛡':'📄'}</div>
-        <div class="doc-info"><div class="doc-name">${d.name}</div><div class="doc-meta">${d.expiry_date?'Expires: '+fmtDate(d.expiry_date):'No expiry'}</div></div>
-      </div>`) : '<div style="color:var(--text3); font-size:13px">No documents linked</div>'}
-    </div>
-
-    <!-- Photos Tab -->
-    <div id="eq-photos" class="tab-content" style="display:none">${photoHtml}</div>
-
-    <!-- Downtime Tab -->
-    <div id="eq-downtime" class="tab-content" style="display:none">
-        <div id="eq-downtime-content" style="color:var(--text2); font-size:13px">Loading downtime...</div>
-    </div>
-
-    <!-- Observations Tab -->
-    <div id="eq-obs" class="tab-content" style="display:none">
-      <div style="display:flex; gap:8px; margin-bottom:12px">
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="Describe observation..." style="flex:1; min-height:60px"></textarea>
-        <div style="display:flex; flex-direction:column; gap:6px">
-          <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px"><option value="info">Info</option><option value="watch">Watch</option><option value="critical">Critical</option></select>
-          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Add</button>
-        </div>
-      </div>
-      <div id="obs-list-${e.id}">Loading...</div>
-    </div>
     <!-- Observations Tab -->
     <div id="eq-obs" class="tab-content" style="display:none">
       <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="What do you see?" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
+        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="What's happening with this machine?" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
         
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
-          <!-- Photo Upload Button -->
-          <div class="photo-grid" id="obs-photo-grid" style="margin:0">
-            <div class="photo-add" onclick="document.getElementById('obs-photo-input').click()" style="width:40px; height:40px; font-size:16px">📸</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+          <!-- CLEAR CAMERA BUTTON -->
+          <div style="display:flex; gap:6px; align-items:center">
+            <button class="btn btn-secondary" onclick="document.getElementById('obs-photo-input').click()" style="padding:6px 10px">📸 Photo</button>
             <input type="file" id="obs-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this,'obs')"/>
+            <span id="obs-photo-status" style="font-size:11px; color:var(--success); font-weight:600"></span>
           </div>
 
           <div style="display:flex; gap:6px; align-items:center">
-            <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px; padding:4px 8px">
-                <option value="info">ℹ Info</option>
-                <option value="watch">👀 Watch</option>
-                <option value="critical">🚨 Critical</option>
+            <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px; padding:4px 6px">
+                <option value="info">Info</option>
+                <option value="watch">Watch</option>
+                <option value="critical">Critical</option>
             </select>
-            <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post Obs</button>
+            <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post</button>
           </div>
         </div>
-        <div id="obs-photo-status" style="font-size:11px; color:var(--success); margin-top:4px"></div>
       </div>
       <div id="obs-list-${e.id}">Loading...</div>
     </div>
 
     <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end">
-      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 Print History</button>
+      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History</button>
       <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
     </div>`;
 
-  openModal('detail-modal');
-}
-function openSupplierDetail(id){
-  const s=state.suppliers.find(x=>x.id===id); if(!s)return;
-  const parts=state.parts.filter(p=>p.supplier_id===id);
-  document.getElementById('detail-title').textContent=s.name;
-  document.getElementById('detail-body').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
-      <div><span style="color:var(--text2)">Contact:</span> ${s.contact||'—'}</div>
-      <div><span style="color:var(--text2)">Phone:</span> ${s.phone||'—'}</div>
-      <div><span style="color:var(--text2)">Email:</span> <a href="mailto:${s.email}" style="color:var(--accent)">${s.email||'—'}</a></div>
-      <div><span style="color:var(--text2)">Website:</span> ${s.website?`<a href="${s.website}" target="_blank" style="color:var(--accent)">Visit</a>`:'—'}</div>
-    </div>
-    ${s.notes?`<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${s.notes}</div>`:''}
-    <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Parts from this supplier (${parts.length})</div>
-    ${parts.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.num} · Stock: ${p.qty}</div></div><span class="badge ${p.qty<=p.reorder?'bw':'bs'}">${p.qty<=p.reorder?'Low':'OK'}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">No parts linked</div>'}
-    <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
-  openModal('detail-modal');
-}
-
-function openDocDetail(id){
-  const d=state.documents.find(x=>x.id===id); if(!d)return;
-  document.getElementById('detail-title').textContent=d.name;
-  document.getElementById('detail-body').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
-      <div><span style="color:var(--text2)">Type:</span> ${d.type}</div>
-      <div><span style="color:var(--text2)">Equipment:</span> ${d.equip_id?equipName(d.equip_id):'—'}</div>
-      <div><span style="color:var(--text2)">Expiry:</span> ${fmtDate(d.expiry_date)}</div>
-    </div>
-    ${d.notes?`<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${d.notes}</div>`:''}
-    ${d.file_data?`<div style="margin-top:12px">${d.file_type&&d.file_type.startsWith('image')?`<img src="${d.file_data}" style="max-width:100%;border-radius:var(--radius);cursor:pointer" onclick="viewPhoto('${d.file_data}')"/>`:`<a href="${d.file_data}" download="${d.name}" class="btn btn-secondary">⬇ Download File</a>`}</div>`:'<div style="color:var(--text3);font-size:13px">No file attached</div>'}
-    <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
 
@@ -3184,10 +3117,7 @@ async function addObservation(equipId){
   const body = document.getElementById('obs-input-'+equipId)?.value.trim();
   const severity = document.getElementById('obs-severity-'+equipId)?.value || 'info';
   
-  if(!body && !pendingPhotos.obs.length){
-      showToast('Please enter text or a photo');
-      return;
-  }
+  if(!body && !pendingPhotos.obs.length) return;
 
   const obs = {
     id: uid(),
@@ -3195,24 +3125,19 @@ async function addObservation(equipId){
     author: currentUser.name,
     body: body || "",
     severity,
-    photo: pendingPhotos.obs.length ? pendingPhotos.obs[0] : null, // Grab the first photo
+    photo: pendingPhotos.obs.length ? pendingPhotos.obs[0] : null, // Save the photo here
     created_at: new Date().toISOString()
   };
 
   try {
     await window._mpdb.from('observations').insert(obs);
     state.observations.unshift(obs);
-    
-    // Reset
-    pendingPhotos.obs = [];
-    const input = document.getElementById('obs-input-'+equipId);
-    if(input) input.value = '';
-    
-    showToast('Observation saved ✓');
+    pendingPhotos.obs = []; // Clear photo after save
+    if(document.getElementById('obs-input-'+equipId)) document.getElementById('obs-input-'+equipId).value = '';
     refreshObsList(equipId);
-    renderDashboard(); // Refresh dash alerts
+    showToast('Observation posted ✓');
   } catch(e) {
-    showToast('Failed to save');
+    showToast('Failed to post');
   }
 }
 function refreshObsList(equipId){
