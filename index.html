@@ -43,6 +43,27 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   --warning:#BA7517;--warning-bg:#FAEEDA;--warning-text:#854F0B;
   --success:#3B6D11;--success-bg:#EAF3DE;--success-text:#27500A;
   --radius:8px;--radius-lg:12px;
+/* --- GHOST INVOICE CLEANUP --- */
+/* This hides the stray elements sitting at the bottom of your screen */
+#invoice-photo-preview-area,
+#invoice-scanning,
+#invoice-extracted-badge,
+button[onclick="saveInvoice()"] {
+    display: none !important;
+}
+
+/* This allows them to show up ONLY when the actual popup (modal) is opened */
+.modal-backdrop.open #invoice-photo-preview-area,
+.modal-backdrop.open #invoice-scanning,
+.modal-backdrop.open #invoice-extracted-badge,
+.modal-backdrop.open button[onclick="saveInvoice()"] {
+    display: block !important;
+}
+
+/* Specifically ensures the 'Save' button looks right inside the popup */
+.modal-backdrop.open .form-row button[onclick="saveInvoice()"] {
+    display: inline-flex !important;
+}
 }
 /* AUTH */
 #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
