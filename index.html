@@ -4254,11 +4254,18 @@ function handleGlobalSearch() {
   const pt = state.parts.filter(p => p.name.toLowerCase().includes(q) || p.num.toLowerCase().includes(q));
   if (pt.length) html += `<div style="padding:8px; font-size:11px; font-weight:600; color:var(--text3); background:var(--bg2)">PARTS</div>` + 
     pt.map(p => `<div style="padding:8px 12px; border-bottom:1px solid var(--border)">${p.name} <span style="font-size:11px; color:var(--text2)">(${p.num}) - ${p.qty} in stock</span></div>`).join('');
+ // Search Tools
+  const tl = state.tools.filter(t => t.name.toLowerCase().includes(q));
+  if (tl.length) {
+    html += `<div style="padding:6px 10px; font-size:10px; font-weight:700; color:var(--text3); background:var(--bg2)">TOOLS</div>`;
+    html += tl.map(t => `<div style="padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px" onclick="showPanel('tools'); editTool('${t.id}'); document.getElementById('search-results').style.display='none'"><b>${t.name}</b> <span style="font-size:11px; color:var(--text2)">@ ${t.location || 'Shop'}</span></div>`).join('');
+  }
 
-  if (!html) html = `<div style="padding:20px; text-align:center; color:var(--text3); font-size:13px">No matches found</div>`;
-  res.innerHTML = html;
+  res.innerHTML = html || `<div style="padding:20px; text-align:center; color:var(--text3); font-size:13px">No results for "${q}"</div>`;
   res.style.display = 'block';
 }
+
+ 
 function renderTools() {
   document.getElementById('tools-table-body').innerHTML = state.tools.map(t => `
     <tr>
@@ -4428,7 +4435,52 @@ function editTool(id) {
     document.getElementById('tool-delete-btn').style.display = 'block';
     openModal('tool-modal');
 }
+function renderEquipTimeline(equipId) {
+  const container = document.getElementById('eq-timeline-content');
+  if(!container) return;
 
+  // Gather Work Orders
+  const tasks = state.tasks.filter(t => t.equipId === equipId).map(t => ({ 
+      date: t.due, 
+      title: t.name, 
+      body: t.notes, 
+      type: 'WO', 
+      status: t.status 
+  }));
+  
+  // Gather Observations
+  const obs = (state.observations || []).filter(o => o.equip_id === equipId).map(o => ({ 
+      date: o.created_at, 
+      title: o.severity.toUpperCase() + ' Obs', 
+      body: o.body, 
+      type: 'OBS', 
+      author: o.author,
+      photo: o.photo
+  }));
+  
+  // Combine and Sort (Newest at top)
+  const timeline = [...tasks, ...obs].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  if (!timeline.length) {
+    container.innerHTML = '<div style="color:var(--text3); font-size:13px; padding:20px 0">No history found for this machine.</div>';
+    return;
+  }
+
+  container.innerHTML = timeline.map(item => `
+    <div style="position:relative; padding-left:24px; margin-bottom:20px; border-left:2px solid var(--border)">
+      <!-- The Timeline Dot -->
+      <div style="position:absolute; left:-7px; top:0; width:12px; height:12px; border-radius:50%; background:${item.type === 'WO' ? 'var(--accent)' : 'var(--warning)'}; border:2px solid var(--bg)"></div>
+      
+      <div style="font-size:11px; color:var(--text3); font-weight:600">${fmtDate(item.date)}</div>
+      <div style="font-weight:600; font-size:14px; margin:2px 0">${item.title} ${item.status ? `<span class="badge bg" style="font-size:10px">${item.status}</span>` : ''}</div>
+      <div style="font-size:13px; color:var(--text2); line-height:1.4">${item.body || ''}</div>
+      
+      ${item.photo ? `<img src="${item.photo}" style="width:100px; height:100px; object-fit:cover; border-radius:4px; margin-top:8px; border:1px solid var(--border); cursor:pointer" onclick="viewPhoto('${item.photo}')"/>` : ''}
+      
+      ${item.author ? `<div style="font-size:11px; color:var(--text3); margin-top:4px">Logged by ${item.author}</div>` : ''}
+    </div>
+  `).join('');
+}
 
 
 </script>
