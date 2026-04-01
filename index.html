@@ -1609,14 +1609,15 @@ function showToast(msg){ const t=document.getElementById('toast'); t.textContent
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
-// ============================================================
-// NAV
-// ============================================================
-// ============================================================
 // MODALS
 // ============================================================
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = 'none'; // Hide it
+    el.classList.remove('open');
+  }
+}
 
 function populateSelects(){
   const equipOpts=state.equipment.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
@@ -3575,11 +3576,14 @@ function renderAlerts(){
 }
 
 // ── OVERRIDDEN openModal ──────────────────────────────────────
-function openModal(id){
-  populateSelects();
-  const el=document.getElementById(id);
-  if(el)el.classList.add('open');
-  setTimeout(initLazyImages,50);
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = 'flex'; // Force it to show
+    el.classList.add('open');  // Apply the CSS transition
+  } else {
+    console.error("Could not find modal with ID:", id);
+  }
 }
 
 // ── FULL enterApp ────────────────────────────────────────────
