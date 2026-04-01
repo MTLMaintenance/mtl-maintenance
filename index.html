@@ -4250,13 +4250,6 @@ async function toggleToolStatus(id) {
       <div style="font-size:12px;color:var(--text2);margin-top:4px">Extracting details automatically</div>
     </div>
 
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
-      <div class="form-group"><label class="form-label">Invoice Number</label><input class="form-input" id="inv-number" placeholder="INV-00123"/></div>
-      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="inv-date" type="date"/></div>
-      <div class="form-group"><label class="form-label">Total Amount ($)</label><input class="form-input" id="inv-amount" type="number" min="0" step="0.01" placeholder="0.00"/></div>
-      <div class="form-group full"><label class="form-label">Notes / Line Items</label><textarea class="form-textarea" id="inv-notes" style="min-height:80px" placeholder="Parts ordered, services rendered..."></textarea></div>
-    </div>
     <div id="invoice-extracted-badge" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:8px 12px;font-size:12px;margin-bottom:12px">
       ✅ Details auto-filled from invoice photo — please verify before saving
     </div>
@@ -4271,7 +4264,7 @@ async function toggleToolStatus(id) {
     </div>
   </div>
 </div>
-<script src="https://unpkg.com/html5-qrcode"></script>
+
 <!-- Log Hours Modal -->
 <div class="modal-backdrop" id="log-hours-modal">
   <div class="modal" style="max-width:350px">
@@ -4295,6 +4288,41 @@ async function toggleToolStatus(id) {
     <div class="form-row" style="margin-top:20px">
       <button class="btn btn-secondary" onclick="closeModal('log-hours-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveQuickLogHours()">Update Meter</button>
+    <!-- THE CORRECT, HIDDEN INVOICE MODAL -->
+<div class="modal-backdrop" id="invoice-modal" style="display:none">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <span class="modal-title">Add Invoice</span>
+      <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
+    </div>
+    
+    <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer" onclick="document.getElementById('invoice-photo-input').click()">
+      <div id="invoice-photo-preview-area">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text)">Click to upload invoice photo</div>
+      </div>
+      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
+    </div>
+
+    <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">
+      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">🔍 AI Scanning Invoice...</div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
+      <div class="form-group"><label class="form-label">Invoice Number</label><input class="form-input" id="inv-number" placeholder="INV-00123"/></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="inv-date" type="date"/></div>
+      <div class="form-group"><label class="form-label">Total Amount ($)</label><input class="form-input" id="inv-amount" type="number" step="0.01" placeholder="0.00"/></div>
+      <div class="form-group full"><label class="form-label">Notes / Line Items</label><textarea class="form-textarea" id="inv-notes" style="min-height:80px" placeholder="Parts ordered, services rendered..."></textarea></div>
+    </div>
+
+    <div class="form-row" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+    </div>
+  </div>
+</div>
+      <script src="https://unpkg.com/html5-qrcode"></script>
     </div>
   </div>
 </div>
