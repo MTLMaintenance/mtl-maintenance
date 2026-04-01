@@ -4621,9 +4621,36 @@ async function sendDMToUsername(username, text) {
       <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
     </div>
     
-    <!-- Invoice Form Content -->
+    <!-- Photo upload area -->
+    <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer; transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
+      <div id="invoice-photo-preview-area">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>
+      </div>
+      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
+    </div>
+
+    <!-- Scanning status -->
+    <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">
+      <div style="font-size:20px;margin-bottom:6px">🔍</div>
+      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">Reading invoice...</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">Extracting details automatically</div>
+    </div>
+
     <div class="form-grid">
-       <!-- ... your input fields ... -->
+     <!-- THE WRAPPER THAT HIDES IT -->
+<div class="modal-backdrop" id="invoice-modal" style="display:none">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <span class="modal-title">Add Invoice</span>
+      <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
+    </div>
+    
+    <!-- PASTE THE INVOICE FIELDS HERE -->
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
+      <!-- ... other invoice fields ... -->
     </div>
 
     <div class="form-row">
@@ -4632,7 +4659,9 @@ async function sendDMToUsername(username, text) {
     </div>
   </div>
 </div>
-</body>
+</div>
+  </div>
+  </body>
 </html>
 }
 
