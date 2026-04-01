@@ -1063,27 +1063,54 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   <img id="pv-img" src="" alt=""/>
 </div>
 <div id="toast"></div>
-<!-- Tool Edit/Add Modal -->
+<!-- THE PRO TOOL MODAL -->
 <div class="modal-backdrop" id="tool-modal" style="display:none">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header"><span class="modal-title">Tool Details</span><button class="modal-close" onclick="closeModal('tool-modal')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><label class="form-label">Tool Name *</label><input class="form-input" id="tool-name"/></div>
-      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Hydraulic</option><option>Torque</option><option>Other</option></select></div>
-      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tool-loc" placeholder="Shelf, Truck #, etc"/></div>
-      <div class="form-group full"><label class="form-label">Condition (Health %)</label>
-        <input type="range" id="tool-health" min="0" max="100" value="100" oninput="document.getElementById('health-val-display').textContent = this.value + '%'"/>
-        <div id="health-val-display" style="text-align:center; font-weight:bold">100%</div>
-      </div>
-      <div class="form-group full"><label style="cursor:pointer"><input type="checkbox" id="tool-lost"/> This tool is lost</label></div>
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title" id="tool-modal-title">Tool Details</span>
+      <button class="modal-close" onclick="closeModal('tool-modal')">✕</button>
     </div>
+
+    <!-- Tab Bar inside the Modal -->
+    <div class="tab-bar">
+      <button class="tab active" id="btn-tool-details" onclick="switchToolModalTab('details')">Details</button>
+      <button class="tab" id="btn-tool-obs" onclick="switchToolModalTab('observations')">Observations</button>
+    </div>
+
+    <!-- 1. Details Tab -->
+    <div id="tool-tab-details">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Tool Name *</label><input class="form-input" id="tool-name"/></div>
+        <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Hydraulic</option><option>Torque</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tool-loc" placeholder="Shelf, Truck #, etc"/></div>
+        <div class="form-group full"><label class="form-label">Condition (Health %)</label>
+          <input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%" oninput="document.getElementById('health-val-display').textContent = this.value + '%'"/>
+          <div id="health-val-display" style="text-align:center; font-weight:bold; font-size:16px; color:var(--accent)">100%</div>
+        </div>
+        <div class="form-group full"><label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px"><input type="checkbox" id="tool-lost"/> This tool is missing / lost</label></div>
+      </div>
+    </div>
+
+    <!-- 2. Observations Tab -->
+    <div id="tool-tab-obs" style="display:none">
+      <div style="background:var(--bg2); padding:10px; border-radius:var(--radius); border:1px solid var(--border); margin-bottom:12px">
+        <textarea class="form-textarea" id="tool-obs-input" placeholder="Add a note about this tool's condition..." style="min-height:60px"></textarea>
+        <button class="btn btn-secondary btn-sm" style="margin-top:8px; width:100%" onclick="addToolObservation()">Post Note</button>
+      </div>
+      <div id="tool-obs-list" style="max-height:200px; overflow-y:auto"></div>
+    </div>
+
     <input type="hidden" id="tool-edit-id"/>
-    <div class="form-row" style="justify-content:space-between">
+    <div class="form-row" style="margin-top:20px; justify-content:space-between">
       <button class="btn btn-danger btn-sm" id="tool-delete-btn" style="display:none" onclick="deleteTool()">Delete Tool</button>
-      <div style="display:flex; gap:8px"><button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTool()">Save</button></div>
+      <div style="display:flex; gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveTool()">Save Changes</button>
+      </div>
     </div>
   </div>
 </div>
+
 
 <!-- Wishlist Modal -->
 <div class="modal-backdrop" id="wishlist-modal" style="display:none">
@@ -4547,6 +4574,73 @@ function healthColor(score) {
     return '#3B6D11'; // Green
 }
 
+// 1. Tab Switcher for the Tool Modal
+function switchToolModalTab(tab) {
+    document.getElementById('tool-tab-details').style.display = tab === 'details' ? 'block' : 'none';
+    document.getElementById('tool-tab-obs').style.display = tab === 'observations' ? 'block' : 'none';
+    document.getElementById('btn-tool-details').classList.toggle('active', tab === 'details');
+    document.getElementById('btn-tool-obs').classList.toggle('active', tab === 'observations');
+    if(tab === 'observations') renderToolObsList();
+}
+
+// 2. Render Observations specific to a tool
+function renderToolObsList() {
+    const toolId = document.getElementById('tool-edit-id').value;
+    const container = document.getElementById('tool-obs-list');
+    if(!toolId || !container) return;
+
+    const obs = state.observations.filter(o => o.tool_id === toolId);
+    container.innerHTML = obs.map(o => `
+        <div style="padding:8px; border-bottom:1px solid var(--border); font-size:12px">
+            <div style="color:var(--text3); margin-bottom:2px">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
+            <div>${o.body}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No notes yet</div>';
+}
+
+// 3. Add an observation to a tool
+async function addToolObservation() {
+    const toolId = document.getElementById('tool-edit-id').value;
+    const body = document.getElementById('tool-obs-input').value.trim();
+    if(!toolId || !body) return;
+
+    const obs = {
+        id: uid(),
+        tool_id: toolId,
+        author: currentUser.name,
+        body: body,
+        severity: 'info',
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        await window._mpdb.from('observations').insert(obs);
+        state.observations.unshift(obs);
+        document.getElementById('tool-obs-input').value = '';
+        renderToolObsList();
+        showToast("Note added ✓");
+    } catch(e) { showToast("Failed to save note"); }
+}
+
+// 4. Update editTool to reset the tabs
+function editTool(id) {
+    const t = state.tools.find(x => x.id === id);
+    if(!t) return;
+    
+    // Reset to Details tab every time we open
+    switchToolModalTab('details');
+
+    document.getElementById('tool-edit-id').value = t.id;
+    document.getElementById('tool-name').value = t.name;
+    document.getElementById('tool-cat').value = t.category;
+    document.getElementById('tool-loc').value = t.location || '';
+    document.getElementById('tool-health').value = t.health;
+    document.getElementById('health-val-display').textContent = t.health + '%';
+    document.getElementById('tool-lost').checked = t.is_lost;
+    document.getElementById('tool-delete-btn').style.display = 'block';
+    
+    openModal('tool-modal');
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
