@@ -252,7 +252,7 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .doc-meta{font-size:11px;color:var(--text2)}
 /* MODAL */
 .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px}
-.modal-backdrop.open{display:flex}
+.modal-backdrop.open{display:flex !important}
 .modal{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .modal-title{font-size:16px;font-weight:600}
@@ -976,7 +976,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <div class="form-group full"><label class="form-label">Part Name *</label><input class="form-input" id="p-name" placeholder="e.g. Hydraulic Filter HF200"/></div>
       <div class="form-group"><label class="form-label">Part Number</label><input class="form-input" id="p-num" placeholder="HF-200-A"/></div>
       <div class="form-group"><label class="form-label">Unit Cost ($)</label><input class="form-input" id="p-cost" type="number" min="0" step="0.01" placeholder="0.00"/></div>
-      <div class="form-group"><label class="form-label">Supplier</label><select class="form-select" id="p-supplier-select"></select></div>
       <div class="form-group"><label class="form-label">Qty In Stock</label><input class="form-input" id="p-qty" type="number" min="0" placeholder="0"/></div>
       <div class="form-group"><label class="form-label">Reorder At (qty)</label><input class="form-input" id="p-reorder" type="number" min="0" placeholder="2"/></div>
       <div class="form-group"><label class="form-label">Auto-Reorder Qty</label><input class="form-input" id="p-reorder-qty" type="number" min="0" placeholder="10"/></div>
@@ -1404,14 +1403,11 @@ function quickLogHours(equipId) {
 // ============================================================
 // STATE
 // ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: [] }; 
-
-function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 async function loadState() {
   setSyncStatus('syncing');
   try {
-    // Note the = sign before await
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tl] = await Promise.all([
+    // We added 'tl' for Tools and 'wl' for Wishlist here:
+    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -1421,9 +1417,9 @@ async function loadState() {
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
       window._mpdb.from('shop_tools').select('*'),
-      window._mpdb.from('shop_tools').select('*'),
-    window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
+      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
     ]);
+
     state.equipment       = eq.data||[];
     state.tasks           = tk.data||[];
     state.schedules       = sc.data||[];
@@ -1433,20 +1429,19 @@ async function loadState() {
     state.partUsage       = pu.data||[];
     state.recurrenceRules = rr.data||[];
     state.tools           = tl.data||[];
+    state.wishlist        = wl.data||[]; // This was the missing line
     state.monthlyCosts    = computeMonthlyCosts();
-    state.tools = tl.data || [];
-    state.wishlist = wl.data || [];
+    
     setSyncStatus('online');
   } catch(e) { 
     console.error('Load error:', e); 
     setSyncStatus('offline'); 
   }
-  try{
+  try {
     const obs = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs.data||[];
   } catch(e) {}
 }
-
 
 function computeMonthlyCosts() {
   const now=new Date();
@@ -4645,6 +4640,38 @@ async function sendDMToUsername(username, text) {
       <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
     </div>
     
+     <!-- Scanning UI -->
+    <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer" onclick="document.getElementById('invoice-photo-input').click()">
+      <div id="invoice-photo-preview-area">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;font-weight:500">Click to upload invoice photo</div>
+      </div>
+      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
+    </div>
+
+    <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">
+      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">🔍 AI Scanning Invoice...</div>
+    </div>
+
+    <!-- The Form Fields -->
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
+      <div class="form-group"><label class="form-label">Invoice Number</label><input class="form-input" id="inv-number" placeholder="INV-00123"/></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="inv-date" type="date"/></div>
+      <div class="form-group"><label class="form-label">Total Amount ($)</label><input class="form-input" id="inv-amount" type="number" step="0.01" placeholder="0.00"/></div>
+      <div class="form-group full"><label class="form-label">Notes / Line Items</label><textarea class="form-textarea" id="inv-notes" style="min-height:80px" placeholder="Parts ordered, services..."></textarea></div>
+    </div>
+    
+    <div id="invoice-extracted-badge" style="display:none; background:var(--success-bg); color:var(--success-text); padding:8px 12px; font-size:12px; margin-top:12px; border-radius:var(--radius)">
+      ✅ Details auto-filled from photo
+    </div>
+
+    <div class="form-row" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+    </div>
+  </div>
+</div>
     <!-- Photo upload area -->
     <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer; transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
       <div id="invoice-photo-preview-area">
@@ -4655,6 +4682,7 @@ async function sendDMToUsername(username, text) {
       <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
     </div>
 
+    
     <!-- Scanning status -->
     <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">
       <div style="font-size:20px;margin-bottom:6px">🔍</div>
@@ -4669,17 +4697,6 @@ async function sendDMToUsername(username, text) {
     <div class="modal-header">
       <span class="modal-title">Add Invoice</span>
       <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
-    </div>
-    
-    <!-- PASTE THE INVOICE FIELDS HERE -->
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
-      <!-- ... other invoice fields ... -->
-    </div>
-
-    <div class="form-row">
-      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
     </div>
   </div>
 </div>
