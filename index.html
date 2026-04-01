@@ -4336,14 +4336,6 @@ function handleGlobalSearch() {
   res.style.display = 'block';
 }
 
-async function saveTool() {
-  const name = document.getElementById('tool-name').value.trim();
-  if(!name) return;
-  const tool = { id: uid(), name, category: document.getElementById('tool-cat').value, status: 'In Shop' };
-  state.tools.push(tool);
-  await persist('shop_tools', 'upsert', tool);
-  closeModal('tool-modal'); renderTools();
-}
 
 async function toggleToolStatus(id) {
   const t = state.tools.find(x => x.id === id);
@@ -4423,14 +4415,6 @@ async function saveTool() {
     if(tool.health <= 40 || tool.is_lost) {
         await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
     }
-    closeModal('tool-modal'); renderTools();
-}
-
-async function deleteTool() {
-    const id = document.getElementById('tool-edit-id').value;
-    if(!id || !confirm("Delete tool?")) return;
-    await window._mpdb.from('shop_tools').delete().eq('id', id);
-    state.tools = state.tools.filter(t => t.id !== id);
     closeModal('tool-modal'); renderTools();
 }
 
@@ -4599,6 +4583,87 @@ function resetToolForm() {
     document.getElementById('tool-lost').checked = false;
     document.getElementById('tool-delete-btn').style.display = 'none';
 }
+    // 1. OPEN THE TOOL POPUP
+function editTool(id) {
+    console.log("Opening tool popup for ID:", id);
+    const t = state.tools.find(x => x.id === id);
+    if(!t) return;
+
+    // Reset popup to 'Details' tab
+    if (typeof switchToolModalTab === 'function') switchToolModalTab('details');
+
+    // Fill the hidden ID field so the save function knows which tool to update
+    document.getElementById('tool-edit-id').value = t.id;
+    
+    // Fill the visible fields
+    document.getElementById('tool-name').value = t.name;
+    document.getElementById('tool-cat').value = t.category || 'Other';
+    document.getElementById('tool-loc').value = t.location || '';
+    document.getElementById('tool-health').value = t.health || 100;
+    document.getElementById('health-val-display').textContent = (t.health || 100) + '%';
+    document.getElementById('tool-lost').checked = !!t.is_lost;
+    
+    // Show the delete button because we are editing an existing tool
+    const delBtn = document.getElementById('tool-delete-btn');
+    if(delBtn) delBtn.style.display = 'block';
+    
+    openModal('tool-modal');
+}
+
+// 2. SAVE TOOL CHANGES
+async function saveTool() {
+    const id = document.getElementById('tool-edit-id').value;
+    const name = document.getElementById('tool-name').value.trim();
+    if(!name) { showToast("Name is required"); return; }
+
+    const tool = {
+        id: id || uid(), // If no ID, it's a new tool
+        name: name,
+        category: document.getElementById('tool-cat').value,
+        location: document.getElementById('tool-loc').value.trim(),
+        health: parseInt(document.getElementById('tool-health').value),
+        is_lost: document.getElementById('tool-lost').checked,
+        last_updated: new Date().toISOString()
+    };
+
+    try {
+        await window._mpdb.from('shop_tools').upsert(tool);
+        
+        // Update local memory
+        const idx = state.tools.findIndex(x => x.id === tool.id);
+        if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+
+        // Notify managers if broken or lost
+        if(tool.health <= 40 || tool.is_lost) {
+            if(typeof notifyToolManagers === 'function') {
+                notifyToolManagers(`⚠️ TOOL ALERT: "${tool.name}" is ${tool.is_lost ? 'LOST' : 'BROKEN ('+tool.health+'%)'}`);
+            }
+        }
+
+        closeModal('tool-modal');
+        renderTools(); // Redraw the table
+        showToast("Tool Saved ✓");
+    } catch(e) {
+        showToast("Error saving tool");
+        console.error(e);
+    }
+}
+
+// 3. DELETE A TOOL
+async function deleteTool() {
+    const id = document.getElementById('tool-edit-id').value;
+    if(!id || !confirm("Permanently delete this tool from inventory?")) return;
+
+    try {
+        await window._mpdb.from('shop_tools').delete().eq('id', id);
+        state.tools = state.tools.filter(t => t.id !== id);
+        closeModal('tool-modal');
+        renderTools();
+        showToast("Tool deleted");
+    } catch(e) {
+        showToast("Delete failed");
+    }
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
@@ -4737,7 +4802,8 @@ function resetToolForm() {
     </div>
   </div>
 </div>
-      <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    </script>
+        <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
         <script src="https://unpkg.com/html5-qrcode"></script>
