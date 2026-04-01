@@ -1409,7 +1409,7 @@ function quickLogHours(equipId) {
 // ============================================================
 // STATE
 // ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist []}; 
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 async function loadState() {
