@@ -3510,8 +3510,12 @@ function showPanel(id) {
         'admin': renderAdminPanel,
         'checklists': renderChecklistTemplates,
         'chat': renderChat,
-       'tools': () => { 
-            // 1. Force the HTML divs to show/hide
+      'tools': () => { 
+            console.log("Switchboard: Preparing Tool Crib...");
+            renderTools(); // <--- Ensure this matches the function name above exactly
+            if (typeof updateWishCount === 'function') updateWishCount(); 
+            
+           // 1. Force the HTML divs to show/hide
             const invView = document.getElementById('tool-inventory-view');
             const wishView = document.getElementById('tool-wishlist-view');
             if(invView) invView.style.display = 'block';
@@ -4350,51 +4354,42 @@ function switchToolTab(view) {
     if(view === 'wishlist') renderWishlist(); else renderTools();
 }
 function renderTools() {
-    const tableBody = document.getElementById('tools-table-body');
-    const inventoryView = document.getElementById('tool-inventory-view');
+    console.log("Artist: renderTools is starting...");
     
-    // 1. Force the container to be visible
-    if (inventoryView) {
-        inventoryView.style.display = 'block';
-    }
+    // 1. Identify the elements
+    const tableBody = document.getElementById('tools-table-body');
+    const invView = document.getElementById('tool-inventory-view');
+    const panel = document.getElementById('panel-tools');
 
-    if(!tableBody) {
-        console.error("CANNOT FIND TABLE BODY ID: tools-table-body");
+    // 2. FORCE THE CURTAINS OPEN
+    if (panel) panel.style.display = 'block';
+    if (invView) invView.style.display = 'block';
+
+    if (!tableBody) {
+        console.error("Artist Error: I can't find 'tools-table-body'!");
         return;
     }
 
-    // 2. Clear and Redraw
-    tableBody.innerHTML = ''; 
-
+    // 3. Draw the data
     if (!state.tools || state.tools.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">No tools in database. Click "+ Add to Inventory" to start.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px">No tools found.</td></tr>';
         return;
     }
 
-    // 3. Loop through tools and build rows
-    const rows = state.tools.map(t => {
-        const isCritical = (t.health <= 40) || t.is_lost;
-        const color = healthColor(t.health);
-        
+    tableBody.innerHTML = state.tools.map(t => {
+        const color = (t.health <= 40 || t.is_lost) ? '#E24B4A' : '#3B6D11';
         return `
         <tr onclick="editTool('${t.id}')" style="cursor:pointer">
             <td><b>${t.name}</b></td>
             <td>${t.category || 'Other'}</td>
             <td>${t.location || '—'}</td>
-            <td>
-                <div style="display:flex; align-items:center; gap:8px">
-                    <div class="health-bar" style="width:60px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden">
-                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${color}"></div>
-                    </div>
-                    <span style="font-size:11px; font-weight:600; color:${color}">${t.health}%</span>
-                </div>
-            </td>
-            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
-            <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : '<span style="color:var(--text3)">—</span>'}</td>
+            <td>${t.health}%</td>
+            <td>${t.is_lost ? 'LOST' : 'Present'}</td>
+            <td>${(t.health <= 40 || t.is_lost) ? '🛒 REPLACE' : '—'}</td>
         </tr>`;
-    });
-
-    tableBody.innerHTML = rows.join('');
+    }).join('');
+    
+    console.log("Artist: Done drawing the table!");
 }
 
 async function saveTool() {
