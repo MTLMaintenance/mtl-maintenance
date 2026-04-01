@@ -784,7 +784,32 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 </div>
+<!-- TOOL CRIB PANEL -->
+  <div class="panel" id="panel-tools">
+    <div class="section-header">
+      <span class="section-title">Tool Crib & Wishlist</span>
+      <div style="display:flex; gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="openModal('wishlist-modal')">💡 Suggest New Tool</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('tool-modal'); resetToolForm();">+ Add to Inventory</button>
+      </div>
+    </div>
 
+    <div class="tab-bar">
+      <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
+      <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
+    </div>
+
+    <div id="tool-inventory-view">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
+        <tbody id="tools-table-body"></tbody>
+      </table></div>
+    </div>
+
+    <div id="tool-wishlist-view" style="display:none">
+      <div class="grid-2" id="wishlist-container"></div>
+    </div>
+  </div>
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
@@ -4470,235 +4495,88 @@ async function sendDMToUsername(username, text) {
     </div>
   </div>
 </div>
-
-<!-- Bug / Suggestion Modal -->
-<div class="modal-backdrop" id="bug-modal">
-  <div class="modal" style="max-width:460px">
-    <div class="modal-header"><span class="modal-title">💬 Bug Report / Suggestion</span><button class="modal-close" onclick="closeModal('bug-modal')">✕</button></div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Found a bug or have an idea? We would love to hear it.</div>
-    <div class="form-grid">
-      <div class="form-group full">
-        <label class="form-label">Type</label>
-        <div style="display:flex;gap:8px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 14px;border:1px solid var(--accent);border-radius:var(--radius);flex:1;justify-content:center" id="type-bug-label"><input type="radio" name="report-type" value="bug" id="type-bug" checked onchange="updateReportType()"/> 🐛 Bug Report</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 14px;border:1px solid var(--border2);border-radius:var(--radius);flex:1;justify-content:center" id="type-sug-label"><input type="radio" name="report-type" value="suggestion" id="type-sug" onchange="updateReportType()"/> 💡 Suggestion</label>
-        </div>
+   <!-- INVOICE MODAL -->
+  <div class="modal-backdrop" id="invoice-modal" style="display:none">
+    <div class="modal" style="max-width:540px">
+      <div class="modal-header"><span class="modal-title">Add Invoice</span><button class="modal-close" onclick="closeModal('invoice-modal')">✕</button></div>
+      <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer" onclick="document.getElementById('invoice-photo-input').click()">
+        <div id="invoice-photo-preview-area">📄<br>Click to upload invoice photo</div>
+        <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
       </div>
-      <div class="form-group full" id="bug-title-wrap"><label class="form-label" id="bug-title-label">What were you trying to do? *</label><input class="form-input" id="bug-title" placeholder="e.g. Adding a new work order"/></div>
-      <div class="form-group full"><label class="form-label" id="bug-desc-label">What happened? *</label><textarea class="form-textarea" id="bug-desc" placeholder="Describe what went wrong..." style="min-height:90px"></textarea></div>
-      <div class="form-group" id="bug-page-wrap"><label class="form-label">Which page?</label><select class="form-select" id="bug-page"><option>Dashboard</option><option>Equipment</option><option>Work Orders</option><option>Schedule</option><option>Parts</option><option>Suppliers</option><option>Documents</option><option>Analytics</option><option>Checklists</option><option>Chat</option><option>Admin</option><option>Other</option></select></div>
-      <div class="form-group" id="bug-severity-wrap"><label class="form-label">Severity</label><select class="form-select" id="bug-severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
-      <div class="form-group full" id="bug-steps-wrap"><label class="form-label" id="bug-steps-label">Steps to reproduce (optional)</label><textarea class="form-textarea" id="bug-steps" style="min-height:60px" placeholder="1. Go to...&#10;2. Click..."></textarea></div>
-    </div>
-    <div id="bug-success" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:13px">✅ Submitted — thanks!</div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('bug-modal')">Cancel</button><button class="btn btn-primary" onclick="submitBugReport()">Submit</button></div>
-  </div>
-</div>
-
-
-    <!-- Photo upload area -->
-    <div id="invoice-photo-area" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
-      <div id="invoice-photo-preview-area">
-        <div style="font-size:32px;margin-bottom:8px">📄</div>
-        <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>
+      <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">🔍 AI Scanning...</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier"/></div>
+        <div class="form-group"><label class="form-label">Total Amount ($)</label><input class="form-input" id="inv-amount" type="number" step="0.01"/></div>
+        <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="inv-notes"></textarea></div>
       </div>
-      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
-    </div>
-
-    <!-- Scanning status -->
-    <div id="invoice-scanning" style="display:none;text-align:center;padding:16px;background:var(--accent-bg);border-radius:var(--radius);margin-bottom:16px">
-      <div style="font-size:20px;margin-bottom:6px">🔍</div>
-      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">Reading invoice...</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">Extracting details automatically</div>
-    </div>
-
-    <div class="form-grid">
-     
-    </div>
-    <div id="invoice-extracted-badge" style="display:none;background:var(--success-bg);color:var(--success-text);border:1px solid var(--success);border-radius:var(--radius);padding:8px 12px;font-size:12px;margin-bottom:12px">
-      ✅ Details auto-filled from invoice photo — please verify before saving
-    </div>
-    <div style="display:none" id="inv-clear-photo-wrap">
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:12px">
-        <input type="checkbox" id="inv-clear-photo" checked/> Remove photo after saving (recommended — keeps data, removes image)
-      </label>
-    </div>
-    <div class="form-row">
-      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+      <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button><button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button></div>
     </div>
   </div>
-</div>
-<script src="https://unpkg.com/html5-qrcode">
-<!-- Log Hours Modal -->
-<div class="modal-backdrop" id="log-hours-modal">
-  <div class="modal" style="max-width:350px">
-    <div class="modal-header">
-      <span class="modal-title">Log Equipment Hours</span>
-      <button class="modal-close" onclick="closeModal('log-hours-modal')">✕</button>
-    </div>
-    <div class="form-grid">
-      <div class="form-group full">
-        <label class="form-label">Date of Reading</label>
-        <input type="date" id="lh-date" class="form-input"/>
+
+  <!-- TOOL CRIB MODAL -->
+  <div class="modal-backdrop" id="tool-modal" style="display:none">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header"><span class="modal-title">Tool Details</span><button class="modal-close" onclick="closeModal('tool-modal')">✕</button></div>
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Tool Name</label><input class="form-input" id="tool-name"/></div>
+        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tool-loc"/></div>
+        <div class="form-group full"><label class="form-label">Health</label><input type="range" id="tool-health" min="0" max="100"/><div id="health-val-display">100%</div></div>
+        <div class="form-group full"><label style="cursor:pointer"><input type="checkbox" id="tool-lost"/> This tool is missing / lost</label></div>
       </div>
-      <div class="form-group full">
-        <label class="form-label">New Meter Reading (Total Hours)</label>
-        <input type="number" id="lh-val" class="form-input" placeholder="Enter hours..."/>
-        <div id="lh-current-display" style="font-size:11px; color:var(--text3); margin-top:4px"></div>
-      </div>
-    </div>
-    <!-- CRITICAL: These IDs must exist -->
-    <input type="hidden" id="lh-equip-id"/>
-    <div class="form-row" style="margin-top:20px">
-      <button class="btn btn-secondary" onclick="closeModal('log-hours-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveQuickLogHours()">Update Meter</button>
-    </div>
-  </div>
-</div>
-<div class="panel" id="panel-tools">
-  <div class="section-header">
-    <span class="section-title">Tool Crib & Wishlist</span>
-    <div style="display:flex; gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="openModal('wishlist-modal')">💡 Suggest New Tool</button>
-        <button class="btn btn-primary btn-sm" onclick="openModal('tool-modal'); resetToolForm();">+ Add to Inventory</button>
-    </div>
-  </div>
-
-  <div class="tab-bar">
-    <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
-    <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
-  </div>
-
-  <!-- Inventory View -->
-  <div id="tool-inventory-view">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-      <tbody id="tools-table-body"></tbody>
-    </table></div>
-  </div>
-
-  <!-- Wishlist View -->
-  <div id="tool-wishlist-view" style="display:none">
-    <div class="grid-2" id="wishlist-container"></div>
-  </div>
-</div>
-<!-- Inventory Edit/Add Modal -->
-<div class="modal-backdrop" id="tool-modal">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header"><span class="modal-title">Tool Details</span><button class="modal-close" onclick="closeModal('tool-modal')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><label class="form-label">Tool Name *</label><input class="form-input" id="tool-name" placeholder="e.g. Torque Wrench"/></div>
-      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="tool-cat"><option>Diagnostic</option><option>Power Tool</option><option>Specialty Hydraulic</option><option>Precision/Torque</option><option>Other</option></select></div>
-      <div class="form-group"><label class="form-label">Location / Area</label><input class="form-input" id="tool-loc" placeholder="e.g. Shelf A-1"/></div>
-      <div class="form-group full"><label class="form-label">Condition (Health %)</label>
-        <input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%" oninput="document.getElementById('health-val-display').textContent = this.value + '%'"/>
-        <div id="health-val-display" style="text-align:center; font-weight:bold; font-size:14px">100%</div>
-      </div>
-      <div class="form-group full">
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
-          <input type="checkbox" id="tool-lost"/> This tool is missing / lost
-        </label>
-      </div>
-    </div>
-    <input type="hidden" id="tool-edit-id"/>
-    <div class="form-row" style="margin-top:20px; justify-content: space-between;">
-      <button class="btn btn-danger btn-sm" id="tool-delete-btn" style="display:none" onclick="deleteTool()">Delete Tool</button>
-      <div style="display:flex; gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveTool()">Save Tool</button>
+      <input type="hidden" id="tool-edit-id"/>
+      <div class="form-row" style="justify-content:space-between">
+        <button class="btn btn-danger btn-sm" id="tool-delete-btn" style="display:none" onclick="deleteTool()">Delete</button>
+        <div style="display:flex; gap:8px"><button class="btn btn-secondary" onclick="closeModal('tool-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTool()">Save</button></div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Wishlist Request Modal -->
-<div class="modal-backdrop" id="wishlist-modal">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header"><span class="modal-title">Suggest a Tool</span><button class="modal-close" onclick="closeModal('wishlist-modal')">✕</button></div>
-    <div class="form-group">
-      <label class="form-label">What tool do we need? *</label>
-      <input class="form-input" id="wish-name" placeholder="e.g. 1/2 inch Impact Wrench"/>
-    </div>
-    <div class="form-group" style="margin-top:12px">
-      <label class="form-label">Why is this needed? (optional)</label>
-      <textarea class="form-textarea" id="wish-notes" placeholder="Current one is weak..."></textarea>
-    </div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit Request</button></div>
-  </div>
-</div>
-<!-- Invoice Modal (Hidden by default) -->
-<div class="modal-backdrop" id="invoice-modal" style="display:none">
-  <div class="modal" style="max-width:540px">
-    <div class="modal-header">
-      <span class="modal-title">Add Invoice</span>
-      <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
-    </div>
-    
-    <!-- Upload Area -->
-    <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer" onclick="document.getElementById('invoice-photo-input').click()">
-      <div id="invoice-photo-preview-area">
-        <div style="font-size:32px;margin-bottom:8px">📄</div>
-        <div style="font-size:13px;font-weight:500">Click to upload invoice photo</div>
-      </div>
-      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
-    </div>
-
-    <!-- Scanning status (Hidden by default) -->
-    <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">
-      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">🔍 AI Scanning Invoice...</div>
-    </div>
-
-    <!-- The Form Fields -->
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" id="inv-supplier" placeholder="e.g. CAT Parts Inc"/></div>
-      <div class="form-group"><label class="form-label">Invoice Number</label><input class="form-input" id="inv-number" placeholder="INV-00123"/></div>
-      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="inv-date" type="date"/></div>
-      <div class="form-group"><label class="form-label">Total Amount ($)</label><input class="form-input" id="inv-amount" type="number" step="0.01" placeholder="0.00"/></div>
-      <div class="form-group full"><label class="form-label">Notes / Line Items</label><textarea class="form-textarea" id="inv-notes" style="min-height:80px" placeholder="Parts ordered, services..."></textarea></div>
-    </div>
-    
-    <div id="invoice-extracted-badge" style="display:none; background:var(--success-bg); color:var(--success-text); border:1px solid var(--success); border-radius:var(--radius); padding:8px 12px; font-size:12px; margin-top:12px">
-      ✅ Details auto-filled from photo
-    </div>
-
-    <div class="form-row" style="margin-top:20px">
-      <button class="btn btn-secondary" onclick="closeModal('invoice-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+  <!-- WISHLIST MODAL -->
+  <div class="modal-backdrop" id="wishlist-modal" style="display:none">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header"><span class="modal-title">Suggest a Tool</span><button class="modal-close" onclick="closeModal('wishlist-modal')">✕</button></div>
+      <div class="form-group"><label class="form-label">What do we need?</label><input class="form-input" id="wish-name" placeholder="Tool name..."/></div>
+      <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit</button></div>
     </div>
   </div>
-</div>
-    <!-- Photo upload area -->
-    <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer; transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
-      <div id="invoice-photo-preview-area">
-        <div style="font-size:32px;margin-bottom:8px">📄</div>
-        <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>
-      </div>
-      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
-    </div>
 
-    
-    <!-- Scanning status -->
-    <div id="invoice-scanning" style="display:none; text-align:center; padding:16px; background:var(--accent-bg); border-radius:var(--radius); margin-bottom:16px">
-      <div style="font-size:20px;margin-bottom:6px">🔍</div>
-      <div style="font-size:13px;font-weight:500;color:var(--accent-text)">Reading invoice...</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">Extracting details automatically</div>
-    </div>
-
-    <div class="form-grid">
-     <!-- THE WRAPPER THAT HIDES IT -->
-<div class="modal-backdrop" id="invoice-modal" style="display:none">
-  <div class="modal" style="max-width:540px">
-    <div class="modal-header">
-      <span class="modal-title">Add Invoice</span>
-      <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
+  <!-- LOG HOURS MODAL -->
+  <div class="modal-backdrop" id="log-hours-modal" style="display:none">
+    <div class="modal" style="max-width:350px">
+      <div class="modal-header"><span class="modal-title">Log Hours</span><button class="modal-close" onclick="closeModal('log-hours-modal')">✕</button></div>
+      <div class="form-group"><label class="form-label">Date</label><input type="date" id="lh-date" class="form-input"/></div>
+      <div class="form-group"><label class="form-label">New Reading (Hrs)</label><input type="number" id="lh-val" class="form-input"/></div>
+      <input type="hidden" id="lh-equip-id"/>
+      <div class="form-row"><button class="btn btn-primary" onclick="saveQuickLogHours()" style="width:100%">Update Meter</button></div>
     </div>
   </div>
-</div>
-</div>
+
+  <!-- BUG MODAL -->
+  <div class="modal-backdrop" id="bug-modal" style="display:none">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-header"><span class="modal-title">Bug Report</span><button class="modal-close" onclick="closeModal('bug-modal')">✕</button></div>
+      <div class="form-group full"><label class="form-label">Description</label><textarea class="form-textarea" id="bug-desc" placeholder="Describe the issue..."></textarea></div>
+      <div class="form-row"><button class="btn btn-primary" onclick="submitBugReport()">Submit</button></div>
+    </div>
   </div>
+
+  <!-- ============================================================ -->
+  <!-- 2. EXTERNAL LIBRARIES                                        -->
+  <!-- ============================================================ -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ============================================================ -->
+  <!-- 3. MAIN SCRIPT TAG (YOUR 4000 LINES GO HERE)                 -->
+  <!-- ============================================================ -->
+  <script>
+    // ... ALL YOUR JAVASCRIPT CODE ...
+  </script>
+</body>
+</html>
+
+
  </script>
   </body>
 </html>
