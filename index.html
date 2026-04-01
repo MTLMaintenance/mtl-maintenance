@@ -3481,38 +3481,32 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 
 // ── OVERRIDDEN showPanel ──────────────────────────────────────
 function showPanel(id) {
-    console.log("Navigation: Moving to", id);
-    
-    // 1. Reset the scroll to the top of the page
+    console.log("Navigating to:", id);
     window.scrollTo(0, 0);
 
-    // 2. FIND EVERY PANEL AND HIDE IT
-    const allPanels = document.querySelectorAll('.panel');
-    allPanels.forEach(panel => {
-        panel.style.display = 'none';      // Force hide
-        panel.classList.remove('active'); // Remove the active class
+    // 1. HIDE ALL PANELS
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p => {
+        p.style.display = 'none';
+        p.classList.remove('active');
     });
 
-    // 3. SHOW ONLY THE SELECTED PANEL
-    const targetPanel = document.getElementById('panel-' + id);
-    if (targetPanel) {
-        targetPanel.style.display = 'block';
-        targetPanel.classList.add('active');
-    } else {
-        console.error("Could not find panel-" + id);
+    // 2. SHOW THE CORRECT PANEL
+    const target = document.getElementById('panel-' + id);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
     }
 
-    // 4. Update Navigation Buttons
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(btn => {
+    // 3. UPDATE NAV BUTTONS
+    document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
-        // Match the button to the ID (handles various button formats)
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 5. Trigger the specific Drawing Functions
+    // 4. DRAW THE DATA
     const renderMap = {
         'dashboard': renderDashboard,
         'calendar': renderCalendar,
@@ -3527,19 +3521,14 @@ function showPanel(id) {
         'checklists': renderChecklistTemplates,
         'chat': renderChat,
         'tools': () => { 
-            // Force the Tool Crib sub-views
-            const invV = document.getElementById('tool-inventory-view');
-            const wishV = document.getElementById('tool-wishlist-view');
-            if(invV) invV.style.display = 'block';
-            if(wishV) wishV.style.display = 'none';
+            // Reset to Inventory view whenever the tab is clicked
+            switchToolTab('inventory'); 
             renderTools(); 
-            updateWishCount(); 
+            if(typeof updateWishCount === 'function') updateWishCount(); 
         }
     };
 
-    if (renderMap[id]) {
-        renderMap[id]();
-    }
+    if (renderMap[id]) renderMap[id]();
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
@@ -4349,36 +4338,50 @@ async function toggleToolStatus(id) {
   renderTools();
 }  
 function switchToolTab(view) {
-    document.getElementById('tool-inventory-view').style.display = view === 'inventory' ? 'block' : 'none';
-    document.getElementById('tool-wishlist-view').style.display = view === 'wishlist' ? 'block' : 'none';
-    document.getElementById('tool-inv-tab').classList.toggle('active', view === 'inventory');
-    document.getElementById('tool-wish-tab').classList.toggle('active', view === 'wishlist');
-    if(view === 'wishlist') renderWishlist(); else renderTools();
+    const invView = document.getElementById('tool-inventory-view');
+    const wishView = document.getElementById('tool-wishlist-view');
+    const invTab = document.getElementById('tool-inv-tab');
+    const wishTab = document.getElementById('tool-wish-tab');
+
+    if(invView) invView.style.display = (view === 'inventory' ? 'block' : 'none');
+    if(wishView) wishView.style.display = (view === 'wishlist' ? 'block' : 'none');
+    
+    if(invTab) invTab.classList.toggle('active', view === 'inventory');
+    if(wishTab) wishTab.classList.toggle('active', view === 'wishlist');
+
+    if(view === 'wishlist') renderWishlist();
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
     if(!tableBody) return;
 
-    // Force visible styles on the table itself
-    const table = tableBody.closest('table');
-    if(table) {
-        table.style.width = "100%";
-        table.style.minHeight = "200px";
-        table.style.background = "white"; // Force white background
-        table.style.display = "table";
-        table.style.color = "black";      // Force black text
+    if (!state.tools || state.tools.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">Inventory is empty. Click "+ Add to Inventory" to start.</td></tr>';
+        return;
     }
 
-    tableBody.innerHTML = state.tools.map(t => `
-        <tr onclick="editTool('${t.id}')" style="border-bottom:1px solid #ccc">
-            <td style="padding:15px; color:black !important; font-weight:bold">${t.name}</td>
-            <td style="color:#555 !important">${t.category || 'Other'}</td>
-            <td style="color:#555 !important">${t.location || '—'}</td>
-            <td style="color:blue !important">${t.health}%</td>
-            <td style="color:black !important">${t.is_lost ? 'LOST' : 'OK'}</td>
-            <td style="color:red !important; font-weight:bold">${(t.health <= 40 || t.is_lost) ? '🛒 REPLACE' : ''}</td>
-        </tr>
-    `).join('');
+    tableBody.innerHTML = state.tools.map(t => {
+        const isCritical = t.health <= 40 || t.is_lost;
+        const barColor = healthColor(t.health);
+        return `
+        <tr onclick="editTool('${t.id}')" style="cursor:pointer">
+            <td style="font-weight:600">${t.name}</td>
+            <td style="color:var(--text2)">${t.category || 'Other'}</td>
+            <td style="color:var(--text2)">${t.location || '—'}</td>
+            <td>
+                <div style="display:flex; align-items:center; gap:8px">
+                    <div class="health-bar" style="width:60px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden">
+                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${barColor}"></div>
+                    </div>
+                    <span style="font-size:11px; font-weight:600; color:${barColor}">${t.health}%</span>
+                </div>
+            </td>
+            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
+            <td style="font-size:11px; font-weight:bold; color:var(--danger)">
+                ${isCritical ? '🛒 SHOPPING LIST' : ''}
+            </td>
+        </tr>`;
+    }).join('');
 }
 
 async function saveTool() {
