@@ -748,20 +748,32 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
     <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
   </div>
-
-  <div id="tool-inventory-view">
+<!-- Inventory View -->
+  <div id="tool-inventory-view" style="display: block;"> <!-- Note: explicitly set to block -->
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-        <tbody id="tools-table-body"></tbody>
+        <thead>
+          <tr>
+            <th>Tool Name</th>
+            <th>Category</th>
+            <th>Location</th>
+            <th>Condition</th>
+            <th>Status</th>
+            <th>Procurement</th>
+          </tr>
+        </thead>
+        <tbody id="tools-table-body">
+           <!-- Data MUST land here -->
+        </tbody>
       </table>
     </div>
   </div>
 
+  <!-- Wishlist View -->
   <div id="tool-wishlist-view" style="display:none">
     <div class="grid-2" id="wishlist-container"></div>
   </div>
-</div>   
+  
 
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
@@ -3498,10 +3510,23 @@ function showPanel(id) {
         'admin': renderAdminPanel,
         'checklists': renderChecklistTemplates,
         'chat': renderChat,
-        'tools': () => { 
-    switchToolTab('inventory'); // This shows the inventory view
-    renderTools();              // This draws the rows
-    updateWishCount();          // This updates the red badge on the tab
+       'tools': () => { 
+            // 1. Force the HTML divs to show/hide
+            const invView = document.getElementById('tool-inventory-view');
+            const wishView = document.getElementById('tool-wishlist-view');
+            if(invView) invView.style.display = 'block';
+            if(wishView) wishView.style.display = 'none';
+
+            // 2. Force the tabs to look correct
+            const invTab = document.getElementById('tool-inv-tab');
+            const wishTab = document.getElementById('tool-wish-tab');
+            if(invTab) invTab.classList.add('active');
+            if(wishTab) wishTab.classList.remove('active');
+
+            // 3. Draw the data
+            renderTools(); 
+            updateWishCount(); 
+        }
 },
     };
 
