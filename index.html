@@ -734,7 +734,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 </div>
-    <div class="panel" id="panel-tools">
+ <!-- THE ONLY TOOL CRIB PANEL -->
+<div class="panel" id="panel-tools" style="display:none">
   <div class="section-header">
     <span class="section-title">Tool Crib & Wishlist</span>
     <div style="display:flex; gap:8px">
@@ -742,18 +743,25 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <button class="btn btn-primary btn-sm" onclick="openModal('tool-modal'); resetToolForm();">+ Add Tool</button>
     </div>
   </div>
+
   <div class="tab-bar">
     <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
     <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
   </div>
+
   <div id="tool-inventory-view">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-      <tbody id="tools-table-body"></tbody>
-    </table></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
+        <tbody id="tools-table-body"></tbody>
+      </table>
+    </div>
   </div>
-  <div id="tool-wishlist-view" style="display:none"><div class="grid-2" id="wishlist-container"></div></div>
-</div>
+
+  <div id="tool-wishlist-view" style="display:none">
+    <div class="grid-2" id="wishlist-container"></div>
+  </div>
+</div>   
 
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
@@ -3490,7 +3498,11 @@ function showPanel(id) {
         'admin': renderAdminPanel,
         'checklists': renderChecklistTemplates,
         'chat': renderChat,
-        'tools': () => { renderTools(); updateWishCount(); },
+        'tools': () => { 
+    switchToolTab('inventory'); // This shows the inventory view
+    renderTools();              // This draws the rows
+    updateWishCount();          // This updates the red badge on the tab
+},
     };
 
     if (renderMap[id]) {
@@ -4283,23 +4295,6 @@ function handleGlobalSearch() {
   res.style.display = 'block';
 }
 
- 
-function renderTools() {
-  document.getElementById('tools-table-body').innerHTML = state.tools.map(t => `
-    <tr>
-      <td style="font-weight:600">${t.name}</td>
-      <td style="color:var(--text2)">${t.category}</td>
-      <td><span class="badge ${t.status === 'In Shop' ? 'bs' : 'bw'}">${t.status}</span></td>
-      <td>${t.checked_out_by || '—'}</td>
-      <td style="font-size:12px; color:var(--text3)">${fmtDate(t.last_updated)}</td>
-      <td style="text-align:right">
-        <button class="btn ${t.status === 'In Shop' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="toggleToolStatus('${t.id}')">
-          ${t.status === 'In Shop' ? 'Check Out' : 'Return to Shop'}
-        </button>
-      </td>
-    </tr>`).join('');
-}
-
 async function saveTool() {
   const name = document.getElementById('tool-name').value.trim();
   if(!name) return;
@@ -4329,17 +4324,40 @@ function switchToolTab(view) {
     document.getElementById('tool-wish-tab').classList.toggle('active', view === 'wishlist');
     if(view === 'wishlist') renderWishlist(); else renderTools();
 }
-
 function renderTools() {
-    document.getElementById('tools-table-body').innerHTML = state.tools.map(t => {
-        const critical = t.health <= 40 || t.is_lost;
-        return `<tr onclick="editTool('${t.id}')">
-            <td><b>${t.name}</b></td><td>${t.category}</td><td>${t.location || '—'}</td>
-            <td><div class="health-bar" style="width:60px"><div class="health-fill" style="width:${t.health}%; background:${healthColor(t.health)}"></div></div> ${t.health}%</td>
-            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
-            <td>${critical ? '<span class="badge bd">🛒 REPLACE</span>' : '—'}</td>
+    const tableBody = document.getElementById('tools-table-body');
+    if(!tableBody) return;
+
+    // Sort: Put "Lost" and "Low Health" tools at the top
+    const sortedTools = [...state.tools].sort((a, b) => {
+        const aCrit = a.is_lost || a.health <= 40;
+        const bCrit = b.is_lost || b.health <= 40;
+        return bCrit - aCrit;
+    });
+
+    tableBody.innerHTML = sortedTools.map(t => {
+        const isCritical = t.health <= 40 || t.is_lost;
+        const healthBarColor = healthColor(t.health);
+        
+        return `
+        <tr onclick="editTool('${t.id}')" style="cursor:pointer">
+            <td style="font-weight:600">${t.name}</td>
+            <td style="color:var(--text2); font-size:12px">${t.category || 'Other'}</td>
+            <td style="color:var(--text2); font-size:12px">${t.location || '—'}</td>
+            <td>
+                <div style="display:flex; align-items:center; gap:8px">
+                    <div class="health-bar" style="width:60px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden">
+                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${healthBarColor}"></div>
+                    </div>
+                    <span style="font-size:11px; font-weight:600; color:${healthBarColor}">${t.health}%</span>
+                </div>
+            </td>
+            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
+            <td>
+                ${isCritical ? '<span class="badge bd" style="animation: pulse 2s infinite">🛒 REPLACE</span>' : '<span style="color:var(--text3)">—</span>'}
+            </td>
         </tr>`;
-    }).join('');
+    }).join('') || '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text3)">No tools in inventory yet. Click "+ Add to Inventory" to start.</td></tr>';
 }
 
 async function saveTool() {
@@ -4499,7 +4517,11 @@ function renderEquipTimeline(equipId) {
     </div>
   `).join('');
 }
-
+function healthColor(score) {
+    if (score <= 40) return '#E24B4A'; // Red
+    if (score <= 70) return '#BA7517'; // Orange
+    return '#3B6D11'; // Green
+}
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
