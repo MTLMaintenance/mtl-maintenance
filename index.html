@@ -2805,33 +2805,56 @@ if(offlineQueue.length) document.getElementById('offline-queue-banner').style.di
 // HOURS AUTO-TRACKER
 // ============================================================
 async function markComplete(taskId) {
-  const t = state.tasks.find(x=>x.id===taskId); if(!t) return;
-  // Prompt for meter reading
-  const equip = state.equipment.find(e=>e.id===t.equipId);
-  const currentHours = equip ? equip.hours : 0;
-  const newHours = prompt(`Update hour meter for ${equip?.name||'equipment'}?
+  const t = state.tasks.find(x => x.id === taskId);
+  if (!t) return;
 
-Current: ${currentHours.toLocaleString()} hrs
-Enter new reading (or cancel to skip):`);
-  if(newHours !== null && newHours.trim() !== '') {
-    const parsed = parseInt(newHours);
-    if(!isNaN(parsed) && parsed >= currentHours) {
-      if(equip) {
-        equip.hours = parsed;
-        t.meter = parsed + ' hrs';
+  // 1. Update machine hours (Helpful for maintenance tracking)
+  const equip = state.equipment.find(e => e.id === t.equipId);
+  const currentHours = equip ? equip.hours : 0;
+  
+  const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
+  
+  if (newHours !== null && newHours.trim() !== '') {
+    const val = parseInt(newHours);
+    if (!isNaN(val) && val >= currentHours) {
+      if (equip) {
+        equip.hours = val;
+        t.meter = val + ' hrs';
         await persist('equipment', 'upsert', equip);
       }
-    } else if(!isNaN(parsed)) {
-      alert('New reading must be greater than or equal to current (' + currentHours + ' hrs)');
-      return;
     }
   }
+
+  // 2. Set status to Completed
   t.status = 'Completed';
-  if(t.photos && t.photos.length) { t.photos = []; }
-  await persist('tasks','upsert',t);
-  // Check recurrence rules for this equipment and trigger if hours threshold met
-  await runRecurrenceEngine();
-  closeModal('detail-modal'); renderDashboard();
+  t.completed_at = new Date().toISOString();
+
+  // 3. Save to Database
+  try {
+    await persist('tasks', 'upsert', t);
+
+    // SAFETY CHECK: Only log to audit if the function exists
+    if (typeof logAuditAction === 'function') {
+        logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
+    }
+
+    // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
+    await runRecurrenceEngine();
+    
+    // 5. UI Refresh
+    closeModal('detail-modal');
+    renderDashboard();
+    
+    // Ensure the task list also refreshes
+    if (typeof renderTasks === 'function') {
+        renderTasks();
+    }
+    
+    showToast("Work Order Completed ✓");
+  } catch (e) {
+    console.error("Completion error:", e);
+    showToast("Failed to save. Check connection.");
+  }
 }
 
 // ============================================================
