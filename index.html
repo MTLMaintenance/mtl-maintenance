@@ -4377,30 +4377,29 @@ function renderTools() {
     if(!tableBody) return;
 
     if (!state.tools || state.tools.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">Inventory is empty. Click "+ Add to Inventory" to start.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text3)">No tools in inventory. Click "+ Add Tool" to start.</td></tr>';
         return;
     }
 
     tableBody.innerHTML = state.tools.map(t => {
         const isCritical = t.health <= 40 || t.is_lost;
-        const barColor = healthColor(t.health);
+        const color = healthColor(t.health);
+        
         return `
         <tr onclick="editTool('${t.id}')" style="cursor:pointer">
             <td style="font-weight:600">${t.name}</td>
-            <td style="color:var(--text2)">${t.category || 'Other'}</td>
-            <td style="color:var(--text2)">${t.location || '—'}</td>
+            <td style="color:var(--text2); font-size:12px">${t.category || 'Other'}</td>
+            <td style="color:var(--text2); font-size:12px">${t.location || '—'}</td>
             <td>
                 <div style="display:flex; align-items:center; gap:8px">
                     <div class="health-bar" style="width:60px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden">
-                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${barColor}"></div>
+                        <div class="health-fill" style="width:${t.health}%; height:100%; background:${color}"></div>
                     </div>
-                    <span style="font-size:11px; font-weight:600; color:${barColor}">${t.health}%</span>
+                    <span style="font-size:11px; font-weight:600; color:${color}">${t.health}%</span>
                 </div>
             </td>
-            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
-            <td style="font-size:11px; font-weight:bold; color:var(--danger)">
-                ${isCritical ? '🛒 SHOPPING LIST' : ''}
-            </td>
+            <td>${t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">PRESENT</span>'}</td>
+            <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : '—'}</td>
         </tr>`;
     }).join('');
 }
@@ -4591,10 +4590,7 @@ async function addToolObservation() {
         showToast("Note added ✓");
     } catch(e) { showToast("Failed to save note"); }
 }
-
-// Clears the form when adding a NEW tool
 function resetToolForm() {
-    document.getElementById('tool-modal-title').textContent = "Add Shop Tool";
     document.getElementById('tool-edit-id').value = '';
     document.getElementById('tool-name').value = '';
     document.getElementById('tool-loc').value = '';
@@ -4602,26 +4598,7 @@ function resetToolForm() {
     document.getElementById('health-val-display').textContent = '100%';
     document.getElementById('tool-lost').checked = false;
     document.getElementById('tool-delete-btn').style.display = 'none';
-    switchToolModalTab('details');
 }
-
-// Fills the form when clicking an EXISTING tool
-function editTool(id) {
-    const t = state.tools.find(x => x.id === id);
-    if(!t) return;
-    document.getElementById('tool-modal-title').textContent = "Edit Tool: " + t.name;
-    document.getElementById('tool-edit-id').value = t.id;
-    document.getElementById('tool-name').value = t.name;
-    document.getElementById('tool-cat').value = t.category;
-    document.getElementById('tool-loc').value = t.location || '';
-    document.getElementById('tool-health').value = t.health;
-    document.getElementById('health-val-display').textContent = t.health + '%';
-    document.getElementById('tool-lost').checked = t.is_lost;
-    document.getElementById('tool-delete-btn').style.display = 'block';
-    switchToolModalTab('details');
-    openModal('tool-modal');
-}
-</script>
 
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
