@@ -2178,7 +2178,7 @@ async function openTaskDetail(id){
     ${photoHtml?`<div id="dt-photos" style="display:none">${photoHtml}</div>`:''}
     
     <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">
-      ${t.status!=='Completed'?`<button class="btn btn-primary" onclick="('${t.id}')">✓ Mark Complete</button>`:'<span class="badge bs">Completed</span>'}
+ ${t.status!=='Completed'?`<button class="btn btn-primary" onclick="markComplete('${t.id}')">✓ Mark Complete</button>`:'<span class="badge bs">Completed</span>'}
       <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
     </div>`;
   openModal('detail-modal');
