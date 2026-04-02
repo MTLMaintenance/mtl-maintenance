@@ -3822,20 +3822,20 @@ function showPanel(id) {
 
     // 4. DRAW THE DATA
     const renderMap = {
-        'dashboard': renderDashboard,
-        'calendar': renderCalendar,
-        'equipment': renderEquipmentTable,
-        'tasks': renderTasks,
-        'schedule': renderSchedule,
-        'parts': renderParts,
-        'suppliers': renderSuppliers,
-        'documents': renderDocuments,
-        'analytics': renderAnalytics,
-        'admin': renderAdminPanel,
-        'checklists': renderChecklistTemplates,
-        'chat': () => {
-        renderChat();
-        markChannelRead(currentChannel); 
+     'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
+        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
+        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
+        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
+        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
+        'parts': typeof renderParts === 'function' ? renderParts : null,
+        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
+        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
+        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
+        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
+        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
+         'tools': typeof renderTools === 'function' ? renderTools : null
+        'chat': typeof renderChat === 'function' ? renderChat : null,
+
     }  
 };
        'tools'; () => { 
