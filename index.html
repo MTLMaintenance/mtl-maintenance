@@ -3584,7 +3584,7 @@ async function initChat(){
         if(msg.channel===currentChannel){
           if(msg.author!==currentUser?.username){appendChatMessage(msg);}
           markChannelRead(currentChannel);
-        }else{updateUnreadBadge();}}).subscribe();}catch(e){}
+        }else{updateUnreadBadge();}}.subscribe();}catch(e){}
 }
 async function renderChat(){
   const banner=document.getElementById('chat-offline-banner');if(banner)banner.style.display=!navigator.onLine?'block':'none';
