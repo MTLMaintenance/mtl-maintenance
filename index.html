@@ -513,7 +513,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
       <button class="nav-btn" onclick="showPanel('analytics')">Analytics</button>
       <button class="nav-btn" onclick="showPanel('checklists')">Checklists</button>
-      <button class="nav-btn" onclick="showPanel('chat')" id="chat-nav-btn">Chat <span id="chat-unread-badge" style="display:none;background:#E24B4A;color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:3px">0</span></button>
+    <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">
+  Chat <span id="chat-unread-top" class="badge bd" style="display:none; font-size:10px; margin-left:4px; padding:1px 5px">0</span>
+</button>
     </nav>
       <div class="topbar-right">
       <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
@@ -708,7 +710,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
         <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--bg)">
           <div id="mention-dropdown" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:6px;max-height:120px;overflow-y:auto"></div>
           <div style="display:flex;gap:8px;align-items:flex-end">
-            <textarea class="form-textarea" id="chat-input" placeholder="Message #general..." style="flex:1;min-height:40px;max-height:120px;resize:none;margin:0" oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea>
+            <div id="mention-dropdown" style="display:none; position:absolute; bottom:100%; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:1001; max-height:150px; overflow-y:auto"></div>
+<textarea class="form-textarea" id="chat-input" placeholder="Message..." oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea>
+              <textarea class="form-textarea" id="chat-input" placeholder="Message #general..." style="flex:1;min-height:40px;max-height:120px;resize:none;margin:0" oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea>
             <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
               <button class="btn btn-secondary btn-sm" onclick="document.getElementById('chat-photo-input').click()" style="padding:6px 8px">📎</button>
               <button class="btn btn-primary btn-sm" onclick="sendChatMessage()">Send</button>
@@ -1570,7 +1574,10 @@ async function loadState() {
     state.observations = obs || [];
   } catch(e) {}
 }
-
+try {
+  const { data: profiles } = await window._mpdb.from('profiles').select('id, username, full_name, role, group_tag').eq('status', 'approved');
+  state.users_list_cache = profiles || [];
+} catch(e) {}
 function computeMonthlyCosts() {
   const now=new Date();
   return [3,2,1,0].map(ago=>{
@@ -3564,6 +3571,16 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
 async function initChat(){
   try{const{data}=await window._mpdb.from('chat_messages').select('id,channel,created_at,author').order('created_at',{ascending:false}).limit(100);state.chatMessages=data||[];updateUnreadBadge();}catch(e){}
   try{window._mpdb.channel('chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>{const msg=payload.new;state.chatMessages.unshift(msg);
+       if (msg.body && msg.body.includes('@' + currentUser.username)) {
+        showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
+    }
+    if(msg.channel === currentChannel){
+        if(msg.author !== currentUser?.username){ appendChatMessage(msg); }
+        markChannelRead(currentChannel);
+    } else {
+        updateUnreadBadge();
+    }
+}).subscribe(); 
         if(msg.channel===currentChannel){
           if(msg.author!==currentUser?.username){appendChatMessage(msg);}
           markChannelRead(currentChannel);
@@ -3648,8 +3665,46 @@ function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElemen
 function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-task-name');const w=document.getElementById('chat-tag-task');const t=state.tasks.find(x=>x.id===id);if(b)b.style.display='flex';if(n)n.textContent='📋 '+(t?.name||'Work Order');if(w)w.style.display='inline-flex';document.getElementById('tag-task-select').value='';}
 function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
 async function handleChatPhoto(input){const file=input.files[0];if(!file)return;const compressed=await compressImage(await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);}),600,0.7);chatPhotoData=compressed;document.getElementById('chat-photo-preview').textContent='📎 Photo attached';input.value='';}
-function markChannelRead(channel){lastReadAt[channel]=new Date().toISOString();try{localStorage.setItem('mp_chat_read',JSON.stringify(lastReadAt));}catch(e){}updateUnreadBadge();}
-function updateUnreadBadge(){let total=0;['general','outside','production'].forEach(ch=>{const lr=lastReadAt[ch]?new Date(lastReadAt[ch]):new Date(0);total+=(state.chatMessages||[]).filter(m=>m.channel===ch&&new Date(m.created_at)>lr&&m.author!==currentUser?.username).length;});const b=document.getElementById('chat-unread-badge');if(b){b.textContent=total;b.style.display=total>0?'inline':'none';}}
+function markChannelRead(channel) {
+    lastReadAt[channel] = new Date().toISOString();
+    try {
+        localStorage.setItem('mp_chat_read', JSON.stringify(lastReadAt));
+    } catch(e) {}
+    updateUnreadBadge(); // This now updates BOTH badges
+}
+
+function updateUnreadBadge() {
+    let totalUnread = 0;
+    const channels = ['general', 'outside', 'production'];
+    
+    // Add DMs to the check
+    (state.chatMessages || []).forEach(m => {
+        if (!channels.includes(m.channel) && m.channel.startsWith('dm-')) {
+            if (!channels.includes(m.channel)) channels.push(m.channel);
+        }
+    });
+
+    channels.forEach(ch => {
+        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+        const unreadCount = (state.chatMessages || []).filter(m => 
+            m.channel === ch && 
+            new Date(m.created_at) > lastRead && 
+            m.author !== currentUser?.username
+        ).length;
+        
+        totalUnread += unreadCount;
+        // Update individual sidebar buttons if they exist
+        const sidebarBadge = document.querySelector(`#ch-${ch} .unread-dot, #dm-${ch.replace('dm-','')} .unread-dot`);
+        // ... (sidebar logic)
+    });
+
+    // UPDATE TOPBAR BADGE
+    const topBadge = document.getElementById('chat-unread-top');
+    if (topBadge) {
+        topBadge.textContent = totalUnread;
+        topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+    }
+}
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
 
@@ -3716,15 +3771,18 @@ function showPanel(id) {
         'analytics': renderAnalytics,
         'admin': renderAdminPanel,
         'checklists': renderChecklistTemplates,
-        'chat': renderChat,
-        'tools': () => { 
+        'chat': () => {
+        renderChat();
+        markChannelRead(currentChannel); 
+    }  
+};
+       'tools': () => { 
             // Reset to Inventory view whenever the tab is clicked
             switchToolTab('inventory'); 
             renderTools(); 
             if(typeof updateWishCount === 'function') updateWishCount(); 
         }
     };
-
     if (renderMap[id]) renderMap[id]();
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
@@ -5064,6 +5122,62 @@ async function renderUsersTable() {
     // Basic placeholder so it doesn't crash
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) tableBody.innerHTML = 'Users loading...';
+}
+function handleChatInput(el) {
+    // 1. Auto-resize textarea
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+
+    const val = el.value;
+    const cursor = el.selectionStart;
+    const lastAt = val.lastIndexOf('@', cursor - 1);
+
+    // 2. Check if user is typing a mention
+    if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ')) {
+        const query = val.substring(lastAt + 1, cursor).toLowerCase();
+        
+        // Fetch users from our existing cache or profiles
+        const users = (state.users_list_cache || []).filter(u => 
+            u.full_name.toLowerCase().includes(query) || 
+            u.username.toLowerCase().includes(query)
+        );
+
+        if (users.length > 0) {
+            showMentionDropdown(users, lastAt);
+        } else {
+            hideMentionDropdown();
+        }
+    } else {
+        hideMentionDropdown();
+    }
+}
+
+function showMentionDropdown(users, atPos) {
+    const dd = document.getElementById('mention-dropdown');
+    if (!dd) return;
+    
+    dd.innerHTML = users.map(u => `
+        <div class="mention-item" style="padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px" onclick="insertMention('${u.username}', ${atPos})">
+            <b>${u.full_name}</b> <span style="font-size:11px; color:var(--text3)">@${u.username}</span>
+        </div>
+    `).join('');
+    dd.style.display = 'block';
+}
+
+function hideMentionDropdown() {
+    const dd = document.getElementById('mention-dropdown');
+    if (dd) dd.style.display = 'none';
+}
+
+function insertMention(username, atPos) {
+    const input = document.getElementById('chat-input');
+    const val = input.value;
+    const before = val.substring(0, atPos);
+    const after = val.substring(input.selectionStart);
+    
+    input.value = before + '@' + username + ' ' + after;
+    hideMentionDropdown();
+    input.focus();
 }
 </script>
 <!-- Checklist Template Modal -->
