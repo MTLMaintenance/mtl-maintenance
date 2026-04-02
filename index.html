@@ -4582,7 +4582,6 @@ async function handleWish(id, status) {
     else await notifyManagers(`✅ Tool approved: "${req.tool_name}" (Req by ${req.requested_by})`);
     renderWishlist();
 }
-
 async function saveWishRequest() {
     const nameInput = document.getElementById('wish-name');
     const name = nameInput.value.trim();
@@ -4591,25 +4590,41 @@ async function saveWishRequest() {
 
     const req = { 
         id: uid(), 
-        tool_name: name, // Ensure this matches renderWishlist
+        tool_name: name, 
         requested_by: currentUser.name, 
         status: 'pending', 
         created_at: new Date().toISOString() 
     };
 
     try {
-        await window._mpdb.from('tool_requests').insert(req);
-        state.wishlist.unshift(req); // Add to top of list
+        // We use { error } to catch database rejections
+        const { error } = await window._mpdb.from('tool_requests').insert(req);
         
-        nameInput.value = ''; // Clear input
+        if (error) {
+            console.error("Supabase Insertion Error:", error);
+            showToast("Database error: " + error.message);
+            return;
+        }
+
+        // Only update local state if the database accepted it
+        state.wishlist.unshift(req); 
+        
+        nameInput.value = '';
         closeModal('wishlist-modal');
-        switchToolTab('wishlist'); // Show the updated wishlist
+        switchToolTab('wishlist');
         showToast("Suggestion submitted ✓");
+
+        // Log to audit
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Tool Suggestion", `${currentUser.name} requested ${name}`);
+        }
+
     } catch(e) {
-        console.error(e);
-        showToast("Failed to submit");
+        console.error("Connection Error:", e);
+        showToast("Failed to connect to database");
     }
 }
+
 function updateWishCount() {
     const count = state.wishlist.filter(w => w.status === 'pending').length;
     const badge = document.getElementById('wish-count');
