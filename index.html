@@ -559,7 +559,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 
-  <!-- CALENDAR -->
+<!-- CALENDAR PANEL -->
   <div class="panel" id="panel-calendar">
     <div class="section-header"><span class="section-title">Maintenance Calendar</span>
       <div style="display:flex;gap:6px"><button class="btn btn-primary btn-sm" onclick="openModal('recur-modal')">+ Recurrence Rule</button><button class="btn btn-primary btn-sm" onclick="openModal('sched-modal')">+ Schedule Work</button></div>
@@ -567,10 +567,12 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div class="card">
       <div class="cal-nav">
         <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
+        <!-- Ensure this ID is here -->
         <div class="cal-nav-title" id="cal-title"></div>
         <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
         <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
       </div>
+      <!-- Ensure these IDs are here -->
       <div class="cal-grid" id="cal-headers"></div>
       <div class="cal-grid" id="cal-days" style="margin-top:4px"></div>
     </div>
@@ -1860,52 +1862,85 @@ function renderCostChart(){
 // CALENDAR
 // ============================================================
 function renderCalendar(){
-  const year=calDate.getFullYear(), month=calDate.getMonth();
-  document.getElementById('cal-title').textContent=`${MONTHS[month]} ${year}`;
-  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  document.getElementById('cal-headers').innerHTML=days.map(d=>`<div class="cal-header">${d}</div>`).join('');
-  const first=new Date(year,month,1).getDay();
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const daysInPrev=new Date(year,month,0).getDate();
-  let cells='';
-  // Prev month padding
-  for(let i=first-1;i>=0;i--) cells+=`<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev-i}</div></div>`;
-  // This month
-  for(let d=1;d<=daysInMonth;d++){
-    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday=new Date(dateStr).toDateString()===TODAY.toDateString();
-    const dayTasks=state.tasks.filter(t=>t.due===dateStr);
-    const dayScheds=state.schedules.filter(s=>s.date===dateStr);
-    const events=[
-      ...dayTasks.map(t=>`<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')" title="${t.name}">${t.name}</div>`),
-      ...dayScheds.map(s=>`<div class="cal-event" title="${s.name}">${s.name}</div>`)
-    ];
-    cells+=`<div class="cal-day${isToday?' today':''}" onclick="calDayClick('${dateStr}')">
-      <div class="cal-day-num">${d}</div>
-      ${events.slice(0,3).join('')}
-      ${events.length>3?`<div style="font-size:9px;color:var(--text3)">+${events.length-3} more</div>`:''}
-    </div>`;
+  const year = calDate.getFullYear();
+  const month = calDate.getMonth();
+  
+  const titleEl = document.getElementById('cal-title');
+  const headersEl = document.getElementById('cal-headers');
+  const daysEl = document.getElementById('cal-days');
+
+  if(!titleEl || !headersEl || !daysEl) return;
+
+  titleEl.textContent = `${MONTHS[month]} ${year}`;
+  
+  // 1. Render Headers
+  const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  headersEl.innerHTML = daysOfWeek.map(d => `<div class="cal-header">${d}</div>`).join('');
+  
+  // 2. Calculate Dates
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  
+  let cells = '';
+
+  // 3. Previous Month Padding
+  for(let i = firstDayIndex - 1; i >= 0; i--){
+    cells += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrevMonth - i}</div></div>`;
   }
-  // Next month padding
-  const remaining=(7-((first+daysInMonth)%7))%7;
-  for(let i=1;i<=remaining;i++) cells+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
-  document.getElementById('cal-days').innerHTML=cells;
-  // Recurrence list
-  renderRecurList();
-  // Month schedule list
-  const n30=new Date(TODAY); n30.setDate(n30.getDate()+30);
-  const sorted=[...state.schedules].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  document.getElementById('sched-month-list').innerHTML=sorted.filter(s=>{const [fy,fm,fd]=(s.date||'').split('-').map(Number);const fd2=fy?new Date(fy,fm-1,fd):new Date(s.date);return fd2>=TODAY&&fd2<=n30;}).map(s=>{
-    const d=new Date(s.date);
-    return `<div class="sched-item">
-      <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div></div>
-      <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'} · ${s.dur}h</div></div>
-      <div style="display:flex;gap:4px">
-        <button class="btn btn-secondary btn-sm" onclick="convertToTask('${s.id}')">→ WO</button>
-        <button class="btn btn-danger" onclick="deleteSched('${s.id}')">✕</button>
-      </div>
-    </div>`;
-  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">Nothing in next 30 days</div>';
+
+  // 4. Current Month Days
+  for(let d = 1; d <= daysInMonth; d++){
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = new Date().toISOString().split('T')[0] === dateStr;
+    
+    // Get events for this day
+    const dayTasks = state.tasks.filter(t => t.due === dateStr);
+    const dayScheds = state.schedules.filter(s => s.date === dateStr);
+    
+    const events = [
+      ...dayTasks.map(t => `<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
+      ...dayScheds.map(s => `<div class="cal-event">${s.name}</div>`)
+    ];
+
+    cells += `
+      <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')">
+        <div class="cal-day-num">${d}</div>
+        <div class="cal-event-container">
+          ${events.slice(0, 3).join('')}
+          ${events.length > 3 ? `<div style="font-size:9px; color:var(--text3); padding-left:4px">+${events.length - 3} more</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  daysEl.innerHTML = cells;
+
+  // 5. Refresh side lists
+  if (typeof renderRecurList === 'function') renderRecurList();
+  renderMonthSchedList();
+}
+
+// Helper to render the list next to the calendar
+function renderMonthSchedList() {
+    const list = document.getElementById('sched-month-list');
+    if(!list) return;
+    const currentMonth = calDate.getMonth();
+    const currentYear = calDate.getFullYear();
+
+    const filtered = state.schedules.filter(s => {
+        const d = new Date(s.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    list.innerHTML = filtered.map(s => `
+        <div class="sched-item">
+            <div class="sched-body">
+                <div class="sched-title">${s.name}</div>
+                <div class="sched-detail">${equipName(s.equipId)} · ${fmtDate(s.date)}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No maintenance scheduled this month.</div>';
 }
 function calPrev(){ calDate.setMonth(calDate.getMonth()-1); renderCalendar(); }
 function calNext(){ calDate.setMonth(calDate.getMonth()+1); renderCalendar(); }
