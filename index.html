@@ -3794,25 +3794,25 @@ const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{
 function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').forEach(img=>lazyObserver.observe(img));}
 
 // ── OVERRIDDEN showPanel ──────────────────────────────────────
+// --- THE MASTER SWITCHBOARD ---
 function showPanel(id) {
     console.log("Navigating to:", id);
     window.scrollTo(0, 0);
 
-    // 1. HIDE ALL PANELS
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(p => {
+    // 1. Hide all panels
+    document.querySelectorAll('.panel').forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    // 2. SHOW THE CORRECT PANEL
+    // 2. Show the target panel
     const target = document.getElementById('panel-' + id);
     if (target) {
         target.style.display = 'block';
         target.classList.add('active');
     }
 
-    // 3. UPDATE NAV BUTTONS
+    // 3. Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
@@ -3820,34 +3820,32 @@ function showPanel(id) {
         }
     });
 
-   const renderMap = {
-        'dashboard': 'renderDashboard',
-        'calendar': 'renderCalendar',
-        'equipment': 'renderEquipmentTable',
-        'tasks': 'renderTasks',
-        'schedule': 'renderSchedule',
-        'parts': 'renderParts',
-        'suppliers': 'renderSuppliers',
-        'documents': 'renderDocuments',
-        'analytics': 'renderAnalytics',
-        'admin': 'renderAdminPanel',
-        'checklists': 'renderChecklistTemplates',
-        'chat': 'renderChat',
-        'tools': 'renderTools'
+    // 4. Drawing Logic
+    const renderMap = {
+        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
+        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
+        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
+        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
+        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
+        'parts': typeof renderParts === 'function' ? renderParts : null,
+        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
+        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
+        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
+        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
+        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
+        'chat': typeof renderChat === 'function' ? renderChat : null,
+        'tools': () => { 
+            if (typeof renderTools === 'function') renderTools(); 
+            if (typeof updateWishCount === 'function') updateWishCount(); 
+        }
     };
 
-    const functionName = renderMap[id];
-    // This checks the window for the function name as a string
-    if (functionName && typeof window[functionName] === 'function') {
-        window[functionName]();
-        // Special case for tools
-        if (id === 'tools') {
-            if (typeof updateWishCount === 'function') updateWishCount();
-            if (typeof switchToolTab === 'function') switchToolTab('inventory');
+    if (renderMap[id]) {
+        if (typeof renderMap[id] === 'function') {
+            renderMap[id]();
         }
-    } else {
-        console.warn("Could not find or run function:", functionName);
-    } 
+    }
+}
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
   renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
@@ -5303,7 +5301,7 @@ function setGroupFilter(group) {
             btn.style.color = '#fff';
         }
     });
-    renderDashboard()
+    if (typeof renderDashboard === 'function') renderDashboard();
 }
 </script>
 <!-- Checklist Template Modal -->
