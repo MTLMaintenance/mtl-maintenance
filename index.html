@@ -3363,17 +3363,43 @@ async function renderAdminPanel(){
     document.getElementById('denied-list').innerHTML=denied.length?denied.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:11px;color:var(--text2)">${p.username}</div></div><button class="btn btn-secondary btn-sm" onclick="approveUser('${p.id}','${p.full_name}')">Restore</button><button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button></div>`).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px 0">None</div>';
   }catch(e){}
 }
-async function renderUsersTable(){
-  try{const{data:profiles}=await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
-    const active=profiles.filter(p=>p.status==='approved');const rc={'admin':'bd','manager':'bw','tech':'bi','viewer':'bg'};
-    document.getElementById('users-table-body').innerHTML=active.map(p=>`<tr><td style="font-weight:500;padding-left:16px">${p.full_name}</td><td style="color:var(--text2)">${p.username}</td><td><span class="badge ${rc[p.role]||'bg'}">${p.role||'tech'}</span></td><td><span class="badge bs">Active</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap">
-      <select class="form-select" style="font-size:12px;padding:3px 6px" onchange="quickRoleChange('${p.id}',this.value)"><option value="manager" ${p.role==='manager'?'selected':''}>Manager</option><option value="tech" ${(!p.role||p.role==='tech')?'selected':''}>Tech</option><option value="viewer" ${p.role==='viewer'?'selected':''}>Viewer</option></select>
-      <select class="form-select" style="font-size:12px;padding:3px 6px" onchange="quickGroupChange('${p.id}',this.value)"><option value="" ${!p.group_tag?'selected':''}>No group</option><option value="outside" ${p.group_tag==='outside'?'selected':''}>Outside</option><option value="production" ${p.group_tag==='production'?'selected':''}>Production</option></select>
-      <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
-    </div></td></tr>`).join('')||'<tr><td colspan="5" style="padding:16px;color:var(--text2);text-align:center">No active users yet</td></tr>';
-    const sel=document.getElementById('role-user-select');if(sel)sel.innerHTML=active.map(p=>`<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
-  }catch(e){}
+async function renderUsersTable() {
+  try {
+    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
+    if (!profiles) return;
+
+    const active = profiles.filter(p => p.status === 'approved');
+    const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+
+    // 1. Fill the main table (the list of users)
+    const tableBody = document.getElementById('users-table-body');
+    if (tableBody) {
+      tableBody.innerHTML = active.map(p => `
+        <tr>
+          <td style="font-weight:500; padding-left:16px">${p.full_name}</td>
+          <td style="color:var(--text2)">${p.username}</td>
+          <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+          <td><span class="badge bs">Active</span> ${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : ''}</td>
+          <td>
+            <div style="display:flex; gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px">No active users</td></tr>';
+    }
+
+    // 2. FILL THE DROPDOWN (This fixes your blank box)
+    const userSelect = document.getElementById('role-user-select');
+    if (userSelect) {
+      userSelect.innerHTML = active.map(p => 
+        `<option value="${p.id}">${p.full_name} (${p.username})</option>`
+      ).join('') || '<option value="">No active users found</option>';
+    }
+
+  } catch (e) {
+    console.error("Error loading users table:", e);
+  }
 }
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
@@ -3748,12 +3774,40 @@ async function recoverMessage(deletedId){
 }
 
 // ── ADMIN TAB SWITCHER ────────────────────────────────────────
-function switchAdminTab(tab,btn){
-  ['admin-approvals','admin-users','admin-permissions','admin-deleted-msgs','admin-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-  const el=document.getElementById('admin-'+tab);if(el)el.style.display='block';
-  document.querySelectorAll('#panel-admin .tab').forEach(b=>{b.classList.remove('active');b.style.background='transparent';b.style.color='rgba(255,255,255,0.8)';b.style.fontWeight='400';});
-  btn.classList.add('active');btn.style.background='rgba(255,255,255,0.25)';btn.style.color='#fff';btn.style.fontWeight='600';
-  if(tab==='users')renderUsersTable();if(tab==='permissions')renderPermissionsMatrix();if(tab==='deleted-msgs')renderDeletedMessages();
+function switchAdminTab(tab, btn) {
+  // Hide all sub-panels
+  ['admin-approvals', 'admin-users', 'admin-permissions', 'admin-deleted-msgs', 'admin-settings'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  // Show selected sub-panel
+  const target = document.getElementById('admin-' + tab);
+  if (target) target.style.display = 'block';
+
+  // UI button styling
+  document.querySelectorAll('#panel-admin .tab').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'transparent';
+    b.style.color = 'rgba(255,255,255,0.8)';
+  });
+  btn.classList.add('active');
+  btn.style.background = 'rgba(255,255,255,0.25)';
+  btn.style.color = '#fff';
+
+  // TRIGGER REFRESHES
+  if (tab === 'users' || tab === 'permissions') {
+    renderUsersTable(); // This now fills both the table AND your dropdown
+  }
+  if (tab === 'permissions') {
+    renderPermissionsMatrix();
+  }
+  if (tab === 'deleted-msgs') {
+    renderDeletedMessages();
+  }
+  if (tab === 'settings') {
+    renderAuditLogs();
+  }
 }
 
 // ── RESET USER PASSWORD ───────────────────────────────────────
