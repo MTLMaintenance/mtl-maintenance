@@ -3512,10 +3512,10 @@ async function renderUsersTable() {
       ).join('') || '<option value="">No users found</option>';
     }
 
-  } catch (e) {
+   catch (e) {
     console.error("Error loading users:", e);
-  }
-}
+  
+
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
 async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await window._mpdb.from('profiles').delete().eq('id',id);showToast(name+' removed');renderAdminPanel();}
