@@ -3504,17 +3504,6 @@ async function renderUsersTable() {
 
   } catch(e) { console.error(e); }
 }
-    // 2. FILL THE DROPDOWN (This fixes the blank box in your screenshot)
-    const userSelect = document.getElementById('role-user-select');
-    if (userSelect) {
-      userSelect.innerHTML = active.map(p => 
-        `<option value="${p.id}">${p.full_name} (${p.username})</option>`
-      ).join('') || '<option value="">No users found</option>';
-    }
-
-   catch (e) {
-    console.error("Error loading users:", e);
-    
 
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
