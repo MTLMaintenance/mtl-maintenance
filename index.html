@@ -3568,23 +3568,49 @@ async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await 
 let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoData=null,lastReadAt={};
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
-async function initChat(){
-  try{const{data}=await window._mpdb.from('chat_messages').select('id,channel,created_at,author').order('created_at',{ascending:false}).limit(100);state.chatMessages=data||[];updateUnreadBadge();}catch(e){}
-  try{window._mpdb.channel('chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>{const msg=payload.new;state.chatMessages.unshift(msg);
-       if (msg.body && msg.body.includes('@' + currentUser.username)) {
-        showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
-    }
-    if(msg.channel === currentChannel){
-        if(msg.author !== currentUser?.username){ appendChatMessage(msg); }
-        markChannelRead(currentChannel);
-    } else {
+
+   async function initChat() {
+    // 1. Initial load of existing messages
+    try {
+        const { data } = await window._mpdb.from('chat_messages')
+            .select('id, channel, created_at, author, body, author_name')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        state.chatMessages = data || [];
         updateUnreadBadge();
+    } catch (e) {
+        console.error("Chat load error:", e);
     }
-}).subscribe(); 
-        if(msg.channel===currentChannel){
-          if(msg.author!==currentUser?.username){appendChatMessage(msg);}
-          markChannelRead(currentChannel);
-        }else{updateUnreadBadge();}}.subscribe();}catch(e){}
+
+    // 2. Setup Realtime Listener for new messages
+    try {
+        window._mpdb.channel('chat').on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages'
+        }, payload => {
+            const msg = payload.new;
+            state.chatMessages.unshift(msg);
+
+            // Handle @Mentions
+            if (msg.body && msg.body.includes('@' + currentUser.username)) {
+                showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
+            }
+
+            // Update UI if user is looking at the channel
+            if (msg.channel === currentChannel) {
+                if (msg.author !== currentUser?.username) {
+                    appendChatMessage(msg);
+                }
+                markChannelRead(currentChannel);
+            } else {
+                // Otherwise, update the red notification dots/badges
+                updateUnreadBadge();
+            }
+        }).subscribe();
+    } catch (e) {
+        console.error("Chat subscription error:", e);
+    }
 }
 async function renderChat(){
   const banner=document.getElementById('chat-offline-banner');if(banner)banner.style.display=!navigator.onLine?'block':'none';
