@@ -830,7 +830,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <div class="card" style="margin-top:12px">
         <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px"></select></div>
+          <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select></div>
           <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="role-select"><option value="manager">Manager</option><option value="tech" selected>Technician</option><option value="viewer">Viewer</option></select></div>
           <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="group-select"><option value="">None</option><option value="outside">Outside</option><option value="production">Production</option></select></div>
           <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
@@ -3450,41 +3450,60 @@ async function quickGroupChange(userId, newGroup) {
         renderUsersTable();
     }
 }
-async function changeUserRole(){const userId=document.getElementById('role-user-select')?.value;const newRole=document.getElementById('role-select')?.value;const newGroup=document.getElementById('group-select')?.value;if(!userId)return;try{const u={};if(newRole)u.role=newRole;if(newGroup!==undefined)u.group_tag=newGroup||null;await window._mpdb.from('profiles').update(u).eq('id',userId);showToast('Updated ✓');renderUsersTable();}catch(e){showToast('Failed');}}
-async function renderAdminPanel(){
-  try{const{data:profiles}=await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
-    const pending=profiles.filter(p=>p.status==='pending'),denied=profiles.filter(p=>p.status==='denied');
-    document.getElementById('pending-count').textContent=pending.length||'0';
-    document.getElementById('pending-list').innerHTML=pending.length?pending.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:11px;color:var(--text2)">${p.username} · ${new Date(p.created_at).toLocaleDateString()}</div></div><button class="btn btn-success btn-sm" onclick="approveUser('${p.id}','${p.full_name}')">Approve</button><button class="btn btn-danger btn-sm" onclick="denyUser('${p.id}')">Deny</button></div>`).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px 0">No pending requests</div>';
-    document.getElementById('denied-list').innerHTML=denied.length?denied.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:11px;color:var(--text2)">${p.username}</div></div><button class="btn btn-secondary btn-sm" onclick="approveUser('${p.id}','${p.full_name}')">Restore</button><button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button></div>`).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px 0">None</div>';
-  }catch(e){}
+async function changeUserRole() {
+  const userId = document.getElementById('role-user-select').value;
+  const newRole = document.getElementById('role-select').value;
+  const newGroup = document.getElementById('group-select').value;
+
+  if (!userId) { showToast("Select a user first"); return; }
+
+  try {
+    const { error } = await window._mpdb.from('profiles').update({
+      role: newRole,
+      group_tag: newGroup || null
+    }).eq('id', userId);
+
+    if (error) throw error;
+
+    showToast("User permissions updated ✓");
+    renderUsersTable(); // Refresh the table to show the change
+  } catch(e) {
+    showToast("Failed to update user");
+  }
 }
 async function renderUsersTable() {
   try {
     const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
     if (!profiles) return;
 
-    const active = profiles.filter(p => p.status === 'approved');
-    const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+    // Store this in a temporary cache so the Sync function can use it
+    state.users_list_cache = profiles;
 
-    // 1. Fill the main table (the list of users)
+    const active = profiles.filter(p => p.status === 'approved');
+    
+    // 1. Fill the main table (the list at the top)
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) {
-      tableBody.innerHTML = active.map(p => `
-        <tr>
-          <td style="font-weight:600; padding-left:16px">${p.full_name}</td>
-          <td style="color:var(--text2)">${p.username}</td>
-          <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-          <td><span class="badge bs">Active</span></td>
-          <td>
-            <div style="display:flex; gap:6px">
-              <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
-            </div>
-          </td>
-        </tr>`).join('');
+        const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+        tableBody.innerHTML = active.map(p => `
+            <tr>
+                <td><b>${p.full_name}</b></td>
+                <td>${p.username}</td>
+                <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+                <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button></td>
+            </tr>`).join('');
     }
 
+    // 2. Fill the dropdown (The box in your screenshot)
+    const userSelect = document.getElementById('role-user-select');
+    if (userSelect) {
+      userSelect.innerHTML = '<option value="">— Select User —</option>' + 
+        active.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
+    }
+
+  } catch(e) { console.error(e); }
+}
     // 2. FILL THE DROPDOWN (This fixes the blank box in your screenshot)
     const userSelect = document.getElementById('role-user-select');
     if (userSelect) {
@@ -4956,6 +4975,25 @@ function promptWishlistCheck() {
     openModal('wishlist-modal');
 }
     
+function syncAdminRoleSelects() {
+    const userId = document.getElementById('role-user-select').value;
+    if (!userId) return;
+
+    // Find the user's data in our local state
+    // Note: We check profiles in loadState, so we need to ensure they are accessible
+    // Let's fetch the specific user from the state we loaded in renderUsersTable
+    const { data: profile } = state.users_list_cache ? { data: state.users_list_cache.find(u => u.id === userId) } : { data: null };
+
+    if (profile) {
+        // Set the Role dropdown to match the user
+        document.getElementById('role-select').value = profile.role || 'tech';
+        
+        // Set the Group dropdown to match the user
+        document.getElementById('group-select').value = profile.group_tag || '';
+        
+        console.log(`Syncing UI for ${profile.username}: Role=${profile.role}, Group=${profile.group_tag}`);
+    }
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
