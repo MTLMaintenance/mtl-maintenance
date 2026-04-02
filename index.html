@@ -756,21 +756,26 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 
-  <!-- THREE TABS -->
   <div class="tab-bar">
     <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
     <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
     <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
   </div>
 
-  <!-- Inventory View -->
+  <!-- Inventory View (Note to Crew moved here) -->
   <div id="tool-inventory-view">
+    <div style="background:var(--warning-bg); color:var(--warning-text); padding:10px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:12px; border:1px solid var(--warning)">
+        <b>Note to Crew:</b> Please check the <u>Denied History</u> tab before suggesting new tools to see if they were previously rejected.
+    </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
       <tbody id="tools-table-body"></tbody>
     </table></div>
   </div>
 
+  <div id="tool-wishlist-view" style="display:none"><div class="grid-2" id="wishlist-container"></div></div>
+  <div id="tool-denied-view" style="display:none"><div class="grid-2" id="denied-container"></div></div>
+</div>
   <!-- Wishlist View -->
   <div id="tool-wishlist-view" style="display:none">
     <div class="grid-2" id="wishlist-container"></div>
@@ -1170,11 +1175,19 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <!-- Wishlist Modal -->
 <div class="modal-backdrop" id="wishlist-modal" style="display:none">
   <div class="modal" style="max-width:400px">
-    <div class="modal-header"><span class="modal-title">Suggest Tool</span><button class="modal-close" onclick="closeModal('wishlist-modal')">✕</button></div>
-    <div class="form-group"><label class="form-label">Tool Name</label><input class="form-input" id="wish-name"/></div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit</button></div>
+    <div class="modal-header"><span class="modal-title">Suggest a New Tool</span><button class="modal-close" onclick="closeModal('wishlist-modal')">✕</button></div>
+    <div class="form-group">
+      <label class="form-label">Tool Name *</label>
+      <input class="form-input" id="wish-name" placeholder="e.g. 1/2 inch Impact Wrench"/>
+    </div>
+    <!-- NEW BOX FOR EXPLANATION -->
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Why is this tool needed? *</label>
+      <textarea class="form-textarea" id="wish-reason" style="min-height:80px" placeholder="Explain the benefit (e.g. Current one is broken, saves time on tracks...)"></textarea>
+    </div>
+    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit Request</button></div>
   </div>
-</div>  
+</div>
 
 <script>
 // ============================================================
@@ -4609,41 +4622,54 @@ async function saveTool() {
     }
     closeModal('tool-modal'); renderTools();
 }
-
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
-    // Only show PENDING items here
     const pending = state.wishlist.filter(w => w.status === 'pending');
     const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
 
     container.innerHTML = pending.map(w => `
         <div class="card" style="border-left: 5px solid var(--warning)">
-            <div style="display:flex; justify-content:space-between">
-                <div><b>${w.tool_name}</b><div style="font-size:11px; color:var(--text3)">By ${w.requested_by}</div></div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                <div>
+                    <div style="font-weight:700; font-size:15px">${w.tool_name}</div>
+                    <!-- ONLY MANAGERS SEE THE NAME -->
+                    <div style="font-size:11px; color:var(--text3); margin-top:2px">
+                        ${isManager ? `Requested by <b>${w.requested_by}</b>` : `Status: Pending Review`}
+                    </div>
+                </div>
                 <span class="badge bw">PENDING</span>
+            </div>
+            <div style="margin-top:10px; font-size:13px; color:var(--text2); background:var(--bg2); padding:8px 10px; border-radius:4px">
+                <b>Reason Needed:</b> ${w.request_reason || 'No reason provided.'}
             </div>
             ${isManager ? `
                 <div style="margin-top:12px; display:flex; gap:8px">
-                    <button class="btn btn-success btn-sm" onclick="handleWishApproval('${w.id}')">Approve & Add to Order</button>
+                    <button class="btn btn-success btn-sm" onclick="handleWishApproval('${w.id}')">Approve</button>
                     <button class="btn btn-danger btn-sm" onclick="handleWishDenial('${w.id}')">Deny</button>
                 </div>
             ` : ''}
         </div>`).join('') || '<div style="color:var(--text3); padding:20px">No pending suggestions.</div>';
     updateWishCount();
 }
-
 function renderDeniedList() {
     const container = document.getElementById('denied-container');
     const denied = state.wishlist.filter(w => w.status === 'denied');
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
     
     container.innerHTML = denied.map(w => `
-        <div class="card" style="border-left: 5px solid var(--danger); opacity: 0.8">
+        <div class="card" style="border-left: 5px solid var(--danger); opacity: 0.9">
             <div style="display:flex; justify-content:space-between">
-                <div><b>${w.tool_name}</b><div style="font-size:11px; color:var(--text3)">Requested by ${w.requested_by}</div></div>
+                <div>
+                    <div style="font-weight:700; font-size:15px">${w.tool_name}</div>
+                    <div style="font-size:11px; color:var(--text3)">
+                        Denied on: ${new Date(w.created_at).toLocaleDateString()} 
+                        ${isManager ? ` · Requested by: ${w.requested_by}` : ''}
+                    </div>
+                </div>
                 <span class="badge bd">DENIED</span>
             </div>
             <div style="margin-top:10px; font-size:12px; color:var(--danger-text); background:var(--danger-bg); padding:8px 10px; border-radius:4px">
-                <b>Reason:</b> ${w.denial_reason || 'No reason provided.'}
+                <b>Denial Reason:</b> ${w.denial_reason || 'Not specified.'}
             </div>
         </div>`).join('') || '<div style="color:var(--text3); padding:20px">No denied tools in history.</div>';
 }
@@ -4659,48 +4685,38 @@ async function handleWish(id, status) {
     renderWishlist();
 }
 async function saveWishRequest() {
-    const nameInput = document.getElementById('wish-name');
-    const name = nameInput.value.trim();
+    const name = document.getElementById('wish-name').value.trim();
+    const reason = document.getElementById('wish-reason').value.trim();
     
-    if(!name) { showToast("Please enter a tool name"); return; }
+    if(!name || !reason) { 
+        showToast("Please provide both the Tool Name and the Reason."); 
+        return; 
+    }
 
     const req = { 
         id: uid(), 
         tool_name: name, 
+        request_reason: reason, // NEW FIELD
         requested_by: currentUser.name, 
         status: 'pending', 
         created_at: new Date().toISOString() 
     };
 
     try {
-        // We use { error } to catch database rejections
-        const { error } = await window._mpdb.from('tool_requests').insert(req);
+        await window._mpdb.from('tool_requests').insert(req);
+        state.wishlist.unshift(req);
         
-        if (error) {
-            console.error("Supabase Insertion Error:", error);
-            showToast("Database error: " + error.message);
-            return;
-        }
-
-        // Only update local state if the database accepted it
-        state.wishlist.unshift(req); 
+        // Reset form
+        document.getElementById('wish-name').value = '';
+        document.getElementById('wish-reason').value = '';
         
-        nameInput.value = '';
-        closeModal('wishlist-modal');
+        closeModal('wishlist-modal'); 
         switchToolTab('wishlist');
-        showToast("Suggestion submitted ✓");
-
-        // Log to audit
-        if (typeof logAuditAction === 'function') {
-            logAuditAction("Tool Suggestion", `${currentUser.name} requested ${name}`);
-        }
-
+        showToast("Suggestion submitted for review ✓");
     } catch(e) {
-        console.error("Connection Error:", e);
-        showToast("Failed to connect to database");
+        showToast("Error submitting request");
     }
 }
-
 function updateWishCount() {
     const count = state.wishlist.filter(w => w.status === 'pending').length;
     const badge = document.getElementById('wish-count');
