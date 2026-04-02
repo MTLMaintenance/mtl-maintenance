@@ -3820,33 +3820,34 @@ function showPanel(id) {
         }
     });
 
-    // 4. DRAW THE DATA
-    const renderMap = {
-     'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
-        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
-        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
-        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
-        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
-        'parts': typeof renderParts === 'function' ? renderParts : null,
-        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
-        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
-        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
-        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
-        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
-         'tools': typeof renderTools === 'function' ? renderTools : null,
-        'chat': typeof renderChat === 'function' ? renderChat : null,
-
-    }  
-};
-       'tools'; () => { 
-            // Reset to Inventory view whenever the tab is clicked
-            switchToolTab('inventory'); 
-            renderTools(); 
-            if(typeof updateWishCount === 'function') updateWishCount(); 
-        }
+   const renderMap = {
+        'dashboard': 'renderDashboard',
+        'calendar': 'renderCalendar',
+        'equipment': 'renderEquipmentTable',
+        'tasks': 'renderTasks',
+        'schedule': 'renderSchedule',
+        'parts': 'renderParts',
+        'suppliers': 'renderSuppliers',
+        'documents': 'renderDocuments',
+        'analytics': 'renderAnalytics',
+        'admin': 'renderAdminPanel',
+        'checklists': 'renderChecklistTemplates',
+        'chat': 'renderChat',
+        'tools': 'renderTools'
     };
-    if (renderMap[id]) renderMap[id]();
 
+    const functionName = renderMap[id];
+    // This checks the window for the function name as a string
+    if (functionName && typeof window[functionName] === 'function') {
+        window[functionName]();
+        // Special case for tools
+        if (id === 'tools') {
+            if (typeof updateWishCount === 'function') updateWishCount();
+            if (typeof switchToolTab === 'function') switchToolTab('inventory');
+        }
+    } else {
+        console.warn("Could not find or run function:", functionName);
+    } 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
   renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
