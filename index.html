@@ -1516,8 +1516,8 @@ function uid() { return Date.now().toString(36)+Math.random().toString(36).slice
 async function loadState() {
   setSyncStatus('syncing');
   try {
-    // Note the = sign before await
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tl,wl] = await Promise.all([
+    // THE ORDER HERE MUST MATCH THE ORDER BELOW
+    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -1527,31 +1527,34 @@ async function loadState() {
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
       window._mpdb.from('shop_tools').select('*'),
-     window._mpdb.from('shop_tools').select('*'),
-    window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
+      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
     ]);
-    state.equipment       = eq.data||[];
-    state.tasks           = tk.data||[];
-    state.schedules       = sc.data||[];
-    state.parts           = pt.data||[];
-    state.suppliers       = sup.data||[];
-    state.documents       = docs.data||[];
-    state.partUsage       = pu.data||[];
-    state.recurrenceRules = rr.data||[];
-    state.tools           = tl.data||[];
-    state.wishlist = wl.data || [];
+
+    // MAP DATA TO STATE
+    state.equipment       = eq.data || [];
+    state.tasks           = tk.data || [];
+    state.schedules       = sc.data || [];
+    state.parts           = pt.data || [];
+    state.suppliers       = sup.data || [];
+    state.documents       = docs.data || [];
+    state.partUsage       = pu.data || [];
+    state.recurrenceRules = rr.data || [];
+    state.tools           = tl.data || [];
+    state.wishlist        = wl.data || []; // <--- Ensuring this is set correctly
+    
     state.monthlyCosts    = computeMonthlyCosts();
     setSyncStatus('online');
   } catch(e) { 
     console.error('Load error:', e); 
     setSyncStatus('offline'); 
   }
-  try{
-    const obs = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
-    state.observations = obs.data||[];
+  
+  // Load observations separately to avoid Promise clutter
+  try {
+    const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at', {ascending: false});
+    state.observations = obs || [];
   } catch(e) {}
 }
-
 
 function computeMonthlyCosts() {
   const now=new Date();
@@ -3414,8 +3417,39 @@ function resetUserPerms(){editingPerms={...PERMISSIONS[editingUserRole]||PERMISS
 async function saveUserPerms(){try{const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;const ho=Object.entries(editingPerms).some(([k,v])=>v!==rd[k]);await window._mpdb.from('profiles').update({custom_permissions:ho?editingPerms:null}).eq('id',editingUserId);showToast('Permissions saved ✓');closeModal('user-perms-modal');renderUsersTable();}catch(e){showToast('Failed');}}
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
 function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
-async function quickRoleChange(userId,newRole){try{await window._mpdb.from('profiles').update({role:newRole}).eq('id',userId);showToast('Role updated ✓');}catch(e){showToast('Failed');}}
-async function quickGroupChange(userId,newGroup){try{await window._mpdb.from('profiles').update({group_tag:newGroup||null}).eq('id',userId);showToast('Group updated ✓');}catch(e){showToast('Failed');}}
+async function quickRoleChange(userId, newRole) {
+    showToast("Updating role...");
+    try {
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ role: newRole })
+            .eq('id', userId); // TARGET SPECIFIC USER ONLY
+            
+        if (error) throw error;
+        showToast("Role updated ✓");
+        // Update local currentUser if you just edited yourself
+        if (currentUser.id === userId) currentUser.role = newRole;
+    } catch(e) {
+        showToast("Update failed");
+        renderUsersTable(); // Revert UI on failure
+    }
+}
+
+async function quickGroupChange(userId, newGroup) {
+    showToast("Updating group...");
+    try {
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ group_tag: newGroup || null })
+            .eq('id', userId); // TARGET SPECIFIC USER ONLY
+
+        if (error) throw error;
+        showToast("Group updated ✓");
+    } catch(e) {
+        showToast("Update failed");
+        renderUsersTable();
+    }
+}
 async function changeUserRole(){const userId=document.getElementById('role-user-select')?.value;const newRole=document.getElementById('role-select')?.value;const newGroup=document.getElementById('group-select')?.value;if(!userId)return;try{const u={};if(newRole)u.role=newRole;if(newGroup!==undefined)u.group_tag=newGroup||null;await window._mpdb.from('profiles').update(u).eq('id',userId);showToast('Updated ✓');renderUsersTable();}catch(e){showToast('Failed');}}
 async function renderAdminPanel(){
   try{const{data:profiles}=await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
@@ -3433,35 +3467,35 @@ async function renderUsersTable() {
     const active = profiles.filter(p => p.status === 'approved');
     const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
 
-    // 1. Fill the main table (the list of users)
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) {
+      // We generate unique IDs for each dropdown to prevent cross-talk
       tableBody.innerHTML = active.map(p => `
         <tr>
-          <td style="font-weight:500; padding-left:16px">${p.full_name}</td>
+          <td style="font-weight:600">${p.full_name}</td>
           <td style="color:var(--text2)">${p.username}</td>
           <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-          <td><span class="badge bs">Active</span> ${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : ''}</td>
           <td>
-            <div style="display:flex; gap:6px">
-              <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
-            </div>
+            <select class="form-select" style="font-size:11px; padding:2px 5px" onchange="quickRoleChange('${p.id}', this.value)">
+                <option value="admin" ${p.role === 'admin' ? 'selected' : ''}>Admin</option>
+                <option value="manager" ${p.role === 'manager' ? 'selected' : ''}>Manager</option>
+                <option value="tech" ${p.role === 'tech' ? 'selected' : ''}>Technician</option>
+                <option value="viewer" ${p.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+            </select>
           </td>
-        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px">No active users</td></tr>';
+          <td>
+             <select class="form-select" style="font-size:11px; padding:2px 5px" onchange="quickGroupChange('${p.id}', this.value)">
+                <option value="" ${!p.group_tag ? 'selected' : ''}>None</option>
+                <option value="outside" ${p.group_tag === 'outside' ? 'selected' : ''}>Outside</option>
+                <option value="production" ${p.group_tag === 'production' ? 'selected' : ''}>Production</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+          </td>
+        </tr>`).join('');
     }
-
-    // 2. FILL THE DROPDOWN (This fixes your blank box)
-    const userSelect = document.getElementById('role-user-select');
-    if (userSelect) {
-      userSelect.innerHTML = active.map(p => 
-        `<option value="${p.id}">${p.full_name} (${p.username})</option>`
-      ).join('') || '<option value="">No active users found</option>';
-    }
-
-  } catch (e) {
-    console.error("Error loading users table:", e);
-  }
+  } catch(e) { console.error(e); }
 }
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
