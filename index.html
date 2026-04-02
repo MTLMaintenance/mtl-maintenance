@@ -380,6 +380,68 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   #chat-sidebar.open{transform:translateX(0)}
   #chat-sidebar-toggle{display:flex!important}
 }
+/* MOBILE RESPONSIVE OVERRIDES                */
+/* ========================================== */
+@media (max-width: 768px) {
+  /* 1. Make the Top Bar taller to hold two rows */
+  .topbar {
+    height: auto !important;
+    flex-wrap: wrap !important;
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+
+  /* 2. Shrink the search bar so it fits on line 1 */
+  #global-search {
+    max-width: 120px !important;
+    font-size: 11px !important;
+  }
+
+  /* 3. Move the Nav Buttons to a second row and make them swipeable */
+  .nav {
+    order: 10; /* Forces it to the bottom of the flex container */
+    width: 100% !important;
+    overflow-x: auto !important; /* Enable swiping */
+    display: flex !important;
+    padding-bottom: 5px;
+    -webkit-overflow-scrolling: touch; /* Smooth swiping on iPhone */
+    scrollbar-width: none; /* Hide scrollbar */
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none; /* Hide scrollbar on Chrome/Android */
+  }
+
+  .nav-btn {
+    padding: 6px 14px !important;
+    background: rgba(255, 255, 255, 0.1) !important; /* Make buttons easier to see on mobile */
+    font-size: 13px !important;
+  }
+
+  /* 4. Adjust the logo and right-side actions */
+  .logo {
+    font-size: 14px !important;
+  }
+
+  .topbar-right {
+    gap: 4px !important;
+  }
+
+  .user-chip {
+    display: none !important; /* Hide user name on mobile to save space */
+  }
+  
+  /* 5. Make Metrics (Dashboard) fit 2 per row */
+  .metrics {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  /* 6. Ensure Modals take up more screen on mobile */
+  .modal {
+    width: 95% !important;
+    padding: 15px !important;
+  }
+}
 </style>
 </head>
 <body>
