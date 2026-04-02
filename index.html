@@ -3467,35 +3467,35 @@ async function renderUsersTable() {
     const active = profiles.filter(p => p.status === 'approved');
     const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
 
+    // 1. Fill the main table (the list of users)
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) {
-      // We generate unique IDs for each dropdown to prevent cross-talk
       tableBody.innerHTML = active.map(p => `
         <tr>
-          <td style="font-weight:600">${p.full_name}</td>
+          <td style="font-weight:600; padding-left:16px">${p.full_name}</td>
           <td style="color:var(--text2)">${p.username}</td>
           <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+          <td><span class="badge bs">Active</span></td>
           <td>
-            <select class="form-select" style="font-size:11px; padding:2px 5px" onchange="quickRoleChange('${p.id}', this.value)">
-                <option value="admin" ${p.role === 'admin' ? 'selected' : ''}>Admin</option>
-                <option value="manager" ${p.role === 'manager' ? 'selected' : ''}>Manager</option>
-                <option value="tech" ${p.role === 'tech' ? 'selected' : ''}>Technician</option>
-                <option value="viewer" ${p.role === 'viewer' ? 'selected' : ''}>Viewer</option>
-            </select>
-          </td>
-          <td>
-             <select class="form-select" style="font-size:11px; padding:2px 5px" onchange="quickGroupChange('${p.id}', this.value)">
-                <option value="" ${!p.group_tag ? 'selected' : ''}>None</option>
-                <option value="outside" ${p.group_tag === 'outside' ? 'selected' : ''}>Outside</option>
-                <option value="production" ${p.group_tag === 'production' ? 'selected' : ''}>Production</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+            <div style="display:flex; gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+            </div>
           </td>
         </tr>`).join('');
     }
-  } catch(e) { console.error(e); }
+
+    // 2. FILL THE DROPDOWN (This fixes the blank box in your screenshot)
+    const userSelect = document.getElementById('role-user-select');
+    if (userSelect) {
+      userSelect.innerHTML = active.map(p => 
+        `<option value="${p.id}">${p.full_name} (${p.username})</option>`
+      ).join('') || '<option value="">No users found</option>';
+    }
+
+  } catch (e) {
+    console.error("Error loading users:", e);
+  }
 }
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
@@ -3871,17 +3871,17 @@ async function recoverMessage(deletedId){
 
 // ── ADMIN TAB SWITCHER ────────────────────────────────────────
 function switchAdminTab(tab, btn) {
-  // Hide all sub-panels
+  // Hide all admin sub-panels
   ['admin-approvals', 'admin-users', 'admin-permissions', 'admin-deleted-msgs', 'admin-settings'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
 
-  // Show selected sub-panel
+  // Show the one you clicked
   const target = document.getElementById('admin-' + tab);
   if (target) target.style.display = 'block';
 
-  // UI button styling
+  // Highlight the tab button
   document.querySelectorAll('#panel-admin .tab').forEach(b => {
     b.classList.remove('active');
     b.style.background = 'transparent';
@@ -3891,9 +3891,9 @@ function switchAdminTab(tab, btn) {
   btn.style.background = 'rgba(255,255,255,0.25)';
   btn.style.color = '#fff';
 
-  // TRIGGER REFRESHES
+  // --- TRIGGER DATA RELOADS ---
   if (tab === 'users' || tab === 'permissions') {
-    renderUsersTable(); // This now fills both the table AND your dropdown
+    renderUsersTable(); // This fills the dropdown and the table
   }
   if (tab === 'permissions') {
     renderPermissionsMatrix();
@@ -3905,7 +3905,6 @@ function switchAdminTab(tab, btn) {
     renderAuditLogs();
   }
 }
-
 // ── RESET USER PASSWORD ───────────────────────────────────────
 async function resetUserPassword(userId,userName){
   const newPass=prompt('Set a new password for '+userName+':');
