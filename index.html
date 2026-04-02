@@ -5018,6 +5018,37 @@ function syncAdminRoleSelects() {
         console.log(`Syncing UI for ${profile.username}: Role=${profile.role}, Group=${profile.group_tag}`);
     }
 }
+async function renderAdminPanel(){
+  try {
+    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
+    if (!profiles) return;
+    
+    const pending = profiles.filter(p => p.status === 'pending');
+    const active = profiles.filter(p => p.status === 'approved');
+
+    document.getElementById('pending-count').textContent = pending.length || '0';
+    document.getElementById('pending-list').innerHTML = pending.map(p => `
+      <div class="parts-row">
+        <div style="flex:1"><b>${p.full_name}</b> (${p.username})</div>
+        <button class="btn btn-success btn-sm" onclick="approveUser('${p.id}')">Approve</button>
+      </div>`).join('') || 'No pending requests';
+
+    // Call user table render to fill the rest
+    renderUsersTable();
+  } catch(e){ console.error(e); }
+}
+
+async function approveUser(id){
+  await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);
+  showToast('User approved ✓');
+  renderAdminPanel();
+}
+
+async function renderUsersTable() {
+    // Basic placeholder so it doesn't crash
+    const tableBody = document.getElementById('users-table-body');
+    if (tableBody) tableBody.innerHTML = 'Users loading...';
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
