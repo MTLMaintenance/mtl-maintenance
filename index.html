@@ -5241,6 +5241,69 @@ function insertMention(username, atPos) {
     hideMentionDropdown();
     input.focus();
 }
+// --- THE MASTER SWITCHBOARD ---
+function showPanel(id) {
+    console.log("Navigating to:", id);
+    window.scrollTo(0, 0);
+
+    // 1. Hide all panels
+    document.querySelectorAll('.panel').forEach(p => {
+        p.style.display = 'none';
+        p.classList.remove('active');
+    });
+
+    // 2. Show the target panel
+    const target = document.getElementById('panel-' + id);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+    }
+
+    // 3. Update nav buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
+            btn.classList.add('active');
+        }
+    });
+
+    // 4. Trigger drawing functions
+    const renderMap = {
+        'dashboard': renderDashboard,
+        'calendar': renderCalendar,
+        'equipment': renderEquipmentTable,
+        'tasks': renderTasks,
+        'schedule': renderSchedule,
+        'parts': renderParts,
+        'suppliers': renderSuppliers,
+        'documents': renderDocuments,
+        'analytics': renderAnalytics,
+        'admin': renderAdminPanel,
+        'checklists': renderChecklistTemplates,
+        'chat': () => { renderChat(); markChannelRead(currentChannel); },
+        'tools': () => { renderTools(); updateWishCount(); }
+    };
+
+    if (renderMap[id]) renderMap[id]();
+}
+
+// --- THE GROUP FILTER (Dashboard tabs) ---
+function setGroupFilter(group) {
+    activeGroupFilter = group;
+    const groups = ['all', 'outside', 'production'];
+    groups.forEach(g => {
+        const btn = document.getElementById('grp-' + g);
+        if (!btn) return;
+        if (g === group) {
+            btn.style.background = '#fff';
+            btn.style.color = '#1a1a18';
+        } else {
+            btn.style.background = 'rgba(255,255,255,0.15)';
+            btn.style.color = '#fff';
+        }
+    });
+    renderDashboard();
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
@@ -5379,6 +5442,7 @@ function insertMention(username, atPos) {
     </div>
   </div>
 </div>
+    
     </script>
         <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
