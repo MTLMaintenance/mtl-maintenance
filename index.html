@@ -440,6 +440,28 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   .modal {
     width: 95% !important;
     padding: 15px !important;
+ .sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #639922; /* Green */
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.sync-dot.syncing {
+  background: #EF9F27; /* Orange */
+  animation: pulse 1s infinite;
+}
+
+.sync-dot.offline {
+  background: #E24B4A; /* Red */
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
   }
 }
 </style>
@@ -1198,7 +1220,21 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
-async function generateSessionToken() {
+function setSyncStatus(s) {
+  const dot = document.getElementById('sync-dot'); 
+  if(!dot) return;
+  
+  // Reset classes
+  dot.className = 'sync-dot';
+  
+  if(s === 'syncing') {
+    dot.classList.add('syncing'); // This makes it pulse orange
+  } else if(s === 'offline') {
+    dot.classList.add('offline'); // This makes it red
+  }
+  // If 'online', it stays green (default)
+}
+    async function generateSessionToken() {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
   return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
