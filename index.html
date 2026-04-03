@@ -76,12 +76,10 @@ body, html {
   overflow: hidden; /* Stops the whole page from bouncing */
 }
 
-  #app {
-  display: flex;
+ #app {
+  display: none; /* Hidden until login */
   flex-direction: column;
-  height: 100vh;
-  width: 100%;
-  background: #1a1a18;
+  height: calc(100vh - 90px); /* Adjusts for the 2-row header */
 }
  
   /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
@@ -172,21 +170,19 @@ button[onclick="saveInvoice()"] {
 /* --- UNIVERSAL HEADER STYLES --- */
 .topbar {
   display: flex !important;
-  flex-direction: column !important; /* Forces Row 1 on top of Row 2 */
-  background: rgba(0, 0, 0, 0.9) !important;
+  flex-direction: column !important; /* Forces row 2 under row 1 */
+  background: #000 !important;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  flex-shrink: 0; /* Header stays fixed size */
+  position: sticky;
+  top: 0;
   z-index: 1000;
-  backdrop-filter: blur(10px);
 }
-
-/* Row 1: Logo, Search, Actions */
 .topbar-main-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 8px 16px;
-  gap: 15px;
+  width: 100%;
 }
 
 .search-wrap {
@@ -576,30 +572,29 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 <div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
 <!-- APP -->
-<div id="app" style="display:none">
-
-     <!-- All your nav-buttons stay here -->
-  </nav>
-</div>
-  <div class="topbar">
-  <!-- ROW 1 -->
+<div class="topbar" id="app-header" style="display:none">
+  <!-- ROW 1: BRAND & ACTIONS -->
   <div class="topbar-main-row">
     <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
+    
     <div style="position:relative; flex:1; max-width:250px">
       <input type="text" id="global-search" class="form-input" placeholder="Search..." oninput="handleGlobalSearch()"/>
+      <div id="search-results" style="display:none; position:absolute; top:34px; left:0; right:0; background:#1c1c1a; border:1px solid #444; border-radius:8px; z-index:1100; max-height:300px; overflow-y:auto"></div>
     </div>
+
     <div class="topbar-right">
        <button class="btn btn-secondary btn-sm" onclick="startQRScanner()">📷 Scan</button>
        <button class="btn btn-primary btn-sm" onclick="signOut()">Sign Out</button>
     </div>
   </div>
-  <!-- ROW 2 -->
+
+  <!-- ROW 2: DYNAMIC NAVIGATION -->
   <nav class="nav" id="main-nav"></nav>
 </div>
 
-<!-- Ensure the main app container starts here -->
+<!-- THE MAIN CONTENT AREA -->
 <div id="app" style="display:none">
-  <!-- All your panels (Dashboard, etc.) go inside here -->
+  <!-- ALL PANELS START BELOW THIS LINE -->
 
 
     <nav class="nav" id="main-nav">
