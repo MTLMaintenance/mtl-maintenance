@@ -581,34 +581,26 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
      <!-- All your nav-buttons stay here -->
   </nav>
 </div>
-    <div class="topbar">
+  <div class="topbar">
   <!-- ROW 1 -->
   <div class="topbar-main-row">
-    <div class="logo" onclick="showPanel('dashboard')" style="cursor:pointer; color:#fff; font-weight:700">⚙ MTL</div>
-    
-    <!-- Search -->
-    <div style="position:relative; flex:1; max-width:400px">
-      <input type="text" id="global-search" class="form-input" placeholder="Search fleet, parts, tasks..." style="width:100%; height:32px; background:rgba(255,255,255,0.1); border:none; color:#fff; padding-left:30px; font-size:13px" oninput="handleGlobalSearch()"/>
-      <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.4">🔍</span>
-      <div id="search-results" style="display:none; position:absolute; top:36px; left:0; right:0; background:#1c1c1a; border:1px solid #444; border-radius:8px; z-index:1100; max-height:400px; overflow-y:auto"></div>
+    <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
+    <div style="position:relative; flex:1; max-width:250px">
+      <input type="text" id="global-search" class="form-input" placeholder="Search..." oninput="handleGlobalSearch()"/>
     </div>
-
-    <!-- Right side -->
-    <div class="topbar-right" style="display:flex; gap:8px">
+    <div class="topbar-right">
        <button class="btn btn-secondary btn-sm" onclick="startQRScanner()">📷 Scan</button>
        <button class="btn btn-primary btn-sm" onclick="signOut()">Sign Out</button>
     </div>
   </div>
-
-  <!-- ROW 2: Managed by JavaScript -->
+  <!-- ROW 2 -->
   <nav class="nav" id="main-nav"></nav>
 </div>
-    <!-- Search Bar -->
-    <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
-      <input type="text" id="global-search" class="form-input" placeholder="Search..." style="width:100%; height:28px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:11px; padding-left:25px" oninput="handleGlobalSearch()"/>
-      <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:10px; opacity:0.5">🔍</span>
-      <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
-    </div>
+
+<!-- Ensure the main app container starts here -->
+<div id="app" style="display:none">
+  <!-- All your panels (Dashboard, etc.) go inside here -->
+
 
     <nav class="nav" id="main-nav">
       <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
@@ -3973,66 +3965,76 @@ function openModal(id) {
     console.error("Could not find modal with ID:", id);
   }
 }
-
-// ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
-  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  console.log("Entering App...");
+  try { 
+    localStorage.setItem('mp_session', JSON.stringify(currentUser)); 
+  } catch(e) {}
+
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex'; 
+  document.getElementById('app').style.display = 'flex'; // Turn on the app container
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
+  // 1. Build & Sort Navigation
   const nav = document.getElementById('main-nav');
-  nav.innerHTML = '';
+  if (nav) {
+      nav.innerHTML = '';
+      const buttons = [
+        { id: 'analytics', label: 'Analytics' },
+        { id: 'calendar', label: 'Calendar' },
+        { id: 'chat', label: 'Chat' },
+        { id: 'checklists', label: 'Checklists' },
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'documents', label: 'Docs' },
+        { id: 'equipment', label: 'Equipment' },
+        { id: 'parts', label: 'Parts' },
+        { id: 'schedule', label: 'Schedule' },
+        { id: 'suppliers', label: 'Suppliers' },
+        { id: 'tools', label: 'Tool Crib' },
+        { id: 'tasks', label: 'Work Orders' }
+      ];
 
-  const buttons = [
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'calendar', label: 'Calendar' },
-    { id: 'chat', label: 'Chat' },
-    { id: 'checklists', label: 'Checklists' },
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'documents', label: 'Docs' },
-    { id: 'equipment', label: 'Equipment' },
-    { id: 'parts', label: 'Parts' },
-    { id: 'schedule', label: 'Schedule' },
-    { id: 'suppliers', label: 'Suppliers' },
-    { id: 'tools', label: 'Tool Crib' },
-    { id: 'tasks', label: 'Work Orders' }
-  ];
+      // Sort A-Z
+      buttons.sort((a, b) => a.label.localeCompare(b.label));
 
-  // 1. Sort A-Z
-  buttons.sort((a, b) => a.label.localeCompare(b.label));
+      // Filter and Create
+      buttons.forEach(btn => {
+        if (btn.id === 'analytics' && !can('canViewReports')) return;
+        if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
 
-  // 2. Build Buttons
-  buttons.forEach(btn => {
-    // Skip if no permission
-    if (btn.id === 'analytics' && !can('canViewReports')) return;
-    if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
+        const b = document.createElement('button');
+        b.className = 'nav-btn';
+        if (btn.id === 'dashboard') b.classList.add('active');
+        b.onclick = () => showPanel(btn.id);
+        b.innerHTML = btn.id === 'chat' ? 
+          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
+        nav.appendChild(b);
+      });
 
-    const b = document.createElement('button');
-    b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
-    b.onclick = () => showPanel(btn.id);
-    b.innerHTML = btn.id === 'chat' ? 
-      `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
-    nav.appendChild(b);
-  });
-
-  // 3. Add Admin at the very end
-  if (currentUser.role === 'admin') {
-    const adminBtn = document.createElement('button');
-    adminBtn.className = 'nav-btn';
-    adminBtn.onclick = () => showPanel('admin');
-    adminBtn.textContent = 'Admin';
-    nav.appendChild(adminBtn);
+      // Add Admin last
+      if (currentUser.role === 'admin') {
+        const adminBtn = document.createElement('button');
+        adminBtn.className = 'nav-btn';
+        adminBtn.onclick = () => showPanel('admin');
+        adminBtn.textContent = 'Admin';
+        nav.appendChild(adminBtn);
+      }
   }
 
+  // 2. Load Data
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
-  renderDashboard();
+  
+  // 3. FORCE THE DASHBOARD TO OPEN
+  showPanel('dashboard'); 
+  
   await initChat();
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
 }
+// ── FULL enterApp ────────────────────────────────────────────
+
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
 function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
