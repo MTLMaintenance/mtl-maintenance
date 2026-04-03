@@ -431,8 +431,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 }
 /* MOBILE RESPONSIVE OVERRIDES                */
 /* ========================================== */
-@media (max-width: 768px) {
- 
     @media (max-width: 768px) {
   /* 1. Make the chat container stack vertically */
   #panel-chat > div {
@@ -472,7 +470,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     flex-wrap: wrap !important;
     padding: 10px 12px !important;
     gap: 10px !important;
-  }
+   position: sticky !important;
+    top: 0;
+    z-index: 1000;
+    }
   #global-search {
     max-width: 120px !important;
     font-size: 11px !important;
@@ -547,7 +548,39 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   bottom: 100% !important;
   z-index: 9999 !important;
   background: var(--bg) !important;
-</style>
+ #app {
+    padding-top: 0 !important;
+  }
+
+  /* 2. Fix the Panel height so it doesn't push off-screen */
+  .panel {
+    padding: 10px !important;
+    height: calc(100vh - 100px) !important; /* Subtracts header height */
+    overflow: hidden;
+  }
+
+  /* 3. Force Chat to fill the screen properly */
+  #panel-chat > div {
+    height: 100% !important;
+    margin-top: 0 !important;
+  }
+
+  /* 4. Fix the Sidebar "Hanging" notification dots */
+  #chat-sidebar {
+    top: 0 !important; /* Sidebar should start at the very top */
+    padding-top: 20px !important;
+    height: 100vh !important;
+  }
+
+  /* 5. Make the message area scrollable but fixed height */
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+    
+    </style>
 </head>
 <body>
 <div id="offline-banner">⚠ You're offline — changes will sync when reconnected</div>
@@ -3810,37 +3843,45 @@ function markChannelRead(channel) {
     // Refresh the counts immediately
     updateUnreadBadge();
 }
-
 function updateUnreadBadge() {
     let totalUnread = 0;
     
-    // Get a list of every unique channel that has ever had a message
-    const allKnownChannels = [...new Set((state.chatMessages || []).map(m => m.channel))];
+    // List of all system channels
+    const channels = ['general', 'outside', 'production'];
 
-    allKnownChannels.forEach(ch => {
-        // Find when this user last read this specific channel
+    // 1. Check main channels
+    channels.forEach(ch => {
         const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        
-        // Count messages in this channel newer than the last read date
-        const unreadInChannel = (state.chatMessages || []).filter(m => 
+        const count = (state.chatMessages || []).filter(m => 
             m.channel === ch && 
             new Date(m.created_at) > lastRead && 
             m.author !== currentUser?.username
         ).length;
+        
+        totalUnread += count;
 
-        totalUnread += unreadInChannel;
-
-        // Update sidebar dots if the button exists on screen
-        // Standard channels use ids like dot-ch-general
-        // DM channels use ids like dot-dm-dm-alpha-beta
-        let dot = document.getElementById(`dot-ch-${ch}`) || document.getElementById(`dot-dm-${ch}`);
-        if (dot) {
-            dot.style.display = unreadInChannel > 0 ? 'inline-block' : 'none';
-        }
+        // TARGET BOTH DESKTOP AND MOBILE IDs
+        const dot = document.getElementById(`dot-ch-${ch}`);
+        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
     });
 
-    // UPDATE THE TOPBAR BADGE
-    // Make sure this ID matches your HTML: chat-unread-top
+    // 2. Check DMs
+    (state.users_list_cache || []).forEach(u => {
+        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
+        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+        const count = (state.chatMessages || []).filter(m => 
+            m.channel === ch && 
+            new Date(m.created_at) > lastRead && 
+            m.author !== currentUser?.username
+        ).length;
+        
+        totalUnread += count;
+        
+        const dot = document.getElementById(`dot-dm-${ch}`);
+        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
+    });
+
+    // 3. Update topbar global badge
     const topBadge = document.getElementById('chat-unread-top');
     if (topBadge) {
         topBadge.textContent = totalUnread;
@@ -3919,6 +3960,7 @@ function showPanel(id) {
     if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
 },
         'tools': () => { 
+              window.scrollTo(0, 0);
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
         }
