@@ -69,16 +69,30 @@ body > #invoice-photo-area {
 }
 
 /* 3. Ensure the main app doesn't have extra bottom padding */
-#app {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* Stops the whole page from bouncing */
 }
+
+  #app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: #1a1a18;
+}
+ 
   /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
 #main-nav .nav-btn {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid transparent !important;
-  padding: 5px 11px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  font-size: 12px;
+  padding: 6px 12px;
+  white-space: nowrap;
+  border-radius: 6px;
 }
 
 #main-nav .nav-btn:hover {
@@ -87,12 +101,10 @@ body > #invoice-photo-area {
 }
 
 #main-nav .nav-btn.active {
-  background: rgba(255, 255, 255, 0.25) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  font-weight: 600 !important;
+  background: #ffffff !important;
+  color: #1a1a18 !important;
+  font-weight: 700;
 }
-
 /* Ensure the Search Bar doesn't look like a button */
 #global-search {
   background: rgba(255, 255, 255, 0.1) !important;
@@ -159,22 +171,22 @@ button[onclick="saveInvoice()"] {
     
 /* --- UNIVERSAL HEADER STYLES --- */
 .topbar {
-  background: rgba(0,0,0,0.88);
+  display: flex !important;
+  flex-direction: column !important; /* Forces Row 1 on top of Row 2 */
+  background: rgba(0, 0, 0, 0.9) !important;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  position: sticky;
-  top: 0;
+  flex-shrink: 0; /* Header stays fixed size */
   z-index: 1000;
-  backdrop-filter: blur(8px);
-  display: flex;
-  flex-direction: column;
+  backdrop-filter: blur(10px);
 }
 
+/* Row 1: Logo, Search, Actions */
 .topbar-main-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  gap: 12px;
+  gap: 15px;
 }
 
 .search-wrap {
@@ -203,14 +215,15 @@ button[onclick="saveInvoice()"] {
 }
 
 .nav {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   gap: 4px;
-  padding: 0 16px 8px;
-  overflow-x: auto;
-  scrollbar-width: none; /* Hide scrollbar Firefox */
+  padding: 0 12px 10px;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-
-.nav::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+.nav::-webkit-scrollbar { display: none; }
 
 .logo {
   color: #ffffff !important;
@@ -479,11 +492,12 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     overflow: hidden;
   }
 
-  .panel.active {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px !important;
-  }
+.panel.active {
+  flex: 1;
+  overflow-y: auto !important; /* Only the content scrolls */
+  padding: 20px;
+  display: block;
+}
 
   .search-wrap {
     max-width: 140px;
@@ -563,30 +577,32 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
 <!-- APP -->
 <div id="app" style="display:none">
-<div class="topbar">
-  <!-- ROW 1: Logo, Search, and Action Buttons -->
-  <div class="topbar-main-row">
-    <div class="logo" onclick="showPanel('dashboard')">⚙ MTL</div>
-    
-    <div class="search-wrap">
-      <input type="text" id="global-search" class="form-input" placeholder="Search..." oninput="handleGlobalSearch()"/>
-      <span class="search-icon">🔍</span>
-      <div id="search-results" style="display:none"></div>
-    </div>
 
-    <div class="topbar-right">
-       <button class="btn btn-secondary btn-sm" onclick="startQRScanner()" title="Scan QR">📷</button>
-       <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign Out">↩</button>
-    </div>
-  </div>
-
-  <!-- ROW 2: The Navigation (Alphabetized via JS) -->
-  <nav class="nav" id="main-nav"></nav>
-</div>
      <!-- All your nav-buttons stay here -->
   </nav>
 </div>
+    <div class="topbar">
+  <!-- ROW 1 -->
+  <div class="topbar-main-row">
+    <div class="logo" onclick="showPanel('dashboard')" style="cursor:pointer; color:#fff; font-weight:700">⚙ MTL</div>
     
+    <!-- Search -->
+    <div style="position:relative; flex:1; max-width:400px">
+      <input type="text" id="global-search" class="form-input" placeholder="Search fleet, parts, tasks..." style="width:100%; height:32px; background:rgba(255,255,255,0.1); border:none; color:#fff; padding-left:30px; font-size:13px" oninput="handleGlobalSearch()"/>
+      <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.4">🔍</span>
+      <div id="search-results" style="display:none; position:absolute; top:36px; left:0; right:0; background:#1c1c1a; border:1px solid #444; border-radius:8px; z-index:1100; max-height:400px; overflow-y:auto"></div>
+    </div>
+
+    <!-- Right side -->
+    <div class="topbar-right" style="display:flex; gap:8px">
+       <button class="btn btn-secondary btn-sm" onclick="startQRScanner()">📷 Scan</button>
+       <button class="btn btn-primary btn-sm" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- ROW 2: Managed by JavaScript -->
+  <nav class="nav" id="main-nav"></nav>
+</div>
     <!-- Search Bar -->
     <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
       <input type="text" id="global-search" class="form-input" placeholder="Search..." style="width:100%; height:28px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:11px; padding-left:25px" oninput="handleGlobalSearch()"/>
@@ -3962,51 +3978,45 @@ function openModal(id) {
 async function enterApp(){
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
+  document.getElementById('app').style.display = 'flex'; 
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
-  // 1. Setup Navigation
   const nav = document.getElementById('main-nav');
-  nav.innerHTML = ''; // Clear existing
+  nav.innerHTML = '';
 
-  // Define all possible buttons
-  const allButtons = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'calendar', label: 'Calendar' },
-    { id: 'equipment', label: 'Equipment' },
-    { id: 'tasks', label: 'Work Orders' },
-    { id: 'schedule', label: 'Schedule' },
-    { id: 'parts', label: 'Parts' },
-    { id: 'suppliers', label: 'Suppliers' },
-    { id: 'documents', label: 'Docs' },
+  const buttons = [
     { id: 'analytics', label: 'Analytics' },
-    { id: 'checklists', label: 'Checklists' },
+    { id: 'calendar', label: 'Calendar' },
     { id: 'chat', label: 'Chat' },
-    { id: 'tools', label: 'Tool Crib' }
+    { id: 'checklists', label: 'Checklists' },
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'documents', label: 'Docs' },
+    { id: 'equipment', label: 'Equipment' },
+    { id: 'parts', label: 'Parts' },
+    { id: 'schedule', label: 'Schedule' },
+    { id: 'suppliers', label: 'Suppliers' },
+    { id: 'tools', label: 'Tool Crib' },
+    { id: 'tasks', label: 'Work Orders' }
   ];
 
-  // 2. Filter by Permissions
-  let allowedButtons = allButtons.filter(btn => {
-    if (btn.id === 'analytics' && !can('canViewReports')) return false;
-    if (btn.id === 'suppliers' && !can('canManageSuppliers')) return false;
-    return true;
-  });
+  // 1. Sort A-Z
+  buttons.sort((a, b) => a.label.localeCompare(b.label));
 
-  // 3. Sort Alphabetically
-  allowedButtons.sort((a, b) => a.label.localeCompare(b.label));
+  // 2. Build Buttons
+  buttons.forEach(btn => {
+    // Skip if no permission
+    if (btn.id === 'analytics' && !can('canViewReports')) return;
+    if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
 
-  // 4. Draw Buttons
-  allowedButtons.forEach(btn => {
     const b = document.createElement('button');
     b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
     b.onclick = () => showPanel(btn.id);
     b.innerHTML = btn.id === 'chat' ? 
-      `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : 
-      btn.label;
+      `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
     nav.appendChild(b);
   });
 
-  // 5. Add Admin at the very end
+  // 3. Add Admin at the very end
   if (currentUser.role === 'admin') {
     const adminBtn = document.createElement('button');
     adminBtn.className = 'nav-btn';
@@ -4015,7 +4025,6 @@ async function enterApp(){
     nav.appendChild(adminBtn);
   }
 
-  // 6. Data Initialization
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
