@@ -432,42 +432,72 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 /* MOBILE RESPONSIVE OVERRIDES                */
 /* ========================================== */
 @media (max-width: 768px) {
-  /* 1. Make the Top Bar taller to hold two rows */
-  .topbar {
+ 
+    @media (max-width: 768px) {
+  /* 1. Make the chat container stack vertically */
+  #panel-chat > div {
+    flex-direction: column !important;
+    height: calc(100vh - 160px) !important;
+  }
+
+  /* 2. Hide the sidebar off-screen to the left */
+  #chat-sidebar {
+    position: fixed !important;
+    left: -260px; /* Off-screen */
+    top: 52px;
+    bottom: 0;
+    z-index: 2000;
+    transition: left 0.3s ease;
+    width: 240px !important;
+    background: rgba(20, 20, 20, 0.98) !important; /* Solid dark background for mobile menu */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    padding-top: 60px !important;
+  }
+  #chat-sidebar.open {
+    left: 0;
+  }
+
+  #panel-chat .main-chat-window {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  #chat-mobile-toggle {
+    display: flex !important;
+  }
+}
+
+    .topbar {
     height: auto !important;
     flex-wrap: wrap !important;
     padding: 10px 12px !important;
     gap: 10px !important;
   }
-
-  /* 2. Shrink the search bar so it fits on line 1 */
   #global-search {
     max-width: 120px !important;
     font-size: 11px !important;
   }
 
-  /* 3. Move the Nav Buttons to a second row and make them swipeable */
   .nav {
-    order: 10; /* Forces it to the bottom of the flex container */
+    order: 10; 
     width: 100% !important;
-    overflow-x: auto !important; /* Enable swiping */
+    overflow-x: auto !important; 
     display: flex !important;
     padding-bottom: 5px;
-    -webkit-overflow-scrolling: touch; /* Smooth swiping on iPhone */
-    scrollbar-width: none; /* Hide scrollbar */
+    -webkit-overflow-scrolling: touch; 
+    scrollbar-width: none;
   }
 
   .nav::-webkit-scrollbar {
-    display: none; /* Hide scrollbar on Chrome/Android */
+    display: none; 
   }
 
   .nav-btn {
     padding: 6px 14px !important;
-    background: rgba(255, 255, 255, 0.1) !important; /* Make buttons easier to see on mobile */
+    background: rgba(255, 255, 255, 0.1) !important; 
     font-size: 13px !important;
   }
 
-  /* 4. Adjust the logo and right-side actions */
   .logo {
     font-size: 14px !important;
   }
@@ -477,15 +507,15 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   }
 
   .user-chip {
-    display: none !important; /* Hide user name on mobile to save space */
+    display: none !important; 
   }
   
-  /* 5. Make Metrics (Dashboard) fit 2 per row */
+ 
   .metrics {
     grid-template-columns: 1fr 1fr !important;
   }
   
-  /* 6. Ensure Modals take up more screen on mobile */
+  
   .modal {
     width: 95% !important;
     padding: 15px !important;
@@ -513,6 +543,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 }
   }
 }
+#mention-dropdown {
+  bottom: 100% !important;
+  z-index: 9999 !important;
+  background: var(--bg) !important;
 </style>
 </head>
 <body>
@@ -776,7 +810,12 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
     <!-- MAIN CHAT WINDOW -->
     <div style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.94); border-radius:var(--radius-lg); border:1px solid var(--border); overflow:hidden">
-      <div style="padding:15px 20px; border-bottom:1px solid var(--border); background:var(--bg2); font-weight:700; font-size:15px" id="chat-header-title"># general</div>
+     <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; gap:10px">
+  <!-- MOBILE MENU BUTTON (Hidden on desktop) -->
+  <button id="chat-mobile-toggle" onclick="toggleChatSidebar()" style="display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text2)">☰</button>
+  
+  <div style="font-weight:700; font-size:15px" id="chat-header-title"># general</div>
+</div>
       
       <div id="chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px"></div>
       
@@ -5398,6 +5437,24 @@ function showPanel(id) {
         console.warn("No render function found for panel ID:", id);
     }
 }
+// Toggle the sidebar on mobile
+function toggleChatSidebar() {
+    const sidebar = document.getElementById('chat-sidebar');
+    if (sidebar) sidebar.classList.toggle('open');
+}
+
+// Update your existing switchChannel to close the menu on mobile
+const _baseSwitchChannel = switchChannel; // Keep your old logic
+switchChannel = function(channel, btn) {
+    // Run the original switching logic
+    _baseSwitchChannel(channel, btn);
+    
+    // AUTO-CLOSE SIDEBAR ON MOBILE
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('chat-sidebar');
+        if (sidebar) sidebar.classList.remove('open');
+    }
+};
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
