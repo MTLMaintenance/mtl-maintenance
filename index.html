@@ -431,155 +431,77 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 }
 /* MOBILE RESPONSIVE OVERRIDES                */
 /* ========================================== */
-    @media (max-width: 768px) {
-  /* 1. Make the chat container stack vertically */
-  #panel-chat > div {
-    flex-direction: column !important;
-    height: calc(100vh - 160px) !important;
+   @media (max-width: 768px) {
+  /* 1. Reset Body to prevent bounce scrolling */
+  body, html {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 
-  /* 2. Hide the sidebar off-screen to the left */
-  #chat-sidebar {
-    position: fixed !important;
-    left: -260px; /* Off-screen */
-    top: 52px;
-    bottom: 0;
-    z-index: 2000;
-    transition: left 0.3s ease;
-    width: 240px !important;
-    background: rgba(20, 20, 20, 0.98) !important; /* Solid dark background for mobile menu */
-    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-    padding-top: 60px !important;
-  }
-  #chat-sidebar.open {
-    left: 0;
-  }
-
-  #panel-chat .main-chat-window {
-    width: 100% !important;
-    border-radius: 0 !important;
-  }
-
-  #chat-mobile-toggle {
-    display: flex !important;
-  }
-}
-
-    .topbar {
+  /* 2. Topbar: Stacked but tight */
+  .topbar {
     height: auto !important;
-    flex-wrap: wrap !important;
-    padding: 10px 12px !important;
-    gap: 10px !important;
-   position: sticky !important;
-    top: 0;
-    z-index: 1000;
-    }
-  #global-search {
-    max-width: 120px !important;
-    font-size: 11px !important;
-  }
-
-  .nav {
-    order: 10; 
-    width: 100% !important;
-    overflow-x: auto !important; 
-    display: flex !important;
-    padding-bottom: 5px;
-    -webkit-overflow-scrolling: touch; 
-    scrollbar-width: none;
-  }
-
-  .nav::-webkit-scrollbar {
-    display: none; 
-  }
-
-  .nav-btn {
-    padding: 6px 14px !important;
-    background: rgba(255, 255, 255, 0.1) !important; 
-    font-size: 13px !important;
-  }
-
-  .logo {
-    font-size: 14px !important;
+    padding: 8px !important;
+    flex-direction: column !important;
+    gap: 8px !important;
   }
 
   .topbar-right {
-    gap: 4px !important;
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .user-chip {
-    display: none !important; 
-  }
-  
- 
-  .metrics {
-    grid-template-columns: 1fr 1fr !important;
-  }
-  
-  
-  .modal {
-    width: 95% !important;
-    padding: 15px !important;
- .sync-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #639922; /* Green */
-  display: inline-block;
-  margin-right: 4px;
-}
-
-.sync-dot.syncing {
-  background: #EF9F27; /* Orange */
-  animation: pulse 1s infinite;
-}
-
-.sync-dot.offline {
-  background: #E24B4A; /* Red */
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .4; }
-}
-  }
-}
-#mention-dropdown {
-  bottom: 100% !important;
-  z-index: 9999 !important;
-  background: var(--bg) !important;
- #app {
-    padding-top: 0 !important;
+  /* 3. The Panels: Fill the remaining space exactly */
+  #app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* 2. Fix the Panel height so it doesn't push off-screen */
   .panel {
+    flex: 1;
+    overflow-y: auto !important; /* Allow internal scrolling only */
     padding: 10px !important;
-    height: calc(100vh - 100px) !important; /* Subtracts header height */
-    overflow: hidden;
-  }
-
-  /* 3. Force Chat to fill the screen properly */
-  #panel-chat > div {
-    height: 100% !important;
     margin-top: 0 !important;
   }
 
-  /* 4. Fix the Sidebar "Hanging" notification dots */
-  #chat-sidebar {
-    top: 0 !important; /* Sidebar should start at the very top */
-    padding-top: 20px !important;
-    height: 100vh !important;
+  /* 4. Chat Specific: Full height, no outer scroll */
+  #panel-chat {
+    height: calc(100vh - 120px) !important;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* 5. Make the message area scrollable but fixed height */
-  #chat-messages {
+  #panel-chat > div {
     flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+
+  #chat-messages {
+    flex: 1 !important;
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+
+  /* 5. The Sidebar: Keep it on top */
+  #chat-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -100%;
+    width: 80% !important;
+    height: 100% !important;
+    z-index: 9999 !important;
+    background: #1a1a18 !important;
+    transition: left 0.3s ease;
+  }
+
+  #chat-sidebar.open {
+    left: 0;
   }
 }
-    
     </style>
 </head>
 <body>
@@ -3806,30 +3728,32 @@ function handleChatInput(el){
 }
 function insertMention(name){const i=document.getElementById('chat-input');if(!i)return;const v=i.value;const a=v.lastIndexOf('@');i.value=v.slice(0,a)+'@'+name.replace(/ /g,'')+' ';const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';i.focus();}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
+
 function switchChannel(channel, btn) {
-    try {
-        currentChannel = channel;
-        
-        // Update button colors
-        document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
+    currentChannel = channel;
+    
+    // 1. Immediately mark the channel as read in the DB
+    markChannelRead(channel);
 
-        // Update the Header Title
-        const header = document.getElementById('chat-header-title');
-        if (header) {
-            if (channel.startsWith('dm-')) {
-                // Get the name from the button text
-                header.textContent = '@ ' + btn.innerText.split('\n')[0].trim();
-            } else {
-                header.textContent = '# ' + channel;
-            }
-        }
+    // 2. UI Updates
+    document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
 
-        loadChatMessages(channel);
-        markChannelRead(channel); // Clears the red dots
-    } catch (e) { console.error("Switch error:", e); }
+    const header = document.getElementById('chat-header-title');
+    if (header) header.textContent = channel.startsWith('dm-') ? '@ ' + btn.innerText.split('\n')[0] : '# ' + channel;
+
+    // 3. Load messages
+    loadChatMessages(channel);
+
+    // 4. FORCE UI badge refresh
+    updateUnreadBadge();
+
+    // 5. Close sidebar if on mobile
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('chat-sidebar');
+        if (sidebar) sidebar.classList.remove('open');
+    }
 }
-
 function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-equip-name');const w=document.getElementById('chat-tag-equip');if(b)b.style.display='flex';if(n)n.textContent='🔧 '+equipName(id);if(w)w.style.display='inline-flex';document.getElementById('tag-equip-select').value='';}
 function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-task-name');const w=document.getElementById('chat-tag-task');const t=state.tasks.find(x=>x.id===id);if(b)b.style.display='flex';if(n)n.textContent='📋 '+(t?.name||'Work Order');if(w)w.style.display='inline-flex';document.getElementById('tag-task-select').value='';}
 function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
@@ -3957,7 +3881,8 @@ function showPanel(id) {
         'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
         'chat': () => { 
     if (typeof renderChat === 'function') renderChat(); 
-    if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
+    if (typeof markChannelRead === 'function') markChannelRead(currentChannel);
+    if(typeof clearAllChatNotificaions ===  'function') clearAllChatNotifications();        
 },
         'tools': () => { 
               window.scrollTo(0, 0);
@@ -5497,6 +5422,19 @@ switchChannel = function(channel, btn) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
+function clearAllChatNotifications() {
+    // Clear current channel
+    markChannelRead(currentChannel);
+    
+    // Force a recount
+    updateUnreadBadge();
+    
+    // If the top bar still shows a number, force it to hide
+    const topBadge = document.getElementById('chat-unread-top');
+    if (topBadge && parseInt(topBadge.textContent) === 0) {
+        topBadge.style.display = 'none';
+    }
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
