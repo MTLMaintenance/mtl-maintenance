@@ -1,11 +1,60 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* 1. Hide the Invoice Modal backdrop unless it's open */
+#panel-chat {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+#chat-sidebar {
+    width: 240px !important;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 15px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+#chat-sidebar .chat-channel-btn {
+    background: transparent !important;
+    color: #ffffff !important;
+    border: 1px solid transparent !important;
+    padding: 10px 12px !important;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+
+#chat-sidebar .chat-channel-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+#chat-sidebar .chat-channel-btn.active {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    font-weight: 600;
+}
+
+.unread-dot {
+    width: 8px;
+    height: 8px;
+    background: #E24B4A;
+    border-radius: 50%;
+    display: inline-block;
+}
+    /* 1. Hide the Invoice Modal backdrop unless it's open */
 #invoice-modal:not(.open) {
     display: none !important;
 }
@@ -706,41 +755,41 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <div class="panel" id="panel-chat">
   <div class="section-header"><span class="section-title">Team Chat</span></div>
   
-  <div style="display:flex; gap:10px; height:calc(100vh - 180px); min-height:500px;">
+  <div style="display:flex; gap:15px; height:calc(100vh - 180px); min-height:550px; align-items: stretch;">
+    
     <!-- SIDEBAR -->
-    <div id="chat-sidebar" style="...">
-  <div style="...">Channels</div>
-  <button class="chat-channel-btn active" id="btn-ch-general" onclick="switchChannel('general', this)">
-    # general <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
-  </button>
-  <button class="chat-channel-btn" id="btn-ch-outside" onclick="switchChannel('outside', this)">
-    # outside <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
-  </button>
-  <button class="chat-channel-btn" id="btn-ch-production" onclick="switchChannel('production', this)">
-    # production <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
-  </button>
+    <div id="chat-sidebar">
+      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:8px">Channels</div>
+      <button class="chat-channel-btn active" id="btn-ch-general" onclick="switchChannel('general', this)">
+        # general <span class="unread-dot" id="dot-ch-general" style="display:none"></span>
+      </button>
+      <button class="chat-channel-btn" id="btn-ch-outside" onclick="switchChannel('outside', this)">
+        # outside <span class="unread-dot" id="dot-ch-outside" style="display:none"></span>
+      </button>
+      <button class="chat-channel-btn" id="btn-ch-production" onclick="switchChannel('production', this)">
+        # production <span class="unread-dot" id="dot-ch-production" style="display:none"></span>
+      </button>
 
-  <div style="...">Direct Messages</div>
-  <div id="dm-list"></div>
-</div>
-    <!-- MAIN CHAT AREA -->
-    <div style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.92); border-radius:var(--radius-lg); overflow:hidden; border:1px solid var(--border)">
-      <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg2); font-weight:600" id="chat-header-title"># general</div>
+      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-top:20px; margin-bottom:8px">Direct Messages</div>
+      <div id="dm-list"></div>
+    </div>
+
+    <!-- MAIN CHAT WINDOW -->
+    <div style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.94); border-radius:var(--radius-lg); border:1px solid var(--border); overflow:hidden">
+      <div style="padding:15px 20px; border-bottom:1px solid var(--border); background:var(--bg2); font-weight:700; font-size:15px" id="chat-header-title"># general</div>
       
-      <div id="chat-messages" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px"></div>
+      <div id="chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px"></div>
       
-      <!-- SINGLE INPUT AREA -->
-      <div style="padding:12px; border-top:1px solid var(--border); background:var(--bg); position:relative">
-        <div id="mention-dropdown" style="display:none; position:absolute; bottom:100%; left:12px; right:12px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); z-index:1001; max-height:150px; overflow-y:auto"></div>
-        <div style="display:flex; gap:8px; align-items:flex-end">
-          <textarea class="form-textarea" id="chat-input" placeholder="Message..." oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)" style="flex:1; min-height:42px; max-height:120px; resize:none"></textarea>
-          <button class="btn btn-primary" onclick="sendChatMessage()" style="height:42px">Send</button>
+      <div style="padding:15px; border-top:1px solid var(--border); background:var(--bg); position:relative">
+        <div id="mention-dropdown" style="display:none; position:absolute; bottom:100%; left:15px; right:15px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); z-index:1001; max-height:150px; overflow-y:auto; margin-bottom:5px"></div>
+        <div style="display:flex; gap:10px; align-items:flex-end">
+          <textarea class="form-textarea" id="chat-input" placeholder="Type a message..." oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)" style="flex:1; min-height:45px; max-height:120px; resize:none; border-radius: 20px; padding: 12px 20px;"></textarea>
+          <button class="btn btn-primary" onclick="sendChatMessage()" style="border-radius: 50%; width: 45px; height: 45px; display:flex; align-items:center; justify-content:center; padding:0">➔</button>
         </div>
       </div>
     </div>
   </div>
 </div>
-  
 
   <!-- ANALYTICS -->
   <div class="panel" id="panel-analytics">
@@ -3643,13 +3692,13 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
         console.error("Chat subscription error:", e);
     }
 }
-async function renderChat(){
-  const banner=document.getElementById('chat-offline-banner');if(banner)banner.style.display=!navigator.onLine?'block':'none';
-  if(!navigator.onLine){const c=document.getElementById('chat-messages');if(c)c.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 20px">Offline — chat unavailable</div>';return;}
-  populateChatTagSelects();
-  await Promise.all([loadChatMessages(currentChannel), renderDmList(), renderOnlineUsers()]);
-  updateUnreadBadge();
+async function renderChat() {
+    console.log("Loading Chat...");
+    await renderDmList();     // 1. Load the DM names
+    updateUnreadBadge();      // 2. Check for red dots
+    loadChatMessages(currentChannel); // 3. Load the actual messages
 }
+
 function populateChatTagSelects(){
   const esel=document.getElementById('tag-equip-select');const tsel=document.getElementById('tag-task-select');
   if(esel)esel.innerHTML='<option value="">+ Equipment</option>'+state.equipment.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
@@ -3755,35 +3804,34 @@ function markChannelRead(channel) {
 function updateUnreadBadge() {
     let totalUnread = 0;
     
-    // Check main channels
+    // 1. Check #channels
     ['general', 'outside', 'production'].forEach(ch => {
-        const lr = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const count = state.chatMessages.filter(m => m.channel === ch && new Date(m.created_at) > lr && m.author !== currentUser.username).length;
+        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+        const count = (state.chatMessages || []).filter(m => m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser.username).length;
         
-        const dot = document.querySelector(`#btn-ch-${ch} .unread-dot`);
+        const dot = document.getElementById(`dot-ch-${ch}`);
         if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
         totalUnread += count;
     });
 
-    // Check all DMs
-    const dmChannels = [...new Set(state.chatMessages.filter(m => m.channel.startsWith('dm-')).map(m => m.channel))];
-    dmChannels.forEach(ch => {
-        const lr = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const count = state.chatMessages.filter(m => m.channel === ch && new Date(m.created_at) > lr && m.author !== currentUser.username).length;
+    // 2. Check DMs
+    (state.users_list_cache || []).forEach(u => {
+        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
+        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+        const count = (state.chatMessages || []).filter(m => m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser.username).length;
         
         const dot = document.getElementById(`dot-dm-${ch}`);
         if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
         totalUnread += count;
     });
 
-    // Update Topbar
+    // 3. Update topbar
     const topBadge = document.getElementById('chat-unread-top');
     if (topBadge) {
         topBadge.textContent = totalUnread;
         topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
     }
 }
-
 
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
@@ -3851,7 +3899,10 @@ function showPanel(id) {
         'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
         'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
         'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
-        'chat': typeof renderChat === 'function' ? renderChat : null,
+        'chat': : () => { 
+    if (typeof renderChat === 'function') renderChat(); 
+    if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
+},
         'tools': () => { 
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
@@ -3999,34 +4050,27 @@ async function updateLastSeen(){
 // ── DIRECT MESSAGES ──────────────────────────────────────────
 let activeDmUser=null;
 function getDmChannel(u1,u2){return 'dm-'+[u1,u2].sort().join('-');}
-async function renderDmList() {
+
+   async function renderDmList() {
     const el = document.getElementById('dm-list');
     if (!el) return;
     
-    try {
-        // Use the cache of users we loaded at startup
-        const users = (state.users_list_cache || []).filter(u => u.username !== currentUser.username);
-        
-        if (users.length === 0) {
-            el.innerHTML = '<div style="color:rgba(255,255,255,0.3); font-size:11px; padding:5px">No other users found</div>';
-            return;
-        }
-
-        el.innerHTML = users.map(u => {
-            // Channel name format: dm-alpha-beta (alphabetical order)
-            const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
-            
-            return `
-            <button class="chat-channel-btn" id="btn-dm-${u.username}" onclick="switchChannel('${ch}', this)">
-                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${u.full_name}</span>
-                <span class="unread-dot" id="dot-dm-${ch}" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
-            </button>`;
-        }).join('');
-    } catch (e) {
-        console.error("DM List error:", e);
+    // Ensure we have users in the cache
+    if (!state.users_list_cache || state.users_list_cache.length === 0) {
+        const { data } = await window._mpdb.from('profiles').select('username, full_name').eq('status', 'approved');
+        state.users_list_cache = data || [];
     }
-}
+
+    const otherUsers = state.users_list_cache.filter(u => u.username !== currentUser.username);
     
+    el.innerHTML = otherUsers.map(u => {
+        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
+        return `
+        <button class="chat-channel-btn" id="btn-dm-${u.username}" onclick="switchChannel('${ch}', this)">
+            ${u.full_name} <span class="unread-dot" id="dot-dm-${ch}" style="display:none"></span>
+        </button>`;
+    }).join('') || '<div style="color:rgba(255,255,255,0.4); font-size:11px; padding-left:12px">No users found</div>';
+} 
 function switchToDm(username,fullName,btn){
   activeDmUser=username;currentChannel=getDmChannel(currentUser.username,username);
   document.querySelectorAll('.chat-channel-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
