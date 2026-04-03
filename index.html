@@ -4416,7 +4416,7 @@ async function saveInvoice() {
       const { data: uploadData, error: uploadError } = await window._mpdb.storage
         .from('invoices')
         .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
-      
+    
       if(!uploadError) {
         photoPath = fileName;
         showToast('Photo uploaded ✓');
@@ -4465,6 +4465,7 @@ async function renderInvoicesList(equipId) {
       listEl.innerHTML = '<div style="color:var(--text3);font-size:13px">No invoices yet</div>';
       return;
     }
+  }
 
     const total = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
@@ -5256,8 +5257,8 @@ function showPanel(id) {
     if (target) {
         target.style.display = 'block';
         target.classList.add('active');
-    }
-
+    
+    
     // 3. Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -5282,26 +5283,8 @@ function showPanel(id) {
         'chat': () => { renderChat(); markChannelRead(currentChannel); },
         'tools': () => { renderTools(); updateWishCount(); }
     };
-
-    if (renderMap[id]) renderMap[id]();
 }
-
-// --- THE GROUP FILTER (Dashboard tabs) ---
-function setGroupFilter(group) {
-    activeGroupFilter = group;
-    const groups = ['all', 'outside', 'production'];
-    groups.forEach(g => {
-        const btn = document.getElementById('grp-' + g);
-        if (!btn) return;
-        if (g === group) {
-            btn.style.background = '#fff';
-            btn.style.color = '#1a1a18';
-        } else {
-            btn.style.background = 'rgba(255,255,255,0.15)';
-            btn.style.color = '#fff';
-        }
-    });
-    if (typeof renderDashboard === 'function') renderDashboard();
+    if (renderMap[id]) renderMap[id]();
 }
 </script>
 <!-- Checklist Template Modal -->
