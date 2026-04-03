@@ -3795,7 +3795,6 @@ function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementB
 function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
 async function handleChatPhoto(input){const file=input.files[0];if(!file)return;const compressed=await compressImage(await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);}),600,0.7);chatPhotoData=compressed;document.getElementById('chat-photo-preview').textContent='📎 Photo attached';input.value='';}
 function markChannelRead(channel) {
-    console.log("Marking as read:", channel);
     lastReadAt[channel] = new Date().toISOString();
     try {
         localStorage.setItem('mp_chat_read', JSON.stringify(lastReadAt));
@@ -3871,7 +3870,7 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 // ── OVERRIDDEN showPanel ──────────────────────────────────────
 // --- THE MASTER SWITCHBOARD ---
 function showPanel(id) {
-    console.log("Navigating to:", id);
+    
     window.scrollTo(0, 0);
 
     // 1. Hide all panels
@@ -5271,9 +5270,54 @@ async function approveUser(id){
 }
 
 async function renderUsersTable() {
-    // Basic placeholder so it doesn't crash
-    const tableBody = document.getElementById('users-table-body');
-    if (tableBody) tableBody.innerHTML = 'Users loading...';
+  const tableBody = document.getElementById('users-table-body');
+  const userSelect = document.getElementById('role-user-select');
+
+  if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px">Fetching users...</td></tr>';
+
+  try {
+    // 1. Fetch all approved users from the database
+    const { data: profiles, error } = await window._mpdb
+      .from('profiles')
+      .select('*')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!profiles) return;
+
+    // Cache the list so other functions (like Role Sync) can use it
+    state.users_list_cache = profiles;
+
+    const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+
+    // 2. Build the Table Rows
+    if (tableBody) {
+      tableBody.innerHTML = profiles.map(p => `
+        <tr>
+          <td style="font-weight:600; padding-left:16px">${p.full_name}</td>
+          <td style="color:var(--text2)">${p.username}</td>
+          <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+          <td><span class="badge bs">Active</span></td>
+          <td>
+            <div style="display:flex; gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px">No active users found.</td></tr>';
+    }
+
+    // 3. Fill the "Change Role" dropdown at the bottom of the page
+    if (userSelect) {
+      userSelect.innerHTML = '<option value="">— Select User —</option>' + 
+        profiles.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
+    }
+
+  } catch (e) {
+    console.error("Error loading users table:", e);
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:20px">Error loading users. Check connection.</td></tr>';
+  }
 }
 function handleChatInput(el) {
     // 1. Auto-resize textarea
@@ -5333,7 +5377,6 @@ function insertMention(username, atPos) {
 }
 // --- THE MASTER SWITCHBOARD ---
 function showPanel(id) {
-    console.log("Navigating to:", id);
     window.scrollTo(0, 0);
 
     // 1. Hide all panels
