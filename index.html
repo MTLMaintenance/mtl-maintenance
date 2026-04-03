@@ -4465,7 +4465,7 @@ async function renderInvoicesList(equipId) {
       listEl.innerHTML = '<div style="color:var(--text3);font-size:13px">No invoices yet</div>';
       return;
     }
-  }
+  
 
     const total = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
