@@ -430,76 +430,43 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   #chat-sidebar-toggle{display:flex!important}
 }
 /* MOBILE RESPONSIVE OVERRIDES                */
-/* ========================================== */
-   @media (max-width: 768px) {
-  /* 1. Reset Body to prevent bounce scrolling */
-  body, html {
-    overflow: hidden !important;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* 2. Topbar: Stacked but tight */
-  .topbar {
-    height: auto !important;
-    padding: 8px !important;
-    flex-direction: column !important;
+@media (max-width: 768px) {
+  /* 1. Make the navigation container scrollable */
+  .nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important; /* Prevents buttons from jumping to next line */
+    overflow-x: auto !important; /* Enables horizontal scroll */
+    -webkit-overflow-scrolling: touch !important; /* Smooth swiping on iPhone */
+    width: 100% !important;
     gap: 8px !important;
+    padding: 10px 0 !important;
+    scrollbar-width: none; /* Hides scrollbar on Firefox */
   }
 
-  .topbar-right {
+  .nav::-webkit-scrollbar {
+    display: none; /* Hides scrollbar on Chrome/Safari */
+  }
+
+  .nav-btn {
+    flex-shrink: 0 !important; /* Prevents buttons from being squished */
+    padding: 8px 15px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* 2. Fix the Topbar layout to accommodate the scroll */
+  .topbar {
+    flex-direction: column !important;
+    height: auto !important;
+    align-items: flex-start !important;
+  }
+  
+  /* Row 1: Logo and Right Buttons */
+  .logo-row-mobile {
+    display: flex;
     width: 100%;
     justify-content: space-between;
-  }
-
-  /* 3. The Panels: Fill the remaining space exactly */
-  #app {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .panel {
-    flex: 1;
-    overflow-y: auto !important; /* Allow internal scrolling only */
-    padding: 10px !important;
-    margin-top: 0 !important;
-  }
-
-  /* 4. Chat Specific: Full height, no outer scroll */
-  #panel-chat {
-    height: calc(100vh - 120px) !important;
-    display: flex;
-    flex-direction: column;
-  }
-
-  #panel-chat > div {
-    flex: 1;
-    flex-direction: column !important;
-    height: 100% !important;
-  }
-
-  #chat-messages {
-    flex: 1 !important;
-    height: auto !important;
-    overflow-y: auto !important;
-  }
-
-  /* 5. The Sidebar: Keep it on top */
-  #chat-sidebar {
-    position: fixed !important;
-    top: 0;
-    left: -100%;
-    width: 80% !important;
-    height: 100% !important;
-    z-index: 9999 !important;
-    background: #1a1a18 !important;
-    transition: left 0.3s ease;
-  }
-
-  #chat-sidebar.open {
-    left: 0;
+    align-items: center;
   }
 }
     </style>
@@ -551,8 +518,22 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
 <!-- APP -->
 <div id="app" style="display:none">
-  <div class="topbar">
-    <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
+<div class="topbar">
+  <!-- ROW 1: Logo and Quick Actions -->
+  <div style="display:flex; width:100%; justify-content:space-between; align-items:center">
+    <div class="logo" onclick="showPanel('dashboard')">⚙ MTL</div>
+    <div class="topbar-right">
+       <!-- Put your Scan, PDF, Sign Out buttons here -->
+       <button class="btn btn-secondary btn-sm" onclick="startQRScanner()">📷</button>
+       <button class="btn btn-primary btn-sm" onclick="signOut()">↩</button>
+    </div>
+  </div>
+
+  <!-- ROW 2: The Scrollable Nav -->
+  <nav class="nav" id="main-nav">
+     <!-- All your nav-buttons stay here -->
+  </nav>
+</div>
     
     <!-- Search Bar -->
     <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
@@ -2417,41 +2398,35 @@ async function openTaskDetail(id){
     </div>`;
   openModal('detail-modal');
 }
+function switchDetailTab(tab, btn) {
+    const modal = document.getElementById('detail-modal');
+    if (!modal) return;
 
-function switchDetailTab(tab, btn){
-  const modal = document.getElementById('detail-modal');
-  
-  // 1. Hide all content divs (anything starting with eq- or dt-)
-  if(modal){
-    modal.querySelectorAll('div[id]').forEach(el => {
-      if(el.id.startsWith('eq-') || el.id.startsWith('dt-')) el.style.display = 'none';
+    const allContentDivs = modal.querySelectorAll('[id^="eq-"], [id^="dt-"]');
+
+    allContentDivs.forEach(div => {
+        div.style.display = 'none';
     });
-  }
 
-  // 2. Show the specific tab the user clicked
-  const el = document.getElementById(tab);
-  if(el) el.style.display = 'block';
+    const target = document.getElementById(tab);
+    if (target) {
+        target.style.display = 'block';
+        // Smooth scroll to top of the modal content
+        modal.querySelector('.modal').scrollTop = 0;
+    }
 
-  // 3. Highlight the active tab button
-  document.querySelectorAll('#detail-modal .tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+    modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
 
-  // 4. TRIGGER DATA RELOADS (Runs specific code for specific tabs)
-  if(window._currentDetailEquipId) {
-      if(tab === 'eq-timeline') {
-        renderEquipTimeline(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-obs') {
-        refreshObsList(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-invoices') {
-        renderInvoicesList(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-downtime') {
-        renderDowntimeTab(window._currentDetailEquipId);
-      }
-  }
+    const id = window._currentDetailEquipId;
+    if (id) {
+        if (tab === 'eq-timeline') renderEquipTimeline(id);
+        if (tab === 'eq-obs') refreshObsList(id);
+        if (tab === 'eq-invoices') renderInvoicesList(id);
+        if (tab === 'eq-downtime') renderDowntimeTab(id);
+    }
 }
+
 
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
