@@ -3795,37 +3795,46 @@ function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementB
 function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
 async function handleChatPhoto(input){const file=input.files[0];if(!file)return;const compressed=await compressImage(await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);}),600,0.7);chatPhotoData=compressed;document.getElementById('chat-photo-preview').textContent='📎 Photo attached';input.value='';}
 function markChannelRead(channel) {
+    console.log("Marking as read:", channel);
     lastReadAt[channel] = new Date().toISOString();
     try {
         localStorage.setItem('mp_chat_read', JSON.stringify(lastReadAt));
     } catch(e) {}
+    
+    // Refresh the counts immediately
     updateUnreadBadge();
 }
+
 function updateUnreadBadge() {
     let totalUnread = 0;
     
-    // 1. Check #channels
-    ['general', 'outside', 'production'].forEach(ch => {
+    // Get a list of every unique channel that has ever had a message
+    const allKnownChannels = [...new Set((state.chatMessages || []).map(m => m.channel))];
+
+    allKnownChannels.forEach(ch => {
+        // Find when this user last read this specific channel
         const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const count = (state.chatMessages || []).filter(m => m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser.username).length;
         
-        const dot = document.getElementById(`dot-ch-${ch}`);
-        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
-        totalUnread += count;
+        // Count messages in this channel newer than the last read date
+        const unreadInChannel = (state.chatMessages || []).filter(m => 
+            m.channel === ch && 
+            new Date(m.created_at) > lastRead && 
+            m.author !== currentUser?.username
+        ).length;
+
+        totalUnread += unreadInChannel;
+
+        // Update sidebar dots if the button exists on screen
+        // Standard channels use ids like dot-ch-general
+        // DM channels use ids like dot-dm-dm-alpha-beta
+        let dot = document.getElementById(`dot-ch-${ch}`) || document.getElementById(`dot-dm-${ch}`);
+        if (dot) {
+            dot.style.display = unreadInChannel > 0 ? 'inline-block' : 'none';
+        }
     });
 
-    // 2. Check DMs
-    (state.users_list_cache || []).forEach(u => {
-        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
-        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const count = (state.chatMessages || []).filter(m => m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser.username).length;
-        
-        const dot = document.getElementById(`dot-dm-${ch}`);
-        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
-        totalUnread += count;
-    });
-
-    // 3. Update topbar
+    // UPDATE THE TOPBAR BADGE
+    // Make sure this ID matches your HTML: chat-unread-top
     const topBadge = document.getElementById('chat-unread-top');
     if (topBadge) {
         topBadge.textContent = totalUnread;
