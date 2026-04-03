@@ -702,55 +702,46 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div id="tpl-list"></div>
   </div>
 
-  <!-- CHAT -->
-  <div class="panel" id="panel-chat">
-    <div class="section-header"><span class="section-title">Team Chat</span></div>
-    <div id="chat-sidebar-overlay" onclick="toggleChatSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200"></div>
-    <div style="display:flex;gap:8px;height:calc(100vh - 180px);min-height:500px;position:relative">
-      <div id="chat-sidebar" style="width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;transition:transform .25s">
-        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:4px 0">Channels</div>
-        <button class="chat-channel-btn active" id="ch-general" onclick="switchChannel('general',this);closeChatSidebarMobile()"># General</button>
-        <button class="chat-channel-btn" id="ch-outside" onclick="switchChannel('outside',this);closeChatSidebarMobile()"># Outside</button>
-        <button class="chat-channel-btn" id="ch-production" onclick="switchChannel('production',this);closeChatSidebarMobile()"># Production</button>
-        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 4px">Direct Messages</div>
-        <div id="dm-list" style="display:flex;flex-direction:column;gap:3px"></div>
-        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 4px">Team</div>
-        <div id="online-users-list" style="font-size:12px;color:rgba(255,255,255,0.7)"></div>
-      </div>
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:rgba(255,255,255,0.92);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(245,245,243,0.95);display:flex;align-items:center;gap:10px">
-          <button id="chat-sidebar-toggle" onclick="toggleChatSidebar()" style="display:none;background:none;border:none;cursor:pointer;font-size:20px;padding:0;line-height:1;color:var(--text2)">☰</button>
-          <div style="flex:1"><span style="font-weight:600;font-size:14px" id="chat-channel-title"># general</span><span style="font-size:12px;color:var(--text2);margin-left:8px" id="chat-channel-desc">General team chat</span></div>
-        </div>
-        <div id="chat-offline-banner" style="display:none;background:var(--warning-bg);color:var(--warning-text);border-bottom:1px solid var(--warning);padding:8px 16px;font-size:13px;text-align:center">Offline — chat unavailable.</div>
-        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:2px"></div>
-        <div id="chat-tag-bar" style="display:none;padding:6px 12px;background:var(--accent-bg);border-top:1px solid var(--border);font-size:12px;align-items:center;gap:8px;flex-wrap:wrap">
-          <span style="color:var(--accent-text);font-weight:500">Tagged:</span>
-          <span id="chat-tag-equip" style="display:none"><span class="badge bi" id="chat-tag-equip-name"></span> <button onclick="clearTag('equip')" style="background:none;border:none;cursor:pointer">✕</button></span>
-          <span id="chat-tag-task" style="display:none"><span class="badge bg" id="chat-tag-task-name"></span> <button onclick="clearTag('task')" style="background:none;border:none;cursor:pointer">✕</button></span>
-        </div>
-        <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--bg)">
-          <div id="mention-dropdown" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:6px;max-height:120px;overflow-y:auto"></div>
-          <div style="display:flex;gap:8px;align-items:flex-end">
-            <div id="mention-dropdown" style="display:none; position:absolute; bottom:100%; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:1001; max-height:150px; overflow-y:auto"></div>
-<textarea class="form-textarea" id="chat-input" placeholder="Message..." oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea>
-              <textarea class="form-textarea" id="chat-input" placeholder="Message #general..." style="flex:1;min-height:40px;max-height:120px;resize:none;margin:0" oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)"></textarea>
-            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('chat-photo-input').click()" style="padding:6px 8px">📎</button>
-              <button class="btn btn-primary btn-sm" onclick="sendChatMessage()">Send</button>
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
-            <span style="font-size:11px;color:var(--text3)">Tag:</span>
-            <select class="form-select" id="tag-equip-select" style="font-size:11px;padding:2px 6px" onchange="tagEquip(this.value)"><option value="">+ Equipment</option></select>
-            <select class="form-select" id="tag-task-select" style="font-size:11px;padding:2px 6px" onchange="tagTask(this.value)"><option value="">+ Work Order</option></select>
-            <input type="file" id="chat-photo-input" accept="image/*" style="display:none" onchange="handleChatPhoto(this)"/>
-            <span id="chat-photo-preview" style="font-size:11px;color:var(--accent)"></span>
-          </div>
+  <!-- CLEAN CHAT PANEL -->
+<div class="panel" id="panel-chat">
+  <div class="section-header"><span class="section-title">Team Chat</span></div>
+  
+  <div style="display:flex; gap:10px; height:calc(100vh - 180px); min-height:500px;">
+    <!-- SIDEBAR -->
+    <div id="chat-sidebar" style="width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:8px; overflow-y:auto">
+      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase">Channels</div>
+      <button class="chat-channel-btn active" id="btn-ch-general" onclick="switchChannel('general', this)">
+        # general <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
+      </button>
+      <button class="chat-channel-btn" id="btn-ch-outside" onclick="switchChannel('outside', this)">
+        # outside <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
+      </button>
+      <button class="chat-channel-btn" id="btn-ch-production" onclick="switchChannel('production', this)">
+        # production <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
+      </button>
+
+      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-top:15px">Direct Messages</div>
+      <div id="dm-list" style="display:flex; flex-direction:column; gap:4px"></div>
+    </div>
+
+    <!-- MAIN CHAT AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.92); border-radius:var(--radius-lg); overflow:hidden; border:1px solid var(--border)">
+      <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg2); font-weight:600" id="chat-header-title"># general</div>
+      
+      <div id="chat-messages" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px"></div>
+      
+      <!-- SINGLE INPUT AREA -->
+      <div style="padding:12px; border-top:1px solid var(--border); background:var(--bg); position:relative">
+        <div id="mention-dropdown" style="display:none; position:absolute; bottom:100%; left:12px; right:12px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); z-index:1001; max-height:150px; overflow-y:auto"></div>
+        <div style="display:flex; gap:8px; align-items:flex-end">
+          <textarea class="form-textarea" id="chat-input" placeholder="Message..." oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)" style="flex:1; min-height:42px; max-height:120px; resize:none"></textarea>
+          <button class="btn btn-primary" onclick="sendChatMessage()" style="height:42px">Send</button>
         </div>
       </div>
     </div>
   </div>
+</div>
+  
 
   <!-- ANALYTICS -->
   <div class="panel" id="panel-analytics">
@@ -3727,7 +3718,21 @@ function handleChatInput(el){
 }
 function insertMention(name){const i=document.getElementById('chat-input');if(!i)return;const v=i.value;const a=v.lastIndexOf('@');i.value=v.slice(0,a)+'@'+name.replace(/ /g,'')+' ';const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';i.focus();}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
-function switchChannel(channel,btn){currentChannel=channel;document.querySelectorAll('.chat-channel-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const t=document.getElementById('chat-channel-title');const d=document.getElementById('chat-channel-desc');if(t)t.textContent='# '+channel;if(d)d.textContent=CHANNEL_DESCS[channel]||'';const i=document.getElementById('chat-input');if(i)i.placeholder='Message #'+channel+'...';loadChatMessages(channel);}
+function switchChannel(channel, btn) {
+    currentChannel = channel;
+    activeDmUser = channel.startsWith('dm-') ? channel.split('-')[1] : null;
+
+    // UI: Update button highlights
+    document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // UI: Update header
+    const header = document.getElementById('chat-header-title');
+    if(header) header.textContent = channel.startsWith('dm-') ? '@ ' + btn.innerText.split('\n')[0] : '# ' + channel;
+
+    loadChatMessages(channel);
+    markChannelRead(channel); // Clears notification for THIS channel
+}
 function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-equip-name');const w=document.getElementById('chat-tag-equip');if(b)b.style.display='flex';if(n)n.textContent='🔧 '+equipName(id);if(w)w.style.display='inline-flex';document.getElementById('tag-equip-select').value='';}
 function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-task-name');const w=document.getElementById('chat-tag-task');const t=state.tasks.find(x=>x.id===id);if(b)b.style.display='flex';if(n)n.textContent='📋 '+(t?.name||'Work Order');if(w)w.style.display='inline-flex';document.getElementById('tag-task-select').value='';}
 function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
@@ -3739,31 +3744,35 @@ function markChannelRead(channel) {
     } catch(e) {}
     updateUnreadBadge(); // This now updates BOTH badges
 }
-
 function updateUnreadBadge() {
     let totalUnread = 0;
     const channels = ['general', 'outside', 'production'];
     
-    // Add DMs to the check
-    (state.chatMessages || []).forEach(m => {
-        if (!channels.includes(m.channel) && m.channel.startsWith('dm-')) {
-            if (!channels.includes(m.channel)) channels.push(m.channel);
-        }
-    });
-
+    // Check main channels
     channels.forEach(ch => {
         const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const unreadCount = (state.chatMessages || []).filter(m => 
-            m.channel === ch && 
-            new Date(m.created_at) > lastRead && 
-            m.author !== currentUser?.username
-        ).length;
+        const count = state.chatMessages.filter(m => m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser.username).length;
         
-        totalUnread += unreadCount;
-        // Update individual sidebar buttons if they exist
-        const sidebarBadge = document.querySelector(`#ch-${ch} .unread-dot, #dm-${ch.replace('dm-','')} .unread-dot`);
-        // ... (sidebar logic)
+        const dot = document.querySelector(`#btn-ch-${ch} .unread-dot`);
+        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
+        totalUnread += count;
     });
+
+    // Check DM unreads (using state.chatMessages)
+    const dmContainer = document.getElementById('dm-list');
+    if (dmContainer) {
+        state.chatMessages.filter(m => m.channel.startsWith('dm-')).forEach(m => {
+            const ch = m.channel;
+            const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+            if (new Date(m.created_at) > lastRead && m.author !== currentUser.username) {
+                totalUnread += 1;
+                // Highlight the DM user in the sidebar
+                const otherUser = m.author;
+                const dot = document.querySelector(`#btn-dm-${otherUser} .unread-dot`);
+                if (dot) dot.style.display = 'inline-block';
+            }
+        });
+    }
 
     // UPDATE TOPBAR BADGE
     const topBadge = document.getElementById('chat-unread-top');
@@ -3772,6 +3781,7 @@ function updateUnreadBadge() {
         topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
     }
 }
+
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
 
@@ -3986,15 +3996,21 @@ async function updateLastSeen(){
 // ── DIRECT MESSAGES ──────────────────────────────────────────
 let activeDmUser=null;
 function getDmChannel(u1,u2){return 'dm-'+[u1,u2].sort().join('-');}
-async function renderDmList(){
-  const el=document.getElementById('dm-list');if(!el)return;
-  try{const{data:profiles}=await window._mpdb.from('profiles').select('username,full_name').eq('status','approved').neq('username',currentUser.username);
-    if(!profiles||!profiles.length){el.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,0.5);padding:2px 4px">No other users</div>';return;}
-    el.innerHTML=profiles.map(p=>{const ch=getDmChannel(currentUser.username,p.username);const lr=lastReadAt[ch]?new Date(lastReadAt[ch]):new Date(0);const unread=(state.chatMessages||[]).filter(m=>m.channel===ch&&new Date(m.created_at)>lr&&m.author!==currentUser.username).length;
-      return`<button class="chat-channel-btn" id="dm-${p.username}" onclick="switchToDm('${p.username}','${p.full_name}',this)" style="font-size:12px;padding:5px 10px"><div style="width:24px;height:24px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${p.full_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.full_name}</span>${unread>0?`<span style="background:#E24B4A;color:#fff;border-radius:20px;padding:1px 5px;font-size:10px">${unread}</span>`:''}</button>`;
-    }).join('');
-  }catch(e){}
+async function renderDmList() {
+    const el = document.getElementById('dm-list');
+    if (!el) return;
+    
+    // Use the users we loaded into the cache in loadState
+    const users = (state.users_list_cache || []).filter(u => u.username !== currentUser.username);
+    
+    el.innerHTML = users.map(u => {
+        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
+        return `<button class="chat-channel-btn" id="btn-dm-${u.username}" onclick="switchChannel('${ch}', this)">
+            ${u.full_name} <span class="unread-dot" style="display:none; margin-left:auto; background:#E24B4A; width:8px; height:8px; border-radius:50%"></span>
+        </button>`;
+    }).join('') || '<div style="color:rgba(255,255,255,0.4); font-size:11px">No other users online</div>';
 }
+    
 function switchToDm(username,fullName,btn){
   activeDmUser=username;currentChannel=getDmChannel(currentUser.username,username);
   document.querySelectorAll('.chat-channel-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
