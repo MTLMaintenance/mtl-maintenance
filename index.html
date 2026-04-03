@@ -570,14 +570,12 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   </div>
 </div>
 
-<div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
-<!-- APP -->
+<!-- THE HEADER: ONLY ONE COPY ALLOWED -->
 <div class="topbar" id="app-header" style="display:none">
-  <!-- ROW 1: BRAND & ACTIONS -->
   <div class="topbar-main-row">
     <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
     
-    <div style="position:relative; flex:1; max-width:250px">
+    <div style="position:relative; flex:1; max-width:300px">
       <input type="text" id="global-search" class="form-input" placeholder="Search..." oninput="handleGlobalSearch()"/>
       <div id="search-results" style="display:none; position:absolute; top:34px; left:0; right:0; background:#1c1c1a; border:1px solid #444; border-radius:8px; z-index:1100; max-height:300px; overflow-y:auto"></div>
     </div>
@@ -588,13 +586,14 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 
-  <!-- ROW 2: DYNAMIC NAVIGATION -->
+  <!-- THIS IS THE ONLY NAV BAR ALLOWED -->
   <nav class="nav" id="main-nav"></nav>
 </div>
 
-<!-- THE MAIN CONTENT AREA -->
+<!-- THE APP: ONLY ONE COPY ALLOWED -->
 <div id="app" style="display:none">
-  <!-- ALL PANELS START BELOW THIS LINE -->
+  <!-- START OF PANELS -->
+  <div class="panel active" id="panel-dashboard">
 
 
     <nav class="nav" id="main-nav">
@@ -3969,7 +3968,8 @@ async function enterApp(){
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex'; // Turn on the app container
   document.getElementById('user-chip-name').textContent = currentUser.name;
-
+document.getElementById('app').style.display = 'flex';
+document.getElementById('app-header').style.display = 'flex'; // Turn on the header too
   // 1. Build & Sort Navigation
   const nav = document.getElementById('main-nav');
   if (nav) {
