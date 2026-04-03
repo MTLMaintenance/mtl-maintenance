@@ -1601,19 +1601,21 @@ async function loadState() {
     setSyncStatus('online');
   } catch(e) { 
     console.error('Load error:', e); 
-    setSyncStatus('offline'); }
-  
+    setSyncStatus('offline'); 
+  }
   
   // Load observations separately to avoid Promise clutter
   try {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at', {ascending: false});
     state.observations = obs || [];
   } catch(e) {}
+
+  try {
+    const { data: profiles } = await window._mpdb.from('profiles').select('id, username, full_name, role, group_tag').eq('status', 'approved');
+    state.users_list_cache = profiles || [];
+  } catch(e) {}
 }
-try {
-  const { data: profiles } = await window._mpdb.from('profiles').select('id, username, full_name, role, group_tag').eq('status', 'approved');
-  state.users_list_cache = profiles || [];
-} catch(e) {}
+
 function computeMonthlyCosts() {
   const now=new Date();
   return [3,2,1,0].map(ago=>{
