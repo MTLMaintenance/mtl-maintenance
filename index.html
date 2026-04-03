@@ -1568,10 +1568,11 @@ function quickLogHours(equipId) {
 let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
 async function loadState() {
   setSyncStatus('syncing');
   try {
-    // THE ORDER HERE MUST MATCH THE ORDER BELOW
+    // 1. Fetch all 10 main tables (Matches the order in state)
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
@@ -1585,36 +1586,38 @@ async function loadState() {
       window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
     ]);
 
-    // MAP DATA TO STATE
-    state.equipment       = eq.data || [];
-    state.tasks           = tk.data || [];
-    state.schedules       = sc.data || [];
-    state.parts           = pt.data || [];
-    state.suppliers       = sup.data || [];
-    state.documents       = docs.data || [];
-    state.partUsage       = pu.data || [];
-    state.recurrenceRules = rr.data || [];
-    state.tools           = tl.data || [];
-    state.wishlist        = wl.data || []; // <--- Ensuring this is set correctly
+    state.equipment       = eq.data||[];
+    state.tasks           = tk.data||[];
+    state.schedules       = sc.data||[];
+    state.parts           = pt.data||[];
+    state.suppliers       = sup.data||[];
+    state.documents       = docs.data||[];
+    state.partUsage       = pu.data||[];
+    state.recurrenceRules = rr.data||[];
+    state.tools           = tl.data||[];
+    state.wishlist        = wl.data||[];
     
-    state.monthlyCosts    = computeMonthlyCosts();
+    // 2. Load Profiles for the Chat Mention Dropdown
+    const { data: profiles } = await window._mpdb.from('profiles')
+        .select('id, username, full_name, role, group_tag')
+        .eq('status', 'approved');
+    state.users_list_cache = profiles || [];
+
+    // 3. Calculate metrics
+    state.monthlyCosts = computeMonthlyCosts();
     setSyncStatus('online');
+
   } catch(e) { 
     console.error('Load error:', e); 
     setSyncStatus('offline'); 
   }
-  
-  // Load observations separately to avoid Promise clutter
+
+  // 4. Load observations (kept separate for better performance)
   try {
-    const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at', {ascending: false});
+    const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
   } catch(e) {}
-
-  try {
-    const { data: profiles } = await window._mpdb.from('profiles').select('id, username, full_name, role, group_tag').eq('status', 'approved');
-    state.users_list_cache = profiles || [];
-  } catch(e) {}
-}
+}    
 
 function computeMonthlyCosts() {
   const now=new Date();
