@@ -5338,9 +5338,9 @@ function showPanel(id) {
     if (target) {
         target.style.display = 'block';
         target.classList.add('active');
-    
-    
-    // 3. Update nav buttons
+    }
+
+    // 3. Update nav buttons (Highlights the one you clicked)
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
@@ -5348,24 +5348,35 @@ function showPanel(id) {
         }
     });
 
-    // 4. Trigger drawing functions
+    // 4. Create the Mapping (The Switchboard)
     const renderMap = {
-        'dashboard': renderDashboard,
-        'calendar': renderCalendar,
-        'equipment': renderEquipmentTable,
-        'tasks': renderTasks,
-        'schedule': renderSchedule,
-        'parts': renderParts,
-        'suppliers': renderSuppliers,
-        'documents': renderDocuments,
-        'analytics': renderAnalytics,
-        'admin': renderAdminPanel,
-        'checklists': renderChecklistTemplates,
-        'chat': () => { renderChat(); markChannelRead(currentChannel); },
-        'tools': () => { renderTools(); updateWishCount(); }
+        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
+        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
+        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
+        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
+        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
+        'parts': typeof renderParts === 'function' ? renderParts : null,
+        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
+        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
+        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
+        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
+        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
+        'chat': () => { 
+            if (typeof renderChat === 'function') renderChat(); 
+            if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
+        },
+        'tools': () => { 
+            if (typeof renderTools === 'function') renderTools(); 
+            if (typeof updateWishCount === 'function') updateWishCount(); 
+        }
     };
-}
-    if (renderMap[id]) renderMap[id]();
+
+    // 5. Run the function if it exists in our map
+    if (renderMap[id]) {
+        renderMap[id]();
+    } else {
+        console.warn("No render function found for panel ID:", id);
+    }
 }
 </script>
 <!-- Checklist Template Modal -->
