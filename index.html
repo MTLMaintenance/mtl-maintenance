@@ -1601,7 +1601,7 @@ async function loadState() {
     setSyncStatus('online');
   } catch(e) { 
     console.error('Load error:', e); 
-    setSyncStatus('offline'); 
+    setSyncStatus('offline'); }
   
   
   // Load observations separately to avoid Promise clutter
