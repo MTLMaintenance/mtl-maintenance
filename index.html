@@ -1961,8 +1961,7 @@ function updateMetrics(){
   safeSet('m-open', open);
 }
 
-  document.getElementById('m-total').textContent=state.equipment.length;
-  document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
+ 
   const openAndOverdue = open + overdue;
   document.getElementById('m-overdue').textContent=openAndOverdue;
   document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
