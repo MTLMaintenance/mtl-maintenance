@@ -812,8 +812,11 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
   <!-- SUPPLIERS -->
   <div class="panel" id="panel-suppliers">
-    <div class="section-header"><span class="section-title">Supplier Management</span><button class="btn btn-primary" onclick="openModal('supplier-modal')">+ Add000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 Supplier</button></div>
-    <div class="table-wrap"><table>
+   <div class="section-header">
+  <span class="section-title">Supplier Management</span>
+  <!-- This is the clean button -->
+  <button class="btn btn-primary" onclick="resetSupplierForm(); openModal('supplier-modal')">+ Add Supplier</button>
+</div>
       <thead><tr><th>Supplier Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Website</th><th>Parts</th><th></th></tr></thead>
       <tbody id="supplier-table-body"></tbody>
     </table></div>
