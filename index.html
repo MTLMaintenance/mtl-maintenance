@@ -637,36 +637,44 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   </div>
 
   <!-- DASHBOARD -->
-  <div class="panel active" id="panel-dashboard">
-    <div id="alert-section"></div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Viewing:</span>
-      <button class="btn btn-sm" id="grp-all" onclick="setGroupFilter('all')" style="background:#fff;color:#1a1a18;font-weight:700;border:1px solid #fff">All</button>
-      <button class="btn btn-sm" id="grp-outside" onclick="setGroupFilter('outside')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Outside</button>
-      <button class="btn btn-sm" id="grp-production" onclick="setGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
+<!-- DASHBOARD PANEL -->
+<div class="panel active" id="panel-dashboard">
+  <div id="alert-section"></div>
+
+  <!-- THE METRIC ROW -->
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">This Month</div><div class="metric-value" id="m-cost">$0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Top 6 machines list -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Equipment Status</span></div>
+      <div id="equip-list-dash"></div>
     </div>
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-total-sub"></div></div>
-      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">—</div><div class="metric-sub">Work orders</div></div>
-      <div class="metric-card"><div class="metric-label">This Month</div><div class="metric-value" id="m-cost">—</div><div class="metric-sub" id="m-cost-sub"></div></div>
-      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">—</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">—</div><div class="metric-sub">Fleet score</div></div>
-      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">—</div><div class="metric-sub">Work orders</div></div>
-    </div>
-    <div class="grid-2" style="margin-bottom:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div><div id="equip-list-dash"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div><div id="sched-list-dash"></div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div><div id="recent-tasks"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Monthly Costs ($)</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div></div>
-    </div>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Fleet Health</span></div><div id="fleet-health-dash"></div></div>
+    <!-- Upcoming list -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
+      <div id="sched-list-dash"></div>
     </div>
   </div>
 
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Work Orders</span></div>
+      <div id="recent-tasks"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Fleet Health</span></div>
+      <div id="fleet-health-dash"></div>
+    </div>
+  </div>
+</div>
 <!-- CALENDAR PANEL -->
   <div class="panel" id="panel-calendar">
     <div class="section-header"><span class="section-title">Maintenance Calendar</span>
@@ -1886,23 +1894,25 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
-  const overdue=state.tasks.filter(t=>t.status==='Overdue').length;
-  const open=state.tasks.filter(t=>t.status==='Open').length;
-  const low=state.parts.filter(p=>p.qty<=p.reorder).length;
-  const costs=state.monthlyCosts; const cost=costs[costs.length-1]; const prev=costs[costs.length-2]||0;
-  const diff=cost-prev; const sign=diff>=0?'+':'-';
-  const avgHealth=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):100;
-  // Make metric cards clickable
-  ['m-total','m-overdue','m-cost','m-parts','m-health','m-open'].forEach(id=>{
-    const el=document.getElementById(id);
-    const card=el?.closest('.metric-card');
-    if(card&&!card.dataset.clickable){
-      card.dataset.clickable='1';
-      card.style.cursor='pointer';
-      const panelMap={'m-total':'equipment','m-overdue':'tasks','m-open':'tasks','m-cost':'analytics','m-parts':'parts','m-health':'analytics'};
-      card.onclick=()=>showPanel(panelMap[id]||'dashboard');
-    }
-  });
+  const overdue = state.tasks.filter(t => t.status === 'Overdue').length;
+  const open = state.tasks.filter(t => t.status === 'Open').length;
+  const lowParts = state.parts.filter(p => p.qty <= p.reorder).length;
+  
+  // Total costs
+  const totalCost = state.tasks.reduce((a, t) => a + (t.cost || 0), 0);
+  
+  // Average Fleet Health
+  const avgHealth = state.equipment.length ? 
+    Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
+
+  // Fill the IDs in the HTML
+  const mt = document.getElementById('m-total'); if(mt) mt.textContent = state.equipment.length;
+  const mo = document.getElementById('m-overdue'); if(mo) mo.textContent = overdue;
+  const mc = document.getElementById('m-cost'); if(mc) mc.textContent = '$' + totalCost.toLocaleString();
+  const mp = document.getElementById('m-parts'); if(mp) mp.textContent = lowParts;
+  const mh = document.getElementById('m-health'); if(mh) mh.textContent = avgHealth + '%';
+  const mw = document.getElementById('m-open'); if(mw) mw.textContent = open;
+}
   document.getElementById('m-total').textContent=state.equipment.length;
   document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
   const openAndOverdue = open + overdue;
@@ -3939,12 +3949,14 @@ function showPanel(id) {
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
-  renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
-  const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
-    if(document.getElementById('recent-obs-list'))renderRecentObservations();
-  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
+  updateMetrics();
+  renderAlerts();
+  renderEquipListDash();
+  renderSchedDash();
+  renderRecentTasks();
+  if (typeof renderRecentObservations === 'function') renderRecentObservations();
+  if (typeof renderFleetHealthDash === 'function') renderFleetHealthDash();
 }
-
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
