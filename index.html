@@ -12,7 +12,75 @@ body, html {
   height: 100%;
   overflow: hidden; /* Prevents the whole page from scrolling */
 }
-    #panel-chat {
+  .metrics {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+  gap: 10px !important;
+  margin-bottom: 20px !important;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px !important;
+  padding: 15px !important;
+  color: #1a1a18 !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #6b6b66;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 5px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  margin-bottom: 15px !important;
+  color: #1a1a18 !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b6b66;
+  text-transform: uppercase;
+}
+
+.grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 15px !important;
+}
+
+/* Ensure buttons in cards look normal again */
+.btn-secondary {
+  background: #f5f5f3;
+  color: #1a1a18;
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}  
+  #panel-chat {
     max-width: 1400px;
     margin: 0 auto;
 }
