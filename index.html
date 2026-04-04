@@ -1310,7 +1310,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 let activeGroupFilter = 'all';
 let equipGroupFilter = 'all';
 let lastReadAt = {};
-let currentChannel = 'general';
+ = 'general';
 let activeDmUser = null;
 
 // Initialize lastReadAt from storage immediately
@@ -3700,7 +3700,7 @@ async function denyUser(id){await window._mpdb.from('profiles').update({status:'
 async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await window._mpdb.from('profiles').delete().eq('id',id);showToast(name+' removed');renderAdminPanel();}
 
 // ── CHAT ─────────────────────────────────────────────────────
-let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoData=null,lastReadAt={};
+
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
