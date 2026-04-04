@@ -1868,8 +1868,8 @@ function closeModal(id) {
 }
 
 function populateSelects() {
-  // 1. Build the HTML options for Equipment
-  const equipOptions = state.equipment.map(e => 
+  // 1. Build the HTML options for Equipment (Using the name the error wants)
+  const equipOpts = state.equipment.map(e => 
     `<option value="${e.id}">${e.name}</option>`
   ).join('') || '<option value="">No equipment found</option>';
 
@@ -1878,30 +1878,42 @@ function populateSelects() {
   const userOptions = '<option value="">— Unassigned —</option>' +
     users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
 
-  // 3. APPLY to Work Order Modal
+  // 3. Build the HTML options for Parts
+  const partOptions = state.parts.map(p => 
+    `<option value="${p.id}">${p.name} (Stock: ${p.qty}${p.cost ? ', $' + p.cost.toFixed(2) + ' ea' : ''})</option>`
+  ).join('') || '<option value="">No parts in inventory</option>';
+
+  // --- APPLY TO WORK ORDER MODAL ---
   const tEquip = document.getElementById('t-equip');
-  if (tEquip) tEquip.innerHTML = equipOptions;
+  if (tEquip) tEquip.innerHTML = equipOpts;
   
   const tAssign = document.getElementById('t-assign');
   if (tAssign) tAssign.innerHTML = userOptions;
 
-  // 4. APPLY to Schedule Modal
+  const pSel = document.getElementById('wo-part-select');
+  if (pSel) pSel.innerHTML = partOptions;
+
+  // --- APPLY TO FILTERS ---
+  const taskFilter = document.getElementById('task-equip-filter');
+  if (taskFilter) {
+      taskFilter.innerHTML = `<option value="all">All Equipment</option>` + equipOpts;
+  }
+
+  // --- APPLY TO OTHER MODALS ---
   const sEquip = document.getElementById('s-equip');
-  if (sEquip) sEquip.innerHTML = equipOptions;
+  if (sEquip) sEquip.innerHTML = equipOpts;
   
   const sTech = document.getElementById('s-tech');
   if (sTech) sTech.innerHTML = userOptions;
 
-  // 5. APPLY to Recurrence Modal
   const rEquip = document.getElementById('r-equip');
-  if (rEquip) rEquip.innerHTML = equipOptions;
+  if (rEquip) rEquip.innerHTML = equipOpts;
 
   const rAssign = document.getElementById('r-assign');
   if (rAssign) rAssign.innerHTML = userOptions;
   
-  // 6. APPLY to Document Modal
   const dEquip = document.getElementById('d-equip');
-  if (dEquip) dEquip.innerHTML = '<option value="">— None —</option>' + equipOptions;
+  if (dEquip) dEquip.innerHTML = '<option value="">— None —</option>' + equipOpts;
 }
  
     // Also populate WO part select
