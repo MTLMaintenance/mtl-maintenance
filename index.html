@@ -6,7 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-#panel-chat {
+#app nav, #app .nav {
+  display: none !important;
+}
+    
+    #main-nav {
+  display: flex !important;
+}
+
+    #panel-chat {
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -167,24 +175,28 @@ button[onclick="saveInvoice()"] {
   display: block !important; /* Only take up space when active */
 }
     
-/* --- UNIVERSAL HEADER STYLES --- */
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block !important;
+}
+
+/* Header stacking */
 .topbar {
-  display: flex !important;
-  flex-direction: column !important; /* Forces row 2 under row 1 */
+  display: none; /* JS will turn this to flex */
+  flex-direction: column !important;
   background: #000 !important;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
 }
+
 .topbar-main-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  width: 100%;
 }
-
 .search-wrap {
   position: relative;
   flex: 1;
@@ -524,7 +536,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     align-items: center;
   }
 }
-    </style>
+    
+</style>
 </head>
 <body>
 <div id="offline-banner">⚠ You're offline — changes will sync when reconnected</div>
@@ -569,8 +582,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 </div>
-
-<!-- THE HEADER: ONLY ONE COPY ALLOWED -->
+<!-- 1. THE ONLY HEADER -->
 <div class="topbar" id="app-header" style="display:none">
   <div class="topbar-main-row">
     <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
@@ -586,14 +598,14 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 
-  <!-- THIS IS THE ONLY NAV BAR ALLOWED -->
   <nav class="nav" id="main-nav"></nav>
 </div>
 
-<!-- THE APP: ONLY ONE COPY ALLOWED -->
+<!-- 2. THE ONLY APP CONTAINER -->
 <div id="app" style="display:none">
-  <!-- START OF PANELS -->
+  <!-- THE PANELS START IMMEDIATELY HERE -->
   <div class="panel active" id="panel-dashboard">
+    
 
 
       <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
@@ -3959,17 +3971,19 @@ function openModal(id) {
   }
 }
 async function enterApp(){
-  console.log("Entering App...");
-  try { 
-    localStorage.setItem('mp_session', JSON.stringify(currentUser)); 
-  } catch(e) {}
-
+  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex'; // Turn on the app container
+  
+  // Show the header and the app container
+  const header = document.getElementById('app-header');
+  const app = document.getElementById('app');
+  if(header) header.style.display = 'flex';
+  if(app) app.style.display = 'flex';
+
   document.getElementById('user-chip-name').textContent = currentUser.name;
-document.getElementById('app').style.display = 'flex';
-document.getElementById('app-header').style.display = 'flex'; // Turn on the header too
-  // 1. Build & Sort Navigation
+
+  // Build the Nav
   const nav = document.getElementById('main-nav');
   if (nav) {
       nav.innerHTML = '';
@@ -3986,26 +4000,17 @@ document.getElementById('app-header').style.display = 'flex'; // Turn on the hea
         { id: 'suppliers', label: 'Suppliers' },
         { id: 'tools', label: 'Tool Crib' },
         { id: 'tasks', label: 'Work Orders' }
-      ];
+      ].sort((a, b) => a.label.localeCompare(b.label));
 
-      // Sort A-Z
-      buttons.sort((a, b) => a.label.localeCompare(b.label));
-
-      // Filter and Create
       buttons.forEach(btn => {
-        if (btn.id === 'analytics' && !can('canViewReports')) return;
-        if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
-
         const b = document.createElement('button');
-        b.className = 'nav-btn';
-        if (btn.id === 'dashboard') b.classList.add('active');
+        b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
         b.onclick = () => showPanel(btn.id);
         b.innerHTML = btn.id === 'chat' ? 
           `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
         nav.appendChild(b);
       });
 
-      // Add Admin last
       if (currentUser.role === 'admin') {
         const adminBtn = document.createElement('button');
         adminBtn.className = 'nav-btn';
@@ -4015,19 +4020,17 @@ document.getElementById('app-header').style.display = 'flex'; // Turn on the hea
       }
   }
 
-  // 2. Load Data
+  // Load Data and Force Dashboard show
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
   
-  // 3. FORCE THE DASHBOARD TO OPEN
-  showPanel('dashboard'); 
+  showPanel('dashboard'); // This ensures the content doesn't "disappear"
   
   await initChat();
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
 }
-// ── FULL enterApp ────────────────────────────────────────────
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
