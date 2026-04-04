@@ -3831,46 +3831,30 @@ function markChannelRead(channel) {
 function updateUnreadBadge() {
     let totalUnread = 0;
     
-    // List of all system channels
-    const channels = ['general', 'outside', 'production'];
+    try {
+        // 1. Calculate unreads (Keep your existing logic here)
+        const allKnownChannels = [...new Set((state.chatMessages || []).map(m => m.channel))];
+        allKnownChannels.forEach(ch => {
+            const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+            const unreadInChannel = (state.chatMessages || []).filter(m => 
+                m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser?.username
+            ).length;
+            totalUnread += unreadInChannel;
 
-    // 1. Check main channels
-    channels.forEach(ch => {
-        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const count = (state.chatMessages || []).filter(m => 
-            m.channel === ch && 
-            new Date(m.created_at) > lastRead && 
-            m.author !== currentUser?.username
-        ).length;
-        
-        totalUnread += count;
+            // Safe Sidebar Update
+            let dot = document.getElementById(`dot-ch-${ch}`) || document.getElementById(`dot-dm-${ch}`);
+            if (dot) dot.style.display = unreadInChannel > 0 ? 'inline-block' : 'none';
+        });
 
-        // TARGET BOTH DESKTOP AND MOBILE IDs
-        const dot = document.getElementById(`dot-ch-${ch}`);
-        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
-    });
+        // 2. SAFE TOPBAR UPDATE (This is likely line 1965)
+        const topBadge = document.getElementById('chat-unread-top');
+        if (topBadge) {
+            topBadge.textContent = totalUnread;
+            topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+        }
 
-    // 2. Check DMs
-    (state.users_list_cache || []).forEach(u => {
-        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
-        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const count = (state.chatMessages || []).filter(m => 
-            m.channel === ch && 
-            new Date(m.created_at) > lastRead && 
-            m.author !== currentUser?.username
-        ).length;
-        
-        totalUnread += count;
-        
-        const dot = document.getElementById(`dot-dm-${ch}`);
-        if (dot) dot.style.display = count > 0 ? 'inline-block' : 'none';
-    });
-
-    // 3. Update topbar global badge
-    const topBadge = document.getElementById('chat-unread-top');
-    if (topBadge) {
-        topBadge.textContent = totalUnread;
-        topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+    } catch (e) {
+        console.warn("Notification update skipped:", e.message);
     }
 }
 
@@ -4014,8 +3998,15 @@ async function enterApp(){
   const app = document.getElementById('app');
   if(header) header.style.display = 'flex';
   if(app) app.style.display = 'flex';
+document.getElementById('user-chip-name').textContent = currentUser.name;
 
-  document.getElementById('user-chip-name').textContent = currentUser.name;
+
+const nameChip = document.getElementById('user-chip-name');
+if (nameChip) {
+    nameChip.textContent = currentUser.name;
+} else {
+    console.warn("UI Warning: 'user-chip-name' ID missing from top bar.");
+}
 
   // Build the Nav
   const nav = document.getElementById('main-nav');
@@ -4064,6 +4055,7 @@ async function enterApp(){
   await initChat();
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
+document.getElementById('app').style.display = 'flex';
 }
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
