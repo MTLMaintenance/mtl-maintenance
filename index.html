@@ -812,7 +812,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
   <!-- SUPPLIERS -->
   <div class="panel" id="panel-suppliers">
-    <div class="section-header"><span class="section-title">Supplier Management</span><button class="btn btn-primary" onclick="openModal('supplier-modal')">+ Add Supplier</button></div>
+    <div class="section-header"><span class="section-title">Supplier Management</span><button class="btn btn-primary" onclick="openModal('supplier-modal')">+ Add000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 Supplier</button></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Supplier Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Website</th><th>Parts</th><th></th></tr></thead>
       <tbody id="supplier-table-body"></tbody>
@@ -2363,14 +2363,17 @@ function renderSuppliers() {
     const tableBody = document.getElementById('supplier-table-body');
     if (!tableBody) return;
 
-    // Safety check: ensure state.suppliers exists
-    const suppliers = state.suppliers || [];
+    // We clear the table first to prevent ghosting
+    tableBody.innerHTML = '';
 
-    tableBody.innerHTML = suppliers.map(s => {
-        // We calculate part count inside the loop where 's' is defined
-        const linkedParts = (state.parts || []).filter(p => p.supplier_id === s.id);
-        const partCount = linkedParts.length;
+    if (!state.suppliers || state.suppliers.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px">No suppliers added yet.</td></tr>';
+        return;
+    }
 
+    // Every use of "s" is strictly trapped inside this .map loop
+    const rows = state.suppliers.map(s => {
+        const count = (state.parts || []).filter(p => p.supplier_id === s.id).length;
         return `
         <tr onclick="editSupplier('${s.id}')" style="cursor:pointer">
             <td style="font-weight:600">${s.name}</td>
@@ -2378,9 +2381,11 @@ function renderSuppliers() {
             <td>${s.email || '—'}</td>
             <td>${s.phone || '—'}</td>
             <td>${s.website ? 'Visit' : '—'}</td>
-            <td><span class="badge bg">${partCount} parts</span></td>
+            <td><span class="badge bg">${count} parts</span></td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6" style="text-align:center; padding:20px">No suppliers added yet.</td></tr>';
+    });
+
+    tableBody.innerHTML = rows.join('');
 }
 function editSupplier(id) {
     const s = state.suppliers.find(x => x.id === id);
@@ -5613,17 +5618,22 @@ async function deleteSupplier() {
     }
 }
 function resetSupplierForm() {
-    document.getElementById('sup-modal-title').textContent = "Add New Supplier";
-    document.getElementById('sup-edit-id').value = '';
+    const title = document.getElementById('sup-modal-title');
+    if (title) title.textContent = "Add New Supplier";
     
-    // Clear all inputs
-    const ids = ['sup-name', 'sup-contact', 'sup-email', 'sup-phone', 'sup-website', 'sup-notes'];
-    ids.forEach(id => {
+    const idField = document.getElementById('sup-edit-id');
+    if (idField) idField.value = '';
+    
+    // Clear the specific name field
+    const nameField = document.getElementById('sup-name');
+    if (nameField) nameField.value = '';
+
+    // Clear everything else
+    ['sup-contact', 'sup-email', 'sup-phone', 'sup-website', 'sup-notes'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
 
-    // HIDE the delete button for new suppliers
     const delBtn = document.getElementById('sup-delete-btn');
     if (delBtn) delBtn.style.display = 'none';
 }
