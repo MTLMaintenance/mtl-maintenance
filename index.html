@@ -6,87 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden; /* Prevents the whole page from scrolling */
-}
-  .metrics {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
-  gap: 10px !important;
-  margin-bottom: 20px !important;
-}
-
-.metric-card {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px !important;
-  padding: 15px !important;
-  color: #1a1a18 !important;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
-}
-
-.metric-label {
-  font-size: 11px;
-  color: #6b6b66;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  margin-bottom: 5px;
-}
-
-.metric-value {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.card {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 12px !important;
-  padding: 20px !important;
-  margin-bottom: 15px !important;
-  color: #1a1a18 !important;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.card-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #6b6b66;
-  text-transform: uppercase;
-}
-
-.grid-2 {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
-  gap: 15px !important;
-}
-
-/* Ensure buttons in cards look normal again */
-.btn-secondary {
-  background: #f5f5f3;
-  color: #1a1a18;
-  border: 1px solid rgba(0,0,0,0.1);
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-}  
-  #panel-chat {
+#panel-chat {
     max-width: 1400px;
     margin: 0 auto;
 }
 
-
-    #chat-sidebar {
+#chat-sidebar {
     width: 240px !important;
     background: rgba(0, 0, 0, 0.4);
     padding: 15px;
@@ -142,15 +67,12 @@ body > #invoice-scanning,
 body > #invoice-photo-area {
     display: none !important;
 }
-#app {
-  display: none; /* Controlled by JS */
-  flex-direction: column;
-  height: 100vh; /* App is exactly the size of the screen */
-  width: 100%;
-}
 
 /* 3. Ensure the main app doesn't have extra bottom padding */
-
+#app {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
   /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
 #main-nav .nav-btn {
   background: transparent !important;
@@ -170,7 +92,8 @@ body > #invoice-photo-area {
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   font-weight: 600 !important;
 }
-    /* Ensure the Search Bar doesn't look like a button */
+
+/* Ensure the Search Bar doesn't look like a button */
 #global-search {
   background: rgba(255, 255, 255, 0.1) !important;
   color: #fff !important;
@@ -229,28 +152,23 @@ button[onclick="saveInvoice()"] {
 .panel {
   display: none; /* Hide by default */
 }
+
 .panel.active {
-  flex: 1;
-  overflow-y: auto !important; /* Only the content scrolls */
-  padding: 16px;
-  display: block;
+  display: block !important; /* Only take up space when active */
 }
-
-
-.topbar {
+    .topbar {
   display: flex !important;
-  flex-direction: column !important; /* Row 1 on top of Row 2 */
-  background: #000 !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  flex-shrink: 0; /* Header never shrinks */
+  flex-direction: row !important;
+  flex-wrap: nowrap !important; /* Forces one single line */
+  align-items: center !important;
+  height: 52px !important;
+  padding: 0 16px !important;
+  background: rgba(0,0,0,0.85) !important;
+  gap: 12px !important;
+  position: sticky;
+  top: 0;
   z-index: 1000;
-}
-.topbar-main-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  gap: 10px;
+  backdrop-filter: blur(8px);
 }
 
 .logo {
@@ -265,13 +183,13 @@ button[onclick="saveInvoice()"] {
 .nav {
   display: flex !important;
   flex-direction: row !important;
-  gap: 4px;
-  padding: 0 12px 8px;
-  overflow-x: auto !important; /* Swipe left/right on phones */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  flex: 1 !important; /* Makes this section fill the middle space */
+  justify-content: flex-start !important;
+  overflow: hidden !important; /* Prevents buttons from pushing the bar wide */
 }
-.nav::-webkit-scrollbar { display: non
+
 /* The right side buttons */
 .topbar-right {
   display: flex !important;
@@ -284,20 +202,20 @@ button[onclick="saveInvoice()"] {
 
 /* Fix for the black/white button issue */
 #main-nav .nav-btn {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-  border: none !important;
-  font-size: 12px;
-  padding: 6px 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid transparent !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+  padding: 5px 10px !important;
 }
 
 #main-nav .nav-btn.active {
-  background: #ffffff !important;
-  color: #1a1a18 !important;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
+
 /* Search bar width adjustment */
 #global-search {
   max-width: 180px !important;
@@ -678,28 +596,15 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 <div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
 <!-- APP -->
 <div id="app" style="display:none">
- <div class="topbar" id="app-header" style="display:none">
-  <!-- ROW 1 -->
-  <div class="topbar-main-row">
-    <div class="logo" onclick="showPanel('dashboard')" style="cursor:pointer">⚙ MTL Maintenance</div>
+  <div class="topbar">
+    <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
     
-    <div style="position:relative; flex:1; max-width:250px">
-      <input type="text" id="global-search" class="form-input" placeholder="Search..." oninput="handleGlobalSearch()" style="width:100%; height:30px; background:rgba(255,255,255,0.1); border:none; color:#fff; padding-left:25px; font-size:12px"/>
-      <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); opacity:0.4">🔍</span>
+    <!-- Search Bar -->
+    <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
+      <input type="text" id="global-search" class="form-input" placeholder="Search..." style="width:100%; height:28px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:11px; padding-left:25px" oninput="handleGlobalSearch()"/>
+      <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:10px; opacity:0.5">🔍</span>
+      <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
     </div>
-
-    <div class="topbar-right">
-       <button class="btn btn-secondary btn-sm" onclick="startQRScanner()">📷 Scan</button>
-       <button class="btn btn-primary btn-sm" onclick="signOut()">Sign Out</button>
-    </div>
-  </div>
-
-  <!-- ROW 2 -->
-  <nav class="nav" id="main-nav"></nav>
-</div>
-
-<div id="app" style="display:none">
-  <!-- ALL PANELS START HERE -->
 
     <nav class="nav" id="main-nav">
       <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
@@ -4061,64 +3966,74 @@ function openModal(id) {
 
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
+  // 1. Session & UI Setup
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
-  
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('app-header').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
-  const nav = document.getElementById('main-nav');
-  if (nav) {
-      nav.innerHTML = '';
-      const menu = [
-        { id: 'analytics', label: 'Analytics' },
-        { id: 'calendar', label: 'Calendar' },
-        { id: 'chat', label: 'Chat' },
-        { id: 'checklists', label: 'Checklists' },
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'documents', label: 'Docs' },
-        { id: 'equipment', label: 'Equipment' },
-        { id: 'parts', label: 'Parts' },
-        { id: 'schedule', label: 'Schedule' },
-        { id: 'suppliers', label: 'Suppliers' },
-        { id: 'tools', label: 'Tool Crib' },
-        { id: 'tasks', label: 'Work Orders' }
-      ].sort((a, b) => a.label.localeCompare(b.label));
-
-      menu.forEach(btn => {
-        if (btn.id === 'analytics' && !can('canViewReports')) return;
-        if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
-
-        const b = document.createElement('button');
-        b.className = 'nav-btn';
-        if (btn.id === 'dashboard') b.classList.add('active');
-        b.onclick = () => showPanel(btn.id);
-        b.innerHTML = btn.id === 'chat' ? 
-          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
-        nav.appendChild(b);
-      });
-
-      if (currentUser.role === 'admin') {
-        const adminBtn = document.createElement('button');
-        adminBtn.className = 'nav-btn';
-        adminBtn.onclick = () => showPanel('admin');
-        adminBtn.textContent = 'Admin';
-        nav.appendChild(adminBtn);
+  // 2. Fetch Profile & Permissions
+  try {
+    const { data: profile } = await window._mpdb.from('profiles')
+      .select('group_tag, custom_permissions, role')
+      .eq('username', currentUser.username)
+      .single();
+    
+    if (profile) {
+      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
+      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
+      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
+        currentUser.role = profile.role;
       }
+    }
+  } catch(e) { console.error("Error loading profile:", e); }
+
+  const nav = document.getElementById('main-nav');
+
+  // 3. Handle Navigation Permissions
+  if(!can('canViewReports')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
+    if(btn) btn.remove();
+  }
+  if(!can('canManageSuppliers')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
+    if(btn) btn.remove();
   }
 
+  // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
+  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
+  
+  // Filter out Admin if it exists so it doesn't get sorted into the middle
+  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
+
+  // Sort remaining buttons A to Z
+  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
+
+  // Re-build the Nav bar
+  nav.innerHTML = '';
+  buttons.forEach(btn => nav.appendChild(btn));
+
+  // 5. Add Admin button last for Admin users
+  if(currentUser.role === 'admin' && !document.getElementById('admin-nav-btn')){
+      const adminBtn = document.createElement('button');
+      adminBtn.className = 'nav-btn';
+      adminBtn.id = 'admin-nav-btn';
+      adminBtn.textContent = 'Admin';
+      adminBtn.onclick = () => showPanel('admin');
+      nav.appendChild(adminBtn);
+  }
+
+  // 6. Final Initialization
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
-  
-  // FORCE THE DASHBOARD TO OPEN
-  showPanel('dashboard');
-  
+  renderDashboard();
   await initChat();
+  
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
 }
+
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
 function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
