@@ -6,15 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-#app nav, #app .nav {
-  display: none !important;
-}
-    
-    #main-nav {
-  display: flex !important;
-}
-
-    #panel-chat {
+#panel-chat {
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -77,28 +69,16 @@ body > #invoice-photo-area {
 }
 
 /* 3. Ensure the main app doesn't have extra bottom padding */
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden; /* Stops the whole page from bouncing */
+#app {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
 }
-
- #app {
-  display: none; /* Hidden until login */
-  flex-direction: column;
-  height: calc(100vh - 90px); /* Adjusts for the 2-row header */
-}
- 
   /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
 #main-nav .nav-btn {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  font-size: 12px;
-  padding: 6px 12px;
-  white-space: nowrap;
-  border-radius: 6px;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid transparent !important;
+  padding: 5px 11px !important;
 }
 
 #main-nav .nav-btn:hover {
@@ -107,10 +87,12 @@ body, html {
 }
 
 #main-nav .nav-btn.active {
-  background: #ffffff !important;
-  color: #1a1a18 !important;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  font-weight: 600 !important;
 }
+
 /* Ensure the Search Bar doesn't look like a button */
 #global-search {
   background: rgba(255, 255, 255, 0.1) !important;
@@ -174,64 +156,20 @@ button[onclick="saveInvoice()"] {
 .panel.active {
   display: block !important; /* Only take up space when active */
 }
-    
-.panel {
-  display: none;
-}
-
-.panel.active {
-  display: block !important;
-}
-
-/* Header stacking */
-.topbar {
-  display: none; /* JS will turn this to flex */
-  flex-direction: column !important;
-  background: #000 !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.topbar-main-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-}
-.search-wrap {
-  position: relative;
-  flex: 1;
-  max-width: 300px;
-}
-
-#global-search {
-  width: 100%;
-  height: 32px;
-  background: rgba(255,255,255,0.1) !important;
-  border-color: rgba(255,255,255,0.2) !important;
-  color: #fff !important;
-  padding-left: 30px;
-  font-size: 13px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.5;
-  font-size: 12px;
-}
-
-.nav {
+    .topbar {
   display: flex !important;
   flex-direction: row !important;
-  gap: 4px;
-  padding: 0 12px 10px;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  flex-wrap: nowrap !important; /* Forces one single line */
+  align-items: center !important;
+  height: 52px !important;
+  padding: 0 16px !important;
+  background: rgba(0,0,0,0.85) !important;
+  gap: 12px !important;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
 }
-.nav::-webkit-scrollbar { display: none; }
 
 .logo {
   color: #ffffff !important;
@@ -492,51 +430,123 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   #chat-sidebar-toggle{display:flex!important}
 }
 /* MOBILE RESPONSIVE OVERRIDES                */
+/* ========================================== */
 @media (max-width: 768px) {
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
+ 
+    @media (max-width: 768px) {
+  /* 1. Make the chat container stack vertically */
+  #panel-chat > div {
+    flex-direction: column !important;
+    height: calc(100vh - 160px) !important;
   }
 
-.panel.active {
-  flex: 1;
-  overflow-y: auto !important; /* Only the content scrolls */
-  padding: 20px;
-  display: block;
+  /* 2. Hide the sidebar off-screen to the left */
+  #chat-sidebar {
+    position: fixed !important;
+    left: -260px; /* Off-screen */
+    top: 52px;
+    bottom: 0;
+    z-index: 2000;
+    transition: left 0.3s ease;
+    width: 240px !important;
+    background: rgba(20, 20, 20, 0.98) !important; /* Solid dark background for mobile menu */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    padding-top: 60px !important;
+  }
+  #chat-sidebar.open {
+    left: 0;
+  }
+
+  #panel-chat .main-chat-window {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  #chat-mobile-toggle {
+    display: flex !important;
+  }
 }
 
-  .search-wrap {
-    max-width: 140px;
+    .topbar {
+    height: auto !important;
+    flex-wrap: wrap !important;
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+  #global-search {
+    max-width: 120px !important;
+    font-size: 11px !important;
   }
 
   .nav {
-    padding: 5px 12px 10px;
+    order: 10; 
+    width: 100% !important;
+    overflow-x: auto !important; 
+    display: flex !important;
+    padding-bottom: 5px;
+    -webkit-overflow-scrolling: touch; 
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none; 
   }
 
   .nav-btn {
-    flex-shrink: 0; /* Prevents buttons from squishing */
-    background: rgba(255, 255, 255, 0.1) !important;
+    padding: 6px 14px !important;
+    background: rgba(255, 255, 255, 0.1) !important; 
+    font-size: 13px !important;
   }
-}
 
-  /* 2. Fix the Topbar layout to accommodate the scroll */
-  .topbar {
-    flex-direction: column !important;
-    height: auto !important;
-    align-items: flex-start !important;
+  .logo {
+    font-size: 14px !important;
+  }
+
+  .topbar-right {
+    gap: 4px !important;
+  }
+
+  .user-chip {
+    display: none !important; 
   }
   
-  /* Row 1: Logo and Right Buttons */
-  .logo-row-mobile {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    align-items: center;
+ 
+  .metrics {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  
+  .modal {
+    width: 95% !important;
+    padding: 15px !important;
+ .sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #639922; /* Green */
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.sync-dot.syncing {
+  background: #EF9F27; /* Orange */
+  animation: pulse 1s infinite;
+}
+
+.sync-dot.offline {
+  background: #E24B4A; /* Red */
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
   }
 }
-    
+#mention-dropdown {
+  bottom: 100% !important;
+  z-index: 9999 !important;
+  background: var(--bg) !important;
 </style>
 </head>
 <body>
@@ -582,32 +592,21 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     </div>
   </div>
 </div>
-<!-- 1. THE ONLY HEADER -->
-<div class="topbar" id="app-header" style="display:none">
-  <div class="topbar-main-row">
+
+<div id="offline-queue-banner" onclick="syncOfflineQueue()">⏳ You have unsynced changes — tap to sync now</div>
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="topbar">
     <div class="logo" onclick="showPanel('dashboard')">⚙ MTL Maintenance</div>
     
-    <div style="position:relative; flex:1; max-width:300px">
-      <input type="text" id="global-search" class="form-input" placeholder="Search..." oninput="handleGlobalSearch()"/>
-      <div id="search-results" style="display:none; position:absolute; top:34px; left:0; right:0; background:#1c1c1a; border:1px solid #444; border-radius:8px; z-index:1100; max-height:300px; overflow-y:auto"></div>
+    <!-- Search Bar -->
+    <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
+      <input type="text" id="global-search" class="form-input" placeholder="Search..." style="width:100%; height:28px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:11px; padding-left:25px" oninput="handleGlobalSearch()"/>
+      <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:10px; opacity:0.5">🔍</span>
+      <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
     </div>
 
-    <div class="topbar-right">
-       <button class="btn btn-secondary btn-sm" onclick="startQRScanner()">📷 Scan</button>
-       <button class="btn btn-primary btn-sm" onclick="signOut()">Sign Out</button>
-    </div>
-  </div>
-
-  <nav class="nav" id="main-nav"></nav>
-</div>
-
-<!-- 2. THE ONLY APP CONTAINER -->
-<div id="app" style="display:none">
-  <!-- THE PANELS START IMMEDIATELY HERE -->
-  <div class="panel active" id="panel-dashboard">
-    
-
-
+    <nav class="nav" id="main-nav">
       <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
       <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
@@ -637,62 +636,36 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   </div>
 
   <!-- DASHBOARD -->
-<!-- DASHBOARD PANEL -->
-<div class="panel active" id="panel-dashboard">
-  <div id="alert-section"></div>
-
-  <!-- THE METRIC ROW -->
-  <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
-    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
-    <div class="metric-card"><div class="metric-label">This Month</div><div class="metric-value" id="m-cost">$0</div></div>
-    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
-    <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div></div>
-    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
-  </div>
-
-  <div class="grid-2">
-    <!-- Top 6 machines list -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Equipment Status</span></div>
-      <div id="equip-list-dash"></div>
+  <div class="panel active" id="panel-dashboard">
+    <div id="alert-section"></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Viewing:</span>
+      <button class="btn btn-sm" id="grp-all" onclick="setGroupFilter('all')" style="background:#fff;color:#1a1a18;font-weight:700;border:1px solid #fff">All</button>
+      <button class="btn btn-sm" id="grp-outside" onclick="setGroupFilter('outside')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Outside</button>
+      <button class="btn btn-sm" id="grp-production" onclick="setGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
     </div>
-    <!-- Upcoming list -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
-      <div id="sched-list-dash"></div>
+    <div class="metrics">
+      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-total-sub"></div></div>
+      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">—</div><div class="metric-sub">Work orders</div></div>
+      <div class="metric-card"><div class="metric-label">This Month</div><div class="metric-value" id="m-cost">—</div><div class="metric-sub" id="m-cost-sub"></div></div>
+      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">—</div><div class="metric-sub">Below reorder</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">—</div><div class="metric-sub">Fleet score</div></div>
+      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">—</div><div class="metric-sub">Work orders</div></div>
     </div>
-  </div>
-
-  <!-- ROW 1 -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Equipment Status</span></div>
-      <div id="equip-list-dash"></div>
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="card"><div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div><div id="equip-list-dash"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div><div id="sched-list-dash"></div></div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
-      <div id="sched-list-dash"></div>
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div><div id="recent-tasks"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Monthly Costs ($)</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div></div>
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Fleet Health</span></div><div id="fleet-health-dash"></div></div>
     </div>
   </div>
 
-  <!-- ROW 2 -->
-  <div class="grid-2" style="margin-top:12px">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Recent Work Orders</span>
-        <!-- Added this ID back so it doesn't crash -->
-        <span class="badge bg" id="task-count-badge"></span> 
-      </div>
-      <div id="recent-tasks"></div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Fleet Health</span>
-      </div>
-      <div id="fleet-health-dash"></div>
-    </div>
-  </div>
 <!-- CALENDAR PANEL -->
   <div class="panel" id="panel-calendar">
     <div class="section-header"><span class="section-title">Maintenance Calendar</span>
@@ -1324,22 +1297,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 // ============================================================
 // CONFIG
 // ============================================================
-// --- GLOBAL STATE AND FILTERS ---
-let activeGroupFilter = 'all';
-let equipGroupFilter = 'all';
-let lastReadAt = {};
-let currentChannel = 'general';
-let activeDmUser = null;
-
-// Initialize lastReadAt from storage immediately
-try {
-  const savedRead = localStorage.getItem('mp_chat_read');
-  if (savedRead) lastReadAt = JSON.parse(savedRead);
-} catch(e) { lastReadAt = {}; }
-
-// Your existing state object follows...
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools: [], wishlist: [] };
-  // ── SESSION TOKEN ────────────────────────────────────────────
+// ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot'); 
   if(!dot) return;
@@ -1685,7 +1643,7 @@ function quickLogHours(equipId) {
 // ============================================================
 // STATE
 // ============================================================
-
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
@@ -1926,89 +1884,119 @@ function handleDocUpload(input){
 // ============================================================
 // DASHBOARD
 // ============================================================
-
-function renderDashboard(){
-  try {
-      updateMetrics();
-      renderAlerts();
-      renderEquipListDash();
-      renderSchedDash();
-      renderRecentTasks();
-      renderRecentObservations();
-      renderFleetHealthDash();
-  } catch (e) {
-      console.warn("Dashboard partially rendered, some elements skipped:", e.message);
-  }
-}
 function updateMetrics(){
-  // 1. Define all variables at the start
-  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
-  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
-  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
-  
-  const costs = state.monthlyCosts || [0,0,0,0];
-  const currentMonthCost = costs[costs.length - 1] || 0;
-  
-  const avgHealth = state.equipment.length ? 
-    Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
-
-  // 2. Helper function to update HTML safely (prevents "textContent of null" errors)
-  const safeSet = (id, text, className) => {
-    const el = document.getElementById(id);
-    if(el) {
-      if(text !== undefined) el.textContent = text;
-      if(className !== undefined) el.className = className;
+  const overdue=state.tasks.filter(t=>t.status==='Overdue').length;
+  const open=state.tasks.filter(t=>t.status==='Open').length;
+  const low=state.parts.filter(p=>p.qty<=p.reorder).length;
+  const costs=state.monthlyCosts; const cost=costs[costs.length-1]; const prev=costs[costs.length-2]||0;
+  const diff=cost-prev; const sign=diff>=0?'+':'-';
+  const avgHealth=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):100;
+  // Make metric cards clickable
+  ['m-total','m-overdue','m-cost','m-parts','m-health','m-open'].forEach(id=>{
+    const el=document.getElementById(id);
+    const card=el?.closest('.metric-card');
+    if(card&&!card.dataset.clickable){
+      card.dataset.clickable='1';
+      card.style.cursor='pointer';
+      const panelMap={'m-total':'equipment','m-overdue':'tasks','m-open':'tasks','m-cost':'analytics','m-parts':'parts','m-health':'analytics'};
+      card.onclick=()=>showPanel(panelMap[id]||'dashboard');
     }
-  };
-
-  // 3. Perform the updates
-  safeSet('m-total', state.equipment.length);
-  safeSet('m-cost', '$' + currentMonthCost.toLocaleString());
-  safeSet('m-parts', lowCount, 'metric-value ' + (lowCount > 0 ? 'v-danger' : 'v-success'));
-  safeSet('m-health', avgHealth + '%', 'metric-value ' + (avgHealth >= 80 ? 'v-success' : avgHealth >= 50 ? 'v-warning' : 'v-danger'));
-  safeSet('m-open', openCount);
-
-  // Handle the Overdue/Active box
-  const totalActive = openCount + overdueCount;
-  const overdueClass = (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
-  safeSet('m-overdue', totalActive, 'metric-value ' + overdueClass);
+  });
+  document.getElementById('m-total').textContent=state.equipment.length;
+  document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
+  const openAndOverdue = open + overdue;
+  document.getElementById('m-overdue').textContent=openAndOverdue;
+  document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
+  document.getElementById('m-cost').textContent='$'+cost.toLocaleString();
+  document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
+  document.getElementById('m-parts').textContent=low;
+  document.getElementById('m-parts').className='metric-value '+(low>0?'v-danger':'v-success');
+  document.getElementById('m-health').textContent=avgHealth+'%';
+  document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
+  document.getElementById('m-open').textContent=open;
 }
-
 function renderEquipListDash(){
-  const el = document.getElementById('equip-list-dash');
-  if(!el) return;
-  const list = filteredEquipment(activeGroupFilter).slice(0, 6);
-  el.innerHTML = list.map(e => `
-    <div class="equip-row" onclick="openEquipDetail('${e.id}')">
-      <div class="equip-name">${e.name}</div>
-      ${badge(e.status)}
-    </div>`).join('') || 'No equipment found';
+  const el=document.getElementById('equip-list-dash');
+  el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
+    const score=calcHealth(e.id);
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
+    return `<div class="equip-row">
+      <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
+      <div class="equip-info" onclick="openEquipDetail('${e.id}')">
+        <div class="equip-name">${e.name}</div>
+        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0; display:flex; flex-direction:column; gap:4px; align-items:flex-end">
+        <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size:10px" onclick="quickLogHours('${e.id}')">⏱ Log Hours</button>
+        <div style="font-size:11px;color:var(--text2)">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
+      </div>
+    </div>`;
+  }).join('');
 }
-// 5. SCHEDULE LIST
 function renderSchedDash(){
-  const el = document.getElementById('sched-list-dash');
-  if(!el) return;
-  const upcoming = state.schedules.slice(0, 6);
-  el.innerHTML = upcoming.map(s => `
-    <div class="sched-item">
-      <div class="sched-title">${s.name}</div>
-      <div class="sched-detail">${fmtDate(s.date)}</div>
-    </div>`).join('') || 'No upcoming maintenance';
-}-
-function renderRecentTasks(){
-  const container = document.getElementById('recent-tasks');
-  const badgeEl = document.getElementById('task-count-badge');
+  const el=document.getElementById('sched-list-dash');
+  // Combine scheduled maintenance + open/overdue work orders
+  const schedItems = state.schedules.filter(s=>{
+    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
+    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
+    return d>=TODAY;
+  }).map(s=>({...s, _type:'schedule'}));
   
-  if(badgeEl) badgeEl.textContent = (state.tasks || []).length + ' total';
-  if(!container) return;
+  const woItems = state.tasks.filter(t=>t.status!=='Completed'&&t.due).map(t=>({
+    id:t.id, name:t.name, date:t.due, equipId:t.equipId,
+    tech:t.assign, _type:'wo', status:t.status, priority:t.priority
+  }));
 
-  const recent = [...state.tasks].sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0,5);
-  container.innerHTML = recent.map(t => `
-    <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
-      <div style="flex:1"><b>${t.name}</b></div>
-      ${badge(t.status)}
-    </div>`).join('') || 'No tasks found';
+  const combined = [...schedItems, ...woItems]
+    .sort((a,b)=>{
+      const [ay,am,ad]=(a.date||'').split('-').map(Number);
+      const [by,bm,bd]=(b.date||'').split('-').map(Number);
+      return new Date(ay,am-1,ad)-new Date(by,bm-1,bd);
+    }).slice(0,6);
+
+  el.innerHTML=combined.map(s=>{
+    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
+    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
+    const isWO = s._type==='wo';
+    const isOverdueItem = isWO && isOverdue(s.date);
+    return `<div class="sched-item" onclick="${isWO?`openTaskDetail('${s.id}')`:''}" style="${isWO?'cursor:pointer':''}">
+      <div class="sched-date" style="background:${isOverdueItem?'var(--danger-bg)':isWO?'var(--accent-bg)':'var(--bg2)'}">
+        <div class="sched-day" style="color:${isOverdueItem?'var(--danger)':isWO?'var(--accent)':''}">${d.getDate()}</div>
+        <div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div>
+      </div>
+      <div class="sched-body">
+        <div class="sched-title">${s.name} ${isWO?`<span class="badge ${isOverdueItem?'bd':s.status==='Open'?'bi':'bg'}" style="font-size:10px">${isOverdueItem?'Overdue':s.status}</span>`:''}</div>
+        <div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'}${isWO&&s.priority?' · '+s.priority:s.dur?' · '+s.dur+'h':''}</div>
+      </div>
+    </div>`;
+  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
 }
+function renderRecentTasks(){
+  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
+  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
+  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
+    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
+    return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
+      <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
+      ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+function renderCostChart(){
+  const costs=state.monthlyCosts; const max=Math.max(...costs,1);
+  const colors=['#B5D4F4','#85B7EB','#378ADD','#185FA5'];
+  const now=new Date();
+  const labels=[3,2,1,0].map(ago=>{ const d=new Date(now.getFullYear(),now.getMonth()-ago,1); return MONTHS[d.getMonth()]; });
+  document.getElementById('cost-chart').innerHTML=costs.map((v,i)=>
+    `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="font-size:10px;font-weight:600">${v>=1000?"$"+(v/1000).toFixed(1)+"k":"$"+v.toLocaleString()}</div>
+      <div style="width:100%;border-radius:3px 3px 0 0;height:${Math.round(v/max*78)}px;background:${colors[i]}"></div>
+      <div style="font-size:10px;color:var(--text2)">${labels[i]}</div>
+    </div>`
+  ).join('')
+}
+
 // ============================================================
 // CALENDAR
 // ============================================================
@@ -2474,35 +2462,41 @@ async function openTaskDetail(id){
     </div>`;
   openModal('detail-modal');
 }
-function switchDetailTab(tab, btn) {
-    const modal = document.getElementById('detail-modal');
-    if (!modal) return;
 
-    const allContentDivs = modal.querySelectorAll('[id^="eq-"], [id^="dt-"]');
-
-    allContentDivs.forEach(div => {
-        div.style.display = 'none';
+function switchDetailTab(tab, btn){
+  const modal = document.getElementById('detail-modal');
+  
+  // 1. Hide all content divs (anything starting with eq- or dt-)
+  if(modal){
+    modal.querySelectorAll('div[id]').forEach(el => {
+      if(el.id.startsWith('eq-') || el.id.startsWith('dt-')) el.style.display = 'none';
     });
+  }
 
-    const target = document.getElementById(tab);
-    if (target) {
-        target.style.display = 'block';
-        // Smooth scroll to top of the modal content
-        modal.querySelector('.modal').scrollTop = 0;
-    }
+  // 2. Show the specific tab the user clicked
+  const el = document.getElementById(tab);
+  if(el) el.style.display = 'block';
 
-    modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
+  // 3. Highlight the active tab button
+  document.querySelectorAll('#detail-modal .tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 
-    const id = window._currentDetailEquipId;
-    if (id) {
-        if (tab === 'eq-timeline') renderEquipTimeline(id);
-        if (tab === 'eq-obs') refreshObsList(id);
-        if (tab === 'eq-invoices') renderInvoicesList(id);
-        if (tab === 'eq-downtime') renderDowntimeTab(id);
-    }
+  // 4. TRIGGER DATA RELOADS (Runs specific code for specific tabs)
+  if(window._currentDetailEquipId) {
+      if(tab === 'eq-timeline') {
+        renderEquipTimeline(window._currentDetailEquipId);
+      }
+      if(tab === 'eq-obs') {
+        refreshObsList(window._currentDetailEquipId);
+      }
+      if(tab === 'eq-invoices') {
+        renderInvoicesList(window._currentDetailEquipId);
+      }
+      if(tab === 'eq-downtime') {
+        renderDowntimeTab(window._currentDetailEquipId);
+      }
+  }
 }
-
 
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
@@ -3530,41 +3524,32 @@ async function sendCriticalObsNotification(obs,equipId){
 // ── OVERDUE EMAIL ────────────────────────────────────────────
 
 // ── GROUPS ───────────────────────────────────────────────────
-
+let activeGroupFilter='all',equipGroupFilter='all';
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
 function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderEquipmentTable();}
 function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all')return state.equipment;return state.equipment.filter(e=>e.group_tag===f||e.group_tag==='both');}
 function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group_tag;if(g&&g!=='all'){setGroupFilter(g);setEquipGroupFilter(g);}}
 
 // ── RECENT OBS + FLEET HEALTH ────────────────────────────────
-
-
-// 7. RECENT OBSERVATIONS (With Badge)
 function renderRecentObservations(){
-  const container = document.getElementById('recent-obs-list');
-  const badgeEl = document.getElementById('obs-count-badge');
-  
-  if(badgeEl) badgeEl.textContent = (state.observations || []).length + ' total';
-  if(!container) return;
-
-  const obs = [...(state.observations || [])].slice(0, 5);
-  container.innerHTML = obs.map(o => `
-    <div class="parts-row" onclick="openEquipDetail('${o.equip_id}')" style="cursor:pointer">
-      <div style="flex:1">${o.body.slice(0,40)}...</div>
-      <span class="badge bg">${o.severity}</span>
-    </div>`).join('') || 'No observations found';
+  const listEl=document.getElementById('recent-obs-list');const badgeEl=document.getElementById('obs-count-badge');if(!listEl)return;
+  let obs=[...(state.observations||[])];if(activeGroupFilter!=='all'){const ids=new Set(filteredEquipment(activeGroupFilter).map(e=>e.id));obs=obs.filter(o=>ids.has(o.equip_id));}
+  if(badgeEl)badgeEl.textContent=obs.length+' total';
+  if(!obs.length){listEl.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">No observations yet</div>';return;}
+  listEl.innerHTML=obs.slice(0,6).map(o=>`<div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
+    <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
+    <div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
+      <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author} · ${new Date(o.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+    </div><span class="badge ${o.severity==='critical'?'bd':o.severity==='watch'?'bw':'bg'}">${o.severity}</span>
+  </div>`).join('');
 }
-
-// 8. FLEET HEALTH (Progress bars)
 function renderFleetHealthDash(){
-  const el = document.getElementById('fleet-health-dash');
-  if(!el) return;
-  const list = state.equipment.slice(0, 5);
-  el.innerHTML = list.map(e => {
-    const s = calcHealth(e.id);
-    return `<div class="parts-row"><span>${e.name}</span><b>${s}%</b></div>`;
-  }).join('');
+  const el=document.getElementById('fleet-health-dash');if(!el)return;
+  const equip=filteredEquipment(activeGroupFilter).slice(0,6);
+  if(!equip.length){el.innerHTML='<div style="color:var(--text2);font-size:13px">No equipment in this group</div>';return;}
+  el.innerHTML=equip.map(e=>{const score=calcHealth(e.id);return`<div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div><div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div></div><span style="font-size:12px;font-weight:600;color:${healthColor(score)};flex-shrink:0;margin-left:8px">${score}%</span></div>`;}).join('');
 }
+
 // ── PERMISSIONS ADMIN ────────────────────────────────────────
 const PERM_LABELS={'canCreate':'Create work orders','canEdit':'Edit records','canDelete':'Delete records','canViewReports':'View reports & analytics','canViewCosts':'View costs','canManageEquip':'Manage equipment','canManageParts':'Manage parts','canManageSuppliers':'Manage suppliers','canManageUsers':'Manage users'};
 let editingUserId=null,editingUserRole=null,editingPerms={};
@@ -3667,7 +3652,7 @@ async function denyUser(id){await window._mpdb.from('profiles').update({status:'
 async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await window._mpdb.from('profiles').delete().eq('id',id);showToast(name+' removed');renderAdminPanel();}
 
 // ── CHAT ─────────────────────────────────────────────────────
-
+let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoData=null,lastReadAt={};
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
@@ -3788,32 +3773,30 @@ function handleChatInput(el){
 }
 function insertMention(name){const i=document.getElementById('chat-input');if(!i)return;const v=i.value;const a=v.lastIndexOf('@');i.value=v.slice(0,a)+'@'+name.replace(/ /g,'')+' ';const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';i.focus();}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
-
 function switchChannel(channel, btn) {
-    currentChannel = channel;
-    
-    // 1. Immediately mark the channel as read in the DB
-    markChannelRead(channel);
+    try {
+        currentChannel = channel;
+        
+        // Update button colors
+        document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
 
-    // 2. UI Updates
-    document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+        // Update the Header Title
+        const header = document.getElementById('chat-header-title');
+        if (header) {
+            if (channel.startsWith('dm-')) {
+                // Get the name from the button text
+                header.textContent = '@ ' + btn.innerText.split('\n')[0].trim();
+            } else {
+                header.textContent = '# ' + channel;
+            }
+        }
 
-    const header = document.getElementById('chat-header-title');
-    if (header) header.textContent = channel.startsWith('dm-') ? '@ ' + btn.innerText.split('\n')[0] : '# ' + channel;
-
-    // 3. Load messages
-    loadChatMessages(channel);
-
-    // 4. FORCE UI badge refresh
-    updateUnreadBadge();
-
-    // 5. Close sidebar if on mobile
-    if (window.innerWidth <= 768) {
-        const sidebar = document.getElementById('chat-sidebar');
-        if (sidebar) sidebar.classList.remove('open');
-    }
+        loadChatMessages(channel);
+        markChannelRead(channel); // Clears the red dots
+    } catch (e) { console.error("Switch error:", e); }
 }
+
 function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-equip-name');const w=document.getElementById('chat-tag-equip');if(b)b.style.display='flex';if(n)n.textContent='🔧 '+equipName(id);if(w)w.style.display='inline-flex';document.getElementById('tag-equip-select').value='';}
 function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-task-name');const w=document.getElementById('chat-tag-task');const t=state.tasks.find(x=>x.id===id);if(b)b.style.display='flex';if(n)n.textContent='📋 '+(t?.name||'Work Order');if(w)w.style.display='inline-flex';document.getElementById('tag-task-select').value='';}
 function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
@@ -3827,33 +3810,41 @@ function markChannelRead(channel) {
     // Refresh the counts immediately
     updateUnreadBadge();
 }
+
 function updateUnreadBadge() {
     let totalUnread = 0;
     
-    try {
-        // 1. Calculate unreads (Keep your existing logic here)
-        const allKnownChannels = [...new Set((state.chatMessages || []).map(m => m.channel))];
-        allKnownChannels.forEach(ch => {
-            const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-            const unreadInChannel = (state.chatMessages || []).filter(m => 
-                m.channel === ch && new Date(m.created_at) > lastRead && m.author !== currentUser?.username
-            ).length;
-            totalUnread += unreadInChannel;
+    // Get a list of every unique channel that has ever had a message
+    const allKnownChannels = [...new Set((state.chatMessages || []).map(m => m.channel))];
 
-            // Safe Sidebar Update
-            let dot = document.getElementById(`dot-ch-${ch}`) || document.getElementById(`dot-dm-${ch}`);
-            if (dot) dot.style.display = unreadInChannel > 0 ? 'inline-block' : 'none';
-        });
+    allKnownChannels.forEach(ch => {
+        // Find when this user last read this specific channel
+        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
+        
+        // Count messages in this channel newer than the last read date
+        const unreadInChannel = (state.chatMessages || []).filter(m => 
+            m.channel === ch && 
+            new Date(m.created_at) > lastRead && 
+            m.author !== currentUser?.username
+        ).length;
 
-        // 2. SAFE TOPBAR UPDATE (This is likely line 1965)
-        const topBadge = document.getElementById('chat-unread-top');
-        if (topBadge) {
-            topBadge.textContent = totalUnread;
-            topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+        totalUnread += unreadInChannel;
+
+        // Update sidebar dots if the button exists on screen
+        // Standard channels use ids like dot-ch-general
+        // DM channels use ids like dot-dm-dm-alpha-beta
+        let dot = document.getElementById(`dot-ch-${ch}`) || document.getElementById(`dot-dm-${ch}`);
+        if (dot) {
+            dot.style.display = unreadInChannel > 0 ? 'inline-block' : 'none';
         }
+    });
 
-    } catch (e) {
-        console.warn("Notification update skipped:", e.message);
+    // UPDATE THE TOPBAR BADGE
+    // Make sure this ID matches your HTML: chat-unread-top
+    const topBadge = document.getElementById('chat-unread-top');
+    if (topBadge) {
+        topBadge.textContent = totalUnread;
+        topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
     }
 }
 
@@ -3925,11 +3916,9 @@ function showPanel(id) {
         'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
         'chat': () => { 
     if (typeof renderChat === 'function') renderChat(); 
-    if (typeof markChannelRead === 'function') markChannelRead(currentChannel);
-    if(typeof clearAllChatNotificaions ===  'function') clearAllChatNotifications();        
+    if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
 },
         'tools': () => { 
-              window.scrollTo(0, 0);
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
         }
@@ -3943,39 +3932,26 @@ function showPanel(id) {
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
-  console.log("Safe Render: Starting Dashboard...");
-  try {
-      updateMetrics();
-      renderAlerts();
-      renderEquipListDash();
-      renderSchedDash();
-      renderRecentTasks();
-      
-      // These are optional, so we wrap them individually
-      if (typeof renderRecentObservations === 'function') {
-          try { renderRecentObservations(); } catch(e) { console.warn("Obs render failed"); }
-      }
-      if (typeof renderFleetHealthDash === 'function') {
-          try { renderFleetHealthDash(); } catch(e) { console.warn("Health render failed"); }
-      }
-      console.log("Safe Render: Dashboard Complete ✓");
-  } catch (e) {
-      console.error("Dashboard drawing crashed:", e);
-  }
+  renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
+  const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
+    if(document.getElementById('recent-obs-list'))renderRecentObservations();
+  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
 }
+
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
-  const sec = document.getElementById('alert-section');
-  if(!sec) return;
-
-  const od = state.tasks.filter(t => t.status !== 'Completed' && isOverdue(t.due));
-  const lp = state.parts.filter(p => p.qty <= p.reorder);
-  let h = '';
-  if(od.length) h += `<div class="alert alert-d"><b>${od.length} Overdue:</b> Check Work Orders</div>`;
-  if(lp.length) h += `<div class="alert alert-w"><b>${lp.length} Low Parts:</b> Check Inventory</div>`;
-  sec.innerHTML = h;
+  const sec=document.getElementById('alert-section');if(!sec)return;
+  const od=state.tasks.filter(t=>t.status!=='Completed'&&isOverdue(t.due));
+  const lp=state.parts.filter(p=>p.qty<=p.reorder_qty&&p.reorder_qty>0);
+  const exp=state.documents.filter(d=>d.expiry_date&&new Date(d.expiry_date)<=new Date(Date.now()+30*24*60*60*1000));
+  const critObs=(state.observations||[]).filter(o=>o.severity==='critical');
+  let h='';
+  if(od.length)h+=`<div class="alert alert-d"><span class="dot"></span><b>${od.length} overdue:</b> ${od.map(t=>t.name).join(', ')}</div>`;
+  if(lp.length)h+=`<div class="alert alert-w">⚠ <b>${lp.length} part${lp.length>1?'s':''} low/out of stock:</b> ${lp.map(p=>p.name).join(', ')}</div>`;
+  if(exp.length)h+=`<div class="alert alert-w">📄 <b>${exp.length} document${exp.length>1?'s':''} expiring soon:</b> ${exp.map(d=>d.name).join(', ')}</div>`;
+  if(critObs.length)h+=`<div class="alert alert-d">🚨 <b>${critObs.length} critical observation${critObs.length>1?'s':''}:</b> ${critObs.map(o=>equipName(o.equip_id)+' — '+o.body.slice(0,50)).join(' | ')}</div>`;
+  sec.innerHTML=h;
 }
-
 
 // ── OVERRIDDEN openModal ──────────────────────────────────────
 function openModal(id) {
@@ -3987,74 +3963,75 @@ function openModal(id) {
     console.error("Could not find modal with ID:", id);
   }
 }
+
+// ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
+  // 1. Session & UI Setup
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
-  
   document.getElementById('auth-screen').style.display = 'none';
-  
-  // Show the header and the app container
-  const header = document.getElementById('app-header');
-  const app = document.getElementById('app');
-  if(header) header.style.display = 'flex';
-  if(app) app.style.display = 'flex';
-document.getElementById('user-chip-name').textContent = currentUser.name;
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-chip-name').textContent = currentUser.name;
 
-
-const nameChip = document.getElementById('user-chip-name');
-if (nameChip) {
-    nameChip.textContent = currentUser.name;
-} else {
-    console.warn("UI Warning: 'user-chip-name' ID missing from top bar.");
-}
-
-  // Build the Nav
-  const nav = document.getElementById('main-nav');
-  if (nav) {
-      nav.innerHTML = '';
-      const buttons = [
-        { id: 'analytics', label: 'Analytics' },
-        { id: 'calendar', label: 'Calendar' },
-        { id: 'chat', label: 'Chat' },
-        { id: 'checklists', label: 'Checklists' },
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'documents', label: 'Docs' },
-        { id: 'equipment', label: 'Equipment' },
-        { id: 'parts', label: 'Parts' },
-        { id: 'schedule', label: 'Schedule' },
-        { id: 'suppliers', label: 'Suppliers' },
-        { id: 'tools', label: 'Tool Crib' },
-        { id: 'tasks', label: 'Work Orders' }
-      ].sort((a, b) => a.label.localeCompare(b.label));
-
-      buttons.forEach(btn => {
-        const b = document.createElement('button');
-        b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
-        b.onclick = () => showPanel(btn.id);
-        b.innerHTML = btn.id === 'chat' ? 
-          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
-        nav.appendChild(b);
-      });
-
-      if (currentUser.role === 'admin') {
-        const adminBtn = document.createElement('button');
-        adminBtn.className = 'nav-btn';
-        adminBtn.onclick = () => showPanel('admin');
-        adminBtn.textContent = 'Admin';
-        nav.appendChild(adminBtn);
+  // 2. Fetch Profile & Permissions
+  try {
+    const { data: profile } = await window._mpdb.from('profiles')
+      .select('group_tag, custom_permissions, role')
+      .eq('username', currentUser.username)
+      .single();
+    
+    if (profile) {
+      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
+      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
+      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
+        currentUser.role = profile.role;
       }
+    }
+  } catch(e) { console.error("Error loading profile:", e); }
+
+  const nav = document.getElementById('main-nav');
+
+  // 3. Handle Navigation Permissions
+  if(!can('canViewReports')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
+    if(btn) btn.remove();
+  }
+  if(!can('canManageSuppliers')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
+    if(btn) btn.remove();
   }
 
-  // Load Data and Force Dashboard show
+  // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
+  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
+  
+  // Filter out Admin if it exists so it doesn't get sorted into the middle
+  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
+
+  // Sort remaining buttons A to Z
+  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
+
+  // Re-build the Nav bar
+  nav.innerHTML = '';
+  buttons.forEach(btn => nav.appendChild(btn));
+
+  // 5. Add Admin button last for Admin users
+  if(currentUser.role === 'admin' && !document.getElementById('admin-nav-btn')){
+      const adminBtn = document.createElement('button');
+      adminBtn.className = 'nav-btn';
+      adminBtn.id = 'admin-nav-btn';
+      adminBtn.textContent = 'Admin';
+      adminBtn.onclick = () => showPanel('admin');
+      nav.appendChild(adminBtn);
+  }
+
+  // 6. Final Initialization
   await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
-  
-  showPanel('dashboard'); // This ensures the content doesn't "disappear"
-  
+  renderDashboard();
   await initChat();
+  
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
-document.getElementById('app').style.display = 'flex';
 }
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
@@ -4086,7 +4063,7 @@ async function updateLastSeen(){
 }
 
 // ── DIRECT MESSAGES ──────────────────────────────────────────
-
+let activeDmUser=null;
 function getDmChannel(u1,u2){return 'dm-'+[u1,u2].sort().join('-');}
 
    async function renderDmList() {
@@ -5432,14 +5409,7 @@ function showPanel(id) {
 
     // 4. Create the Mapping (The Switchboard)
     const renderMap = {
-       'dashboard': () => {
-    if (typeof renderDashboard === 'function') {
-        console.log("Switchboard: Drawing Dashboard...");
-        renderDashboard();
-    } else {
-        console.error("Switchboard Error: renderDashboard function is missing!");
-    }
-},
+        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
         'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
         'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
         'tasks': typeof renderTasks === 'function' ? renderTasks : null,
@@ -5485,19 +5455,6 @@ switchChannel = function(channel, btn) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
-function clearAllChatNotifications() {
-    // Clear current channel
-    markChannelRead(currentChannel);
-    
-    // Force a recount
-    updateUnreadBadge();
-    
-    // If the top bar still shows a number, force it to hide
-    const topBadge = document.getElementById('chat-unread-top');
-    if (topBadge && parseInt(topBadge.textContent) === 0) {
-        topBadge.style.display = 'none';
-    }
-}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
