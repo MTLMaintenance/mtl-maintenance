@@ -548,41 +548,54 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   z-index: 9999 !important;
   background: var(--bg) !important;
 @media (max-width: 768px) {
-  /* 1. Force the app to be exactly the height of the screen */
+  /* 1. Lock the whole screen so nothing can scroll except the data */
   body, html {
     overflow: hidden !important;
     height: 100% !important;
+    position: fixed;
+    width: 100%;
   }
 
+  /* 2. Force the App to fill the screen exactly */
   #app {
     display: flex !important;
     flex-direction: column !important;
     height: 100vh !important;
-    overflow: hidden !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* 2. Fix the Header and Nav row */
+  /* 3. Keep the header at the very top */
   .topbar {
     flex-shrink: 0 !important;
+    z-index: 1001;
   }
 
-  /* 3. Make the active panel fill the middle space */
+  /* 4. Force the Panel to start at the top and fill the gap */
   .panel.active {
+    display: flex !important;
+    flex-direction: column !important;
     flex: 1 !important;
-    overflow-y: auto !important; /* Content scrolls, but header stays put */
+    overflow-y: auto !important;
     padding: 10px !important;
+    margin: 0 !important;
   }
 
-  /* 4. Chat specific: Full height on mobile */
+  /* 5. Chat Specific: Ensure messages fill the space and input is at bottom */
   #panel-chat {
     height: 100% !important;
+  }
+  
+  #panel-chat > div {
+    flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
-  #panel-chat > div {
+  #chat-messages {
     flex: 1 !important;
-    height: 100% !important;
+    overflow-y: auto !important;
   }
 }
     </style>
@@ -3907,7 +3920,8 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 function showPanel(id) {
     
     window.scrollTo(0, 0);
-
+const panelContainer = document.querySelector('.panel.active');
+    if(panelContainer) panelContainer.scrollTop = 0;
     // 1. Hide all panels
     document.querySelectorAll('.panel').forEach(p => {
         p.style.display = 'none';
@@ -3998,7 +4012,7 @@ async function enterApp(){
   // 1. Session & UI Setup
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
+  document.getElementById('app').style.display = 'flex';
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
   // 2. Fetch Profile & Permissions
