@@ -812,11 +812,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
   <!-- SUPPLIERS -->
   <div class="panel" id="panel-suppliers">
-   <div class="section-header">
-  <span class="section-title">Supplier Management</span>
-  <!-- This is the clean button -->
-  <button class="btn btn-primary" onclick="resetSupplierForm(); openModal('supplier-modal')">+ Add Supplier</button>
-</div>
+    <div class="section-header"><span class="section-title">Supplier Management</span><button class="btn btn-primary" onclick="openModal('supplier-modal')">+ Add Supplier</button></div>
+    <div class="table-wrap"><table>
       <thead><tr><th>Supplier Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Website</th><th>Parts</th><th></th></tr></thead>
       <tbody id="supplier-table-body"></tbody>
     </table></div>
@@ -1211,16 +1208,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 </div>
 
 <!-- Supplier Modal -->
-<div class="modal-backdrop" id="supplier-modal" style="display:none">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-header">
-      <span class="modal-title" id="sup-modal-title">Supplier Details</span>
-      <button class="modal-close" onclick="closeModal('supplier-modal')">✕</button>
-    </div>
+<div class="modal-backdrop" id="supplier-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Supplier</span><button class="modal-close" onclick="closeModal('supplier-modal')">✕</button></div>
     <div class="form-grid">
-      <!-- Hidden input to store the ID when editing -->
-      <input type="hidden" id="sup-edit-id"/>
-      
       <div class="form-group full"><label class="form-label">Supplier Name *</label><input class="form-input" id="sup-name" placeholder="e.g. CAT Parts Inc."/></div>
       <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" id="sup-contact" placeholder="Name"/></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="sup-email" type="email" placeholder="email@supplier.com"/></div>
@@ -1228,14 +1219,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="sup-website" placeholder="https://..."/></div>
       <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="sup-notes"></textarea></div>
     </div>
-
-    <div class="form-row" style="justify-content: space-between; margin-top: 20px;">
-      <button class="btn btn-danger btn-sm" id="sup-delete-btn" style="display:none" onclick="deleteSupplier()">Delete Supplier</button>
-      <div style="display:flex; gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal('supplier-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button>
-      </div>
-    </div>
+    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('supplier-modal')">Cancel</button><button class="btn btn-primary" onclick="saveSupplier()">Add Supplier</button></div>
   </div>
 </div>
 
@@ -2362,70 +2346,21 @@ async function deletePart(id){ if(!confirm('Delete this part?'))return; state.pa
 // ============================================================
 // SUPPLIERS
 // ============================================================
-function renderSuppliers() {
-    const tableBody = document.getElementById('supplier-table-body');
-    if (!tableBody) return;
-
-    // We clear the table first to prevent ghosting
-    tableBody.innerHTML = '';
-
-    if (!state.suppliers || state.suppliers.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px">No suppliers added yet.</td></tr>';
-        return;
-    }
-
-    // Every use of "s" is strictly trapped inside this .map loop
-    const rows = state.suppliers.map(s => {
-        const count = (state.parts || []).filter(p => p.supplier_id === s.id).length;
-        return `
-        <tr onclick="editSupplier('${s.id}')" style="cursor:pointer">
-            <td style="font-weight:600">${s.name}</td>
-            <td style="color:var(--text2)">${s.contact || '—'}</td>
-            <td>${s.email || '—'}</td>
-            <td>${s.phone || '—'}</td>
-            <td>${s.website ? 'Visit' : '—'}</td>
-            <td><span class="badge bg">${count} parts</span></td>
-        </tr>`;
-    });
-
-    tableBody.innerHTML = rows.join('');
+function renderSuppliers(){
+  document.getElementById('supplier-table-body').innerHTML=state.suppliers.map(s=>{
+    const partCount=state.parts.filter(p=>p.supplier_id===s.id).length;
+    return `<tr onclick="openSupplierDetail('${s.id}')">
+      <td style="font-weight:500">${s.name}</td>
+      <td style="color:var(--text2)">${s.contact||'—'}</td>
+      <td><a href="mailto:${s.email}" onclick="event.stopPropagation()" style="color:var(--accent)">${s.email||'—'}</a></td>
+      <td style="color:var(--text2)">${s.phone||'—'}</td>
+      <td><a href="${s.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--accent)">${s.website?'Visit':'—'}</a></td>
+      <td><span class="badge bg">${partCount} part${partCount!==1?'s':''}</span></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-danger" onclick="deleteSupplier('${s.id}')">Del</button></td>
+    </tr>`;
+  }).join('');
 }
-function editSupplier(id) {
-    const s = state.suppliers.find(x => x.id === id);
-    if (!s) return;
-
-    // Safely update the Modal Title
-    const title = document.getElementById('sup-modal-title');
-    if (title) title.textContent = "Edit Supplier: " + s.name;
-
-    // Helper to set values safely
-    const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-
-    setVal('sup-edit-id', s.id);
-    setVal('sup-name', s.name);
-    setVal('sup-contact', s.contact);
-    setVal('sup-email', s.email);
-    setVal('sup-phone', s.phone);
-    setVal('sup-website', s.website);
-    setVal('sup-notes', s.notes);
-   const delBtn = document.getElementById('sup-delete-btn');
-    if (delBtn) delBtn.style.display = 'block';
-    
-    openModal('supplier-modal');
-}
-    async function deleteSupplier(id){ if(!confirm('Delete this supplier?'))return; state.suppliers=state.suppliers.filter(s=>s.id!==id); await persist('suppliers','delete',{id}); renderSuppliers(); }
-    document.getElementById('sup-modal-title').textContent = "Edit Supplier: " + s.name;
-    document.getElementById('sup-edit-id').value = s.id;
-    document.getElementById('sup-name').value = s.name;
-    document.getElementById('sup-contact').value = s.contact || '';
-    document.getElementById('sup-email').value = s.email || '';
-    document.getElementById('sup-phone').value = s.phone || '';
-    document.getElementById('sup-website').value = s.website || '';
-    document.getElementById('sup-notes').value = s.notes || '';
-    
-    document.getElementById('sup-delete-btn').style.display = 'block';
-    openModal('supplier-modal');
-
+async function deleteSupplier(id){ if(!confirm('Delete this supplier?'))return; state.suppliers=state.suppliers.filter(s=>s.id!==id); await persist('suppliers','delete',{id}); renderSuppliers(); }
 
 // ============================================================
 // DOCUMENTS
@@ -2948,41 +2883,23 @@ async function savePart(){
   ['p-name','p-num','p-qty','p-reorder','p-cost','p-reorder-qty'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('p-auto-reorder').checked=false;
 }
-async function saveSupplier() {
-    const idEl = document.getElementById('sup-edit-id');
-    const nameEl = document.getElementById('sup-name');
-    
-    if (!nameEl || !nameEl.value.trim()) {
-        showToast("Supplier name is required");
-        return;
-    }
 
-    const record = {
-        id: (idEl && idEl.value) ? idEl.value : uid(),
-        name: nameEl.value.trim(),
-        contact: document.getElementById('sup-contact')?.value || '',
-        email: document.getElementById('sup-email')?.value || '',
-        phone: document.getElementById('sup-phone')?.value || '',
-        website: document.getElementById('sup-website')?.value || '',
-        notes: document.getElementById('sup-notes')?.value || '',
-    };
-
-    try {
-        await window._mpdb.from('suppliers').upsert(record);
-        
-        // Update local memory
-        const idx = state.suppliers.findIndex(x => x.id === record.id);
-        if (idx > -1) state.suppliers[idx] = record; 
-        else state.suppliers.push(record);
-        
-        closeModal('supplier-modal');
-        renderSuppliers(); // Redraw the table
-        showToast("Supplier saved ✓");
-    } catch (e) {
-        console.error("Save error:", e);
-        showToast("Error saving supplier");
-    }
+async function saveSupplier(){
+  const name=document.getElementById('sup-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
+  const record={
+    id:uid(), name,
+    contact: document.getElementById('sup-contact').value,
+    email:   document.getElementById('sup-email').value,
+    phone:   document.getElementById('sup-phone').value,
+    website: document.getElementById('sup-website').value,
+    notes:   document.getElementById('sup-notes').value,
+  };
+  state.suppliers.push(record);
+  await persist('suppliers','upsert',record);
+  closeModal('supplier-modal'); renderSuppliers();
+  ['sup-name','sup-contact','sup-email','sup-phone','sup-website','sup-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
+
 async function saveDoc(){
   const name=document.getElementById('d-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
   const record={
@@ -5581,65 +5498,6 @@ switchChannel = function(channel, btn) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
-async function deleteSupplier() {
-    const id = document.getElementById('sup-edit-id').value;
-    
-    if (!id) {
-        showToast("Error: No supplier selected to delete");
-        return;
-    }
-
-    if (!confirm("Are you sure you want to permanently delete this supplier? This will un-link them from any parts.")) {
-        return;
-    }
-
-    try {
-        // 1. Remove from Database
-        const { error } = await window._mpdb
-            .from('suppliers')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        // 2. Remove from local memory
-        state.suppliers = state.suppliers.filter(sup => sup.id !== id);
-
-        // 3. UI Cleanup
-        closeModal('supplier-modal');
-        renderSuppliers();
-        showToast("Supplier deleted");
-
-        // 4. Optional: Log to Audit
-        if (typeof logAuditAction === 'function') {
-            logAuditAction("Deleted Supplier", `Removed ID: ${id}`);
-        }
-
-    } catch (e) {
-        console.error("Delete failed:", e);
-        showToast("Error: Could not delete from database");
-    }
-}
-function resetSupplierForm() {
-    const title = document.getElementById('sup-modal-title');
-    if (title) title.textContent = "Add New Supplier";
-    
-    const idField = document.getElementById('sup-edit-id');
-    if (idField) idField.value = '';
-    
-    // Clear the specific name field
-    const nameField = document.getElementById('sup-name');
-    if (nameField) nameField.value = '';
-
-    // Clear everything else
-    ['sup-contact', 'sup-email', 'sup-phone', 'sup-website', 'sup-notes'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-
-    const delBtn = document.getElementById('sup-delete-btn');
-    if (delBtn) delBtn.style.display = 'none';
-}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
