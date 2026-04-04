@@ -1925,7 +1925,7 @@ function updateMetrics(){
   document.getElementById('m-health').textContent=avgHealth+'%';
   document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
   document.getElementById('m-open').textContent=open;
-}
+
 function renderEquipListDash(){
   const el=document.getElementById('equip-list-dash');
   el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
