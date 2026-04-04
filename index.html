@@ -1206,13 +1206,11 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('part-modal')">Cancel</button><button class="btn btn-primary" onclick="savePart()">Add Part</button></div>
   </div>
 </div>
-<!-- Supplier Add/Edit Modal -->
-<div class="modal-backdrop" id="supplier-modal" style="display:none">
+
+<!-- Supplier Modal -->
+<div class="modal-backdrop" id="supplier-modal">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="sup-modal-title">Supplier Details</span>
-      <button class="modal-close" onclick="closeModal('supplier-modal')">✕</button>
-    </div>
+    <div class="modal-header"><span class="modal-title">Add Supplier</span><button class="modal-close" onclick="closeModal('supplier-modal')">✕</button></div>
     <div class="form-grid">
       <div class="form-group full"><label class="form-label">Supplier Name *</label><input class="form-input" id="sup-name" placeholder="e.g. CAT Parts Inc."/></div>
       <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" id="sup-contact" placeholder="Name"/></div>
@@ -1221,17 +1219,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="sup-website" placeholder="https://..."/></div>
       <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="sup-notes"></textarea></div>
     </div>
-    
-    <!-- Hidden input to track if editing -->
-    <input type="hidden" id="sup-edit-id"/>
-
-    <div class="form-row" style="justify-content: space-between; margin-top: 20px;">
-      <button class="btn btn-danger btn-sm" id="sup-delete-btn" style="display:none" onclick="deleteSupplier()">Delete Supplier</button>
-      <div style="display:flex; gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal('supplier-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button>
-      </div>
-    </div>
+    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('supplier-modal')">Cancel</button><button class="btn btn-primary" onclick="saveSupplier()">Add Supplier</button></div>
   </div>
 </div>
 
@@ -2358,19 +2346,28 @@ async function deletePart(id){ if(!confirm('Delete this part?'))return; state.pa
 // ============================================================
 // SUPPLIERS
 // ============================================================
-function resetSuppliersForm() {
-    document.getElementById('sup-modal-title').textContent = "Add Supplier";
-    document.getElementById('sup-edit-id').value = '';
-    ['sup-name','sup-contact','sup-email','sup-phone','sup-website','sup-notes'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('sup-delete-btn').style.display = 'none';
+function renderSuppliers() {
+    const tableBody = document.getElementById('supplier-table-body');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = state.suppliers.map(s => {
+        const partCount = state.parts.filter(p => p.supplier_id === s.id).length;
+        return `
+        <tr onclick="editSupplier('${s.id}')" style="cursor:pointer">
+            <td style="font-weight:600">${s.name}</td>
+            <td style="color:var(--text2)">${s.contact || '—'}</td>
+            <td>${s.email || '—'}</td>
+            <td>${s.phone || '—'}</td>
+            <td>${s.website ? 'Visit' : '—'}</td>
+            <td><span class="badge bg">${partCount} parts</span></td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center; padding:20px">No suppliers added yet.</td></tr>';
 }
-
-    function editSuppliers(id) {
+function editSupplier(id) {
     const s = state.suppliers.find(x => x.id === id);
-    if(!s) return;
-
-    // Set UI
-    document.getElementById('sup-modal-title').textContent = "Edit Supplier";
+    if (!s) return;
+    async function deleteSupplier(id){ if(!confirm('Delete this supplier?'))return; state.suppliers=state.suppliers.filter(s=>s.id!==id); await persist('suppliers','delete',{id}); renderSuppliers(); }
+    document.getElementById('sup-modal-title').textContent = "Edit Supplier: " + s.name;
     document.getElementById('sup-edit-id').value = s.id;
     document.getElementById('sup-name').value = s.name;
     document.getElementById('sup-contact').value = s.contact || '';
@@ -2379,25 +2376,10 @@ function resetSuppliersForm() {
     document.getElementById('sup-website').value = s.website || '';
     document.getElementById('sup-notes').value = s.notes || '';
     
-    // Show delete button
     document.getElementById('sup-delete-btn').style.display = 'block';
-    
     openModal('supplier-modal');
 }
 
-async function deleteSuppliers(){
-  const id = document.getElementById('sup-edit-id').value;
-  if(!id || !confirm('Delete this supplier? This will un-link them from any parts.')) return;
-  
-  try {
-    await window._mpdb.from('suppliers').delete().eq('id', id);
-    state.suppliers = state.suppliers.filter(s => s.id !== id);
-    
-    closeModal('supplier-modal');
-    renderSuppliers();
-    showToast('Supplier removed');
-  } catch(e) { showToast('Delete failed'); }
-}
 // ============================================================
 // DOCUMENTS
 // ============================================================
@@ -2731,7 +2713,7 @@ function openEquipDetail(id){
 
   openModal('detail-modal');
 }
-function openSuppliersDetail(id){
+function openSupplierDetail(id){
   const s=state.suppliers.find(x=>x.id===id); if(!s)return;
   const parts=state.parts.filter(p=>p.supplier_id===id);
   document.getElementById('detail-title').textContent=s.name;
@@ -2919,35 +2901,33 @@ async function savePart(){
   ['p-name','p-num','p-qty','p-reorder','p-cost','p-reorder-qty'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('p-auto-reorder').checked=false;
 }
+async function saveSupplier() {
+    const id = document.getElementById('sup-edit-id').value;
+    const name = document.getElementById('sup-name').value.trim();
+    if (!name) { showToast("Supplier name is required"); return; }
 
-async function saveSuppliers(){
-  const id = document.getElementById('sup-edit-id').value;
-  const name = document.getElementById('sup-name').value.trim();
-  if (!name) { showToast('Suppliers name required'); return; }
+    const record = {
+        id: id || uid(),
+        name,
+        contact: document.getElementById('sup-contact').value,
+        email: document.getElementById('sup-email').value,
+        phone: document.getElementById('sup-phone').value,
+        website: document.getElementById('sup-website').value,
+        notes: document.getElementById('sup-notes').value,
+    };
 
-  const record = {
-    id: id || uid(),
-    name,
-    contact: document.getElementById('sup-contact').value,
-    email:   document.getElementById('sup-email').value,
-    phone:   document.getElementById('sup-phone').value,
-    website: document.getElementById('sup-website').value,
-    notes:   document.getElementById('sup-notes').value,
-  };
-
-  try {
-    await window._mpdb.from('suppliers').upsert(record);
-    
-    // Update local state
-    const idx = state.suppliers.findIndex(x => x.id === record.id);
-    if(idx > -1) state.suppliers[idx] = record; else state.suppliers.push(record);
-    
-    closeModal('suppliers-modal');
-    renderSuppliers();
-    showToast('Supplier saved ✓');
-  } catch(e) { showToast('Failed to save'); }
+    try {
+        await window._mpdb.from('suppliers').upsert(record);
+        const idx = state.suppliers.findIndex(x => x.id === record.id);
+        if (idx > -1) state.suppliers[idx] = record; else state.suppliers.push(record);
+        
+        closeModal('supplier-modal');
+        renderSuppliers(); // Redraw the table
+        showToast("Supplier saved ✓");
+    } catch (e) {
+        showToast("Error saving supplier");
+    }
 }
-
 async function saveDoc(){
   const name=document.getElementById('d-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
   const record={
