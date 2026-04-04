@@ -3762,19 +3762,31 @@ function shouldStickChatToBottom(container){
   const threshold=80;
   return container.scrollHeight-container.scrollTop-container.clientHeight<=threshold;
 }
-    async function loadChatMessages(channel){
-  const container=document.getElementById('chat-messages');if(!container)return;
-  container.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Loading...</div>';
- try{
-        const{data}=await window._mpdb.from('chat_messages').select('*').eq('channel',channel).order('created_at',{ascending:true}).limit(100);
-    renderChatMessages(data||[],container);
-    markChannelRead(channel);
-    setTimeout(()=>{
-      if(!isMobileViewport())container.scrollTop=container.scrollHeight;
-    },100);
-  }
- }catch(e){container.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Could not load messages</div>';}
+async function loadChatMessages(channel) {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
 
+  container.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Loading...</div>';
+
+  try {
+    const { data } = await window._mpdb
+      .from('chat_messages')
+      .select('*')
+      .eq('channel', channel)
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    renderChatMessages(data || [], container);
+    markChannelRead(channel);
+      setTimeout(() => {
+      if (!isMobileViewport()) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 100);
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Could not load messages</div>';
+  }
+} 
 function renderChatMessages(msgs,container){
   if(!msgs.length){container.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 20px">No messages yet — say hello! 👋</div>';return;}
   let html='',lastDate='';
