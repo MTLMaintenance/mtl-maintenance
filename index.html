@@ -2358,14 +2358,14 @@ async function deletePart(id){ if(!confirm('Delete this part?'))return; state.pa
 // ============================================================
 // SUPPLIERS
 // ============================================================
-function resetSupplierForm() {
+function resetSuppliersForm() {
     document.getElementById('sup-modal-title').textContent = "Add Supplier";
     document.getElementById('sup-edit-id').value = '';
     ['sup-name','sup-contact','sup-email','sup-phone','sup-website','sup-notes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('sup-delete-btn').style.display = 'none';
 }
 
-    function editSupplier(id) {
+    function editSuppliers(id) {
     const s = state.suppliers.find(x => x.id === id);
     if(!s) return;
 
@@ -2385,7 +2385,7 @@ function resetSupplierForm() {
     openModal('supplier-modal');
 }
 
-async function deleteSupplier(){
+async function deleteSuppliers(){
   const id = document.getElementById('sup-edit-id').value;
   if(!id || !confirm('Delete this supplier? This will un-link them from any parts.')) return;
   
@@ -2731,7 +2731,7 @@ function openEquipDetail(id){
 
   openModal('detail-modal');
 }
-function openSupplierDetail(id){
+function openSuppliersDetail(id){
   const s=state.suppliers.find(x=>x.id===id); if(!s)return;
   const parts=state.parts.filter(p=>p.supplier_id===id);
   document.getElementById('detail-title').textContent=s.name;
@@ -2920,10 +2920,10 @@ async function savePart(){
   document.getElementById('p-auto-reorder').checked=false;
 }
 
-async function saveSupplier(){
+async function saveSuppliers(){
   const id = document.getElementById('sup-edit-id').value;
   const name = document.getElementById('sup-name').value.trim();
-  if (!name) { showToast('Supplier name required'); return; }
+  if (!name) { showToast('Suppliers name required'); return; }
 
   const record = {
     id: id || uid(),
@@ -2942,7 +2942,7 @@ async function saveSupplier(){
     const idx = state.suppliers.findIndex(x => x.id === record.id);
     if(idx > -1) state.suppliers[idx] = record; else state.suppliers.push(record);
     
-    closeModal('supplier-modal');
+    closeModal('suppliers-modal');
     renderSuppliers();
     showToast('Supplier saved ✓');
   } catch(e) { showToast('Failed to save'); }
