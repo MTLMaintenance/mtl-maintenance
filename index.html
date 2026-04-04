@@ -661,7 +661,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
       <button class="btn btn-secondary btn-sm" onclick="exportPDF()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">PDF</button>
       <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('task-modal')">+ Work Order</button>
+      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('task-modal')">+ Work Order</button>
       <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🌙</button>
       <button class="btn btn-secondary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">💬</button>
       <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign out">↩ Sign Out</button>
@@ -1866,14 +1866,33 @@ function closeModal(id) {
   }
 }
 
-function populateSelects(){
-  const equipOpts=state.equipment.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-  const techOpts=`<option value="">— Unassigned —</option>`;
-  const supOpts=`<option value="">— None —</option>`+state.suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  ['t-equip','s-equip','r-equip','d-equip'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=equipOpts; });
-  ['t-assign','s-tech','r-assign'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=techOpts; });
-  ['p-supplier-select'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=supOpts; });
-  // Also populate WO part select
+function populateSelects() {
+  const equipSelect = document.getElementById('t-equip');
+  const assignSelect = document.getElementById('t-assign');
+
+  // 1. Fill the Equipment dropdown
+  if (equipSelect) {
+    equipSelect.innerHTML = state.equipment.map(e => 
+      `<option value="${e.id}">${e.name}</option>`
+    ).join('') || '<option value="">No equipment found</option>';
+  }
+
+  // 2. Fill the Assigned To dropdown (using your user cache)
+  if (assignSelect) {
+    const users = state.users_list_cache || [];
+    assignSelect.innerHTML = '<option value="">— Unassigned —</option>' +
+      users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
+  }
+
+  // 3. Also fill the Schedule modal dropdowns if they exist
+  const schedEquip = document.getElementById('s-equip');
+  if (schedEquip) {
+      schedEquip.innerHTML = equipSelect ? equipSelect.innerHTML : '';
+  }
+}
+
+ 
+    // Also populate WO part select
   const partOpts=state.parts.map(p=>`<option value="${p.id}">${p.name} (Stock: ${p.qty}${p.cost?', $'+p.cost.toFixed(2)+' ea':''})</option>`).join('');
   const psel=document.getElementById('wo-part-select'); if(psel) psel.innerHTML=partOpts;
   // populate equip filter
@@ -1884,7 +1903,8 @@ function populateSelects(){
 // WO Tab switching
 let currentWOTab='details';
 let woPartsTemp=[];
-function switchWOTab(tab, btn){
+
+    function switchWOTab(tab, btn){
   ['wo-details','wo-checklist','wo-parts-tab','wo-comments','wo-attachments'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
   const el=document.getElementById('wo-'+tab); if(el) el.style.display='block';
   document.querySelectorAll('#task-modal .tab').forEach(b=>b.classList.remove('active'));
