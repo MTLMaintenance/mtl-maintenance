@@ -1940,30 +1940,35 @@ function renderDashboard(){
       console.warn("Dashboard partially rendered, some elements skipped:", e.message);
   }
 }
-
 function updateMetrics(){
+  // 1. Define the variables FIRST
   const overdue = (state.tasks || []).filter(t => t.status === 'Overdue').length;
   const open = (state.tasks || []).filter(t => t.status === 'Open').length;
-  const lowParts = (state.parts || []).filter(p => p.qty <= p.reorder).length;
-  const totalCost = (state.tasks || []).reduce((a, t) => a + (t.cost || 0), 0);
-  const avgHealth = state.equipment.length ? Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
-
-  const safeSet = (id, val) => {
-      const el = document.getElementById(id);
-      if(el) el.textContent = val;
-  };
-
-  safeSet('m-total', state.equipment.length);
-  safeSet('m-overdue', overdue);
-  safeSet('m-cost', '$' + totalCost.toLocaleString());
-  safeSet('m-parts', lowParts);
-  safeSet('m-health', avgHealth + '%');
-  safeSet('m-open', open);
+  const low = (state.parts || []).filter(p => p.qty <= p.reorder).length;
+  const costs = state.monthlyCosts || [0,0,0,0];
+  const cost = costs[costs.length - 1] || 0;
+  const avgHealth = state.equipment.length ? 
+    Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
+  const mt = document.getElementById('m-total'); if(mt) mt.textContent = state.equipment.length; 
+  const mo = document.getElementById('m-overdue'); 
+  if(mo) {
+    const totalOpen = open + overdue;
+    mo.textContent = totalOpen;
+    mo.className = 'metric-value ' + (overdue > 0 ? 'v-danger' : totalOpen > 0 ? 'v-warning' : 'v-success');
+  }
+  const mc = document.getElementById('m-cost'); if(mc) mc.textContent = '$' + cost.toLocaleString();  
+  const mp = document.getElementById('m-parts'); 
+  if(mp) {
+    mp.textContent = low;
+    mp.className = 'metric-value ' + (low > 0 ? 'v-danger' : 'v-success');}
+  const mh = document.getElementById('m-health'); 
+  if(mh) {
+    mh.textContent = avgHealth + '%';
+    mh.className = 'metric-value ' + (avgHealth >= 80 ? 'v-success' : avgHealth >= 50 ? 'v-warning' : 'v-danger');
+  }
+  const mw = document.getElementById('m-open'); if(mw) mw.textContent = open;
 }
-
- 
-  const openAndOverdue = open + overdue;
-  document.getElementById('m-overdue').textContent=openAndOverdue;
+ document.getElementById('m-overdue').textContent=openAndOverdue;
   document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
   document.getElementById('m-cost').textContent='$'+cost.toLocaleString();
   document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
@@ -1993,8 +1998,7 @@ function renderSchedDash(){
       <div class="sched-title">${s.name}</div>
       <div class="sched-detail">${fmtDate(s.date)}</div>
     </div>`).join('') || 'No upcoming maintenance';
-}
-// --- DEFENSIVE RECENT TASKS ---
+}-
 function renderRecentTasks(){
   const container = document.getElementById('recent-tasks');
   const badgeEl = document.getElementById('task-count-badge');
