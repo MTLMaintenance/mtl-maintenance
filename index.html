@@ -1339,7 +1339,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 <script>
 // ============================================================
-
+let currentWOTab = 'details'; 
+let woPartsTemp = [];
     // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
@@ -1868,27 +1869,20 @@ function closeModal(id) {
 }
 
 function populateSelects() {
-    console.log("Populating dropdowns...");
-    
-    // 1. Create the HTML string for equipment options
-    // This is the variable the error was complaining about
+    // 1. Define the variable INSIDE the function so it is never "not defined"
     const equipOpts = (state.equipment || []).map(e => 
         `<option value="${e.id}">${e.name}</option>`
     ).join('') || '<option value="">No equipment found</option>';
 
-    // 2. Create the HTML string for users
     const users = state.users_list_cache || [];
     const userOptions = '<option value="">— Unassigned —</option>' +
         users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
 
-    // 3. Create the HTML string for parts
     const partOptions = (state.parts || []).map(p => 
         `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`
     ).join('') || '<option value="">No parts in inventory</option>';
 
-    // --- UPDATE THE MODALS ---
-    
-    // Work Orders
+    // --- Apply to HTML ---
     const tEquip = document.getElementById('t-equip');
     if (tEquip) tEquip.innerHTML = equipOpts;
     
@@ -1898,65 +1892,49 @@ function populateSelects() {
     const pSel = document.getElementById('wo-part-select');
     if (pSel) pSel.innerHTML = partOptions;
 
-    // Filters
     const taskFilter = document.getElementById('task-equip-filter');
-    if (taskFilter) {
-        taskFilter.innerHTML = `<option value="all">All Equipment</option>` + equipOpts;
-    }
+    if (taskFilter) taskFilter.innerHTML = `<option value="all">All Equipment</option>` + equipOpts;
 
-    // Schedule
     const sEquip = document.getElementById('s-equip');
     if (sEquip) sEquip.innerHTML = equipOpts;
     
     const sTech = document.getElementById('s-tech');
     if (sTech) sTech.innerHTML = userOptions;
 
-    // Recurrence
     const rEquip = document.getElementById('r-equip');
     if (rEquip) rEquip.innerHTML = equipOpts;
 
     const rAssign = document.getElementById('r-assign');
     if (rAssign) rAssign.innerHTML = userOptions;
     
-    // Documents
     const dEquip = document.getElementById('d-equip');
-    if (dEquip) dEquip.innerHTML = '<option value="">— None —</option>' + equipOpts; 
-    console.log("Dropdowns updated successfully ✓");
+    if (dEquip) dEquip.innerHTML = '<option value="">— None —</option>' + equipOpts;
 }
- 
     // Also populate WO part select
   const partOpts=state.parts.map(p=>`<option value="${p.id}">${p.name} (Stock: ${p.qty}${p.cost?', $'+p.cost.toFixed(2)+' ea':''})</option>`).join('');
   const psel=document.getElementById('wo-part-select'); if(psel) psel.innerHTML=partOpts;
   // populate equip filter
   const ef=document.getElementById('task-equip-filter');
-  if(ef) ef.innerHTML=`<option value="all">All Equipment</option>`+equipOpts;
 
-
-// WO Tab switching
-let currentWOTab='details';
-let woPartsTemp=[];
-
- function switchWOTab(tab, btn) {
-  // 1. Hide all tab sections in the Work Order modal
+function switchWOTab(tab, btn) {
+  // 1. Hide all sections
   const sections = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments', 'wo-attachments'];
   sections.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
 
-  // 2. Show the specific tab the user clicked
-  const activeSection = document.getElementById('wo-' + tab);
-  if (activeSection) {
-    activeSection.style.display = 'block';
-  }
+  // 2. Show selected section
+  const active = document.getElementById('wo-' + tab);
+  if (active) active.style.display = 'block';
 
-  // 3. Highlight the tab button
-  document.querySelectorAll('#task-modal .tab').forEach(b => b.classList.remove('active'));
+  // 3. Update tabs
+  document.querySelectorAll('#task-modal .tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
-  // 4. Update the global tracking variable
+  // 4. Update the global variable (This matches the one we put at the top)
   currentWOTab = tab;
-}  
+}
 function switchTab(group, tab, btn){
   const modal=btn.closest('.modal');
   modal.querySelectorAll('[id]').forEach(el=>{
