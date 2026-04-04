@@ -3762,10 +3762,23 @@ function populateChatTagSelects(){
   if(esel)esel.innerHTML='<option value="">+ Equipment</option>'+state.equipment.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
   if(tsel)tsel.innerHTML='<option value="">+ Work Order</option>'+state.tasks.filter(t=>t.status!=='Completed').map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 }
+function isMobileViewport(){return window.matchMedia('(max-width: 768px)').matches;}
+function shouldStickChatToBottom(container){
+  if(!container)return false;
+  const threshold=80;
+  return container.scrollHeight-container.scrollTop-container.clientHeight<=threshold;
+}
 async function loadChatMessages(channel){
   const container=document.getElementById('chat-messages');if(!container)return;
   container.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Loading...</div>';
-  try{const{data}=await window._mpdb.from('chat_messages').select('*').eq('channel',channel).order('created_at',{ascending:true}).limit(100);renderChatMessages(data||[],container);markChannelRead(channel);setTimeout(()=>{container.scrollTop=container.scrollHeight;},100);}
+  try{
+    const{data}=await window._mpdb.from('chat_messages').select('*').eq('channel',channel).order('created_at',{ascending:true}).limit(100);
+    renderChatMessages(data||[],container);
+    markChannelRead(channel);
+    setTimeout(()=>{
+      if(!isMobileViewport())container.scrollTop=container.scrollHeight;
+    },100);
+  }
   catch(e){container.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Could not load messages</div>';}
 }
 function renderChatMessages(msgs,container){
@@ -3801,7 +3814,7 @@ function buildChatMsgHtml(msg){
     </div>
   </div>`;
 }
-function appendChatMessage(msg){const c=document.getElementById('chat-messages');if(!c)return;const d=document.createElement('div');d.innerHTML=buildChatMsgHtml(msg);c.appendChild(d.firstElementChild);c.scrollTop=c.scrollHeight;}
+function appendChatMessage(msg){const c=document.getElementById('chat-messages');if(!c)return;const shouldAutoScroll=!isMobileViewport()||shouldStickChatToBottom(c);const d=document.createElement('div');d.innerHTML=buildChatMsgHtml(msg);c.appendChild(d.firstElementChild);if(shouldAutoScroll)c.scrollTop=c.scrollHeight;}
 async function sendChatMessage(){
   const input=document.getElementById('chat-input');const body=input?.value.trim();if(!body&&!chatPhotoData)return;
   if(!navigator.onLine){showToast('Offline');return;}
