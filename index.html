@@ -939,7 +939,16 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
       <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
       <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
     </div>
-    <div id="admin-approvals">
+    <div class="card" style="margin-top:12px">
+  <div class="card-header">
+    <span class="card-title">System Audit Log</span>
+    <button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button>
+  </div>
+  <div id="audit-log-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,0.03)">
+    <div style="padding:20px; text-align:center; color:var(--text3); font-size:12px">Logs will appear here...</div>
+  </div>
+</div>
+      <div id="admin-approvals">
       <div class="grid-2">
         <div class="card"><div class="card-header"><span class="card-title">Pending Approvals</span><span class="badge bd" id="pending-count">0</span></div><div id="pending-list"></div></div>
         <div class="card"><div class="card-header"><span class="card-title">Denied</span></div><div id="denied-list"></div></div>
@@ -4216,7 +4225,9 @@ function switchAdminTab(tab, btn) {
   btn.style.color = '#fff';
 
   // --- TRIGGER DATA RELOADS ---
-  if (tab === 'users' || tab === 'permissions') {
+  if(tab === 'settings') renderAuditLogs();
+    
+    if (tab === 'users' || tab === 'permissions') {
     renderUsersTable(); // This fills the dropdown and the table
   }
   if (tab === 'permissions') {
@@ -5508,6 +5519,37 @@ switchChannel = function(channel, btn) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
+// Function to send a log to the database
+async function logAuditAction(action, details) {
+  try {
+    await window._mpdb.from('audit_logs').insert({
+      user_name: currentUser?.name || 'System',
+      action: action,
+      details: details,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) { console.warn("Logging failed"); }
+}
+
+// Function to draw the logs on the screen
+async function renderAuditLogs() {
+  const container = document.getElementById('audit-log-list');
+  if(!container) return;
+  
+  try {
+    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(50);
+    if(!data || !data.length) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No logs found.</div>';
+        return;
+    }
+    container.innerHTML = data.map(log => `
+      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; font-size:12px">
+        <div style="color:var(--text3); width:70px; flex-shrink:0">${new Date(log.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        <div style="flex:1"><b>${log.user_name}</b>: ${log.action} <div style="font-size:11px; color:var(--text2)">${log.details}</div></div>
+      </div>
+    `).join('');
+  } catch(e) { container.innerHTML = 'Failed to load logs.'; }
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
