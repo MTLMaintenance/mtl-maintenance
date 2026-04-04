@@ -1306,7 +1306,22 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 // ============================================================
 // CONFIG
 // ============================================================
-// ── SESSION TOKEN ────────────────────────────────────────────
+// --- GLOBAL STATE AND FILTERS ---
+let activeGroupFilter = 'all';
+let equipGroupFilter = 'all';
+let lastReadAt = {};
+let currentChannel = 'general';
+let activeDmUser = null;
+
+// Initialize lastReadAt from storage immediately
+try {
+  const savedRead = localStorage.getItem('mp_chat_read');
+  if (savedRead) lastReadAt = JSON.parse(savedRead);
+} catch(e) { lastReadAt = {}; }
+
+// Your existing state object follows...
+let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools: [], wishlist: [] };
+  // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot'); 
   if(!dot) return;
@@ -1914,16 +1929,15 @@ function renderDashboard(){
       console.error("Dashboard drawing crashed:", e);
   }
 }
-
 function updateMetrics(){
   const overdue = (state.tasks || []).filter(t => t.status === 'Overdue').length;
   const open = (state.tasks || []).filter(t => t.status === 'Open').length;
-  const lowParts = (state.parts || []).filter(p => p.qty <= p.reorder).length;
   const totalCost = (state.tasks || []).reduce((a, t) => a + (t.cost || 0), 0);
+  
   const avgHealth = state.equipment.length ? 
     Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
 
-  // SAFE UPDATES: Only update if the ID exists in HTML
+  // This helper prevents the "textContent of null" crash
   const setSafeText = (id, val) => {
       const el = document.getElementById(id);
       if(el) el.textContent = val;
@@ -1932,10 +1946,10 @@ function updateMetrics(){
   setSafeText('m-total', state.equipment.length);
   setSafeText('m-overdue', overdue);
   setSafeText('m-cost', '$' + totalCost.toLocaleString());
-  setSafeText('m-parts', lowParts);
   setSafeText('m-health', avgHealth + '%');
   setSafeText('m-open', open);
 }
+
   document.getElementById('m-total').textContent=state.equipment.length;
   document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
   const openAndOverdue = open + overdue;
@@ -1950,23 +1964,29 @@ function updateMetrics(){
   document.getElementById('m-open').textContent=open;
 
 function renderEquipListDash(){
-  const el=document.getElementById('equip-list-dash');
-  el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
-    const score=calcHealth(e.id);
-    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
-    return `<div class="equip-row">
-      <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
-      <div class="equip-info" onclick="openEquipDetail('${e.id}')">
-        <div class="equip-name">${e.name}</div>
-        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
-      </div>
-      <div style="text-align:right;flex-shrink:0; display:flex; flex-direction:column; gap:4px; align-items:flex-end">
-        <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size:10px" onclick="quickLogHours('${e.id}')">⏱ Log Hours</button>
-        <div style="font-size:11px;color:var(--text2)">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
-      </div>
-    </div>`;
-  }).join('');
+  const el = document.getElementById('equip-list-dash');
+  if(!el) return;
+
+  // Defensive check for the filter
+  const filter = typeof activeGroupFilter !== 'undefined' ? activeGroupFilter : 'all';
+  const list = filteredEquipment(filter).slice(0, 6);
+
+  el.innerHTML = list.map(e => {
+    const score = calcHealth(e.id);
+    const icon = e.photos && e.photos.length ? `<img src="${e.photos[0]}"/>` : (ICONS[e.type]||'⚙');
+    return `
+      <div class="equip-row" onclick="openEquipDetail('${e.id}')">
+        <div class="equip-icon">${icon}</div>
+        <div class="equip-info">
+          <div class="equip-name">${e.name}</div>
+          <div class="equip-meta">${e.hours.toLocaleString()} hrs</div>
+        </div>
+        <div style="text-align:right">
+          ${badge(e.status)}
+          <div style="font-size:10px; color:${healthColor(score)}">${score}%</div>
+        </div>
+      </div>`;
+  }).join('') || '<div style="color:var(--text3); font-size:13px">No equipment found</div>';
 }
 function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
