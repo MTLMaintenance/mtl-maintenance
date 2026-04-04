@@ -2363,8 +2363,14 @@ function renderSuppliers() {
     const tableBody = document.getElementById('supplier-table-body');
     if (!tableBody) return;
 
-    tableBody.innerHTML = state.suppliers.map(s => {
-        const partCount = state.parts.filter(p => p.supplier_id === s.id).length;
+    // Safety check: ensure state.suppliers exists
+    const suppliers = state.suppliers || [];
+
+    tableBody.innerHTML = suppliers.map(s => {
+        // We calculate part count inside the loop where 's' is defined
+        const linkedParts = (state.parts || []).filter(p => p.supplier_id === s.id);
+        const partCount = linkedParts.length;
+
         return `
         <tr onclick="editSupplier('${s.id}')" style="cursor:pointer">
             <td style="font-weight:600">${s.name}</td>
@@ -5567,6 +5573,60 @@ switchChannel = function(channel, btn) {
         if (sidebar) sidebar.classList.remove('open');
     }
 };
+async function deleteSupplier() {
+    const id = document.getElementById('sup-edit-id').value;
+    
+    if (!id) {
+        showToast("Error: No supplier selected to delete");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to permanently delete this supplier? This will un-link them from any parts.")) {
+        return;
+    }
+
+    try {
+        // 1. Remove from Database
+        const { error } = await window._mpdb
+            .from('suppliers')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 2. Remove from local memory
+        state.suppliers = state.suppliers.filter(sup => sup.id !== id);
+
+        // 3. UI Cleanup
+        closeModal('supplier-modal');
+        renderSuppliers();
+        showToast("Supplier deleted");
+
+        // 4. Optional: Log to Audit
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Deleted Supplier", `Removed ID: ${id}`);
+        }
+
+    } catch (e) {
+        console.error("Delete failed:", e);
+        showToast("Error: Could not delete from database");
+    }
+}
+function resetSupplierForm() {
+    document.getElementById('sup-modal-title').textContent = "Add New Supplier";
+    document.getElementById('sup-edit-id').value = '';
+    
+    // Clear all inputs
+    const ids = ['sup-name', 'sup-contact', 'sup-email', 'sup-phone', 'sup-website', 'sup-notes'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // HIDE the delete button for new suppliers
+    const delBtn = document.getElementById('sup-delete-btn');
+    if (delBtn) delBtn.style.display = 'none';
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
