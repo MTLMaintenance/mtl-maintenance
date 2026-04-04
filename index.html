@@ -1926,46 +1926,39 @@ function handleDocUpload(input){
 // ============================================================
 // DASHBOARD
 // ============================================================
+
 function renderDashboard(){
-  console.log("Safe Render: Starting Dashboard...");
   try {
       updateMetrics();
       renderAlerts();
       renderEquipListDash();
       renderSchedDash();
       renderRecentTasks();
-      
-      // These are optional, so we wrap them individually
-      if (typeof renderRecentObservations === 'function') {
-          try { renderRecentObservations(); } catch(e) { console.warn("Obs render failed"); }
-      }
-      if (typeof renderFleetHealthDash === 'function') {
-          try { renderFleetHealthDash(); } catch(e) { console.warn("Health render failed"); }
-      }
-      console.log("Safe Render: Dashboard Complete ✓");
+      renderRecentObservations();
+      renderFleetHealthDash();
   } catch (e) {
-      console.error("Dashboard drawing crashed:", e);
+      console.warn("Dashboard partially rendered, some elements skipped:", e.message);
   }
 }
+
 function updateMetrics(){
   const overdue = (state.tasks || []).filter(t => t.status === 'Overdue').length;
   const open = (state.tasks || []).filter(t => t.status === 'Open').length;
+  const lowParts = (state.parts || []).filter(p => p.qty <= p.reorder).length;
   const totalCost = (state.tasks || []).reduce((a, t) => a + (t.cost || 0), 0);
-  
-  const avgHealth = state.equipment.length ? 
-    Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
+  const avgHealth = state.equipment.length ? Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
 
-  // This helper prevents the "textContent of null" crash
-  const setSafeText = (id, val) => {
+  const safeSet = (id, val) => {
       const el = document.getElementById(id);
       if(el) el.textContent = val;
   };
 
-  setSafeText('m-total', state.equipment.length);
-  setSafeText('m-overdue', overdue);
-  setSafeText('m-cost', '$' + totalCost.toLocaleString());
-  setSafeText('m-health', avgHealth + '%');
-  setSafeText('m-open', open);
+  safeSet('m-total', state.equipment.length);
+  safeSet('m-overdue', overdue);
+  safeSet('m-cost', '$' + totalCost.toLocaleString());
+  safeSet('m-parts', lowParts);
+  safeSet('m-health', avgHealth + '%');
+  safeSet('m-open', open);
 }
 
   document.getElementById('m-total').textContent=state.equipment.length;
@@ -1984,95 +1977,39 @@ function updateMetrics(){
 function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
   if(!el) return;
-
-  // Defensive check for the filter
-  const filter = typeof activeGroupFilter !== 'undefined' ? activeGroupFilter : 'all';
-  const list = filteredEquipment(filter).slice(0, 6);
-
-  el.innerHTML = list.map(e => {
-    const score = calcHealth(e.id);
-    const icon = e.photos && e.photos.length ? `<img src="${e.photos[0]}"/>` : (ICONS[e.type]||'⚙');
-    return `
-      <div class="equip-row" onclick="openEquipDetail('${e.id}')">
-        <div class="equip-icon">${icon}</div>
-        <div class="equip-info">
-          <div class="equip-name">${e.name}</div>
-          <div class="equip-meta">${e.hours.toLocaleString()} hrs</div>
-        </div>
-        <div style="text-align:right">
-          ${badge(e.status)}
-          <div style="font-size:10px; color:${healthColor(score)}">${score}%</div>
-        </div>
-      </div>`;
-  }).join('') || '<div style="color:var(--text3); font-size:13px">No equipment found</div>';
+  const list = filteredEquipment(activeGroupFilter).slice(0, 6);
+  el.innerHTML = list.map(e => `
+    <div class="equip-row" onclick="openEquipDetail('${e.id}')">
+      <div class="equip-name">${e.name}</div>
+      ${badge(e.status)}
+    </div>`).join('') || 'No equipment found';
 }
+// 5. SCHEDULE LIST
 function renderSchedDash(){
-  const el=document.getElementById('sched-list-dash');
-  // Combine scheduled maintenance + open/overdue work orders
-  const schedItems = state.schedules.filter(s=>{
-    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
-    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
-    return d>=TODAY;
-  }).map(s=>({...s, _type:'schedule'}));
-  
-  const woItems = state.tasks.filter(t=>t.status!=='Completed'&&t.due).map(t=>({
-    id:t.id, name:t.name, date:t.due, equipId:t.equipId,
-    tech:t.assign, _type:'wo', status:t.status, priority:t.priority
-  }));
-
-  const combined = [...schedItems, ...woItems]
-    .sort((a,b)=>{
-      const [ay,am,ad]=(a.date||'').split('-').map(Number);
-      const [by,bm,bd]=(b.date||'').split('-').map(Number);
-      return new Date(ay,am-1,ad)-new Date(by,bm-1,bd);
-    }).slice(0,6);
-
-  el.innerHTML=combined.map(s=>{
-    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
-    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
-    const isWO = s._type==='wo';
-    const isOverdueItem = isWO && isOverdue(s.date);
-    return `<div class="sched-item" onclick="${isWO?`openTaskDetail('${s.id}')`:''}" style="${isWO?'cursor:pointer':''}">
-      <div class="sched-date" style="background:${isOverdueItem?'var(--danger-bg)':isWO?'var(--accent-bg)':'var(--bg2)'}">
-        <div class="sched-day" style="color:${isOverdueItem?'var(--danger)':isWO?'var(--accent)':''}">${d.getDate()}</div>
-        <div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div>
-      </div>
-      <div class="sched-body">
-        <div class="sched-title">${s.name} ${isWO?`<span class="badge ${isOverdueItem?'bd':s.status==='Open'?'bi':'bg'}" style="font-size:10px">${isOverdueItem?'Overdue':s.status}</span>`:''}</div>
-        <div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'}${isWO&&s.priority?' · '+s.priority:s.dur?' · '+s.dur+'h':''}</div>
-      </div>
-    </div>`;
-  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
+  const el = document.getElementById('sched-list-dash');
+  if(!el) return;
+  const upcoming = state.schedules.slice(0, 6);
+  el.innerHTML = upcoming.map(s => `
+    <div class="sched-item">
+      <div class="sched-title">${s.name}</div>
+      <div class="sched-detail">${fmtDate(s.date)}</div>
+    </div>`).join('') || 'No upcoming maintenance';
 }
 // --- DEFENSIVE RECENT TASKS ---
 function renderRecentTasks(){
-  const recent = [...state.tasks].sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0,5);
-  
-  // 1. Update Badge safely
-  const badgeEl = document.getElementById('task-count-badge');
-  if(badgeEl) {
-    badgeEl.textContent = state.tasks.length + ' work orders';
-  }
-
-  // 2. Update Container safely
   const container = document.getElementById('recent-tasks');
+  const badgeEl = document.getElementById('task-count-badge');
+  
+  if(badgeEl) badgeEl.textContent = (state.tasks || []).length + ' total';
   if(!container) return;
 
-  container.innerHTML = recent.map(t => {
-    const partsUsed = state.partUsage.filter(p => p.task_id === t.id).length;
-    return `
+  const recent = [...state.tasks].sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0,5);
+  container.innerHTML = recent.map(t => `
     <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
-      <div style="flex:1">
-        <div style="font-weight:500">${t.name}</div>
-        <div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed ? ` · ${partsUsed} part(s)` : ''}</div>
-      </div>
+      <div style="flex:1"><b>${t.name}</b></div>
       ${badge(t.status)}
-      <div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
-    </div>`;
-  }).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No recent work orders</div>';
+    </div>`).join('') || 'No tasks found';
 }
-
-
 // ============================================================
 // CALENDAR
 // ============================================================
@@ -3602,53 +3539,31 @@ function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group
 
 // ── RECENT OBS + FLEET HEALTH ────────────────────────────────
 
+
+// 7. RECENT OBSERVATIONS (With Badge)
 function renderRecentObservations(){
-  const listEl = document.getElementById('recent-obs-list');
+  const container = document.getElementById('recent-obs-list');
   const badgeEl = document.getElementById('obs-count-badge');
-  if(!listEl) return;
-
-  let obs = [...(state.observations || [])];
   
-  // Update badge safely
-  if(badgeEl) {
-    badgeEl.textContent = obs.length + ' total';
-  }
+  if(badgeEl) badgeEl.textContent = (state.observations || []).length + ' total';
+  if(!container) return;
 
-  if(!obs.length){
-    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No observations yet</div>';
-    return;
-  }
-  
-  listEl.innerHTML = obs.slice(0, 6).map(o => `
-    <div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
-      <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
-        <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author}</div>
-      </div>
-    </div>`).join('');
+  const obs = [...(state.observations || [])].slice(0, 5);
+  container.innerHTML = obs.map(o => `
+    <div class="parts-row" onclick="openEquipDetail('${o.equip_id}')" style="cursor:pointer">
+      <div style="flex:1">${o.body.slice(0,40)}...</div>
+      <span class="badge bg">${o.severity}</span>
+    </div>`).join('') || 'No observations found';
 }
 
+// 8. FLEET HEALTH (Progress bars)
 function renderFleetHealthDash(){
   const el = document.getElementById('fleet-health-dash');
   if(!el) return;
-
-  const equip = filteredEquipment(activeGroupFilter).slice(0, 6);
-  if(!equip.length){
-    el.innerHTML = '<div style="color:var(--text2);font-size:13px">No equipment in group</div>';
-    return;
-  }
-
-  el.innerHTML = equip.map(e => {
-    const score = calcHealth(e.id);
-    return `
-    <div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
-        <div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
-      </div>
-      <span style="font-size:12px;font-weight:600;color:${healthColor(score)};margin-left:8px">${score}%</span>
-    </div>`;
+  const list = state.equipment.slice(0, 5);
+  el.innerHTML = list.map(e => {
+    const s = calcHealth(e.id);
+    return `<div class="parts-row"><span>${e.name}</span><b>${s}%</b></div>`;
   }).join('');
 }
 // ── PERMISSIONS ADMIN ────────────────────────────────────────
@@ -4067,18 +3982,17 @@ function renderDashboard(){
 }
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
-  const sec=document.getElementById('alert-section');if(!sec)return;
-  const od=state.tasks.filter(t=>t.status!=='Completed'&&isOverdue(t.due));
-  const lp=state.parts.filter(p=>p.qty<=p.reorder_qty&&p.reorder_qty>0);
-  const exp=state.documents.filter(d=>d.expiry_date&&new Date(d.expiry_date)<=new Date(Date.now()+30*24*60*60*1000));
-  const critObs=(state.observations||[]).filter(o=>o.severity==='critical');
-  let h='';
-  if(od.length)h+=`<div class="alert alert-d"><span class="dot"></span><b>${od.length} overdue:</b> ${od.map(t=>t.name).join(', ')}</div>`;
-  if(lp.length)h+=`<div class="alert alert-w">⚠ <b>${lp.length} part${lp.length>1?'s':''} low/out of stock:</b> ${lp.map(p=>p.name).join(', ')}</div>`;
-  if(exp.length)h+=`<div class="alert alert-w">📄 <b>${exp.length} document${exp.length>1?'s':''} expiring soon:</b> ${exp.map(d=>d.name).join(', ')}</div>`;
-  if(critObs.length)h+=`<div class="alert alert-d">🚨 <b>${critObs.length} critical observation${critObs.length>1?'s':''}:</b> ${critObs.map(o=>equipName(o.equip_id)+' — '+o.body.slice(0,50)).join(' | ')}</div>`;
-  sec.innerHTML=h;
+  const sec = document.getElementById('alert-section');
+  if(!sec) return;
+
+  const od = state.tasks.filter(t => t.status !== 'Completed' && isOverdue(t.due));
+  const lp = state.parts.filter(p => p.qty <= p.reorder);
+  let h = '';
+  if(od.length) h += `<div class="alert alert-d"><b>${od.length} Overdue:</b> Check Work Orders</div>`;
+  if(lp.length) h += `<div class="alert alert-w"><b>${lp.length} Low Parts:</b> Check Inventory</div>`;
+  sec.innerHTML = h;
 }
+
 
 // ── OVERRIDDEN openModal ──────────────────────────────────────
 function openModal(id) {
