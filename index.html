@@ -1339,7 +1339,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 <script>
 // ============================================================
-// CONFIG
+let currentWOTab = 'details';
+let woPartsTemp = [];
+let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
+    // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
@@ -1867,30 +1870,41 @@ function closeModal(id) {
 }
 
 function populateSelects() {
-  const equipSelect = document.getElementById('t-equip');
-  const assignSelect = document.getElementById('t-assign');
+  // 1. Build the HTML options for Equipment
+  const equipOptions = state.equipment.map(e => 
+    `<option value="${e.id}">${e.name}</option>`
+  ).join('') || '<option value="">No equipment found</option>';
 
-  // 1. Fill the Equipment dropdown
-  if (equipSelect) {
-    equipSelect.innerHTML = state.equipment.map(e => 
-      `<option value="${e.id}">${e.name}</option>`
-    ).join('') || '<option value="">No equipment found</option>';
-  }
+  // 2. Build the HTML options for Users
+  const users = state.users_list_cache || [];
+  const userOptions = '<option value="">— Unassigned —</option>' +
+    users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
 
-  // 2. Fill the Assigned To dropdown (using your user cache)
-  if (assignSelect) {
-    const users = state.users_list_cache || [];
-    assignSelect.innerHTML = '<option value="">— Unassigned —</option>' +
-      users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
-  }
+  // 3. APPLY to Work Order Modal
+  const tEquip = document.getElementById('t-equip');
+  if (tEquip) tEquip.innerHTML = equipOptions;
+  
+  const tAssign = document.getElementById('t-assign');
+  if (tAssign) tAssign.innerHTML = userOptions;
 
-  // 3. Also fill the Schedule modal dropdowns if they exist
-  const schedEquip = document.getElementById('s-equip');
-  if (schedEquip) {
-      schedEquip.innerHTML = equipSelect ? equipSelect.innerHTML : '';
-  }
+  // 4. APPLY to Schedule Modal
+  const sEquip = document.getElementById('s-equip');
+  if (sEquip) sEquip.innerHTML = equipOptions;
+  
+  const sTech = document.getElementById('s-tech');
+  if (sTech) sTech.innerHTML = userOptions;
+
+  // 5. APPLY to Recurrence Modal
+  const rEquip = document.getElementById('r-equip');
+  if (rEquip) rEquip.innerHTML = equipOptions;
+
+  const rAssign = document.getElementById('r-assign');
+  if (rAssign) rAssign.innerHTML = userOptions;
+  
+  // 6. APPLY to Document Modal
+  const dEquip = document.getElementById('d-equip');
+  if (dEquip) dEquip.innerHTML = '<option value="">— None —</option>' + equipOptions;
 }
-
  
     // Also populate WO part select
   const partOpts=state.parts.map(p=>`<option value="${p.id}">${p.name} (Stock: ${p.qty}${p.cost?', $'+p.cost.toFixed(2)+' ea':''})</option>`).join('');
@@ -1904,13 +1918,27 @@ function populateSelects() {
 let currentWOTab='details';
 let woPartsTemp=[];
 
-    function switchWOTab(tab, btn){
-  ['wo-details','wo-checklist','wo-parts-tab','wo-comments','wo-attachments'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-  const el=document.getElementById('wo-'+tab); if(el) el.style.display='block';
-  document.querySelectorAll('#task-modal .tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  currentWOTab=tab;
-}
+ function switchWOTab(tab, btn) {
+  // 1. Hide all tab sections in the Work Order modal
+  const sections = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments', 'wo-attachments'];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  // 2. Show the specific tab the user clicked
+  const activeSection = document.getElementById('wo-' + tab);
+  if (activeSection) {
+    activeSection.style.display = 'block';
+  }
+
+  // 3. Highlight the tab button
+  document.querySelectorAll('#task-modal .tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  // 4. Update the global tracking variable
+  currentWOTab = tab;
+}  
 function switchTab(group, tab, btn){
   const modal=btn.closest('.modal');
   modal.querySelectorAll('[id]').forEach(el=>{
