@@ -68,16 +68,15 @@ body > #invoice-photo-area {
     display: none !important;
 }
 #app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  width: 100% !important;
+  background: transparent !important; /* Makes the body background visible */
   margin: 0 !important;
   padding: 0 !important;
-  /* Ensure your background image is here */
-  background: url('data:image/png;base64,iVBOR...') center/cover fixed no-repeat;
-  overflow: hidden;
 }
+
 
 #main-nav .nav-btn {
   background: transparent !important;
@@ -556,17 +555,14 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     @media (max-width: 768px) {
   /* 1. Force the background to cover the ENTIRE screen with no black bars */
   #app {
-    background-size: cover !important;
-    background-position: center center !important;
-    background-attachment: fixed !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important; /* Better height for mobile browsers */
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-  }
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  width: 100% !important;
+  background: transparent !important; /* Makes the body background visible */
+  margin: 0 !important;
+  padding: 0 !important;
+}
 
   /* 2. Pin the header and panels to the top */
   .topbar {
@@ -575,14 +571,15 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   }
 
   .panel.active {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important; /* Forces content to the top */
-    overflow-y: auto !important;
-    padding: 12px !important;
-    margin-top: 0 !important; /* Kills any gap at the top */
-  }
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important; /* PINS CONTENT TO THE TOP */
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 16px !important;
+  margin-top: 0 !important; /* Ensures no gap at top */
+}
+
 
   /* 3. Specifically fix the Chat Window */
   #panel-chat {
@@ -590,24 +587,33 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     padding: 0 !important; /* Removes padding so it touches the edges */
   }
 
-  #panel-chat > div {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    justify-content: flex-start !important;
-  }
+ #panel-chat > div {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  justify-content: flex-start !important;
+}
 
-  #chat-messages {
-    flex: 1 !important;
-    overflow-y: auto !important;
-  }
+#chat-messages {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
 
   /* 4. Make the input area stick to the bottom of the screen */
   #panel-chat .form-textarea {
     font-size: 16px !important; /* Prevents iPhone from auto-zooming when typing */
   }
 }
-    
+    @media (max-width: 768px) {
+  body, html {
+    background-attachment: scroll !important; /* Fixed backgrounds break on some phones */
+    position: fixed; /* Stops iPhone "bounce" scroll */
+  }
+  
+  .panel.active {
+    padding: 10px !important;
+  }
+}
     </style>
 </head>
 <body>
