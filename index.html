@@ -605,10 +605,15 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   }
 }
     @media (max-width: 768px) {
-  body, html {
-    background-attachment: scroll !important; /* Fixed backgrounds break on some phones */
-    position: fixed; /* Stops iPhone "bounce" scroll */
-  }
+ body, html {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important; /* Stops the "double scroll" */
+  background: url('data:image/png;base64,iVBOR...') center/cover fixed no-repeat !important;
+}
+
   
   .panel.active {
     padding: 10px !important;
