@@ -67,17 +67,13 @@ body > #invoice-scanning,
 body > #invoice-photo-area {
     display: none !important;
 }
+
+/* 3. Ensure the main app doesn't have extra bottom padding */
 #app {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  width: 100% !important;
-  background: transparent !important; /* Makes the body background visible */
-  margin: 0 !important;
-  padding: 0 !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
 }
-
-
+  /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
 #main-nav .nav-btn {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.8) !important;
@@ -551,72 +547,55 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   bottom: 100% !important;
   z-index: 9999 !important;
   background: var(--bg) !important;
-
-    @media (max-width: 768px) {
-  /* 1. Force the background to cover the ENTIRE screen with no black bars */
-  #app {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  width: 100% !important;
-  background: transparent !important; /* Makes the body background visible */
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-  /* 2. Pin the header and panels to the top */
-  .topbar {
-    width: 100% !important;
-    flex-shrink: 0 !important;
+@media (max-width: 768px) {
+  /* 1. Lock the whole screen so nothing can scroll except the data */
+  body, html {
+    overflow: hidden !important;
+    height: 100% !important;
+    position: fixed;
+    width: 100%;
   }
 
+  /* 2. Force the App to fill the screen exactly */
+  #app {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 3. Keep the header at the very top */
+  .topbar {
+    flex-shrink: 0 !important;
+    z-index: 1001;
+  }
+
+  /* 4. Force the Panel to start at the top and fill the gap */
   .panel.active {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important; /* PINS CONTENT TO THE TOP */
-  flex: 1 !important;
-  overflow-y: auto !important;
-  padding: 16px !important;
-  margin-top: 0 !important; /* Ensures no gap at top */
-}
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 10px !important;
+    margin: 0 !important;
+  }
 
-
-  /* 3. Specifically fix the Chat Window */
+  /* 5. Chat Specific: Ensure messages fill the space and input is at bottom */
   #panel-chat {
     height: 100% !important;
-    padding: 0 !important; /* Removes padding so it touches the edges */
   }
-
- #panel-chat > div {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  justify-content: flex-start !important;
-}
-
-#chat-messages {
-  flex: 1 !important;
-  overflow-y: auto !important;
-}
-
-  /* 4. Make the input area stick to the bottom of the screen */
-  #panel-chat .form-textarea {
-    font-size: 16px !important; /* Prevents iPhone from auto-zooming when typing */
-  }
-}
-    @media (max-width: 768px) {
- body, html {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  overflow: hidden !important; /* Stops the "double scroll" */
-  background: url('data:image/png;base64,iVBOR...') center/cover fixed no-repeat !important;
-}
-
   
-  .panel.active {
-    padding: 10px !important;
+  #panel-chat > div {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
   }
 }
     </style>
@@ -3952,7 +3931,7 @@ const panelContainer = document.querySelector('.panel.active');
     // 2. Show the target panel
     const target = document.getElementById('panel-' + id);
     if (target) {
-        target.style.display = 'flex';
+        target.style.display = 'block';
         target.classList.add('active');
     }
 
