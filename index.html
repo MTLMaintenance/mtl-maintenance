@@ -2649,6 +2649,7 @@ function openEquipDetail(id){
       <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
       <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
       <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
+    <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
     </div>
 
     <!-- 1. Info Tab -->
@@ -2716,6 +2717,7 @@ function openEquipDetail(id){
       <div id="obs-list-${e.id}"></div>
     </div>
 
+    
     <!-- 8. Invoices Tab -->
     <div id="eq-invoices" class="tab-content" style="display:none">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
@@ -2728,10 +2730,33 @@ function openEquipDetail(id){
     <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
       <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History Report</button>
       <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
-    </div>`;
+    </div>
+   <!-- 9. Zerk Location Tab -->
+    <div id="eq-zerks" class="tab-content" style="display:none">
+  <!-- View Switcher -->
+  <div style="display:flex; gap:4px; margin-bottom:10px; overflow-x:auto; padding-bottom:5px">
+    <button class="btn btn-secondary btn-sm active-view" id="btn-view-1" onclick="changeZerkView('side_1', this)">View 1</button>
+    <button class="btn btn-secondary btn-sm" id="btn-view-2" onclick="changeZerkView('side_2', this)">View 2</button>
+    <button class="btn btn-secondary btn-sm" id="btn-view-3" onclick="changeZerkView('side_3', this)">View 3</button>
+    <button class="btn btn-secondary btn-sm" id="btn-view-4" onclick="changeZerkView('side_4', this)">View 4</button>
+  </div>
 
-  openModal('detail-modal');
+  <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+    <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+    <div id="zerk-dots-overlay" style="position:absolute; inset:0" onclick="handleMapClick(event)"></div>
+  </div>
+
+  <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1)">
+    <div style="display:flex; justify-content:space-between; align-items:center">
+        <div id="zerk-label" style="font-weight:700; font-size:15px; color:var(--text)"></div>
+        <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete</button>
+    </div>
+    <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:6px; line-height:1.4"></div>
+  </div>
+</div>
+    openModal('detail-modal');
 }
+    
 function openSupplierDetail(id){
   const s=state.suppliers.find(x=>x.id===id); if(!s)return;
   const parts=state.parts.filter(p=>p.supplier_id===id);
@@ -2747,7 +2772,8 @@ function openSupplierDetail(id){
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Parts from this supplier (${parts.length})</div>
     ${parts.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.num} · Stock: ${p.qty}</div></div><span class="badge ${p.qty<=p.reorder?'bw':'bs'}">${p.qty<=p.reorder?'Low':'OK'}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">No parts linked</div>'}
     <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
-  openModal('detail-modal');
+ 
+    openModal('detail-modal');
 }
 
 function openDocDetail(id){
@@ -5593,6 +5619,105 @@ async function renderAuditLogs() {
       </div>
     `).join('');
   } catch(e) { container.innerHTML = 'Failed to load logs.'; }
+}
+let currentZerkView = 'side_1';
+let allMachineZerks = [];
+
+async function refreshZerkMap(equipId) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e) return;
+
+    // 1. Fetch all dots for this machine
+    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
+    allMachineZerks = data || [];
+    
+    // 2. Set the labels for the view buttons based on how many photos the machine has
+    for(let i=1; i<=4; i++) {
+        const btn = document.getElementById(`btn-view-${i}`);
+        if(btn) btn.style.display = (e.photos && e.photos[i-1]) ? 'block' : 'none';
+    }
+
+    // 3. Trigger the first view
+    changeZerkView('side_1', document.getElementById('btn-view-1'));
+}
+
+function changeZerkView(viewName, btn) {
+    currentZerkView = viewName;
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    
+    // Update button styling
+    document.querySelectorAll('#panel-calendar .btn-secondary').forEach(b => b.style.borderColor = 'var(--border2)');
+    if(btn) btn.style.borderColor = 'var(--accent)';
+
+    // Update Image
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    const img = document.getElementById('zerk-map-img');
+    if(equip.photos && equip.photos[viewIndex]) {
+        img.src = equip.photos[viewIndex];
+        img.style.display = 'block';
+    } else {
+        img.style.display = 'none';
+    }
+
+    renderZerkDots();
+    document.getElementById('zerk-detail-box').style.display = 'none';
+}
+
+function renderZerkDots() {
+    const overlay = document.getElementById('zerk-dots-overlay');
+    // Filter dots: only show dots that belong to the current side/view
+    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
+    
+    overlay.innerHTML = visibleDots.map((z, index) => `
+        <div class="zerk-dot" 
+             style="left: ${z.x_pos}%; top: ${z.y_pos}%" 
+             onclick="showZerkInfo(event, '${z.id}')">
+             ${index + 1}
+        </div>
+    `).join('');
+}
+
+function showZerkInfo(event, zerkId) {
+    event.stopPropagation();
+    const z = allMachineZerks.find(x => x.id === zerkId);
+    const box = document.getElementById('zerk-detail-box');
+    
+    document.getElementById('zerk-label').textContent = z.label;
+    document.getElementById('zerk-instr').textContent = z.instructions || "No special instructions.";
+    
+    const delBtn = document.getElementById('zerk-delete-btn');
+    delBtn.style.display = (currentUser.role === 'admin') ? 'block' : 'none';
+    delBtn.onclick = () => deleteZerk(z.id);
+    
+    box.style.display = 'block';
+}
+
+async function handleMapClick(event) {
+    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
+    
+    const rect = document.getElementById('zerk-map-img').getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+    const label = prompt("Zerk Name (e.g. Lower Swing Bearing):");
+    if (!label) return;
+    const instr = prompt("Instructions (e.g. 5 pumps daily):");
+
+    const newZerk = {
+        id: uid(),
+        equip_id: window._currentDetailEquipId,
+        view_name: currentZerkView, // Save WHICH side this dot belongs to
+        label: label,
+        instructions: instr,
+        x_pos: x,
+        y_pos: y
+    };
+
+    try {
+        await window._mpdb.from('grease_points').insert(newZerk);
+        allMachineZerks.push(newZerk);
+        renderZerkDots();
+    } catch(e) { console.error(e); }
 }
 </script>
 <!-- Checklist Template Modal -->
