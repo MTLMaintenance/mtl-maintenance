@@ -2718,27 +2718,33 @@ function openEquipDetail(id){
       <button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button>
     </div>
 
-    <!-- 9. Zerk Map Tab -->
+    
+  <!-- 9. Zerk Map Tab -->
     <div id="eq-zerks" class="tab-content" style="display:none">
-      <div style="display:flex; gap:4px; margin-bottom:10px; overflow-x:auto; padding-bottom:5px">
-        <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_1', this)">View 1</button>
-        <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_2', this)">View 2</button>
+      <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:5px">
+        <!-- Buttons are generated dynamically by refreshZerkMap() -->
       </div>
+
       <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
         <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
         <div id="zerk-dots-overlay" style="position:absolute; inset:0" onclick="handleMapClick(event)"></div>
       </div>
-      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border)">
-        <div id="zerk-label" style="font-weight:700"></div>
-        <div id="zerk-instr" style="font-size:13px; color:var(--text2)"></div>
+
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1)">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+            <div id="zerk-label" style="font-weight:700; font-size:15px; color:var(--text)"></div>
+            <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete</button>
+        </div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:6px; line-height:1.4"></div>
       </div>
-    </div>
-
-    <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
-      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History Report</button>
-      <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
-    </div>`;
-
+      
+      <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3)">
+        <div style="font-size:30px; margin-bottom:10px">📸</div>
+        <div>No photos found for this machine.</div>
+        <div style="font-size:12px; margin-top:5px">Upload photos in the <b>Photos</b> tab to create zerk maps.</div>
+      </div>
+    </div>`
+  
   openModal('detail-modal');
 }
     
@@ -5619,42 +5625,70 @@ async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
-    // 1. Fetch all dots for this machine
+    const switcher = document.getElementById('zerk-view-switcher');
+    const noPhotos = document.getElementById('zerk-no-photos');
+    const container = document.getElementById('zerk-map-container');
+
+    // 1. Check if we have photos. If not, show warning.
+    if(!e.photos || e.photos.length === 0) {
+        if(switcher) switcher.style.display = 'none';
+        if(container) container.style.display = 'none';
+        if(noPhotos) noPhotos.style.display = 'block';
+        return;
+    }
+
+    // 2. Show the map UI
+    if(switcher) switcher.style.display = 'flex';
+    if(container) container.style.display = 'block';
+    if(noPhotos) noPhotos.style.display = 'none';
+
+    // 3. Generate buttons for EVERY photo uploaded
+    switcher.innerHTML = e.photos.map((_, i) => `
+        <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
+            View ${i+1}
+        </button>
+    `).join('');
+
+    // 4. Load all grease points from the database
     const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
     allMachineZerks = data || [];
     
-    // 2. Set the labels for the view buttons based on how many photos the machine has
-    for(let i=1; i<=4; i++) {
-        const btn = document.getElementById(`btn-view-${i}`);
-        if(btn) btn.style.display = (e.photos && e.photos[i-1]) ? 'block' : 'none';
-    }
-
-    // 3. Trigger the first view
-    changeZerkView('side_1', document.getElementById('btn-view-1'));
+    // 5. Default to the first view
+    changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
 }
-
 function changeZerkView(viewName, btn) {
     currentZerkView = viewName;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    
-    // Update button styling
-    document.querySelectorAll('#panel-calendar .btn-secondary').forEach(b => b.style.borderColor = 'var(--border2)');
-    if(btn) btn.style.borderColor = 'var(--accent)';
+    if(!equip) return;
 
-    // Update Image
-    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
-    const img = document.getElementById('zerk-map-img');
-    if(equip.photos && equip.photos[viewIndex]) {
-        img.src = equip.photos[viewIndex];
-        img.style.display = 'block';
-    } else {
-        img.style.display = 'none';
+    // Highlight the active button
+    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.borderColor = 'var(--border2)';
+        b.style.color = 'var(--text)';
+    });
+    if(btn) {
+        btn.style.background = 'var(--accent-bg)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent-text)';
     }
 
-    renderZerkDots();
-    document.getElementById('zerk-detail-box').style.display = 'none';
-}
+    // Update the Map Image
+    // Extract the index from names like 'side_1' -> 0, 'side_5' -> 4
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    const img = document.getElementById('zerk-map-img');
+    
+    if(equip.photos && equip.photos[viewIndex]) {
+        img.src = equip.photos[viewIndex];
+    }
 
+    // Redraw the dots for THIS specific view
+    renderZerkDots();
+    
+    // Hide the detail box from previous view
+    const detailBox = document.getElementById('zerk-detail-box');
+    if(detailBox) detailBox.style.display = 'none';
+}
 function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
     // Filter dots: only show dots that belong to the current side/view
