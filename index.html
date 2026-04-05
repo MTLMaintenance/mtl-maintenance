@@ -2719,10 +2719,16 @@ function openEquipDetail(id){
     </div>
 
     
-  <!-- 9. Zerk Map Tab -->
+ <!-- 9. Zerk Map Tab (Self-Contained) -->
     <div id="eq-zerks" class="tab-content" style="display:none">
-      <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:5px">
-        <!-- Buttons are generated dynamically by refreshZerkMap() -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap">
+        <div id="zerk-view-switcher" style="display:flex; gap:6px; overflow-x:auto; flex:1"></div>
+        
+        <!-- DIRECT UPLOAD BUTTON -->
+        <div style="flex-shrink:0">
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+          <input type="file" id="zerk-upload-input" accept="image/*" style="display:none" onchange="uploadZerkView(this)"/>
+        </div>
       </div>
 
       <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
@@ -2732,20 +2738,24 @@ function openEquipDetail(id){
 
       <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1)">
         <div style="display:flex; justify-content:space-between; align-items:center">
-            <div id="zerk-label" style="font-weight:700; font-size:15px; color:var(--text)"></div>
-            <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete</button>
+            <div id="zerk-label" style="font-weight:700; font-size:15px"></div>
+            <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete Point</button>
         </div>
-        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:6px; line-height:1.4"></div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:6px"></div>
+      </div>
+
+      <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3); background:var(--bg2); border-radius:var(--radius)">
+        <div style="font-size:30px; margin-bottom:10px">🗺️</div>
+        <div>No Zerk Map created yet.</div>
+        <div style="font-size:12px; margin-top:5px">Click <b>+ Add View</b> to upload a photo and start pinning grease points.</div>
       </div>
       
-      <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3)">
-        <div style="font-size:30px; margin-bottom:10px">📸</div>
-        <div>No photos found for this machine.</div>
-        <div style="font-size:12px; margin-top:5px">Upload photos in the <b>Photos</b> tab to create zerk maps.</div>
-      </div>
+      <!-- DELETE VIEW BUTTON -->
+      <button class="btn btn-danger btn-sm" id="btn-delete-view" style="display:none; margin-top:10px; width:100%" onclick="deleteZerkView()">Delete Current View Photo</button>
     </div>`
   
-  openModal('detail-modal');
+    openModal('detail-modal');
+
 }
     
 function openSupplierDetail(id){
@@ -5744,6 +5754,104 @@ async function handleMapClick(event) {
         allMachineZerks.push(newZerk);
         renderZerkDots();
     } catch(e) { console.error(e); }
+async function uploadZerkView(input) {
+    const file = input.files[0]; if(!file) return;
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+
+    showToast("Processing image...");
+    
+    // 1. Compress and convert to Base64 (using your existing app logic)
+    const base64 = await compressImage(await new Promise(res => {
+        const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file);
+    }), 1200, 0.8);
+
+    // 2. Add to the new zerk_photos array
+    if(!e.zerk_photos) e.zerk_photos = [];
+    e.zerk_photos.push(base64);
+
+    // 3. Save to Supabase
+    try {
+        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
+        showToast("View added ✓");
+        refreshZerkMap(equipId); // Refresh the UI
+    } catch(err) { showToast("Upload failed"); }
+    input.value = "";
+}
+
+async function deleteZerkView() {
+    if(!confirm("Delete this photo and ALL grease points on it?")) return;
+    
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
+
+    // 1. Remove photo from array
+    e.zerk_photos.splice(viewIndex, 1);
+
+    // 2. Delete all dots associated with this view in the database
+    await window._mpdb.from('grease_points').delete().eq('equip_id', equipId).eq('view_name', currentZerkView);
+
+    // 3. Update Equipment in database
+    await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
+    
+    showToast("View deleted");
+    refreshZerkMap(equipId);
+}
+
+// UPDATE: refreshZerkMap to use the new zerk_photos field
+async function refreshZerkMap(equipId) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e) return;
+
+    const switcher = document.getElementById('zerk-view-switcher');
+    const noPhotos = document.getElementById('zerk-no-photos');
+    const container = document.getElementById('zerk-map-container');
+    const delViewBtn = document.getElementById('btn-delete-view');
+
+    if(!e.zerk_photos || e.zerk_photos.length === 0) {
+        if(switcher) switcher.style.display = 'none';
+        if(container) container.style.display = 'none';
+        if(delViewBtn) delViewBtn.style.display = 'none';
+        if(noPhotos) noPhotos.style.display = 'block';
+        return;
+    }
+
+    if(switcher) switcher.style.display = 'flex';
+    if(container) container.style.display = 'block';
+    if(delViewBtn) delViewBtn.style.display = 'block';
+    if(noPhotos) noPhotos.style.display = 'none';
+
+    switcher.innerHTML = e.zerk_photos.map((_, i) => `
+        <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
+            View ${i+1}
+        </button>
+    `).join('');
+
+    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
+    allMachineZerks = data || [];
+    
+    changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
+}
+
+// UPDATE: changeZerkView to pull from zerk_photos array
+function changeZerkView(viewName, btn) {
+    currentZerkView = viewName;
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    
+    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => b.style.borderColor = 'var(--border2)');
+    if(btn) btn.style.borderColor = 'var(--accent)';
+
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    const img = document.getElementById('zerk-map-img');
+    
+    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        img.src = equip.zerk_photos[viewIndex];
+    }
+
+    renderZerkDots();
+    document.getElementById('zerk-detail-box').style.display = 'none';
+}
 }
 </script>
 <!-- Checklist Template Modal -->
