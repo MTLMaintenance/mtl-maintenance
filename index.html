@@ -2761,7 +2761,7 @@ function openSupplierDetail(id){
   const s=state.suppliers.find(x=>x.id===id); if(!s)return;
   const parts=state.parts.filter(p=>p.supplier_id===id);
   document.getElementById('detail-title').textContent=s.name;
-  document.getElementById('detail-body').innerHTML=`
+  document.getElementById('detail-body').innerHTML=
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
       <div><span style="color:var(--text2)">Contact:</span> ${s.contact||'—'}</div>
       <div><span style="color:var(--text2)">Phone:</span> ${s.phone||'—'}</div>
