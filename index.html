@@ -2638,7 +2638,7 @@ function openEquipDetail(id){
 
   document.getElementById('detail-title').textContent = e.name;
   
-  // Build the modal content as a single clean string
+  // THE MASTER TEMPLATE STRING
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border); display: flex; gap: 4px;">
       <button class="tab active" onclick="switchDetailTab('eq-info',this)">Info</button>
@@ -2649,7 +2649,7 @@ function openEquipDetail(id){
       <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
       <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
       <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
-    <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
+      <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
     </div>
 
     <!-- 1. Info Tab -->
@@ -2706,74 +2706,66 @@ function openEquipDetail(id){
             <input type="file" id="obs-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this,'obs')"/>
             <span id="obs-photo-status" style="font-size:11px; color:var(--success); font-weight:600"></span>
           </div>
-          <div style="display:flex; gap:6px; align-items:center">
-            <select class="form-select" id="obs-severity-${e.id}" style="font-size:12px; padding:4px 6px">
-                <option value="info">Info</option><option value="watch">Watch</option><option value="critical">Critical</option>
-            </select>
-            <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post</button>
-          </div>
+          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post</button>
         </div>
       </div>
       <div id="obs-list-${e.id}"></div>
     </div>
 
-    
     <!-- 8. Invoices Tab -->
     <div id="eq-invoices" class="tab-content" style="display:none">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-        <span style="font-size:13px; color:var(--text2)">Invoice Records</span>
-        <button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button>
-      </div>
       <div id="invoices-list"></div>
+      <button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button>
+    </div>
+
+    <!-- 9. Zerk Map Tab -->
+    <div id="eq-zerks" class="tab-content" style="display:none">
+      <div style="display:flex; gap:4px; margin-bottom:10px; overflow-x:auto; padding-bottom:5px">
+        <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_1', this)">View 1</button>
+        <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_2', this)">View 2</button>
+      </div>
+      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+        <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+        <div id="zerk-dots-overlay" style="position:absolute; inset:0" onclick="handleMapClick(event)"></div>
+      </div>
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border)">
+        <div id="zerk-label" style="font-weight:700"></div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2)"></div>
+      </div>
     </div>
 
     <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
       <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History Report</button>
       <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
-    </div>
-   <!-- 9. Zerk Location Tab -->
-    <div id="eq-zerks" class="tab-content" style="display:none">
-  <!-- View Switcher -->
-  <div style="display:flex; gap:4px; margin-bottom:10px; overflow-x:auto; padding-bottom:5px">
-    <button class="btn btn-secondary btn-sm active-view" id="btn-view-1" onclick="changeZerkView('side_1', this)">View 1</button>
-    <button class="btn btn-secondary btn-sm" id="btn-view-2" onclick="changeZerkView('side_2', this)">View 2</button>
-    <button class="btn btn-secondary btn-sm" id="btn-view-3" onclick="changeZerkView('side_3', this)">View 3</button>
-    <button class="btn btn-secondary btn-sm" id="btn-view-4" onclick="changeZerkView('side_4', this)">View 4</button>
-  </div>
+    </div>`;
 
-  <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
-    <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
-    <div id="zerk-dots-overlay" style="position:absolute; inset:0" onclick="handleMapClick(event)"></div>
-  </div>
-
-  <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1)">
-    <div style="display:flex; justify-content:space-between; align-items:center">
-        <div id="zerk-label" style="font-weight:700; font-size:15px; color:var(--text)"></div>
-        <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete</button>
-    </div>
-    <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:6px; line-height:1.4"></div>
-  </div>
-</div>
-    
+  openModal('detail-modal');
 }
     
 function openSupplierDetail(id){
-  const s=state.suppliers.find(x=>x.id===id); if(!s)return;
-  const parts=state.parts.filter(p=>p.supplier_id===id);
-  document.getElementById('detail-title').textContent=s.name;
-  document.getElementById('detail-body').innerHTML=
+  const s = state.suppliers.find(x => x.id === id); 
+  if(!s) return;
+  
+  const parts = state.parts.filter(p => p.supplier_id === id);
+  document.getElementById('detail-title').textContent = s.name;
+  
+  document.getElementById('detail-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
       <div><span style="color:var(--text2)">Contact:</span> ${s.contact||'—'}</div>
       <div><span style="color:var(--text2)">Phone:</span> ${s.phone||'—'}</div>
       <div><span style="color:var(--text2)">Email:</span> <a href="mailto:${s.email}" style="color:var(--accent)">${s.email||'—'}</a></div>
-      <div><span style="color:var(--text2)">Website:</span> ${s.website?`<a href="${s.website}" target="_blank" style="color:var(--accent)">Visit</a>`:'—'}</div>
+      <div><span style="color:var(--text2)">Website:</span> ${s.website ? `<a href="${s.website}" target="_blank" style="color:var(--accent)">Visit</a>` : '—'}</div>
     </div>
-    ${s.notes?`<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${s.notes}</div>`:''}
+    ${s.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${s.notes}</div>` : ''}
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Parts from this supplier (${parts.length})</div>
-    ${parts.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.num} · Stock: ${p.qty}</div></div><span class="badge ${p.qty<=p.reorder?'bw':'bs'}">${p.qty<=p.reorder?'Low':'OK'}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">No parts linked</div>'}
-    <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
- 
-    openModal('detail-modal');
+    ${parts.map(p => `<div class="parts-row">
+        <div style="flex:1"><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.num} · Stock: ${p.qty}</div></div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No parts linked</div>'}
+    <div style="margin-top:16px;text-align:right">
+        <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
+    </div>`;
+
+  openModal('detail-modal');
 }
 
 function openDocDetail(id){
