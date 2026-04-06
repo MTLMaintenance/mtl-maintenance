@@ -615,6 +615,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     pointer-events: none;
     z-index: 110;
 }
+ #zerk-svg-layer {
+    z-index: 50;
+}   
     
   }
  #panel-chat .main-chat-window {
@@ -2816,18 +2819,16 @@ function openEquipDetail(id){
         </div>
         <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
       </div>
+<div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+    <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+    
+    <!-- FIXED SVG LAYER -->
+    <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;">
+        <!-- Lines will be drawn here -->
+    </svg>
 
-      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
-          <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
-          
-          <!-- SVG Layer for Lines -->
-          <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;" viewBox="0 0 100 100" preserveAspectRatio="none">
-          </svg>
-
-          <!-- Interaction Overlay -->
-          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
-      </div>
-
+    <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+</div>
       <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center">
             <div id="zerk-label" style="font-weight:700; font-size:15px"></div>
@@ -5816,17 +5817,23 @@ function renderZerkDots() {
     const svg = document.getElementById('zerk-svg-layer');
     if(!overlay || !svg) return;
 
+    // Filter dots for the current view
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
-    // 1. Draw Lines (Only if target and label are different)
+    // 1. DRAW THE LINES
     svg.innerHTML = visibleDots.map(z => {
-        if (z.x_target === z.x_pos && z.y_target === z.y_pos) return '';
-        return `<line class="zerk-line" x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" />`;
+        // Skip drawing if it's a "Point Only" (target and pos are the same)
+        if (parseFloat(z.x_target) === parseFloat(z.x_pos) && parseFloat(z.y_target) === parseFloat(z.y_pos)) {
+            return '';
+        }
+        // Draw a line from the actual Zerk (target) to the Label (pos)
+        return `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" 
+                      style="stroke:#ffec00; stroke-width:0.6; stroke-linecap:round; opacity:0.8" />`;
     }).join('');
 
-    // 2. Draw Points
-    let html = visibleDots.map((z, index) => {
-        const isSingleDot = (z.x_target === z.x_pos && z.y_target === z.y_pos);
+    // 2. DRAW THE LABELS AND TARGET DOTS
+    overlay.innerHTML = visibleDots.map((z, index) => {
+        const isSingleDot = (parseFloat(z.x_target) === parseFloat(z.x_pos));
         return `
             ${!isSingleDot ? `<div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>` : ''}
             <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
@@ -5835,11 +5842,10 @@ function renderZerkDots() {
         `;
     }).join('');
 
+    // 3. SHOW PREVIEW DOT (If currently drawing a line)
     if (zerkDrawingStep === 2) {
-        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow;"></div>`;
+        overlay.innerHTML += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: white; border: 2px solid #ffec00; transform: translate(-50%, -50%) scale(1.5);"></div>`;
     }
-
-    overlay.innerHTML = html;
 }
 
 function showZerkInfo(event, zerkId) {
