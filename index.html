@@ -1439,30 +1439,22 @@ async function hashPassword(password) {
 const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
 // --- ZERK MAP UPLOAD LOGIC (PLACE AT TOP OF SCRIPT) ---
 async function uploadZerkView(input) {
-    const file = input.files[0]; 
-    if(!file) return;
-
+    const file = input.files[0]; if(!file) return;
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
-
     if(!e) return;
 
     showToast("⚙️ Processing image...");
-
+    
     try {
-        const reader = new FileReader();
-        const dataUrl = await new Promise((resolve) => {
-            reader.onload = ev => resolve(ev.target.result);
-            reader.readAsDataURL(file);
-        });
+        const base64 = await compressImage(await new Promise(res => {
+            const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file);
+        }), 1200, 0.8);
 
-        const compressedBase64 = await compressImage(dataUrl, 1200, 0.8);
-
-        // Update local state IMMEDIATELY
         if(!e.zerk_photos) e.zerk_photos = [];
-        e.zerk_photos.push(compressedBase64);
+        e.zerk_photos.push(base64);
 
-        // Save to Database
+        // SAVE TO DATABASE
         const { error } = await window._mpdb
             .from('equipment')
             .update({ zerk_photos: e.zerk_photos })
@@ -1471,16 +1463,12 @@ async function uploadZerkView(input) {
         if (error) throw error;
 
         showToast("View added ✓");
-        
-        // Refresh the UI now that local state is updated
         refreshZerkMap(equipId);
-        
-    } catch (err) {
-        console.error("Zerk Upload Failed:", err);
-        showToast("Upload failed");
-    } finally {
-        input.value = ""; 
+    } catch(err) { 
+        console.error(err);
+        showToast("Upload failed"); 
     }
+    input.value = "";
 }
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 const ADMIN_USERNAME = 'tangal99';
@@ -5778,9 +5766,13 @@ function showZerkInfo(event, zerkId) {
 }
 
 async function handleMapClick(event) {
+    // Only admins/managers can add points
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
-    const rect = document.getElementById('zerk-map-img').getBoundingClientRect();
+    const img = document.getElementById('zerk-map-img');
+    const rect = img.getBoundingClientRect();
+    
+    // Calculate percentage position
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
@@ -5789,9 +5781,9 @@ async function handleMapClick(event) {
     const instr = prompt("Instructions (e.g. 5 pumps daily):");
 
     const newZerk = {
-        id: uid(),
+        id: uid(), // This is the text ID that now matches the SQL change
         equip_id: window._currentDetailEquipId,
-        view_name: currentZerkView, // Save WHICH side this dot belongs to
+        view_name: currentZerkView, 
         label: label,
         instructions: instr,
         x_pos: x,
@@ -5799,10 +5791,17 @@ async function handleMapClick(event) {
     };
 
     try {
-        await window._mpdb.from('grease_points').insert(newZerk);
+        const { error } = await window._mpdb.from('grease_points').insert(newZerk);
+        if (error) throw error;
+
         allMachineZerks.push(newZerk);
         renderZerkDots();
-    } catch(e) { console.error(e); }
+        showToast("Point added ✓");
+    } catch(e) { 
+        console.error("Failed to add zerk:", e); 
+        showToast("Error: " + e.message);
+    }
+}
    
 async function deleteZerkView() {
     if(!confirm("Delete this photo and ALL grease points on it?")) return;
