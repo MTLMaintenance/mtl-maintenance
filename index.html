@@ -5982,14 +5982,23 @@ function renderQuickSpecs(equipId) {
     const entries = Object.entries(specs);
 
     if (entries.length === 0) {
-        container.innerHTML = '<div style="color:var(--text3); font-style:italic; padding: 10px 0;">No specs added yet. Click + Add to log oil types, PSI, etc.</div>';
+        container.innerHTML = '<div style="color:var(--text3); font-style:italic; padding: 10px 0;">No specs added yet.</div>';
         return;
     }
 
     container.innerHTML = entries.map(([key, val]) => `
-        <div class="spec-row" onclick="editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')" title="Click to edit or delete">
-            <span style="color:var(--text2)">${key}:</span>
-            <b style="color:var(--text)">${val}</b>
+        <div class="spec-row" style="display:flex; align-items:center; gap:8px; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05)">
+            <!-- Clicking the text still triggers the edit -->
+            <div style="flex:1; display:flex; justify-content:space-between; cursor:pointer" onclick="editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">
+                <span style="color:var(--text2)">${key}:</span>
+                <b style="color:var(--text)">${val}</b>
+            </div>
+            
+            <!-- NEW: Dedicated Delete Button -->
+            <button class="btn btn-danger" 
+                    style="padding: 2px 6px; font-size: 10px; border-radius: 4px; line-height: 1" 
+                    onclick="deleteQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')" 
+                    title="Delete Spec">✕</button>
         </div>
     `).join('');
 }
@@ -6029,38 +6038,44 @@ async function editQuickSpec(equipId, key) {
     if(!e || !e.custom_fields) return;
 
     const currentVal = e.custom_fields[key];
-    
-    // 1. Ask for the new value
-    const newVal = prompt(`Editing "${key}"\n\nEnter new value (or leave blank to delete):`, currentVal);
+    const newVal = prompt(`Update value for "${key}":`, currentVal);
 
-    // 2. Handle Cancel
-    if (newVal === null) return;
+    // If user clicks cancel or enters nothing, do nothing
+    if (newVal === null || newVal.trim() === "") return;
 
-    // 3. Handle Deletion (if input is empty)
-    if (newVal.trim() === "") {
-        if (confirm(`Delete "${key}" entirely?`)) {
-            delete e.custom_fields[key];
-            showToast("Spec deleted");
-        } else {
-            return;
-        }
-    } else {
-        // 4. Handle Update
-        e.custom_fields[key] = newVal.trim();
-        showToast("Updated ✓");
-    }
-
-    // 5. Instant UI Refresh
+    // Update local state and redraw
+    e.custom_fields[key] = newVal.trim();
     renderQuickSpecs(equipId);
 
-    // 6. Persist to Database
+    // Save to DB
     try {
         await persist('equipment', 'upsert', e);
+        showToast("Updated ✓");
+    } catch(err) { console.error(err); }
+}
+async function deleteQuickSpec(equipId, key) {
+    if (!confirm(`Are you sure you want to delete the spec "${key}"?`)) return;
+
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e || !e.custom_fields) return;
+
+    // 1. Remove the key from the local object
+    delete e.custom_fields[key];
+
+    // 2. Instant UI Refresh
+    renderQuickSpecs(equipId);
+
+    // 3. Save to Database
+    try {
+        await persist('equipment', 'upsert', e);
+        showToast("Spec deleted");
+        
         if(typeof logAuditAction === 'function') {
-            logAuditAction("Modified Spec", `${e.name}: ${key}`);
+            logAuditAction("Deleted Spec", `${e.name}: removed ${key}`);
         }
     } catch(err) {
         console.error(err);
+        showToast("Error saving changes");
     }
 }
 </script>
