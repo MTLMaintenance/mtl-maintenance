@@ -1445,27 +1445,24 @@ async function uploadZerkView(input) {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
 
-    if(!e) {
-        showToast("Error: Machine not identified.");
-        return;
-    }
+    if(!e) return;
 
     showToast("⚙️ Processing image...");
 
     try {
         const reader = new FileReader();
-        const dataUrl = await new Promise((resolve, reject) => {
+        const dataUrl = await new Promise((resolve) => {
             reader.onload = ev => resolve(ev.target.result);
-            reader.onerror = err => reject(err);
             reader.readAsDataURL(file);
         });
 
-        // Use the app's built-in compression
         const compressedBase64 = await compressImage(dataUrl, 1200, 0.8);
 
+        // Update local state IMMEDIATELY
         if(!e.zerk_photos) e.zerk_photos = [];
         e.zerk_photos.push(compressedBase64);
 
+        // Save to Database
         const { error } = await window._mpdb
             .from('equipment')
             .update({ zerk_photos: e.zerk_photos })
@@ -1474,11 +1471,13 @@ async function uploadZerkView(input) {
         if (error) throw error;
 
         showToast("View added ✓");
+        
+        // Refresh the UI now that local state is updated
         refreshZerkMap(equipId);
         
     } catch (err) {
         console.error("Zerk Upload Failed:", err);
-        showToast("Upload failed: " + err.message);
+        showToast("Upload failed");
     } finally {
         input.value = ""; 
     }
@@ -5684,32 +5683,35 @@ async function refreshZerkMap(equipId) {
     const switcher = document.getElementById('zerk-view-switcher');
     const noPhotos = document.getElementById('zerk-no-photos');
     const container = document.getElementById('zerk-map-container');
+    const delViewBtn = document.getElementById('btn-delete-view');
 
-    // 1. Check if we have photos. If not, show warning.
-    if(!e.photos || e.photos.length === 0) {
+    // Check the local object 'e' for photos
+    if(!e.zerk_photos || e.zerk_photos.length === 0) {
         if(switcher) switcher.style.display = 'none';
         if(container) container.style.display = 'none';
+        if(delViewBtn) delViewBtn.style.display = 'none';
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // 2. Show the map UI
+    // Hide the "No Photos" message and show the Map
     if(switcher) switcher.style.display = 'flex';
     if(container) container.style.display = 'block';
+    if(delViewBtn) delViewBtn.style.display = 'block';
     if(noPhotos) noPhotos.style.display = 'none';
 
-    // 3. Generate buttons for EVERY photo uploaded
-    switcher.innerHTML = e.photos.map((_, i) => `
+    // Generate the View buttons
+    switcher.innerHTML = e.zerk_photos.map((_, i) => `
         <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
             View ${i+1}
         </button>
     `).join('');
 
-    // 4. Load all grease points from the database
+    // Load points for this machine from the database
     const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
     allMachineZerks = data || [];
     
-    // 5. Default to the first view
+    // Auto-load the first photo
     changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
 }
 function changeZerkView(viewName, btn) {
@@ -5730,12 +5732,12 @@ function changeZerkView(viewName, btn) {
     }
 
     // Update the Map Image
-    // Extract the index from names like 'side_1' -> 0, 'side_5' -> 4
     const viewIndex = parseInt(viewName.split('_')[1]) - 1;
     const img = document.getElementById('zerk-map-img');
     
-    if(equip.photos && equip.photos[viewIndex]) {
-        img.src = equip.photos[viewIndex];
+    // FIXED: Changed 'photos' to 'zerk_photos'
+    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        img.src = equip.zerk_photos[viewIndex];
     }
 
     // Redraw the dots for THIS specific view
@@ -5745,9 +5747,10 @@ function changeZerkView(viewName, btn) {
     const detailBox = document.getElementById('zerk-detail-box');
     if(detailBox) detailBox.style.display = 'none';
 }
-function renderZerkDots() {
+
+    function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
-    // Filter dots: only show dots that belong to the current side/view
+     if(!overlay) return;
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
     overlay.innerHTML = visibleDots.map((z, index) => `
