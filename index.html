@@ -582,7 +582,44 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     overflow-y: auto !important;
   }
 
-    </style>
+/* Ensure the container for the map is exactly the same size as the image */
+#zerk-map-container {
+    position: relative;
+    display: inline-block; /* Fits to image size */
+    width: 100%;
+}
+
+#zerk-map-img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Style for the actual dots */
+.zerk-dot {
+    position: absolute; /* This is what makes them stay where you clicked */
+    width: 24px;
+    height: 24px;
+    background: #ffec00; /* Bright Zerk Yellow */
+    color: #000;
+    border: 2px solid #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transform: translate(-50%, -50%); /* Centers the dot on the click point */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+
+.zerk-dot:hover {
+    background: #fff;
+    transform: translate(-50%, -50%) scale(1.2);
+}    
+</style>
 </head>
 <body>
 <div id="offline-banner">⚠ You're offline — changes will sync when reconnected</div>
@@ -5764,30 +5801,31 @@ function showZerkInfo(event, zerkId) {
     
     box.style.display = 'block';
 }
-
 async function handleMapClick(event) {
-    // Only admins/managers can add points
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
     const img = document.getElementById('zerk-map-img');
-    const rect = img.getBoundingClientRect();
+    const rect = img.getBoundingClientRect(); // Get exact image position
     
-    // Calculate percentage position
+    // Calculate position as a percentage of the image width/height
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    const label = prompt("Zerk Name (e.g. Lower Swing Bearing):");
+    // Validation: prevent clicks outside the image area
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
+
+    const label = prompt("Zerk Name (e.g. Boom Pivot):");
     if (!label) return;
-    const instr = prompt("Instructions (e.g. 5 pumps daily):");
+    const instr = prompt("Instructions (e.g. 3 pumps weekly):");
 
     const newZerk = {
-        id: uid(), // This is the text ID that now matches the SQL change
+        id: uid(),
         equip_id: window._currentDetailEquipId,
         view_name: currentZerkView, 
         label: label,
         instructions: instr,
-        x_pos: x,
-        y_pos: y
+        x_pos: x.toFixed(2), // Keep 2 decimal places
+        y_pos: y.toFixed(2)
     };
 
     try {
@@ -5798,10 +5836,11 @@ async function handleMapClick(event) {
         renderZerkDots();
         showToast("Point added ✓");
     } catch(e) { 
-        console.error("Failed to add zerk:", e); 
-        showToast("Error: " + e.message);
+        console.error(e);
+        showToast("Error saving point");
     }
 }
+
    
 async function deleteZerkView() {
     if(!confirm("Delete this photo and ALL grease points on it?")) return;
@@ -5862,19 +5901,37 @@ async function refreshZerkMap(equipId) {
 function changeZerkView(viewName, btn) {
     currentZerkView = viewName;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => b.style.borderColor = 'var(--border2)');
-    if(btn) btn.style.borderColor = 'var(--accent)';
+    if(!equip) return;
 
+    // 1. Highlight the button
+    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
+        b.style.border = '1px solid var(--border2)';
+        b.style.background = 'transparent';
+    });
+    if(btn) {
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.background = 'var(--accent-bg)';
+    }
+
+    // 2. Load the Image
     const viewIndex = parseInt(viewName.split('_')[1]) - 1;
     const img = document.getElementById('zerk-map-img');
+    const container = document.getElementById('zerk-map-container');
+    const noPhotos = document.getElementById('zerk-no-photos');
     
     if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
         img.src = equip.zerk_photos[viewIndex];
+        img.style.display = 'block';
+        if(container) container.style.display = 'block';
+        if(noPhotos) noPhotos.style.display = 'none';
+    } else {
+        img.style.display = 'none';
+        if(container) container.style.display = 'none';
+        if(noPhotos) noPhotos.style.display = 'block';
     }
 
+    // 3. Draw the dots
     renderZerkDots();
-    document.getElementById('zerk-detail-box').style.display = 'none';
 }
 
 </script>
