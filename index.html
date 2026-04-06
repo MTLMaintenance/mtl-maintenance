@@ -3055,11 +3055,6 @@ function convertToTask(schedId){
   },50);
   openModal('task-modal');
 }
-  
-
-
-
-
 
 // ============================================================
 // EXPORTS
@@ -3694,8 +3689,6 @@ async function sendCriticalObsNotification(obs,equipId){
   
   try{ await sendCriticalObsEmail(obs, equipId); showToast('🚨 Critical alert sent'); }catch(e){ showToast('🚨 Critical observation logged'); }
 }
-
-// ── OVERDUE EMAIL ────────────────────────────────────────────
 
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
@@ -5823,7 +5816,8 @@ async function deleteZerkView() {
         showToast("Error deleting view");
     }
 }
-
+}
+    
 // FINAL SAFETY SEAL
 </script>
 
