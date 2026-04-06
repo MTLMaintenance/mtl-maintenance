@@ -585,30 +585,32 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 #zerk-map-container {
   position: relative !important;
   width: 100%;
+  max-width: 100%;
   background: #000;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
 #zerk-map-img {
   width: 100%;
   display: block;
+  pointer-events: none; /* Prevents image from blocking clicks */
 }
 
-/* This overlay must sit exactly on top of the image */
 #zerk-dots-overlay {
   position: absolute !important;
-  inset: 0 !important;
-  z-index: 20;
-  cursor: crosshair;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 100 !important;
 }
 
-/* This is the style for your yellow circles */
 .zerk-dot {
   position: absolute !important;
   width: 22px !important;
   height: 22px !important;
-  background: #ffec00 !important; /* Safety Yellow */
+  background: #ffec00 !important;
   color: #000 !important;
   border: 2px solid #000 !important;
   border-radius: 50% !important;
@@ -617,9 +619,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   justify-content: center !important;
   font-size: 11px !important;
   font-weight: 900 !important;
-  transform: translate(-50%, -50%) !important; /* Centers the dot on the click */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
-  pointer-events: auto;
+  transform: translate(-50%, -50%) !important;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
   
 </style>
@@ -1381,6 +1383,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 // ============================================================
 let currentWOTab = 'details'; 
 let woPartsTemp = [];
+let currentZerkView = 'side_1';
+let allMachineZerks = [];
     // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
@@ -2644,6 +2648,8 @@ function switchDetailTab(tab, btn){
 
   // 4. TRIGGER DATA RELOADS (Runs specific code for specific tabs)
   if(window._currentDetailEquipId) {
+     if(tab === 'eq-zerks') {
+    refreshZerkMap(window._currentDetailEquipId); 
       if(tab === 'eq-timeline') {
         renderEquipTimeline(window._currentDetailEquipId);
       }
@@ -5701,86 +5707,60 @@ async function renderAuditLogs() {
     `).join('');
   } catch(e) { container.innerHTML = 'Failed to load logs.'; }
 }
-let currentZerkView = 'side_1';
-let allMachineZerks = [];
 
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
+    // 1. Fetch ALL dots for this equipment from Supabase
+    const { data, error } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
+    allMachineZerks = data || [];
+    
+    // 2. Setup the UI visibility
     const switcher = document.getElementById('zerk-view-switcher');
-    const noPhotos = document.getElementById('zerk-no-photos');
     const container = document.getElementById('zerk-map-container');
-    const delViewBtn = document.getElementById('btn-delete-view');
+    const noPhotos = document.getElementById('zerk-no-photos');
 
-    // Check the local object 'e' for photos
     if(!e.zerk_photos || e.zerk_photos.length === 0) {
-        if(switcher) switcher.style.display = 'none';
         if(container) container.style.display = 'none';
-        if(delViewBtn) delViewBtn.style.display = 'none';
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // Hide the "No Photos" message and show the Map
-    if(switcher) switcher.style.display = 'flex';
     if(container) container.style.display = 'block';
-    if(delViewBtn) delViewBtn.style.display = 'block';
     if(noPhotos) noPhotos.style.display = 'none';
 
-    // Generate the View buttons
-    switcher.innerHTML = e.zerk_photos.map((_, i) => `
-        <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
-            View ${i+1}
-        </button>
-    `).join('');
+    // 3. Build View Buttons
+    if(switcher) {
+        switcher.innerHTML = e.zerk_photos.map((_, i) => `
+            <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+        `).join('');
+    }
 
-    // Load points for this machine from the database
-    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
-    allMachineZerks = data || [];
-    
-    // Auto-load the first photo
-    changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
+    // 4. Force load the first view
+    changeZerkView('side_1');
 }
+
 function changeZerkView(viewName, btn) {
     currentZerkView = viewName;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    if(!equip) return;
-
-    // Highlight the active button
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.borderColor = 'var(--border2)';
-        b.style.color = 'var(--text)';
-    });
-    if(btn) {
-        btn.style.background = 'var(--accent-bg)';
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.color = 'var(--accent-text)';
-    }
-
-    // Update the Map Image
     const viewIndex = parseInt(viewName.split('_')[1]) - 1;
     const img = document.getElementById('zerk-map-img');
-    
-    // FIXED: Changed 'photos' to 'zerk_photos'
-    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+
+    // Update the image source
+    if(equip && equip.zerk_photos && equip.zerk_photos[viewIndex]) {
         img.src = equip.zerk_photos[viewIndex];
     }
 
-    // Redraw the dots for THIS specific view
+    // Update dot colors
     renderZerkDots();
-    
-    // Hide the detail box from previous view
-    const detailBox = document.getElementById('zerk-detail-box');
-    if(detailBox) detailBox.style.display = 'none';
 }
 
-   function renderZerkDots() {
+function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
     if(!overlay) return;
 
-    // Only show dots that belong to the current view (side_1, side_2, etc)
+    // Only show dots for the current side (side_1, side_2, etc.)
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
     overlay.innerHTML = visibleDots.map((z, index) => `
@@ -5809,43 +5789,33 @@ function showZerkInfo(event, zerkId) {
 async function handleMapClick(event) {
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
-    const img = document.getElementById('zerk-map-img');
-    const rect = img.getBoundingClientRect(); // Get exact image position
+    const overlay = document.getElementById('zerk-dots-overlay');
+    const rect = overlay.getBoundingClientRect();
     
-    // Calculate position as a percentage of the image width/height
+    // Calculate percentage based on the click location inside the overlay
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    // Validation: prevent clicks outside the image area
-    if (x < 0 || x > 100 || y < 0 || y > 100) return;
-
-    const label = prompt("Zerk Name (e.g. Boom Pivot):");
+    const label = prompt("Zerk Name:");
     if (!label) return;
-    const instr = prompt("Instructions (e.g. 3 pumps weekly):");
 
     const newZerk = {
         id: uid(),
         equip_id: window._currentDetailEquipId,
-        view_name: currentZerkView, 
+        view_name: currentZerkView,
         label: label,
-        instructions: instr,
-        x_pos: x.toFixed(2), // Keep 2 decimal places
+        instructions: prompt("Instructions:"),
+        x_pos: x.toFixed(2),
         y_pos: y.toFixed(2)
     };
 
     try {
         const { error } = await window._mpdb.from('grease_points').insert(newZerk);
-        if (error) throw error;
-
+        if(error) throw error;
         allMachineZerks.push(newZerk);
         renderZerkDots();
-        showToast("Point added ✓");
-    } catch(e) { 
-        console.error(e);
-        showToast("Error saving point");
-    }
+    } catch(e) { showToast("Failed to save dot"); }
 }
-
    async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
@@ -5886,77 +5856,7 @@ async function handleMapClick(event) {
 }
 
 
-// UPDATE: refreshZerkMap to use the new zerk_photos field
-async function refreshZerkMap(equipId) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e) return;
 
-    const switcher = document.getElementById('zerk-view-switcher');
-    const noPhotos = document.getElementById('zerk-no-photos');
-    const container = document.getElementById('zerk-map-container');
-    const delViewBtn = document.getElementById('btn-delete-view');
-
-    if(!e.zerk_photos || e.zerk_photos.length === 0) {
-        if(switcher) switcher.style.display = 'none';
-        if(container) container.style.display = 'none';
-        if(delViewBtn) delViewBtn.style.display = 'none';
-        if(noPhotos) noPhotos.style.display = 'block';
-        return;
-    }
-
-    if(switcher) switcher.style.display = 'flex';
-    if(container) container.style.display = 'block';
-    if(delViewBtn) delViewBtn.style.display = 'block';
-    if(noPhotos) noPhotos.style.display = 'none';
-
-    switcher.innerHTML = e.zerk_photos.map((_, i) => `
-        <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
-            View ${i+1}
-        </button>
-    `).join('');
-
-    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
-    allMachineZerks = data || [];
-    
-    changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
-}
-
-// UPDATE: changeZerkView to pull from zerk_photos array
-function changeZerkView(viewName, btn) {
-    currentZerkView = viewName;
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    if(!equip) return;
-
-    // 1. Highlight the button
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
-        b.style.border = '1px solid var(--border2)';
-        b.style.background = 'transparent';
-    });
-    if(btn) {
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.background = 'var(--accent-bg)';
-    }
-
-    // 2. Load the Image
-    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
-    const img = document.getElementById('zerk-map-img');
-    const container = document.getElementById('zerk-map-container');
-    const noPhotos = document.getElementById('zerk-no-photos');
-    
-    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
-        img.src = equip.zerk_photos[viewIndex];
-        img.style.display = 'block';
-        if(container) container.style.display = 'block';
-        if(noPhotos) noPhotos.style.display = 'none';
-    } else {
-        img.style.display = 'none';
-        if(container) container.style.display = 'none';
-        if(noPhotos) noPhotos.style.display = 'block';
-    }
-
-    // 3. Draw the dots
-    renderZerkDots();
-}
 
 </script>
 <!-- Checklist Template Modal -->
