@@ -2615,49 +2615,33 @@ async function openTaskDetail(id){
     </div>`;
   openModal('detail-modal');
 }
-
 function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
-  
-  // 1. Hide all content divs (anything starting with eq- or dt-)
-  if(modal){
-    modal.querySelectorAll('div[id]').forEach(el => {
-      if(el.id.startsWith('eq-') || el.id.startsWith('dt-')) el.style.display = 'none';
-    });
-  }
+  if(!modal) return;
 
-  // 2. Show the specific tab the user clicked
+  // 1. Hide all tab content divs
+  const contents = modal.querySelectorAll('.tab-content');
+  contents.forEach(c => c.style.display = 'none');
+
+  // 2. Show the specific tab clicked
   const el = document.getElementById(tab);
   if(el) el.style.display = 'block';
 
-  // 3. Highlight the active tab button
-  document.querySelectorAll('#detail-modal .tab').forEach(b => b.classList.remove('active'));
+  // 3. Highlight button
+  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // 4. TRIGGER DATA RELOADS (Runs specific code for specific tabs)
-  if(window._currentDetailEquipId) {
-      if(tab === 'eq-timeline') {
-        renderEquipTimeline(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-obs') {
-        refreshObsList(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-invoices') {
-        renderInvoicesList(window._currentDetailEquipId);
-      }
-      if(tab === 'eq-downtime') {
-        renderDowntimeTab(window._currentDetailEquipId);
-     if (tab === 'eq-zerks') {
-    const id = window._currentDetailEquipId;
-    console.log("Switching to Zerk Map for machine:", id);
-    // This forces the app to redraw the photo and dots every time you click the tab
-    if (typeof refreshZerkMap === 'function') {
-        refreshZerkMap(id);
-    }
-}
-      }
-  }
-}
+  // 4. TRIGGER DATA RELOADS
+  const id = window._currentDetailEquipId;
+  if(!id) return;
+
+  if(tab === 'eq-timeline') renderEquipTimeline(id);
+  if(tab === 'eq-obs') refreshObsList(id);
+  if(tab === 'eq-invoices') renderInvoicesList(id);
+  
+  // THIS LINE FIXES THE DISAPPEARING PHOTO
+  if(tab === 'eq-zerks') refreshZerkMap(id); 
+}    
 
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
@@ -5698,34 +5682,31 @@ async function refreshZerkMap(equipId) {
     const switcher = document.getElementById('zerk-view-switcher');
     const container = document.getElementById('zerk-map-container');
     const noPhotos = document.getElementById('zerk-no-photos');
-    const delBtn = document.getElementById('btn-delete-view');
 
-    // 1. Sync check
+    // 1. Check if photos exist in the database for this machine
     if(!e.zerk_photos || e.zerk_photos.length === 0) {
         if(container) container.style.display = 'none';
-        if(switcher) switcher.style.display = 'none';
-        if(delBtn) delBtn.style.display = 'none';
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // 2. Display the UI
+    // 2. Photos exist, show the map UI
     if(container) container.style.display = 'block';
-    if(switcher) switcher.style.display = 'flex';
-    if(delBtn) delBtn.style.display = 'block';
     if(noPhotos) noPhotos.style.display = 'none';
 
-    // 3. Rebuild View Buttons
-    switcher.innerHTML = e.zerk_photos.map((_, i) => `
-        <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
-    `).join('');
+    // 3. Rebuild the view buttons
+    if(switcher) {
+        switcher.innerHTML = e.zerk_photos.map((_, i) => `
+            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+        `).join('');
+    }
 
-    // 4. Load dots from DB
+    // 4. Fetch the dots from Supabase
     const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
     allMachineZerks = data || [];
     
-    // 5. Default to Side 1
-    changeZerkView('side_1');
+    // 5. Load the first side
+    changeZerkView('side_1', document.getElementById('btn-side-1'));
 }
 
 function changeZerkView(viewName, btn) {
@@ -5811,17 +5792,17 @@ function showZerkInfo(event, zerkId) {
 }
 
 async function handleMapClick(event) {
-    // SECURITY CHECK
+    // Only Admin/Manager can add points
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
-    const overlay = document.getElementById('zerk-dots-overlay');
-    const rect = overlay.getBoundingClientRect();
+    const container = document.getElementById('zerk-map-container');
+    const rect = container.getBoundingClientRect();
     
-    // Exact percentage calculation
+    // Calculate exact percentage based on the click inside the container
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    const label = prompt("Zerk Name:");
+    const label = prompt("Zerk Name (e.g. Pivot Pin):");
     if (!label) return;
 
     const newZerk = {
@@ -5829,16 +5810,22 @@ async function handleMapClick(event) {
         equip_id: window._currentDetailEquipId,
         view_name: currentZerkView,
         label: label,
-        instructions: prompt("Instructions:"),
+        instructions: prompt("Instructions (e.g. 2 pumps):") || "",
         x_pos: x.toFixed(2),
         y_pos: y.toFixed(2)
     };
 
     try {
-        await window._mpdb.from('grease_points').insert(newZerk);
+        const { error } = await window._mpdb.from('grease_points').insert(newZerk);
+        if(error) throw error;
+        
         allMachineZerks.push(newZerk);
-        renderZerkDots();
-    } catch(e) { showToast("Save failed"); }
+        renderZerkDots(); // Redraw dots immediately
+        showToast("Point pinned ✓");
+    } catch(e) {
+        console.error(e);
+        showToast("Database Error: Could not save point");
+    }
 }
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
