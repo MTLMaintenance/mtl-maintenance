@@ -5755,30 +5755,62 @@ async function handleMapClick(event) {
         renderZerkDots();
     } catch(e) { console.error(e); }
 async function uploadZerkView(input) {
-    const file = input.files[0]; if(!file) return;
+    const file = input.files[0]; 
+    if(!file) return;
+
+    console.log("File selected:", file.name);
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
 
-    showToast("Processing image...");
-    
-    // 1. Compress and convert to Base64 (using your existing app logic)
-    const base64 = await compressImage(await new Promise(res => {
-        const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file);
-    }), 1200, 0.8);
+    if(!e) {
+        console.error("No equipment found for ID:", equipId);
+        return;
+    }
 
-    // 2. Add to the new zerk_photos array
-    if(!e.zerk_photos) e.zerk_photos = [];
-    e.zerk_photos.push(base64);
+    showToast("⚙️ Processing image...");
 
-    // 3. Save to Supabase
     try {
-        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
-        showToast("View added ✓");
-        refreshZerkMap(equipId); // Refresh the UI
-    } catch(err) { showToast("Upload failed"); }
-    input.value = "";
-}
+        // 1. Convert file to Base64
+        console.log("Converting to Base64...");
+        const reader = new FileReader();
+        const dataUrl = await new Promise((resolve, reject) => {
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = err => reject(err);
+            reader.readAsDataURL(file);
+        });
 
+        // 2. Compress Image (Using the built-in function)
+        console.log("Compressing...");
+        const compressedBase64 = await compressImage(dataUrl, 1200, 0.8);
+        console.log("Compression complete.");
+
+        // 3. Prepare the array
+        if(!e.zerk_photos) e.zerk_photos = [];
+        e.zerk_photos.push(compressedBase64);
+
+        // 4. Save to Database
+        console.log("Saving to Supabase...");
+        const { error } = await window._mpdb
+            .from('equipment')
+            .update({ zerk_photos: e.zerk_photos })
+            .eq('id', equipId);
+
+        if (error) throw error;
+
+        console.log("Save successful ✓");
+        showToast("View added ✓");
+        
+        // 5. Refresh the UI
+        refreshZerkMap(equipId);
+        
+    } catch (err) {
+        console.error("Zerk Upload Failed:", err);
+        showToast("Error: " + err.message);
+    } finally {
+        input.value = ""; // Clear input for next time
+    }
+}
+   
 async function deleteZerkView() {
     if(!confirm("Delete this photo and ALL grease points on it?")) return;
     
