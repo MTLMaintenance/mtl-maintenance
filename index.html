@@ -598,9 +598,23 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     min-height: 0 !important;
   }
 
- 
- 
-    
+ .zerk-line {
+    stroke: #ffec00; /* Zerk yellow */
+    stroke-width: 0.5;
+    stroke-linecap: round;
+    opacity: 0.8;
+}
+
+.zerk-target-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 110;
+}
     
   }
  #panel-chat .main-chat-window {
@@ -1422,10 +1436,15 @@ body.dark-mode .spec-row:hover {
 
 <script>
 // ============================================================
+let zerkPinMode = 'dot'; // 'dot' or 'line'
+let zerkDrawingStep = 1; 
+let tempZerkCoords = { x: 0, y: 0 };
 let currentWOTab = 'details'; 
 let woPartsTemp = [];
 let currentZerkView = 'side_1';
 let allMachineZerks = [];
+let zerkDrawingStep = 1; // 1 = waiting for target, 2 = waiting for label
+let tempZerkCoords = { x: 0, y: 0 };
     // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
@@ -2752,7 +2771,7 @@ function openEquipDetail(id){
       <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs</button>
     </div>
 
-    <!-- 1. OVERVIEW VIEW -->
+    <!-- 1. OVERVIEW VIEW (Dashboard Layout) -->
     <div id="eq-overview" class="tab-content">
       <div class="eq-dash-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
         
@@ -2769,15 +2788,13 @@ function openEquipDetail(id){
           </div>
         </div>
 
-        <!-- NEW Widget: Quick Specs & Capacities -->
+        <!-- Widget: Quick Specs & Capacities -->
         <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
             <span style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase;">Quick Specs</span>
             <button class="btn btn-secondary btn-sm" style="font-size:10px; padding: 2px 6px" onclick="addQuickSpec('${e.id}')">+ Add</button>
           </div>
-          <div id="eq-quick-specs" style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
-             <!-- Specs load here -->
-          </div>
+          <div id="eq-quick-specs" style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;"></div>
         </div>
 
         <!-- Widget: Recent Activity -->
@@ -2787,17 +2804,51 @@ function openEquipDetail(id){
           </div>
           <div id="eq-timeline-content-mini" style="max-height: 180px; overflow-y: auto;"></div>
         </div>
-
       </div>
     </div>
 
-    <!-- 2. DEEP DIVE VIEWS -->
+    <!-- 2. ZERK MAP VIEW (With Line Drawing) -->
+    <div id="eq-zerks" class="tab-content" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
+        <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
+        
+        <div style="background:var(--bg2); padding:4px; border-radius:var(--radius); display:flex; gap:2px; border:1px solid var(--border)">
+            <button class="btn btn-sm" id="mode-dot" onclick="setZerkMode('dot')" style="background:var(--accent); color:#fff; font-size:10px">Point Only</button>
+            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')" style="background:transparent; color:var(--text2); font-size:10px">Pointer Line</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+      </div>
+
+      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+          <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+          
+          <!-- SVG Layer for Lines -->
+          <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;" viewBox="0 0 100 100" preserveAspectRatio="none">
+          </svg>
+
+          <!-- Interaction Overlay -->
+          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+      </div>
+
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+            <div id="zerk-label" style="font-weight:700; font-size:15px"></div>
+            <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px" onclick="deleteZerk()">Delete</button>
+        </div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
+      </div>
+      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+    </div>
+
+    <!-- 3. DEEP DIVE VIEWS -->
     <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list-full"></div></div>
-    <div id="eq-obs" class="tab-content" style="display:none"><div id="obs-list-full"></div></div>
-    <div id="eq-zerks" class="tab-content" style="display:none"></div>
+    <div id="eq-obs" class="tab-content" style="display:none">
+       <div id="obs-list-full"></div>
+    </div>
     <div id="eq-invoices" class="tab-content" style="display:none"><div id="invoices-list"></div></div>
     <div id="eq-docs" class="tab-content" style="display:none"><div id="docs-list-content-full"></div></div>
 
+    <!-- FOOTER ACTIONS -->
     <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
       <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History Report</button>
       <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
@@ -2805,7 +2856,7 @@ function openEquipDetail(id){
 
   openModal('detail-modal');
   renderMiniTimeline(id);
-  renderQuickSpecs(id); // <--- New renderer
+  renderQuickSpecs(id);
 }
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
@@ -5764,19 +5815,34 @@ function changeZerkView(viewName, btn) {
   
 function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
-    if(!overlay) return;
+    const svg = document.getElementById('zerk-svg-layer');
+    if(!overlay || !svg) return;
 
-    // Only show dots for the current side (side_1, side_2, etc.)
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
-    overlay.innerHTML = visibleDots.map((z, index) => `
-        <div class="zerk-dot" 
-             style="left: ${z.x_pos}%; top: ${z.y_pos}%" 
-             onclick="showZerkInfo(event, '${z.id}')">
-             ${index + 1}
-        </div>
-    `).join('');
-} 
+    // 1. Draw Lines (Only if target and label are different)
+    svg.innerHTML = visibleDots.map(z => {
+        if (z.x_target === z.x_pos && z.y_target === z.y_pos) return '';
+        return `<line class="zerk-line" x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" />`;
+    }).join('');
+
+    // 2. Draw Points
+    let html = visibleDots.map((z, index) => {
+        const isSingleDot = (z.x_target === z.x_pos && z.y_target === z.y_pos);
+        return `
+            ${!isSingleDot ? `<div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>` : ''}
+            <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
+                 ${index + 1}
+            </div>
+        `;
+    }).join('');
+
+    if (zerkDrawingStep === 2) {
+        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow;"></div>`;
+    }
+
+    overlay.innerHTML = html;
+}
 
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
@@ -5805,49 +5871,34 @@ function showZerkInfo(event, zerkId) {
     box.style.display = 'block';
 }
 async function handleMapClick(event) {
-    // 1. Permission Check
-    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-        showToast("Only managers can add grease points");
-        return;
-    }
-
-    // 2. Identify where we clicked
+    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
+    
     const overlay = event.currentTarget;
     const rect = overlay.getBoundingClientRect();
-    
-    // Exact percentage calculation
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    // 3. Get User Input
-    const label = prompt("Zerk Name (e.g. Pivot Pin):");
-    if (!label) return;
-    const instr = prompt("Instructions (e.g. 3 pumps weekly):") || "";
+    // MODE 1: SIMPLE DOT (One Click)
+    if (zerkPinMode === 'dot') {
+        const label = prompt("Zerk Name:");
+        if (!label) return;
 
-    // 4. Create the Data Object
-    const newZerk = {
-        id: uid(),
-        equip_id: window._currentDetailEquipId,
-        view_name: currentZerkView, // e.g. 'side_1'
-        label: label,
-        instructions: instr,
-        x_pos: x.toFixed(2),
-        y_pos: y.toFixed(2)
-    };
-
-    try {
-        // 5. Save to Supabase
-        const { error } = await window._mpdb.from('grease_points').insert(newZerk);
-        if (error) throw error;
-
-        // 6. Update Local Memory and Redraw
-        if(!allMachineZerks) allMachineZerks = [];
-        allMachineZerks.push(newZerk);
-        renderZerkDots();
-        showToast("Point added ✓");
-    } catch(e) {
-        console.error("Database save failed:", e);
-        showToast("Error: Could not save to database");
+        saveZerkPoint(label, x, y, x, y); // Target and Label are the same spot
+    } 
+    // MODE 2: POINTER LINE (Two Clicks)
+    else {
+        if (zerkDrawingStep === 1) {
+            tempZerkCoords = { x, y };
+            zerkDrawingStep = 2;
+            showToast("Target set. Now click where the Label goes.");
+            renderZerkDots();
+        } else {
+            const label = prompt("Zerk Name:");
+            if (!label) { zerkDrawingStep = 1; renderZerkDots(); return; }
+            
+            saveZerkPoint(label, x, y, tempZerkCoords.x, tempZerkCoords.y);
+            zerkDrawingStep = 1;
+        }
     }
 }
 
@@ -5936,19 +5987,32 @@ function changeZerkView(viewName, btn) {
 }
 function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
-    if(!overlay) return;
+    const svg = document.getElementById('zerk-svg-layer');
+    if(!overlay || !svg) return;
 
-    // Only show dots that belong to the current view (side_1, side_2, etc)
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
-    overlay.innerHTML = visibleDots.map((z, index) => `
-        <div class="zerk-dot" 
-             style="left: ${z.x_pos}%; top: ${z.y_pos}%" 
-             onclick="showZerkInfo(event, '${z.id}')">
+    // 1. Draw Lines in SVG
+    svg.innerHTML = visibleDots.map(z => `
+        <line class="zerk-line" x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" />
+    `).join('');
+
+    // 2. Draw Labels and Target Dots
+    let html = visibleDots.map((z, index) => `
+        <div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>
+        <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
              ${index + 1}
         </div>
     `).join('');
+
+    // 3. Show temporary target if in Step 2 of drawing
+    if (zerkDrawingStep === 2) {
+        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; scale: 2;"></div>`;
+    }
+
+    overlay.innerHTML = html;
 }
+    
 function renderDashboardObs(equipId) {
     const container = document.getElementById('eq-obs-list-dash');
     if(!container) return;
@@ -6077,6 +6141,35 @@ async function deleteQuickSpec(equipId, key) {
         console.error(err);
         showToast("Error saving changes");
     }
+}
+function setZerkMode(mode) {
+    zerkPinMode = mode;
+    zerkDrawingStep = 1; // Reset steps
+    document.getElementById('mode-dot').style.background = mode === 'dot' ? 'var(--accent)' : 'transparent';
+    document.getElementById('mode-dot').style.color = mode === 'dot' ? '#fff' : 'var(--text2)';
+    document.getElementById('mode-line').style.background = mode === 'line' ? 'var(--accent)' : 'transparent';
+    document.getElementById('mode-line').style.color = mode === 'line' ? '#fff' : 'var(--text2)';
+    renderZerkDots(); // Clear any temp dots
+}
+    async function saveZerkPoint(label, x_label, y_label, x_target, y_target) {
+    const newZerk = {
+        id: uid(),
+        equip_id: window._currentDetailEquipId,
+        view_name: currentZerkView,
+        label: label,
+        instructions: prompt("Instructions (optional):") || "",
+        x_pos: x_label,
+        y_pos: y_label,
+        x_target: x_target,
+        y_target: y_target
+    };
+
+    try {
+        await window._mpdb.from('grease_points').insert(newZerk);
+        allMachineZerks.push(newZerk);
+        renderZerkDots();
+        showToast("Zerk Saved ✓");
+    } catch(e) { console.error(e); }
 }
 </script>
 <!-- Checklist Template Modal -->
