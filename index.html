@@ -581,7 +581,47 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     min-height: 0 !important;
     overflow-y: auto !important;
   }
+#zerk-map-container {
+  position: relative !important;
+  width: 100%;
+  max-width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
 
+#zerk-map-img {
+  width: 100%;
+  display: block;
+  pointer-events: none; /* Prevents image from blocking clicks */
+}
+
+#zerk-dots-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 100 !important;
+}
+
+.zerk-dot {
+  position: absolute !important;
+  width: 22px !important;
+  height: 22px !important;
+  background: #ffec00 !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  transform: translate(-50%, -50%) !important;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
     </style>
 </head>
 <body>
@@ -2615,6 +2655,9 @@ function switchDetailTab(tab, btn){
       }
       if(tab === 'eq-downtime') {
         renderDowntimeTab(window._currentDetailEquipId);
+     if(tab === 'eq-zerks') {
+    refreshZerkMap(window._currentDetailEquipId);
+}
       }
   }
 }
@@ -5663,44 +5706,52 @@ async function renderAuditLogs() {
 }
 let currentZerkView = 'side_1';
 let allMachineZerks = [];
-
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
+    // 1. Fetch ALL dots for this equipment from Supabase
+    const { data, error } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
+    allMachineZerks = data || [];
+    
+    // 2. Setup the UI visibility
     const switcher = document.getElementById('zerk-view-switcher');
-    const noPhotos = document.getElementById('zerk-no-photos');
     const container = document.getElementById('zerk-map-container');
-    const delViewBtn = document.getElementById('btn-delete-view');
+    const noPhotos = document.getElementById('zerk-no-photos');
 
-    // Check the local object 'e' for photos
     if(!e.zerk_photos || e.zerk_photos.length === 0) {
-        if(switcher) switcher.style.display = 'none';
         if(container) container.style.display = 'none';
-        if(delViewBtn) delViewBtn.style.display = 'none';
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // Hide the "No Photos" message and show the Map
-    if(switcher) switcher.style.display = 'flex';
     if(container) container.style.display = 'block';
-    if(delViewBtn) delViewBtn.style.display = 'block';
     if(noPhotos) noPhotos.style.display = 'none';
 
-    // Generate the View buttons
-    switcher.innerHTML = e.zerk_photos.map((_, i) => `
-        <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
-            View ${i+1}
-        </button>
-    `).join('');
+    // 3. Build View Buttons
+    if(switcher) {
+        switcher.innerHTML = e.zerk_photos.map((_, i) => `
+            <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+        `).join('');
+    }
 
-    // Load points for this machine from the database
-    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
-    allMachineZerks = data || [];
-    
-    // Auto-load the first photo
-    changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
+    // 4. Force load the first view
+    changeZerkView('side_1');
+}
+
+function changeZerkView(viewName, btn) {
+    currentZerkView = viewName;
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    const img = document.getElementById('zerk-map-img');
+
+    // Update the image source
+    if(equip && equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        img.src = equip.zerk_photos[viewIndex];
+    }
+
+    // Update dot colors
+    renderZerkDots();
 }
 function changeZerkView(viewName, btn) {
     currentZerkView = viewName;
@@ -5735,10 +5786,12 @@ function changeZerkView(viewName, btn) {
     const detailBox = document.getElementById('zerk-detail-box');
     if(detailBox) detailBox.style.display = 'none';
 }
-
-    function renderZerkDots() {
+  
+function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
-     if(!overlay) return;
+    if(!overlay) return;
+
+    // Only show dots for the current side (side_1, side_2, etc.)
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
     overlay.innerHTML = visibleDots.map((z, index) => `
@@ -5748,7 +5801,7 @@ function changeZerkView(viewName, btn) {
              ${index + 1}
         </div>
     `).join('');
-}
+} 
 
 function showZerkInfo(event, zerkId) {
     event.stopPropagation();
@@ -5765,62 +5818,75 @@ function showZerkInfo(event, zerkId) {
     box.style.display = 'block';
 }
 
+
 async function handleMapClick(event) {
-    // Only admins/managers can add points
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
-    const img = document.getElementById('zerk-map-img');
-    const rect = img.getBoundingClientRect();
+    const overlay = document.getElementById('zerk-dots-overlay');
+    const rect = overlay.getBoundingClientRect();
     
-    // Calculate percentage position
+    // Calculate percentage based on the click location inside the overlay
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    const label = prompt("Zerk Name (e.g. Lower Swing Bearing):");
+    const label = prompt("Zerk Name:");
     if (!label) return;
-    const instr = prompt("Instructions (e.g. 5 pumps daily):");
 
     const newZerk = {
-        id: uid(), // This is the text ID that now matches the SQL change
+        id: uid(),
         equip_id: window._currentDetailEquipId,
-        view_name: currentZerkView, 
+        view_name: currentZerkView,
         label: label,
-        instructions: instr,
-        x_pos: x,
-        y_pos: y
+        instructions: prompt("Instructions:"),
+        x_pos: x.toFixed(2),
+        y_pos: y.toFixed(2)
     };
 
     try {
         const { error } = await window._mpdb.from('grease_points').insert(newZerk);
-        if (error) throw error;
-
+        if(error) throw error;
         allMachineZerks.push(newZerk);
         renderZerkDots();
-        showToast("Point added ✓");
-    } catch(e) { 
-        console.error("Failed to add zerk:", e); 
-        showToast("Error: " + e.message);
-    }
+    } catch(e) { showToast("Failed to save dot"); }
 }
    
 async function deleteZerkView() {
-    if(!confirm("Delete this photo and ALL grease points on it?")) return;
-    
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
+    if(!e || !e.zerk_photos) return;
+
+    if(!confirm("Are you sure you want to delete this photo and all its grease points?")) return;
+
+    // 1. Figure out which photo we are looking at
+    // currentZerkView is something like 'side_1'
     const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
 
-    // 1. Remove photo from array
-    e.zerk_photos.splice(viewIndex, 1);
+    try {
+        // 2. Remove the photo from the local list
+        e.zerk_photos.splice(viewIndex, 1);
 
-    // 2. Delete all dots associated with this view in the database
-    await window._mpdb.from('grease_points').delete().eq('equip_id', equipId).eq('view_name', currentZerkView);
+        // 3. Remove all dots for THIS specific view from the database
+        await window._mpdb.from('grease_points')
+            .delete()
+            .eq('equip_id', equipId)
+            .eq('view_name', currentZerkView);
 
-    // 3. Update Equipment in database
-    await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
-    
-    showToast("View deleted");
-    refreshZerkMap(equipId);
+        // 4. Update the equipment record in the database
+        const { error } = await window._mpdb.from('equipment')
+            .update({ zerk_photos: e.zerk_photos })
+            .eq('id', equipId);
+
+        if (error) throw error;
+
+        showToast("View deleted");
+        
+        // 5. Reset to the first view or show the "No Photos" message
+        refreshZerkMap(equipId);
+        
+    } catch(err) {
+        console.error("Delete View failed:", err);
+        showToast("Error deleting view");
+    }
 }
 
 // UPDATE: refreshZerkMap to use the new zerk_photos field
@@ -5876,7 +5942,21 @@ function changeZerkView(viewName, btn) {
     renderZerkDots();
     document.getElementById('zerk-detail-box').style.display = 'none';
 }
+function renderZerkDots() {
+    const overlay = document.getElementById('zerk-dots-overlay');
+    if(!overlay) return;
 
+    // Only show dots that belong to the current view (side_1, side_2, etc)
+    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
+    
+    overlay.innerHTML = visibleDots.map((z, index) => `
+        <div class="zerk-dot" 
+             style="left: ${z.x_pos}%; top: ${z.y_pos}%" 
+             onclick="showZerkInfo(event, '${z.id}')">
+             ${index + 1}
+        </div>
+    `).join('');
+}
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
