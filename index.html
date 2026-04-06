@@ -6,7 +6,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-#panel-chat {
+#zerk-svg-layer {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important; /* Let clicks pass through to the overlay */
+    z-index: 50 !important; /* Sit between the image and the dots */
+    overflow: visible !important;
+    display: block !important;
+}
+
+/* Force the lines to be bright and thick */
+.zerk-line {
+    stroke: #ffff00 !important; /* Bright Yellow */
+    stroke-width: 0.8 !important;
+    stroke-linecap: round !important;
+    opacity: 1 !important;
+}
+    #panel-chat {
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -5817,23 +5836,22 @@ function renderZerkDots() {
     const svg = document.getElementById('zerk-svg-layer');
     if(!overlay || !svg) return;
 
-    // Filter dots for the current view
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
+    console.log("Zerk Map: Drawing " + visibleDots.length + " lines/dots.");
     
-    // 1. DRAW THE LINES
-    svg.innerHTML = visibleDots.map(z => {
-        // Skip drawing if it's a "Point Only" (target and pos are the same)
-        if (parseFloat(z.x_target) === parseFloat(z.x_pos) && parseFloat(z.y_target) === parseFloat(z.y_pos)) {
-            return '';
+    // 1. CLEAR AND DRAW THE LINES
+    let svgContent = '';
+    visibleDots.forEach(z => {
+        // Only draw a line if the target and label are in different spots
+        if (Number(z.x_target) !== Number(z.x_pos) || Number(z.y_target) !== Number(z.y_pos)) {
+            svgContent += `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" class="zerk-line" style="stroke:yellow; stroke-width:0.8;" />`;
         }
-        // Draw a line from the actual Zerk (target) to the Label (pos)
-        return `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" 
-                      style="stroke:#ffec00; stroke-width:0.6; stroke-linecap:round; opacity:0.8" />`;
-    }).join('');
+    });
+    svg.innerHTML = svgContent;
 
     // 2. DRAW THE LABELS AND TARGET DOTS
-    overlay.innerHTML = visibleDots.map((z, index) => {
-        const isSingleDot = (parseFloat(z.x_target) === parseFloat(z.x_pos));
+    let html = visibleDots.map((z, index) => {
+        const isSingleDot = (Number(z.x_target) === Number(z.x_pos));
         return `
             ${!isSingleDot ? `<div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>` : ''}
             <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
@@ -5844,10 +5862,11 @@ function renderZerkDots() {
 
     // 3. SHOW PREVIEW DOT (If currently drawing a line)
     if (zerkDrawingStep === 2) {
-        overlay.innerHTML += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: white; border: 2px solid #ffec00; transform: translate(-50%, -50%) scale(1.5);"></div>`;
+        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; border: 2px solid white; transform: translate(-50%, -50%) scale(2);"></div>`;
     }
-}
 
+    overlay.innerHTML = html;
+}
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
     
