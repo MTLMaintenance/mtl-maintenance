@@ -5780,16 +5780,28 @@ function renderZerkDots() {
 } 
 
 function showZerkInfo(event, zerkId) {
-    event.stopPropagation();
-    const z = allMachineZerks.find(x => x.id === zerkId);
-    const box = document.getElementById('zerk-detail-box');
+    event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
     
+    // Find the specific dot data
+    const z = allMachineZerks.find(x => x.id === zerkId);
+    if(!z) return;
+
+    const box = document.getElementById('zerk-detail-box');
+    if(!box) return;
+    
+    // Fill the text
     document.getElementById('zerk-label').textContent = z.label;
     document.getElementById('zerk-instr').textContent = z.instructions || "No special instructions.";
     
+    // Setup the Delete button
     const delBtn = document.getElementById('zerk-delete-btn');
-    delBtn.style.display = (currentUser.role === 'admin') ? 'block' : 'none';
-    delBtn.onclick = () => deleteZerk(z.id);
+    if(delBtn) {
+        // Only show delete button for Admins/Managers
+        delBtn.style.display = (currentUser.role === 'admin' || currentUser.role === 'manager') ? 'block' : 'none';
+        
+        // This connects the button to the function we just added
+        delBtn.onclick = () => deleteZerk(z.id);
+    }
     
     box.style.display = 'block';
 }
@@ -5840,42 +5852,33 @@ async function handleMapClick(event) {
     }
 }
 
-async function deleteZerkView() {
-    const equipId = window._currentDetailEquipId;
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e || !e.zerk_photos) return;
-
-    if(!confirm("Are you sure you want to delete this photo and all its grease points?")) return;
-
-    // 1. Figure out which photo we are looking at
-    // currentZerkView is something like 'side_1'
-    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
+async function deleteZerk(id) {
+    // 1. Confirmation
+    if (!confirm("Are you sure you want to permanently delete this grease point?")) return;
 
     try {
-        // 2. Remove the photo from the local list
-        e.zerk_photos.splice(viewIndex, 1);
-
-        // 3. Remove all dots for THIS specific view from the database
-        await window._mpdb.from('grease_points')
+        // 2. Remove from Supabase
+        const { error } = await window._mpdb
+            .from('grease_points')
             .delete()
-            .eq('equip_id', equipId)
-            .eq('view_name', currentZerkView);
-
-        // 4. Update the equipment record in the database
-        const { error } = await window._mpdb.from('equipment')
-            .update({ zerk_photos: e.zerk_photos })
-            .eq('id', equipId);
+            .eq('id', id);
 
         if (error) throw error;
 
-        showToast("View deleted");
+        // 3. Remove from local memory
+        allMachineZerks = allMachineZerks.filter(z => z.id !== id);
+
+        // 4. UI Refresh
+        renderZerkDots();
         
-        // 5. Reset to the first view or show the "No Photos" message
-        refreshZerkMap(equipId);
-        
-    } catch(err) {
-        console.error("Delete View failed:", err);
-        showToast("Error deleting view");
+        // 5. Hide the detail box since the point is gone
+        const box = document.getElementById('zerk-detail-box');
+        if (box) box.style.display = 'none';
+
+        showToast("Point deleted ✓");
+    } catch (e) {
+        console.error("Delete failed:", e);
+        showToast("Error: Could not delete from database");
     }
 }
 
