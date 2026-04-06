@@ -23,10 +23,13 @@
   position: absolute !important;
   inset: 0 !important;
   z-index: 100 !important;
+cursor: crosshair !important;
+  pointer-events: auto !important;
 }
 
 .zerk-dot {
-  position: absolute !important;
+  pointer-events: auto !important;
+    position: absolute !important;
   width: 24px;
   height: 24px;
   background: #ffec00 !important; /* Safety Yellow */
@@ -5790,43 +5793,53 @@ function showZerkInfo(event, zerkId) {
     
     box.style.display = 'block';
 }
-
 async function handleMapClick(event) {
-    // Only Admin/Manager can add points
-    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
+    // 1. Permission Check
+    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
+        showToast("Only managers can add grease points");
+        return;
+    }
+
+    // 2. Identify where we clicked
+    const overlay = event.currentTarget;
+    const rect = overlay.getBoundingClientRect();
     
-    const container = document.getElementById('zerk-map-container');
-    const rect = container.getBoundingClientRect();
-    
-    // Calculate exact percentage based on the click inside the container
+    // Exact percentage calculation
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
+    // 3. Get User Input
     const label = prompt("Zerk Name (e.g. Pivot Pin):");
     if (!label) return;
+    const instr = prompt("Instructions (e.g. 3 pumps weekly):") || "";
 
+    // 4. Create the Data Object
     const newZerk = {
         id: uid(),
         equip_id: window._currentDetailEquipId,
-        view_name: currentZerkView,
+        view_name: currentZerkView, // e.g. 'side_1'
         label: label,
-        instructions: prompt("Instructions (e.g. 2 pumps):") || "",
+        instructions: instr,
         x_pos: x.toFixed(2),
         y_pos: y.toFixed(2)
     };
 
     try {
+        // 5. Save to Supabase
         const { error } = await window._mpdb.from('grease_points').insert(newZerk);
-        if(error) throw error;
-        
+        if (error) throw error;
+
+        // 6. Update Local Memory and Redraw
+        if(!allMachineZerks) allMachineZerks = [];
         allMachineZerks.push(newZerk);
-        renderZerkDots(); // Redraw dots immediately
-        showToast("Point pinned ✓");
+        renderZerkDots();
+        showToast("Point added ✓");
     } catch(e) {
-        console.error(e);
-        showToast("Database Error: Could not save point");
+        console.error("Database save failed:", e);
+        showToast("Error: Could not save to database");
     }
 }
+
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
