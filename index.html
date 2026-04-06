@@ -1437,7 +1437,53 @@ async function hashPassword(password) {
 }
 
 const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
+// --- ZERK MAP UPLOAD LOGIC (PLACE AT TOP OF SCRIPT) ---
+async function uploadZerkView(input) {
+    const file = input.files[0]; 
+    if(!file) return;
+
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+
+    if(!e) {
+        showToast("Error: Machine not identified.");
+        return;
+    }
+
+    showToast("⚙️ Processing image...");
+
+    try {
+        const reader = new FileReader();
+        const dataUrl = await new Promise((resolve, reject) => {
+            reader.onload = ev => resolve(ev.target.result);
+            reader.onerror = err => reject(err);
+            reader.readAsDataURL(file);
+        });
+
+        // Use the app's built-in compression
+        const compressedBase64 = await compressImage(dataUrl, 1200, 0.8);
+
+        if(!e.zerk_photos) e.zerk_photos = [];
+        e.zerk_photos.push(compressedBase64);
+
+        const { error } = await window._mpdb
+            .from('equipment')
+            .update({ zerk_photos: e.zerk_photos })
+            .eq('id', equipId);
+
+        if (error) throw error;
+
+        showToast("View added ✓");
+        refreshZerkMap(equipId);
+        
+    } catch (err) {
+        console.error("Zerk Upload Failed:", err);
+        showToast("Upload failed: " + err.message);
+    } finally {
+        input.value = ""; 
+    }
+}
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 const ADMIN_USERNAME = 'tangal99';
 let currentUser = null;
 let calDate = new Date();
@@ -5754,62 +5800,6 @@ async function handleMapClick(event) {
         allMachineZerks.push(newZerk);
         renderZerkDots();
     } catch(e) { console.error(e); }
-async function uploadZerkView(input) {
-    const file = input.files[0]; 
-    if(!file) return;
-
-    console.log("File selected:", file.name);
-    const equipId = window._currentDetailEquipId;
-    const e = state.equipment.find(x => x.id === equipId);
-
-    if(!e) {
-        console.error("No equipment found for ID:", equipId);
-        return;
-    }
-
-    showToast("⚙️ Processing image...");
-
-    try {
-        // 1. Convert file to Base64
-        console.log("Converting to Base64...");
-        const reader = new FileReader();
-        const dataUrl = await new Promise((resolve, reject) => {
-            reader.onload = e => resolve(e.target.result);
-            reader.onerror = err => reject(err);
-            reader.readAsDataURL(file);
-        });
-
-        // 2. Compress Image (Using the built-in function)
-        console.log("Compressing...");
-        const compressedBase64 = await compressImage(dataUrl, 1200, 0.8);
-        console.log("Compression complete.");
-
-        // 3. Prepare the array
-        if(!e.zerk_photos) e.zerk_photos = [];
-        e.zerk_photos.push(compressedBase64);
-
-        // 4. Save to Database
-        console.log("Saving to Supabase...");
-        const { error } = await window._mpdb
-            .from('equipment')
-            .update({ zerk_photos: e.zerk_photos })
-            .eq('id', equipId);
-
-        if (error) throw error;
-
-        console.log("Save successful ✓");
-        showToast("View added ✓");
-        
-        // 5. Refresh the UI
-        refreshZerkMap(equipId);
-        
-    } catch (err) {
-        console.error("Zerk Upload Failed:", err);
-        showToast("Error: " + err.message);
-    } finally {
-        input.value = ""; // Clear input for next time
-    }
-}
    
 async function deleteZerkView() {
     if(!confirm("Delete this photo and ALL grease points on it?")) return;
