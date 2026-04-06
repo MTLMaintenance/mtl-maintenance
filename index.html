@@ -5978,28 +5978,34 @@ function renderQuickSpecs(equipId) {
 }
 
 async function addQuickSpec(equipId) {
+    // 1. Find the machine in our local list
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
-    const key = prompt("What spec are you adding? (e.g., Engine Oil, Tire PSI, Hydraulic Fluid)");
+    // 2. Ask for the info
+    const key = prompt("Spec Name (e.g. Engine Oil, Front Tire PSI)");
     if (!key) return;
-    const val = prompt(`Enter value for ${key}: (e.g., 15 qts, 32 PSI, 10 gallons)`);
+    const val = prompt(`Value for ${key} (e.g. 15 qts, 35 PSI)`);
     if (!val) return;
 
+    // 3. Update the LOCAL data immediately so the redraw sees it
     if (!e.custom_fields) e.custom_fields = {};
     e.custom_fields[key] = val;
 
+    // 4. DRAW IT NOW (Before even talking to the database)
+    renderQuickSpecs(equipId);
+
+    // 5. Save to the database in the background
     try {
         await persist('equipment', 'upsert', e);
-        renderQuickSpecs(equipId);
-        showToast("Spec added ✓");
+        showToast("Spec saved ✓");
         
-        // Log to audit log if you have it
         if(typeof logAuditAction === 'function') {
-            logAuditAction("Updated Spec", `${e.name}: added ${key}=${val}`);
+            logAuditAction("Added Spec", `${e.name}: ${key}=${val}`);
         }
     } catch(err) {
-        showToast("Save failed");
+        console.error(err);
+        showToast("Sync failed - will retry later");
     }
 }
 </script>
