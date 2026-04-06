@@ -2723,23 +2723,7 @@ function openEquipDetail(id){
   document.getElementById('detail-title').textContent = e.name;
   
   document.getElementById('detail-body').innerHTML = `
-    <!-- BIG METRICS -->
-    <div class="metrics" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-      <div class="metric-card" style="padding: 10px; text-align: center;">
-        <div class="metric-label" style="font-size: 9px;">Hour Meter</div>
-        <div class="metric-value" style="font-size: 18px;">${e.hours.toLocaleString()}</div>
-      </div>
-      <div class="metric-card" style="padding: 10px; text-align: center;">
-        <div class="metric-label" style="font-size: 9px;">Status</div>
-        <div style="margin-top: 4px;">${badge(e.status)}</div>
-      </div>
-      <div class="metric-card" style="padding: 10px; text-align: center;">
-        <div class="metric-label" style="font-size: 9px;">Health</div>
-        <div class="metric-value" style="font-size: 18px; color:${healthColor(score)}">${score}%</div>
-      </div>
-    </div>
-
-    <!-- TAB NAVIGATION -->
+    <!-- QUICK NAVIGATION -->
     <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; margin-bottom: 15px; display: flex; gap: 4px;">
       <button class="tab active" onclick="switchDetailTab('eq-overview',this)">Overview</button>
       <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
@@ -2752,24 +2736,46 @@ function openEquipDetail(id){
     <!-- 1. OVERVIEW VIEW -->
     <div id="eq-overview" class="tab-content">
       <div class="eq-dash-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;">
+        
+        <!-- Widget: Machine Specs (Hours and Status moved here) -->
         <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
-          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Recent Activity</div>
-          <div id="eq-timeline-content-mini" style="max-height: 200px; overflow-y: auto;"></div>
-        </div>
-        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
-          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Specs</div>
-          <div style="font-size: 13px; line-height: 1.8;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+            Machine Info
+          </div>
+          <div style="font-size: 13px; line-height: 2;">
+            <div>Status: ${badge(e.status)}</div>
+            <div>Current Meter: <b>${e.hours.toLocaleString()} hrs</b></div>
+            <div>Health: <b style="color:${healthColor(score)}">${score}%</b></div>
             <div>S/N: <b>${e.serial || '—'}</b></div>
             <div>Model: <b>${e.type || '—'}</b></div>
             <div>Operator: <b>${e.op || 'Unassigned'}</b></div>
           </div>
         </div>
+
+        <!-- Widget: Recent Activity -->
+        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+            Recent Activity
+          </div>
+          <div id="eq-timeline-content-mini" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
       </div>
     </div>
 
-    <!-- 2. ZERK MAP VIEW (Restored HTML) -->
+    <!-- 2. OTHER VIEWS (HIDDEN BY DEFAULT) -->
+    <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list-full"></div></div>
+    
+    <div id="eq-obs" class="tab-content" style="display:none">
+      <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
+        <textarea class="form-textarea" id="tool-obs-input" placeholder="Add a note..."></textarea>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px; width:100%" onclick="addObservation('${e.id}')">Post Observation</button>
+      </div>
+      <div id="obs-list-full"></div>
+    </div>
+
     <div id="eq-zerks" class="tab-content" style="display:none">
-      <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto;"></div>
+      <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:5px"></div>
       <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
         <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
         <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
@@ -2781,35 +2787,13 @@ function openEquipDetail(id){
         </div>
         <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
       </div>
-      <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3)">📸<br>Add a view to start mapping.</div>
-      <div style="display:flex; gap:8px; margin-top:10px">
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
-        <button class="btn btn-danger btn-sm" id="btn-delete-view" style="display:none" onclick="deleteZerkView()">Delete Photo</button>
-      </div>
-      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
     </div>
 
-    <!-- 3. FULL HISTORY VIEW -->
-    <div id="eq-history" class="tab-content" style="display:none">
-        <div id="eq-history-list-full"></div>
-    </div>
-
-    <!-- 4. OBSERVATIONS VIEW -->
-    <div id="eq-obs" class="tab-content" style="display:none">
-      <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="Add a note..."></textarea>
-        <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')" style="margin-top:8px; width:100%">Post Note</button>
-      </div>
-      <div id="obs-list-full"></div>
-    </div>
-
-    <!-- 5. INVOICES VIEW -->
     <div id="eq-invoices" class="tab-content" style="display:none">
         <div id="invoices-list"></div>
         <button class="btn btn-primary btn-sm" onclick="openAddInvoice()" style="margin-top:10px">+ Add Invoice</button>
     </div>
 
-    <!-- 6. DOCS VIEW (Restored Container) -->
     <div id="eq-docs" class="tab-content" style="display:none">
         <div id="docs-list-content-full"></div>
     </div>
@@ -2820,7 +2804,7 @@ function openEquipDetail(id){
     </div>`;
 
   openModal('detail-modal');
-  renderMiniTimeline(id); // Load the overview widget
+  renderMiniTimeline(id);
 }
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
