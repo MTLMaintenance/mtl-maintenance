@@ -648,6 +648,23 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 @media (max-width: 600px) {
     .eq-dash-grid { grid-template-columns: 1fr; }
 }    
+.spec-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.spec-row:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+body.dark-mode .spec-row:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
 </style>
 </head>
 <body>
@@ -5965,18 +5982,17 @@ function renderQuickSpecs(equipId) {
     const entries = Object.entries(specs);
 
     if (entries.length === 0) {
-        container.innerHTML = '<div style="color:var(--text3); font-style:italic">No specs added yet. Click + Add to log oil types, capacities, etc.</div>';
+        container.innerHTML = '<div style="color:var(--text3); font-style:italic; padding: 10px 0;">No specs added yet. Click + Add to log oil types, PSI, etc.</div>';
         return;
     }
 
     container.innerHTML = entries.map(([key, val]) => `
-        <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom: 1px solid rgba(0,0,0,0.05)">
+        <div class="spec-row" onclick="editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')" title="Click to edit or delete">
             <span style="color:var(--text2)">${key}:</span>
             <b style="color:var(--text)">${val}</b>
         </div>
     `).join('');
 }
-
 async function addQuickSpec(equipId) {
     // 1. Find the machine in our local list
     const e = state.equipment.find(x => x.id === equipId);
@@ -6006,6 +6022,45 @@ async function addQuickSpec(equipId) {
     } catch(err) {
         console.error(err);
         showToast("Sync failed - will retry later");
+    }
+}
+async function editQuickSpec(equipId, key) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e || !e.custom_fields) return;
+
+    const currentVal = e.custom_fields[key];
+    
+    // 1. Ask for the new value
+    const newVal = prompt(`Editing "${key}"\n\nEnter new value (or leave blank to delete):`, currentVal);
+
+    // 2. Handle Cancel
+    if (newVal === null) return;
+
+    // 3. Handle Deletion (if input is empty)
+    if (newVal.trim() === "") {
+        if (confirm(`Delete "${key}" entirely?`)) {
+            delete e.custom_fields[key];
+            showToast("Spec deleted");
+        } else {
+            return;
+        }
+    } else {
+        // 4. Handle Update
+        e.custom_fields[key] = newVal.trim();
+        showToast("Updated ✓");
+    }
+
+    // 5. Instant UI Refresh
+    renderQuickSpecs(equipId);
+
+    // 6. Persist to Database
+    try {
+        await persist('equipment', 'upsert', e);
+        if(typeof logAuditAction === 'function') {
+            logAuditAction("Modified Spec", `${e.name}: ${key}`);
+        }
+    } catch(err) {
+        console.error(err);
     }
 }
 </script>
