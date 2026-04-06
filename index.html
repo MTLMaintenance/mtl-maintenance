@@ -2694,14 +2694,11 @@ async function toggleCheck(taskId,idx){
   t.checklist[idx].done=!t.checklist[idx].done;
   await persist('tasks','upsert',t); openTaskDetail(taskId);
 }
-
 function openEquipDetail(id){
   const e = state.equipment.find(x => x.id === id); 
   if(!e) return;
   
-  // Set global ID for tab switching logic
   window._currentDetailEquipId = id;
-
   const tasks = state.tasks.filter(t => t.equipId === id);
   const docs = state.documents.filter(d => d.equip_id === id);
   const score = calcHealth(id);
@@ -2711,13 +2708,12 @@ function openEquipDetail(id){
 
   document.getElementById('detail-title').textContent = e.name;
   
-  // THE MASTER TEMPLATE STRING
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border); display: flex; gap: 4px;">
       <button class="tab active" onclick="switchDetailTab('eq-info',this)">Info</button>
       <button class="tab" onclick="switchDetailTab('eq-timeline',this)">Timeline</button>
       <button class="tab" onclick="switchDetailTab('eq-history',this)">History (${tasks.length})</button>
-      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs (${docs.length})</button>
+      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs</button>
       <button class="tab" onclick="switchDetailTab('eq-photos',this)">Photos</button>
       <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
       <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
@@ -2747,7 +2743,7 @@ function openEquipDetail(id){
     <div id="eq-history" class="tab-content" style="display:none">
       ${tasks.length ? tasks.map(t => `
         <div class="parts-row" onclick="openTaskDetail('${t.id}'); closeModal('detail-modal')">
-          <div style="flex:1"><div style="font-weight:600">${t.name}</div><div style="font-size:11px; color:var(--text2)">${fmtDate(t.due)} · $${t.cost||0}</div></div>
+          <div style="flex:1"><div style="font-weight:600">${t.name}</div><div style="font-size:11px; color:var(--text2)">${fmtDate(t.due)} · $${(t.cost||0).toLocaleString()}</div></div>
           ${badge(t.status)}
         </div>`).join('') : '<div style="color:var(--text3); font-size:13px; padding:10px 0">No history found</div>'}
     </div>
@@ -2788,43 +2784,43 @@ function openEquipDetail(id){
     <!-- 8. Invoices Tab -->
     <div id="eq-invoices" class="tab-content" style="display:none">
       <div id="invoices-list"></div>
-      <button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddInvoice()" style="margin-top:10px">+ Add Invoice</button>
     </div>
 
     <!-- 9. Zerk Map Tab -->
-<div id="eq-zerks" class="tab-content" style="display:none">
-  <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto;"></div>
-
-  <div id="zerk-map-container" style="position:relative; width:100%; background:#000; border-radius:12px; overflow:hidden">
-    <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
-    <!-- IMPORTANT: The onclick MUST be here on the overlay -->
-    <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
-  </div>
-
-  <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-    <div id="zerk-label" style="font-weight:700"></div>
-    <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
-    <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="margin-top:10px">Delete Point</button>
-  </div>
-  
-  <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3)">
-    📸<br>Add a view to start mapping.
-  </div>
-  
-  <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
-  <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
-  <button class="btn btn-danger btn-sm" id="btn-delete-view" style="display:none; margin-top:5px; width:100%" onclick="deleteZerkView()">Delete Current Photo</button>
-</div>
-
+    <div id="eq-zerks" class="tab-content" style="display:none">
+      <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:5px"></div>
       
-      <!-- DELETE VIEW BUTTON -->
-      <button class="btn btn-danger btn-sm" id="btn-delete-view" style="display:none; margin-top:10px; width:100%" onclick="deleteZerkView()">Delete Current View Photo</button>
-    </div>`
-  
-    openModal('detail-modal');
+      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+        <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+        <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+      </div>
 
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+            <div id="zerk-label" style="font-weight:700"></div>
+            <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete Point</button>
+        </div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
+      </div>
+
+      <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3)">📸<br>Add a view to start mapping.</div>
+      
+      <div style="display:flex; gap:8px; margin-top:10px">
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+        <button class="btn btn-danger btn-sm" id="btn-delete-view" style="display:none" onclick="deleteZerkView()">Delete Current View</button>
+      </div>
+      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+    </div>
+
+    <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
+      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History Report</button>
+      <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
+    </div>`;
+
+  openModal('detail-modal');
 }
-    
+
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
   if(!s) return;
@@ -5695,7 +5691,6 @@ async function renderAuditLogs() {
     `).join('');
   } catch(e) { container.innerHTML = 'Failed to load logs.'; }
 }
-
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
@@ -5703,30 +5698,33 @@ async function refreshZerkMap(equipId) {
     const switcher = document.getElementById('zerk-view-switcher');
     const container = document.getElementById('zerk-map-container');
     const noPhotos = document.getElementById('zerk-no-photos');
+    const delBtn = document.getElementById('btn-delete-view');
 
-    // 1. If no photos, show the "Empty" message
+    // 1. Sync check
     if(!e.zerk_photos || e.zerk_photos.length === 0) {
         if(container) container.style.display = 'none';
+        if(switcher) switcher.style.display = 'none';
+        if(delBtn) delBtn.style.display = 'none';
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // 2. We have photos, so show the map and hide the message
+    // 2. Display the UI
     if(container) container.style.display = 'block';
+    if(switcher) switcher.style.display = 'flex';
+    if(delBtn) delBtn.style.display = 'block';
     if(noPhotos) noPhotos.style.display = 'none';
 
-    // 3. Update the view buttons
-    if(switcher) {
-        switcher.innerHTML = e.zerk_photos.map((_, i) => `
-            <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
-        `).join('');
-    }
+    // 3. Rebuild View Buttons
+    switcher.innerHTML = e.zerk_photos.map((_, i) => `
+        <button class="btn btn-secondary btn-sm" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+    `).join('');
 
-    // 4. Fetch the dots from the database
+    // 4. Load dots from DB
     const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
     allMachineZerks = data || [];
     
-    // 5. Default to the first photo
+    // 5. Default to Side 1
     changeZerkView('side_1');
 }
 
@@ -5813,10 +5811,13 @@ function showZerkInfo(event, zerkId) {
 }
 
 async function handleMapClick(event) {
+    // SECURITY CHECK
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
-    // We use the overlay's size to calculate the % coordinates
-    const rect = document.getElementById('zerk-dots-overlay').getBoundingClientRect();
+    const overlay = document.getElementById('zerk-dots-overlay');
+    const rect = overlay.getBoundingClientRect();
+    
+    // Exact percentage calculation
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
@@ -5828,7 +5829,7 @@ async function handleMapClick(event) {
         equip_id: window._currentDetailEquipId,
         view_name: currentZerkView,
         label: label,
-        instructions: prompt("Instructions (e.g. 2 pumps):"),
+        instructions: prompt("Instructions:"),
         x_pos: x.toFixed(2),
         y_pos: y.toFixed(2)
     };
@@ -5837,10 +5838,8 @@ async function handleMapClick(event) {
         await window._mpdb.from('grease_points').insert(newZerk);
         allMachineZerks.push(newZerk);
         renderZerkDots();
-        showToast("Point pinned ✓");
     } catch(e) { showToast("Save failed"); }
 }
-
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
