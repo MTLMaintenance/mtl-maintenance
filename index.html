@@ -615,7 +615,40 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     min-height: 0 !important;
     overflow-y: auto !important;
   }
-    </style>
+.eq-dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.eq-widget {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+}
+
+.eq-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 5px;
+}
+
+.eq-widget-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text2);
+}
+
+@media (max-width: 600px) {
+    .eq-dash-grid { grid-template-columns: 1fr; }
+}    
+</style>
 </head>
 <body>
 <div id="offline-banner">⚠ You're offline — changes will sync when reconnected</div>
@@ -2622,29 +2655,28 @@ function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
   if(!modal) return;
 
-  // 1. Hide all tab content divs
-  const contents = modal.querySelectorAll('.tab-content');
-  contents.forEach(c => c.style.display = 'none');
-
-  // 2. Show the specific tab clicked
+  // Hide all contents
+  modal.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  
+  // Show selected
   const el = document.getElementById(tab);
   if(el) el.style.display = 'block';
 
-  // 3. Highlight button
+  // Update tabs
   modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // 4. TRIGGER DATA RELOADS
   const id = window._currentDetailEquipId;
   if(!id) return;
 
-  if(tab === 'eq-timeline') renderEquipTimeline(id);
+  // Run specific renders
+  if(tab === 'eq-overview') renderMiniTimeline(id);
+  if(tab === 'eq-history') renderFullHistoryList(id);
   if(tab === 'eq-obs') refreshObsList(id);
+  if(tab === 'eq-zerks') refreshZerkMap(id);
   if(tab === 'eq-invoices') renderInvoicesList(id);
-  
-  // THIS LINE FIXES THE DISAPPEARING PHOTO
-  if(tab === 'eq-zerks') refreshZerkMap(id); 
-}    
+  if(tab === 'eq-docs') renderDocsList(id);
+}
 
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
@@ -2686,118 +2718,102 @@ function openEquipDetail(id){
   if(!e) return;
   
   window._currentDetailEquipId = id;
-  const tasks = state.tasks.filter(t => t.equipId === id);
-  const docs = state.documents.filter(d => d.equip_id === id);
   const score = calcHealth(id);
-  const photoHtml = e.photos && e.photos.length ? 
-    `<div class="photo-grid">${e.photos.map(src => `<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>` : 
-    '<div style="color:var(--text3); font-size:13px">No photos uploaded</div>';
 
   document.getElementById('detail-title').textContent = e.name;
   
   document.getElementById('detail-body').innerHTML = `
-    <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--border); display: flex; gap: 4px;">
-      <button class="tab active" onclick="switchDetailTab('eq-info',this)">Info</button>
-      <button class="tab" onclick="switchDetailTab('eq-timeline',this)">Timeline</button>
-      <button class="tab" onclick="switchDetailTab('eq-history',this)">History (${tasks.length})</button>
-      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs</button>
-      <button class="tab" onclick="switchDetailTab('eq-photos',this)">Photos</button>
-      <button class="tab" onclick="switchDetailTab('eq-downtime',this)">Downtime</button>
-      <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
-      <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
-      <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
-    </div>
-
-    <!-- 1. Info Tab -->
-    <div id="eq-info" class="tab-content">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px; font-size:13px">
-        <div><span style="color:var(--text2)">Type:</span> ${e.type}</div>
-        <div><span style="color:var(--text2)">Serial:</span> ${e.serial}</div>
-        <div><span style="color:var(--text2)">Status:</span> ${badge(e.status)}</div>
-        <div><span style="color:var(--text2)">Hours:</span> <b>${e.hours.toLocaleString()} hrs</b></div>
-        <div><span style="color:var(--text2)">Operator:</span> ${e.op||'—'}</div>
-        <div><span style="color:var(--text2)">Health:</span> <b style="color:${healthColor(score)}">${score}%</b></div>
+    <!-- TOP ROW: BIG METRICS (Like the main dashboard) -->
+    <div class="metrics" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+      <div class="metric-card" style="padding: 10px; text-align: center;">
+        <div class="metric-label" style="font-size: 9px;">Hour Meter</div>
+        <div class="metric-value" style="font-size: 18px;">${e.hours.toLocaleString()}</div>
       </div>
-      ${e.notes ? `<div style="font-size:13px; color:var(--text2); background:var(--bg2); padding:12px; border-radius:var(--radius); border:1px solid var(--border)">${e.notes}</div>` : ''}
+      <div class="metric-card" style="padding: 10px; text-align: center;">
+        <div class="metric-label" style="font-size: 9px;">Status</div>
+        <div style="margin-top: 4px;">${badge(e.status)}</div>
+      </div>
+      <div class="metric-card" style="padding: 10px; text-align: center;">
+        <div class="metric-label" style="font-size: 9px;">Health Score</div>
+        <div class="metric-value" style="font-size: 18px; color:${healthColor(score)}">${score}%</div>
+      </div>
     </div>
 
-    <!-- 2. Timeline Tab -->
-    <div id="eq-timeline" class="tab-content" style="display:none">
-        <div id="eq-timeline-content"></div>
+    <!-- TAB NAVIGATION (Simplified) -->
+    <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; margin-bottom: 15px; display: flex; gap: 4px;">
+      <button class="tab active" onclick="switchDetailTab('eq-overview',this)">Overview</button>
+      <button class="tab" onclick="switchDetailTab('eq-history',this)">Full History</button>
+      <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
+      <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
+      <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
+      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs</button>
     </div>
 
-    <!-- 3. History Tab -->
+    <!-- 1. OVERVIEW VIEW (The new Dashboard-style card) -->
+    <div id="eq-overview" class="tab-content">
+      <div class="eq-dash-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;">
+        
+        <!-- Widget: Recent Activity -->
+        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+            Recent Activity
+          </div>
+          <div id="eq-timeline-content-mini" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Widget: Quick Specs -->
+        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+            Machine Specs
+          </div>
+          <div style="font-size: 13px; line-height: 1.8;">
+            <div>S/N: <b>${e.serial || '—'}</b></div>
+            <div>Model: <b>${e.type || '—'}</b></div>
+            <div>Primary Operator: <b>${e.op || 'Unassigned'}</b></div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border)">
+                <button class="btn btn-secondary btn-sm" style="width: 100%" onclick="switchDetailTab('eq-docs', document.getElementById('btn-placeholder'))">View Manuals / Docs</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget: Latest Photos -->
+        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+            Machine Photo
+          </div>
+          <div id="eq-photo-mini">
+            ${e.photos && e.photos.length ? 
+              `<img src="${e.photos[0]}" style="width:100%; border-radius: 4px; cursor:pointer" onclick="viewPhoto('${e.photos[0]}')"/>` : 
+              '<div style="color:var(--text3); font-size:12px; text-align:center; padding: 20px">No photos uploaded</div>'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. OTHER VIEWS (Hidden by default) -->
     <div id="eq-history" class="tab-content" style="display:none">
-      ${tasks.length ? tasks.map(t => `
-        <div class="parts-row" onclick="openTaskDetail('${t.id}'); closeModal('detail-modal')">
-          <div style="flex:1"><div style="font-weight:600">${t.name}</div><div style="font-size:11px; color:var(--text2)">${fmtDate(t.due)} · $${(t.cost||0).toLocaleString()}</div></div>
-          ${badge(t.status)}
-        </div>`).join('') : '<div style="color:var(--text3); font-size:13px; padding:10px 0">No history found</div>'}
+        <div id="eq-history-list"></div>
     </div>
-
-    <!-- 4. Docs Tab -->
-    <div id="eq-docs" class="tab-content" style="display:none">
-      ${docs.length ? docs.map(d => `
-        <div class="doc-item">
-          <div class="doc-icon">${d.type==='warranty'?'🛡':'📄'}</div>
-          <div class="doc-info"><div class="doc-name">${d.name}</div><div class="doc-meta">${d.expiry_date?'Expires: '+fmtDate(d.expiry_date):'No expiry'}</div></div>
-        </div>`).join('') : '<div style="color:var(--text3); font-size:13px; padding:10px 0">No documents found</div>'}
-    </div>
-
-    <!-- 5. Photos Tab -->
-    <div id="eq-photos" class="tab-content" style="display:none">${photoHtml}</div>
-
-    <!-- 6. Downtime Tab -->
-    <div id="eq-downtime" class="tab-content" style="display:none">
-        <div id="eq-downtime-content"></div>
-    </div>
-
-    <!-- 7. Observations Tab -->
+    
     <div id="eq-obs" class="tab-content" style="display:none">
       <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="What do you see?" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
-          <div style="display:flex; gap:6px; align-items:center">
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('obs-photo-input').click()">📸 Photo</button>
-            <input type="file" id="obs-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this,'obs')"/>
-            <span id="obs-photo-status" style="font-size:11px; color:var(--success); font-weight:600"></span>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post</button>
-        </div>
+        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="Add a note..."></textarea>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px; width:100%" onclick="addObservation('${e.id}')">Post Observation</button>
       </div>
-      <div id="obs-list-${e.id}"></div>
+      <div id="obs-list-full"></div>
     </div>
 
-    <!-- 8. Invoices Tab -->
-    <div id="eq-invoices" class="tab-content" style="display:none">
-      <div id="invoices-list"></div>
-      <button class="btn btn-primary btn-sm" onclick="openAddInvoice()" style="margin-top:10px">+ Add Invoice</button>
-    </div>
-
-    <!-- 9. Zerk Map Tab -->
     <div id="eq-zerks" class="tab-content" style="display:none">
-      <div id="zerk-view-switcher" style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:5px"></div>
-      
-      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
-        <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
-        <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
-      </div>
+       <!-- Zerk Map UI will load here -->
+    </div>
 
-      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-            <div id="zerk-label" style="font-weight:700"></div>
-            <button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px">Delete Point</button>
-        </div>
-        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
-      </div>
+    <div id="eq-invoices" class="tab-content" style="display:none">
+        <div id="invoices-list"></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddInvoice()" style="margin-top:10px">+ Add Invoice</button>
+    </div>
 
-      <div id="zerk-no-photos" style="display:none; text-align:center; padding:40px; color:var(--text3)">📸<br>Add a view to start mapping.</div>
-      
-      <div style="display:flex; gap:8px; margin-top:10px">
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
-        <button class="btn btn-danger btn-sm" id="btn-delete-view" style="display:none" onclick="deleteZerkView()">Delete Current View</button>
-      </div>
-      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+    <div id="eq-docs" class="tab-content" style="display:none">
+        <div id="docs-list-content"></div>
     </div>
 
     <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
@@ -2806,6 +2822,9 @@ function openEquipDetail(id){
     </div>`;
 
   openModal('detail-modal');
+  
+  // IMMEDIATELY load the mini-timeline for the Overview
+  renderMiniTimeline(id);
 }
 
 function openSupplierDetail(id){
@@ -5949,6 +5968,30 @@ function renderZerkDots() {
              ${index + 1}
         </div>
     `).join('');
+}
+function renderDashboardObs(equipId) {
+    const container = document.getElementById('eq-obs-list-dash');
+    if(!container) return;
+    const obs = state.observations.filter(o => o.equip_id === equipId).slice(0, 3);
+    container.innerHTML = obs.map(o => `
+        <div style="padding:6px 0; border-bottom:1px solid var(--border); font-size:12px">
+            <div style="color:var(--text3); font-size:10px">${o.author} · ${fmtDate(o.created_at)}</div>
+            <div>${o.body.slice(0, 50)}${o.body.length > 50 ? '...' : ''}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:11px">No notes</div>';
+}
+    function renderMiniTimeline(equipId) {
+    const container = document.getElementById('eq-timeline-content-mini');
+    if(!container) return;
+
+    const items = state.tasks.filter(t => t.equipId === equipId).slice(0, 5);
+    container.innerHTML = items.map(t => `
+        <div style="padding:8px 0; border-bottom: 1px solid var(--border); font-size: 12px">
+            <div style="color: var(--text3); font-size: 10px">${fmtDate(t.due)}</div>
+            <div style="font-weight: 600">${t.name}</div>
+            <div style="color: var(--text2)">${badge(t.status)}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:12px">No recent activity</div>';
 }
 </script>
 <!-- Checklist Template Modal -->
