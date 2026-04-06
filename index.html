@@ -11,7 +11,38 @@
     margin: 0 auto;
 }
 
-#chat-sidebar {
+#zerk-map-container {
+  position: relative !important;
+  width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#zerk-dots-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+}
+
+.zerk-dot {
+  position: absolute !important;
+  width: 24px;
+  height: 24px;
+  background: #ffec00 !important; /* Safety Yellow */
+  color: #000 !important;
+  border: 2px solid #000 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  transform: translate(-50%, -50%) !important;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+    #chat-sidebar {
     width: 240px !important;
     background: rgba(0, 0, 0, 0.4);
     padding: 15px;
@@ -581,47 +612,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     min-height: 0 !important;
     overflow-y: auto !important;
   }
-#zerk-map-container {
-  position: relative !important;
-  width: 100%;
-  max-width: 100%;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-#zerk-map-img {
-  width: 100%;
-  display: block;
-  pointer-events: none; /* Prevents image from blocking clicks */
-}
-
-#zerk-dots-overlay {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  z-index: 100 !important;
-}
-
-.zerk-dot {
-  position: absolute !important;
-  width: 22px !important;
-  height: 22px !important;
-  background: #ffec00 !important;
-  color: #000 !important;
-  border: 2px solid #000 !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-  transform: translate(-50%, -50%) !important;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-}
     </style>
 </head>
 <body>
@@ -1381,6 +1371,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 // ============================================================
 let currentWOTab = 'details'; 
 let woPartsTemp = [];
+let currentZerkView = 'side_1';
+let allMachineZerks = [];
     // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
@@ -5704,8 +5696,7 @@ async function renderAuditLogs() {
     `).join('');
   } catch(e) { container.innerHTML = 'Failed to load logs.'; }
 }
-let currentZerkView = 'side_1';
-let allMachineZerks = [];
+
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
@@ -5818,14 +5809,11 @@ function showZerkInfo(event, zerkId) {
     box.style.display = 'block';
 }
 
-
 async function handleMapClick(event) {
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
-    const overlay = document.getElementById('zerk-dots-overlay');
-    const rect = overlay.getBoundingClientRect();
-    
-    // Calculate percentage based on the click location inside the overlay
+    // We use the overlay's size to calculate the % coordinates
+    const rect = document.getElementById('zerk-dots-overlay').getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
@@ -5837,19 +5825,19 @@ async function handleMapClick(event) {
         equip_id: window._currentDetailEquipId,
         view_name: currentZerkView,
         label: label,
-        instructions: prompt("Instructions:"),
+        instructions: prompt("Instructions (e.g. 2 pumps):"),
         x_pos: x.toFixed(2),
         y_pos: y.toFixed(2)
     };
 
     try {
-        const { error } = await window._mpdb.from('grease_points').insert(newZerk);
-        if(error) throw error;
+        await window._mpdb.from('grease_points').insert(newZerk);
         allMachineZerks.push(newZerk);
         renderZerkDots();
-    } catch(e) { showToast("Failed to save dot"); }
+        showToast("Point pinned ✓");
+    } catch(e) { showToast("Save failed"); }
 }
-   
+
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
