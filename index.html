@@ -6376,21 +6376,11 @@ async function saveQuickLogHours() {
     closeModal('log-hours-modal');
     renderDashboard();
     
-    showToast(`Updated ${e.name} to ${val} hrs ✓`);
     
-    if (typeof logAuditAction === 'function') {
-        logAuditAction("Updated Hours", `${e.name} set to ${val} hrs`);
-    }
-  } catch (err) {
-    console.error("Save failed:", err);
-    showToast("Database error: Save failed");
-  }
-}
- getAdaptivePrediction(id).then(res => {
+getAdaptivePrediction(id).then(res => {
     const el = document.getElementById(`adaptive-prediction-${id}`);
     if(!el) return;
 
-    // If more than 40 hours left or no data, keep the spot empty
     if (!res || res.status === 'HIDDEN') {
         el.innerHTML = ''; 
         return;
@@ -6413,7 +6403,10 @@ async function saveQuickLogHours() {
             </div>`;
     }
   });
+  // ---------------------------
 
+}
+    
     
 </script>
 <!-- Checklist Template Modal -->
