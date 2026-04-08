@@ -2933,13 +2933,30 @@ function openSupplierDetail(id){
   openModal('detail-modal');
 getAdaptivePrediction(id).then(res => {
     const el = document.getElementById(`adaptive-prediction-${id}`);
-    if(!el || !res) return;
-    if(res.status === 'PAUSED') el.innerHTML = `<div style="font-size:11px; color:var(--text3)">⏸ Maintenance paused while machine is Down</div>`;
-    else if(res.status === 'OVERDUE') el.innerHTML = `<div style="font-size:11px; color:var(--danger); font-weight:bold">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
-    else el.innerHTML = `
-        <div style="font-size:13px; font-weight:700; color:var(--accent-text)">~${res.hoursRemaining} Working Hours Left</div>
-        <div style="font-size:11px; color:var(--text2)">Est. Service: ${res.predictedDate.toLocaleDateString()}</div>`;
-});
+    if(!el) return;
+
+    if (!res || res.status === 'HIDDEN') {
+        el.innerHTML = ''; 
+        return;
+    }
+
+    if (res.status === 'PAUSED') {
+        el.innerHTML = `<div class="badge bg" style="width:100%; justify-content:center">⏸ Maintenance paused: Machine Down</div>`;
+    } 
+    else if (res.status === 'OVERDUE') {
+        el.innerHTML = `<div class="badge bd" style="width:100%; justify-content:center">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
+    }
+    else if (res.status === 'ACTIVE') {
+        el.innerHTML = `
+            <div style="background:var(--accent-bg); padding:12px; border-radius:8px; border:1px solid var(--accent); margin-top:10px">
+                <div style="font-size:11px; text-transform:uppercase; color:var(--accent-text); font-weight:700">Predictive Service Alert</div>
+                <div style="font-size:16px; font-weight:800; margin:4px 0">~${res.hoursRemaining} Hours Left</div>
+                <div style="font-size:11px; color:var(--text2)">
+                    Est. Due: <b>${res.predictedDate.toLocaleDateString()}</b> (${res.burnRate} hrs/day usage)
+                </div>
+            </div>`;
+    }
+  });
 }
 
 function openDocDetail(id){
@@ -6381,32 +6398,7 @@ async function saveQuickLogHours() {
   }
 }
     
-getAdaptivePrediction(id).then(res => {
-    const el = document.getElementById(`adaptive-prediction-${id}`);
-    if(!el) return;
 
-    if (!res || res.status === 'HIDDEN') {
-        el.innerHTML = ''; 
-        return;
-    }
-
-    if (res.status === 'PAUSED') {
-        el.innerHTML = `<div class="badge bg" style="width:100%; justify-content:center">⏸ Maintenance paused: Machine Down</div>`;
-    } 
-    else if (res.status === 'OVERDUE') {
-        el.innerHTML = `<div class="badge bd" style="width:100%; justify-content:center">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
-    }
-    else if (res.status === 'ACTIVE') {
-        el.innerHTML = `
-            <div style="background:var(--accent-bg); padding:12px; border-radius:8px; border:1px solid var(--accent); margin-top:10px">
-                <div style="font-size:11px; text-transform:uppercase; color:var(--accent-text); font-weight:700">Predictive Service Alert</div>
-                <div style="font-size:16px; font-weight:800; margin:4px 0">~${res.hoursRemaining} Hours Left</div>
-                <div style="font-size:11px; color:var(--text2)">
-                    Est. Due: <b>${res.predictedDate.toLocaleDateString()}</b> (${res.burnRate} hrs/day usage)
-                </div>
-            </div>`;
-    }
-  });
 
     
     
