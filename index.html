@@ -806,35 +806,19 @@ body.dark-mode .spec-row:hover {
       <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">—</div><div class="metric-sub">Fleet score</div></div>
       <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">—</div><div class="metric-sub">Work orders</div></div>
     </div>
- <div class="panel active" id="panel-dashboard">
-  <div id="alert-section"></div>
-
-  <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
-    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
-    <div class="metric-card"><div class="metric-label">This Month Cost</div><div class="metric-value" id="m-cost">$0</div></div>
-    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
-    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
-  </div>
-
-  <div class="grid-2">
-    <!-- Main Equipment List with Adaptive Hours -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Fleet Status & Predictions</span></div>
-      <div id="equip-list-dash"></div>
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="card"><div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div><div id="equip-list-dash"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div><div id="sched-list-dash"></div></div>
     </div>
-
-    <!-- Upcoming/Overdue Work Orders -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Work Order Queue</span><span class="badge bg" id="task-count-badge"></span></div>
-      <div id="recent-tasks"></div>
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div><div id="recent-tasks"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Monthly Costs ($)</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div></div>
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Fleet Health</span></div><div id="fleet-health-dash"></div></div>
     </div>
   </div>
-<div class="card" style="margin-top:12px">
-      <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
-      <div id="sched-list-dash"></div>
-  </div>
-</div>
 
 <!-- CALENDAR PANEL -->
   <div class="panel" id="panel-calendar">
@@ -1018,14 +1002,7 @@ body.dark-mode .spec-row:hover {
     <div class="grid-2" style="margin-top:12px">
       <div class="card"><div class="card-header"><span class="card-title">Equipment Health Scores</span></div><div id="health-scores"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">Top Parts Consumed</span></div><div id="parts-consumed"></div></div>
-    <div class="card">
     </div>
-  </div>
-        <div class="card" style="margin-top:12px">
-      <div class="card-header"><span class="card-title">Monthly Maintenance Spend</span></div>
-      <div style="display:flex; align-items:flex-end; gap:10px; height:150px; padding:10px" id="cost-chart-large"></div>
-    </div>
-
   </div>
   <!-- THE ONLY TOOL CRIB PANEL -->
 <div class="panel" id="panel-tools">
@@ -1709,72 +1686,59 @@ const LOCKOUT_MINUTES = 15;
 async function doLogin() {
   const username = document.getElementById('auth-user').value.trim();
   const pass = document.getElementById('auth-pass').value;
-  document.getElementById('auth-err').style.display = 'none';
-
-  console.log("Login attempt started for user:", username);
-
-  if (!username || !pass) { 
-    showErr('Please enter your username and password.'); 
-    return; 
-  }
-
+  document.getElementById('auth-err').style.display='none';
+  if (!username||!pass) { showErr('Please enter your username and password.'); return; }
   const btn = document.getElementById('auth-btn');
-  btn.textContent = 'Signing in...'; 
-  btn.disabled = true;
-
+  btn.textContent='Signing in...'; btn.disabled=true;
   try {
-    console.log("Step 1: Querying Supabase for profile...");
     const { data: profile, error } = await window._mpdb.from('profiles').select('*').eq('username', username).single();
-    
-    if (error) {
-        console.error("Step 1 Error (DB Query):", error);
-        showErr('Username not found or database error.');
-        btn.textContent = 'Sign In'; btn.disabled = false;
-        return;
+    if (error||!profile) { showErr('Username not found.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+
+    // Check if account is locked
+    if (profile.locked_until && new Date(profile.locked_until) > new Date()) {
+      const mins = Math.ceil((new Date(profile.locked_until) - new Date()) / 60000);
+      showErr('Account locked due to too many failed attempts. Try again in ' + mins + ' minute' + (mins!==1?'s':'') + '.');
+      btn.textContent='Sign In'; btn.disabled=false; return;
     }
 
-    console.log("Step 2: Profile found. Checking password...");
-    
-    // Check password (supports both SHA-256 and old Base64)
+    // Check password
     const hashedInput = await hashPassword(pass);
     const storedHash = profile.password_hash || '';
     let passwordMatch = false;
-
     if (storedHash.length === 64) {
-      passwordMatch = (storedHash === hashedInput);
+      passwordMatch = storedHash === hashedInput;
     } else {
-      // Fallback for old accounts
       try { passwordMatch = atob(storedHash.replace(/\s/g,'')) === pass; } catch(e) {}
     }
 
     if (!passwordMatch) {
-      console.warn("Step 2 Error: Password does not match.");
-      showErr('Incorrect password.');
-      btn.textContent = 'Sign In'; btn.disabled = false;
-      return;
+      const attempts = (profile.login_attempts || 0) + 1;
+      const updateData = { login_attempts: attempts };
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString();
+        updateData.locked_until = lockUntil;
+        updateData.login_attempts = 0;
+        showErr('Too many failed attempts. Account locked for ' + LOCKOUT_MINUTES + ' minutes.');
+      } else {
+        const remaining = MAX_LOGIN_ATTEMPTS - attempts;
+        showErr('Incorrect password. ' + remaining + ' attempt' + (remaining!==1?'s':'') + ' remaining.');
+      }
+      await window._mpdb.from('profiles').update(updateData).eq('username', username);
+      btn.textContent='Sign In'; btn.disabled=false; return;
     }
 
-    console.log("Step 3: Password OK. Checking status...");
-    if (profile.status !== 'approved') {
-        console.warn("Step 3 Error: Account status is", profile.status);
-        showErr('Your account is ' + profile.status + '. Contact admin.');
-        btn.textContent = 'Sign In'; btn.disabled = false;
-        return;
-    }
+    // Success — reset attempts
+    await window._mpdb.from('profiles').update({ login_attempts: 0, locked_until: null }).eq('username', username);
 
-    console.log("Step 4: Success! Creating session...");
-    const isAdmin = username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
-    currentUser = { id: profile.id, name: profile.full_name || username, role: isAdmin ? 'admin' : profile.role, username };
-    
+    if (profile.status==='pending') { showErr('Your account is pending admin approval.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+    if (profile.status==='denied') { showErr('Access denied. Contact your administrator.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+
+    const isAdmin = username.toLowerCase()===ADMIN_USERNAME.toLowerCase();
+    currentUser = { id: profile.id, name: profile.full_name||username, role: isAdmin?'admin':'tech', username };
+    // Create secure session token
     await createSession(username, profile.id);
-    console.log("Login successful. Entering app.");
     enterApp();
-
-  } catch (e) {
-    console.error("Login crashed with unexpected error:", e);
-    showErr('Login failed. Check console for details.');
-    btn.textContent = 'Sign In'; btn.disabled = false;
-  }
+  } catch(e) { showErr('Login failed. Try again.'); btn.textContent='Sign In'; btn.disabled=false; }
 }
 
 async function doRegister() {
@@ -2196,56 +2160,28 @@ function updateMetrics(){
   document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
   document.getElementById('m-open').textContent=open;
 }
-async function renderEquipListDash(){
-  const el = document.getElementById('equip-list-dash');
-  if(!el) return;
-
-  const list = filteredEquipment(activeGroupFilter).slice(0, 8);
-  
-  // We build the list first, then fill in predictions to keep it fast
-  el.innerHTML = list.map(e => `
-    <div class="equip-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer">
-      <div class="equip-info">
+function renderEquipListDash(){
+  const el=document.getElementById('equip-list-dash');
+  el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
+    const score=calcHealth(e.id);
+    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
+    return `<div class="equip-row">
+      <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
+      <div class="equip-info" onclick="openEquipDetail('${e.id}')">
         <div class="equip-name">${e.name}</div>
-        <div class="equip-meta">${e.hours.toLocaleString()} hrs · ${badge(e.status)}</div>
-        <!-- Prediction Spot -->
-        <div id="dash-predict-${e.id}" style="font-size:11px; margin-top:2px"></div>
+        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
       </div>
-      <div style="text-align:right"><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); quickLogHours('${e.id}')">⏱ Log</button></div>
-    </div>`).join('');
-
-  // Now calculate and inject predictions
-  for (const e of list) {
-    const res = await getAdaptivePrediction(e.id);
-    const predictEl = document.getElementById(`dash-predict-${e.id}`);
-    if (predictEl && res && res.status === 'ACTIVE') {
-        predictEl.innerHTML = `<span style="color:var(--warning); font-weight:700">⚠️ ~${res.hoursRemaining} hrs until service</span>`;
-    } else if (predictEl && res && res.status === 'OVERDUE') {
-        predictEl.innerHTML = `<span style="color:var(--danger); font-weight:700">🚨 SERVICE OVERDUE</span>`;
-    }
-  }
-}
-function renderRecentTasks(){
-  const container = document.getElementById('recent-tasks'); // Explicitly defined
-  if(!container) return;
-
-  const recent = [...state.tasks].sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0,5);
-  
-  const badgeEl = document.getElementById('task-count-badge');
-  if(badgeEl) badgeEl.textContent = state.tasks.length + ' work orders';
-
-  container.innerHTML = recent.map(t => `
-    <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
-      <div style="flex:1">
-        <div style="font-weight:500">${t.name}</div>
-        <div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}</div>
+      <div style="text-align:right;flex-shrink:0; display:flex; flex-direction:column; gap:4px; align-items:flex-end">
+        <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size:10px" onclick="quickLogHours('${e.id}')">⏱ Log Hours</button>
+        <div style="font-size:11px;color:var(--text2)">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
       </div>
-      ${badge(t.status)}
-    </div>`).join('') || '<div style="color:var(--text3); padding:10px">No recent work orders</div>';
+    </div>`;
+  }).join('');
 }
-    function renderSchedDash(){
+function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
-  if(!el) return;
+  // Combine scheduled maintenance + open/overdue work orders
   const schedItems = state.schedules.filter(s=>{
     const [sy,sm,sd]=(s.date||'').split('-').map(Number);
     const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
@@ -2281,34 +2217,35 @@ function renderRecentTasks(){
     </div>`;
   }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
 }
-
+function renderRecentTasks(){
+  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
+  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
+  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
+    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
+    return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
+      <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
+      ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
 function renderCostChart(){
-  const costs = state.monthlyCosts; 
-  const max = Math.max(...costs, 1);
-  const colors = ['#B5D4F4','#85B7EB','#378ADD','#185FA5'];
-  const now = new Date();
-  const labels = [3,2,1,0].map(ago => { 
-    const d = new Date(now.getFullYear(), now.getMonth()-ago, 1); 
-    return MONTHS[d.getMonth()]; 
-  });
-
-  // CHANGE THE ID HERE to match your new Analytics card
-  const container = document.getElementById('cost-chart-large');
-  if(!container) return;
-
-  container.innerHTML = costs.map((v, i) =>
-    `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px">
-      <div style="font-size:11px; font-weight:700">$${v.toLocaleString()}</div>
-      <div style="width:100%; border-radius:4px 4px 0 0; height:${Math.round(v/max * 100)}px; background:${colors[i]}; transition: height 0.5s"></div>
-      <div style="font-size:11px; color:var(--text2); font-weight:600">${labels[i]}</div>
+  const costs=state.monthlyCosts; const max=Math.max(...costs,1);
+  const colors=['#B5D4F4','#85B7EB','#378ADD','#185FA5'];
+  const now=new Date();
+  const labels=[3,2,1,0].map(ago=>{ const d=new Date(now.getFullYear(),now.getMonth()-ago,1); return MONTHS[d.getMonth()]; });
+  document.getElementById('cost-chart').innerHTML=costs.map((v,i)=>
+    `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="font-size:10px;font-weight:600">${v>=1000?"$"+(v/1000).toFixed(1)+"k":"$"+v.toLocaleString()}</div>
+      <div style="width:100%;border-radius:3px 3px 0 0;height:${Math.round(v/max*78)}px;background:${colors[i]}"></div>
+      <div style="font-size:10px;color:var(--text2)">${labels[i]}</div>
     </div>`
-  ).join('');
+  ).join('')
 }
 
 // ============================================================
 // CALENDAR
 // ============================================================
-async function renderCalendar(){
+function renderCalendar(){
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
   
@@ -2324,51 +2261,30 @@ async function renderCalendar(){
   const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   headersEl.innerHTML = daysOfWeek.map(d => `<div class="cal-header">${d}</div>`).join('');
   
-  // 2. PRE-CALCULATE FORECASTS (The new "Adaptive" part)
-  // We calculate every machine's predicted date once before building the calendar
-  for (let e of state.equipment) {
-      const pred = await getAdaptivePrediction(e.id);
-      if (pred && pred.status === 'ACTIVE') {
-          // Store the date string in a temporary variable on the machine object
-          e._predictedDate = pred.predictedDate.toISOString().split('T')[0];
-      } else {
-          e._predictedDate = null;
-      }
-  }
-
-  // 3. Calculate Dates
+  // 2. Calculate Dates
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
   
   let cells = '';
 
-  // 4. Previous Month Padding
+  // 3. Previous Month Padding
   for(let i = firstDayIndex - 1; i >= 0; i--){
     cells += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrevMonth - i}</div></div>`;
   }
 
-  // 5. Current Month Days
+  // 4. Current Month Days
   for(let d = 1; d <= daysInMonth; d++){
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isToday = new Date().toISOString().split('T')[0] === dateStr;
     
-    // Get Work Orders and Schedules
+    // Get events for this day
     const dayTasks = state.tasks.filter(t => t.due === dateStr);
     const dayScheds = state.schedules.filter(s => s.date === dateStr);
     
-    // FIND ADAPTIVE FORECASTS FOR THIS DAY
-    const forecastEvents = [];
-    state.equipment.forEach(e => {
-        if (e._predictedDate === dateStr) {
-            forecastEvents.push(`<div class="cal-event" style="background:rgba(186,117,23,0.15); color:#BA7517; border:1px dashed #BA7517; font-size:9px">📈 Forecast: ${e.name}</div>`);
-        }
-    });
-
     const events = [
       ...dayTasks.map(t => `<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
-      ...dayScheds.map(s => `<div class="cal-event">${s.name}</div>`),
-      ...forecastEvents // <--- Add the new forecasts here
+      ...dayScheds.map(s => `<div class="cal-event">${s.name}</div>`)
     ];
 
     cells += `
@@ -2382,8 +2298,10 @@ async function renderCalendar(){
   }
 
   daysEl.innerHTML = cells;
+
+  // 5. Refresh side lists
+  if (typeof renderRecurList === 'function') renderRecurList();
   renderMonthSchedList();
-  if(typeof renderRecurList === 'function') renderRecurList();
 }
 
 // Helper to render the list next to the calendar
@@ -3402,7 +3320,8 @@ function compressImage(dataUrl, maxWidth=800, quality=0.75) {
   });
 }
 
-
+// Override handlePhotoUpload to compress
+const _origHandlePhoto = handlePhotoUpload;
 async function handlePhotoUpload(input, key) {
   const files = Array.from(input.files);
   for(const file of files) {
@@ -3428,7 +3347,8 @@ function saveOfflineQueue() {
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
 
-
+// Override persist to queue when offline
+const _origPersist = persist;
 async function persist(table, action, record) {
   if(!navigator.onLine) {
     offlineQueue.push({ table, action, record, ts: Date.now() });
@@ -3476,23 +3396,20 @@ async function markComplete(taskId) {
   const t = state.tasks.find(x => x.id === taskId);
   if (!t) return;
 
+  // 1. Update machine hours (Helpful for maintenance tracking)
   const equip = state.equipment.find(e => e.id === t.equipId);
   const currentHours = equip ? equip.hours : 0;
   
-  // 1. Prompt for new hours
   const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
-  let val = NaN;
-
+  
   if (newHours !== null && newHours.trim() !== '') {
-    val = parseInt(newHours);
+    const val = parseInt(newHours);
     if (!isNaN(val) && val >= currentHours) {
       if (equip) {
         equip.hours = val;
         t.meter = val + ' hrs';
+        await persist('equipment', 'upsert', equip);
       }
-    } else if (!isNaN(val)) {
-      alert("New reading must be greater than current hours.");
-      return;
     }
   }
 
@@ -3500,50 +3417,38 @@ async function markComplete(taskId) {
   t.status = 'Completed';
   t.completed_at = new Date().toISOString();
 
-  // 3. Main Database Operations
+  // 3. Save to Database
   try {
-    // A. Update Equipment hours if changed
-    if (equip && !isNaN(val)) {
-        await persist('equipment', 'upsert', equip);
-        
-        // B. Save to Meter History (Crucial for Adaptive Maintenance)
-        await window._mpdb.from('meter_history').insert({ 
-            equip_id: t.equipId, 
-            reading: val, 
-            status_at_reading: equip.status 
-        });
-    }
-
-    // C. Update Task to Completed
     await persist('tasks', 'upsert', t);
 
-    // D. RESET THE RECURRENCE CYCLE (Early Completion logic)
-    const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
-    if (rule && equip) {
-        rule.last_generated_hours = equip.hours; // Sync local memory
-        await window._mpdb.from('recurrence_rules').update({ 
-            last_generated_hours: equip.hours 
-        }).eq('id', rule.id);
-    }
-
-    // E. Audit Logging
+    // SAFETY CHECK: Only log to audit if the function exists
     if (typeof logAuditAction === 'function') {
         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
     }
 
-    // 4. Refresh Everything
+    // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
     await runRecurrenceEngine();
-    closeModal('detail-modal');
     
-    if (typeof renderDashboard === 'function') renderDashboard();
-    if (typeof renderTasks === 'function') renderTasks();
+    // 5. UI Refresh
+    closeModal('detail-modal');
+    renderDashboard();
+    
+    // Ensure the task list also refreshes
+    if (typeof renderTasks === 'function') {
+        renderTasks();
+    }
     
     showToast("Work Order Completed ✓");
-
   } catch (e) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
+
+await window._mpdb.from('meter_history').insert({ 
+    equip_id: equipId, 
+    reading: val, 
+    status_at_reading: e.status 
+});
 }
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
@@ -3726,6 +3631,10 @@ function checkBudgetAlerts() {
   });
   return alerts;
 }
+
+// ============================================================
+// PATCH: saveEquipment — add budget fields
+// ============================================================
 const _origSaveEquipment = saveEquipment;
 async function saveEquipment() {
   const name = document.getElementById('e-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
@@ -3754,6 +3663,23 @@ async function saveEquipment() {
   closeModal('equip-modal'); renderEquipmentTable(); updateMetrics();
   ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
+
+// ============================================================
+// PATCH: renderDashboard — add budget alerts + push check
+// ============================================================
+const _origRenderDashboard = renderDashboard;
+
+// ============================================================
+// PATCH: enterApp — request push, init push check
+// ============================================================
+const _origEnterApp = enterApp;
+
+// ============================================================
+// PATCH: renderEquipmentTable — add QR button for admin
+// ============================================================
+const _origRenderEquipmentTable = renderEquipmentTable;
+
+
 
 // ============================================================
 // PERMISSIONS
@@ -3926,34 +3852,22 @@ function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group
 
 // ── RECENT OBS + FLEET HEALTH ────────────────────────────────
 function renderRecentObservations(){
-  const container = document.getElementById('recent-obs-list'); // Explicitly defined
-  if(!container) return;
-
-  const obs = [...(state.observations || [])].slice(0, 6);
-  container.innerHTML = obs.map(o => `
-    <div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
-      <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
-        <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author}</div>
-      </div>
-    </div>`).join('') || '<div style="color:var(--text3); padding:10px">No observations yet</div>';
+  const listEl=document.getElementById('recent-obs-list');const badgeEl=document.getElementById('obs-count-badge');if(!listEl)return;
+  let obs=[...(state.observations||[])];if(activeGroupFilter!=='all'){const ids=new Set(filteredEquipment(activeGroupFilter).map(e=>e.id));obs=obs.filter(o=>ids.has(o.equip_id));}
+  if(badgeEl)badgeEl.textContent=obs.length+' total';
+  if(!obs.length){listEl.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">No observations yet</div>';return;}
+  listEl.innerHTML=obs.slice(0,6).map(o=>`<div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
+    <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
+    <div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
+      <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author} · ${new Date(o.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+    </div><span class="badge ${o.severity==='critical'?'bd':o.severity==='watch'?'bw':'bg'}">${o.severity}</span>
+  </div>`).join('');
+}
 function renderFleetHealthDash(){
-  const container = document.getElementById('fleet-health-dash'); // Explicitly defined
-  if(!container) return;
-
-  const equip = filteredEquipment(activeGroupFilter).slice(0, 6);
-  container.innerHTML = equip.map(e => {
-    const score = calcHealth(e.id);
-    return `
-    <div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:500;font-size:13px">${e.name}</div>
-        <div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
-      </div>
-      <span style="font-size:12px;font-weight:600;color:${healthColor(score)};margin-left:8px">${score}%</span>
-    </div>`;
-  }).join('') || '<div style="color:var(--text3); padding:10px">No equipment in group</div>';
+  const el=document.getElementById('fleet-health-dash');if(!el)return;
+  const equip=filteredEquipment(activeGroupFilter).slice(0,6);
+  if(!equip.length){el.innerHTML='<div style="color:var(--text2);font-size:13px">No equipment in this group</div>';return;}
+  el.innerHTML=equip.map(e=>{const score=calcHealth(e.id);return`<div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div><div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div></div><span style="font-size:12px;font-weight:600;color:${healthColor(score)};flex-shrink:0;margin-left:8px">${score}%</span></div>`;}).join('');
 }
 
 // ── PERMISSIONS ADMIN ────────────────────────────────────────
@@ -4356,20 +4270,10 @@ updateUnreadBadge();
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
-  console.log("Safe Render: Starting Dashboard...");
-  try {
-      updateMetrics();
-      renderAlerts();
-      renderEquipListDash();
-      renderRecentTasks();
-      renderSchedDash();
-      renderRecentObservations();
-      renderFleetHealthDash();
-      console.log("Safe Render: Dashboard Complete ✓");
-  } catch (e) {
-      console.error("Dashboard drawing crashed:", e);
-      // This is the line that was showing your error
-  }
+  renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
+  const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
+    if(document.getElementById('recent-obs-list'))renderRecentObservations();
+  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
 }
 
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
@@ -4400,75 +4304,74 @@ function openModal(id) {
 
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
-  console.log("Entering app UI...");
-  
-  // 1. Toggle Visibility
+  // 1. Session & UI Setup
+  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
   document.getElementById('auth-screen').style.display = 'none';
-  const appContainer = document.getElementById('app');
-  const appHeader = document.getElementById('app-header');
-  
-  if(appContainer) appContainer.style.display = 'flex';
-  if(appHeader) appHeader.style.display = 'flex';
-  
+  document.getElementById('app').style.display = 'flex';
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
-  // 2. Build and Alphabetize Navigation
-  const nav = document.getElementById('main-nav');
-  if (nav) {
-      nav.innerHTML = '';
-      const menuItems = [
-        { id: 'analytics', label: 'Analytics' },
-        { id: 'calendar', label: 'Calendar' },
-        { id: 'chat', label: 'Chat' },
-        { id: 'checklists', label: 'Checklists' },
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'documents', label: 'Docs' },
-        { id: 'equipment', label: 'Equipment' },
-        { id: 'parts', label: 'Parts' },
-        { id: 'schedule', label: 'Schedule' },
-        { id: 'suppliers', label: 'Suppliers' },
-        { id: 'tools', label: 'Tool Crib' },
-        { id: 'tasks', label: 'Work Orders' }
-      ].sort((a, b) => a.label.localeCompare(b.label));
-
-      // Create buttons A-Z
-      menuItems.forEach(btn => {
-        // Skip if user doesn't have permission
-        if (btn.id === 'analytics' && !can('canViewReports')) return;
-        if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
-
-        const b = document.createElement('button');
-        b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
-        b.onclick = () => showPanel(btn.id);
-        b.innerHTML = btn.id === 'chat' ? 
-          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
-        nav.appendChild(b);
-      });
-
-      // Add Admin button last
-      if (currentUser.role === 'admin') {
-        const adminBtn = document.createElement('button');
-        adminBtn.className = 'nav-btn';
-        adminBtn.onclick = () => showPanel('admin');
-        adminBtn.textContent = 'Admin';
-        nav.appendChild(adminBtn);
+  // 2. Fetch Profile & Permissions
+  try {
+    const { data: profile } = await window._mpdb.from('profiles')
+      .select('group_tag, custom_permissions, role')
+      .eq('username', currentUser.username)
+      .single();
+    
+    if (profile) {
+      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
+      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
+      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
+        currentUser.role = profile.role;
       }
+    }
+  } catch(e) { console.error("Error loading profile:", e); }
+
+  const nav = document.getElementById('main-nav');
+
+  // 3. Handle Navigation Permissions
+  if(!can('canViewReports')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
+    if(btn) btn.remove();
+  }
+  if(!can('canManageSuppliers')){
+    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
+    if(btn) btn.remove();
   }
 
-  // 3. Initialize Data & Logic
-  console.log("Loading system data...");
+  // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
+  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
+  
+  // Filter out Admin if it exists so it doesn't get sorted into the middle
+  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
+
+  // Sort remaining buttons A to Z
+  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
+
+  // Re-build the Nav bar
+  nav.innerHTML = '';
+  buttons.forEach(btn => nav.appendChild(btn));
+
+  // 5. Add Admin button last for Admin users
+  if(currentUser.role === 'admin' && !document.getElementById('admin-nav-btn')){
+      const adminBtn = document.createElement('button');
+      adminBtn.className = 'nav-btn';
+      adminBtn.id = 'admin-nav-btn';
+      adminBtn.textContent = 'Admin';
+      adminBtn.onclick = () => showPanel('admin');
+      nav.appendChild(adminBtn);
+  }
+
+  // 6. Final Initialization
   await loadState();
   await runRecurrenceEngine();
-  
-  // Show dashboard immediately
-  showPanel('dashboard');
-  
+  applyUserGroupFilter();
+  renderDashboard();
   await initChat();
   
-  // 4. Set up Heartbeat
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
 }
+
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
 function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
@@ -6432,10 +6335,9 @@ async function getAdaptivePrediction(equipId) {
         burnRate: burnRate.toFixed(1)
     };
 }
-
-    async function saveQuickLogHours() {
+async function saveQuickLogHours() {
   const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value; 
+  const date = document.getElementById('lh-date').value; // Get the date from the box
   const val = parseInt(document.getElementById('lh-val').value);
   
   const e = state.equipment.find(x => x.id === equipId);
@@ -6450,41 +6352,43 @@ async function getAdaptivePrediction(equipId) {
 
   try {
     await persist('equipment', 'upsert', e);
+
+    // FIX: We now send the 'created_at' as the date you picked in the calendar box
     await window._mpdb.from('meter_history').insert({ 
         equip_id: equipId, 
         reading: val, 
         status_at_reading: e.status,
-        created_at: new Date(date).toISOString()
+        created_at: new Date(date).toISOString() // <--- THIS is the fix
     });
 
     await runRecurrenceEngine();
     closeModal('log-hours-modal');
-    if (typeof renderDashboard === 'function') renderDashboard();
+    renderDashboard();
     showToast(`Updated ${e.name} ✓`);
   } catch (err) {
     console.error(err);
   }
 }
-}
     
+
 
     
     
 </script>
 <!-- Checklist Template Modal -->
-<!-- Checklist Template Modal -->
-<div class="modal-backdrop" id="tpl-modal" style="display:none">
+<div class="modal-backdrop" id="tpl-modal">
   <div class="modal" style="max-width:600px">
     <div class="modal-header"><span class="modal-title">Add Checklist Template</span><button class="modal-close" onclick="closeModal('tpl-modal')">✕</button></div>
     <div class="form-grid">
       <div class="form-group full"><label class="form-label">Template Name *</label><input class="form-input" id="tpl-name" placeholder="e.g. CAT 320 Daily Inspection"/></div>
       <div class="form-group"><label class="form-label">Equipment Model</label><input class="form-input" id="tpl-model" placeholder="e.g. CAT 320BLL"/></div>
       <div class="form-group"><label class="form-label">Equipment Type</label><input class="form-input" id="tpl-type" placeholder="e.g. Excavator"/></div>
-      <div class="form-group full"><label class="form-label">Checklist Items (one per line)</label><textarea class="form-textarea" id="tpl-items" style="min-height:200px" placeholder="Check oil level..."></textarea></div>
+      <div class="form-group full"><label class="form-label">Checklist Items (one per line)</label><textarea class="form-textarea" id="tpl-items" style="min-height:200px" placeholder="Check engine oil level&#10;Check hydraulic fluid level&#10;..."></textarea></div>
     </div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('tpl-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTpl()">Save Template</button></div>
   </div>
 </div>
+
 <!-- User Permissions Modal -->
 <div class="modal-backdrop" id="user-perms-modal">
   <div class="modal" style="max-width:500px">
