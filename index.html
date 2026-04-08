@@ -275,16 +275,30 @@ button[onclick="saveInvoice()"] {
 }
 
 .panel.active {
-  display: block !important;
-  height: auto !important;
-  overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important; /* Pushes content to the TOP */
+    align-items: center !important;
+    padding-top: 20px !important; /* Adjust this to sit nicely under your header */
+    min-height: 100vh;
 }
 
+#panel-tools {
+    display: none;
+    margin: 0 auto !important;
+    vertical-align: top !important;
+}
+ #panel-tools.active {
+    display: flex !important;
+}   
 /* If anything is sitting at the very bottom of the body, hide it */
 body > .form-grid, body > .form-row {
     display: none !important;
 }
-
+#tool-inventory-view, #tool-wishlist-view, #tool-denied-view {
+    width: 100%;
+    margin-top: 0 !important;
+}
 /* Ensure the App container doesn't have extra height pushing things down */
 #app {
   min-height: 100vh;
@@ -5180,30 +5194,34 @@ async function toggleToolStatus(id) {
   renderTools();
 }  
 function switchToolTab(view) {
-    // Hide all views
+    // 1. Force the page to scroll to the top of the panel
+    const panel = document.getElementById('panel-tools');
+    if (panel) panel.scrollTop = 0;
+
+    // 2. Hide all internal views
     document.getElementById('tool-inventory-view').style.display = 'none';
     document.getElementById('tool-wishlist-view').style.display = 'none';
     document.getElementById('tool-denied-view').style.display = 'none';
     
-    // Deactivate all tabs
+    // 3. Reset all tab buttons
     document.getElementById('tool-inv-tab').classList.remove('active');
     document.getElementById('tool-wish-tab').classList.remove('active');
     document.getElementById('tool-denied-tab').classList.remove('active');
 
-    // Show selected
-    if (view === 'inventory') {
-        document.getElementById('tool-inventory-view').style.display = 'block';
-        document.getElementById('tool-inv-tab').classList.add('active');
-        renderTools();
-    } else if (view === 'wishlist') {
-        document.getElementById('tool-wishlist-view').style.display = 'block';
-        document.getElementById('tool-wish-tab').classList.add('active');
-        renderWishlist();
-    } else if (view === 'denied') {
-        document.getElementById('tool-denied-view').style.display = 'block';
-        document.getElementById('tool-denied-tab').classList.add('active');
-        renderDeniedList();
+    // 4. Show the selected view AT THE TOP
+    const targetView = document.getElementById('tool-' + view + '-view');
+    if (targetView) {
+        targetView.style.display = 'block';
+        targetView.style.marginTop = '0';
     }
+    
+    const targetTab = document.getElementById('tool-' + view + '-tab');
+    if (targetTab) targetTab.classList.add('active');
+
+    // 5. Draw the data
+    if (view === 'inventory') renderTools();
+    if (view === 'wishlist') renderWishlist();
+    if (view === 'denied') renderDeniedList();
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
