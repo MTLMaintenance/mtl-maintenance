@@ -836,7 +836,11 @@ body.dark-mode .spec-row:hover {
       <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
     </div>
   </div>
-
+<div class="card" style="margin-top:12px">
+  <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
+  <!-- THIS ID MUST MATCH EXACTLY -->
+  <div id="sched-list-dash"></div> 
+</div>
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -4292,12 +4296,20 @@ updateUnreadBadge();
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
-  renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
-  const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
-    if(document.getElementById('recent-obs-list'))renderRecentObservations();
-  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
+  try {
+      updateMetrics();
+      renderAlerts();
+      renderEquipListDash(); // This handles the new adaptive predictions
+      renderRecentTasks();
+      
+      // These functions are now "Defensive" - they won't crash if the card is missing
+      if (typeof renderSchedDash === 'function') renderSchedDash(); 
+      if (typeof renderRecentObservations === 'function') renderRecentObservations();
+      if (typeof renderFleetHealthDash === 'function') renderFleetHealthDash();
+  } catch (e) {
+      console.warn("Dashboard partially rendered:", e.message);
+  }
 }
-
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
