@@ -789,37 +789,31 @@ body.dark-mode .spec-row:hover {
     </div>
   </div>
 
-  <!-- DASHBOARD -->
-  <div class="panel active" id="panel-dashboard">
-    <div id="alert-section"></div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Viewing:</span>
-      <button class="btn btn-sm" id="grp-all" onclick="setGroupFilter('all')" style="background:#fff;color:#1a1a18;font-weight:700;border:1px solid #fff">All</button>
-      <button class="btn btn-sm" id="grp-outside" onclick="setGroupFilter('outside')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Outside</button>
-      <button class="btn btn-sm" id="grp-production" onclick="setGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
-    </div>
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-total-sub"></div></div>
-      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">—</div><div class="metric-sub">Work orders</div></div>
-      <div class="metric-card"><div class="metric-label">This Month</div><div class="metric-value" id="m-cost">—</div><div class="metric-sub" id="m-cost-sub"></div></div>
-      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">—</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">—</div><div class="metric-sub">Fleet score</div></div>
-      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">—</div><div class="metric-sub">Work orders</div></div>
-    </div>
-    <div class="grid-2" style="margin-bottom:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div><div id="equip-list-dash"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div><div id="sched-list-dash"></div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div><div id="recent-tasks"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Monthly Costs ($)</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div></div>
-    </div>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Fleet Health</span></div><div id="fleet-health-dash"></div></div>
-    </div>
+ <div class="panel active" id="panel-dashboard">
+  <div id="alert-section"></div>
+
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">This Month Cost</div><div class="metric-value" id="m-cost">$0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
 
+  <div class="grid-2">
+    <!-- Card 1: Machine Status + Adaptive Alerts -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Fleet Status & Service Forecast</span></div>
+      <div id="equip-list-dash"></div>
+    </div>
+
+    <!-- Card 2: Work Order Queue -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
+      <div id="recent-tasks"></div>
+    </div>
+  </div>
+</div>
 <!-- CALENDAR PANEL -->
   <div class="panel" id="panel-calendar">
     <div class="section-header"><span class="section-title">Maintenance Calendar</span>
@@ -1002,6 +996,9 @@ body.dark-mode .spec-row:hover {
     <div class="grid-2" style="margin-top:12px">
       <div class="card"><div class="card-header"><span class="card-title">Equipment Health Scores</span></div><div id="health-scores"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">Top Parts Consumed</span></div><div id="parts-consumed"></div></div>
+      <div class="card-header"><span class="card-title">Monthly Maintenance Spend</span></div>
+  <div style="display:flex; align-items:flex-end; gap:10px; height:150px; padding:10px" id="cost-chart-large"></div>
+</div>
     </div>
   </div>
   <!-- THE ONLY TOOL CRIB PANEL -->
@@ -2160,24 +2157,32 @@ function updateMetrics(){
   document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
   document.getElementById('m-open').textContent=open;
 }
-function renderEquipListDash(){
-  const el=document.getElementById('equip-list-dash');
-  el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
-    const score=calcHealth(e.id);
-    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
-    return `<div class="equip-row">
-      <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
-      <div class="equip-info" onclick="openEquipDetail('${e.id}')">
-        <div class="equip-name">${e.name}</div>
-        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+async function renderEquipListDash(){
+  const el = document.getElementById('equip-list-dash');
+  if(!el) return;
+
+  const list = filteredEquipment(activeGroupFilter).slice(0, 8);
+  
+  el.innerHTML = list.map(e => `
+    <div class="equip-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer">
+      <div style="flex:1">
+        <div style="font-weight:600">${e.name}</div>
+        <div style="font-size:11px; color:var(--text2)">${e.hours.toLocaleString()} hrs · ${badge(e.status)}</div>
+        <div id="dash-predict-${e.id}" style="font-size:11px; margin-top:2px"></div>
       </div>
-      <div style="text-align:right;flex-shrink:0; display:flex; flex-direction:column; gap:4px; align-items:flex-end">
-        <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size:10px" onclick="quickLogHours('${e.id}')">⏱ Log Hours</button>
-        <div style="font-size:11px;color:var(--text2)">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
-      </div>
-    </div>`;
-  }).join('');
+      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); quickLogHours('${e.id}')">⏱ Log</button>
+    </div>`).join('');
+
+  // Inject the predictions
+  for (const e of list) {
+    const res = await getAdaptivePrediction(e.id);
+    const pEl = document.getElementById(`dash-predict-${e.id}`);
+    if (pEl && res && res.status === 'ACTIVE') {
+        pEl.innerHTML = `<span style="color:var(--warning); font-weight:700">⚠️ ~${res.hoursRemaining} hrs until service</span>`;
+    } else if (pEl && res && res.status === 'OVERDUE') {
+        pEl.innerHTML = `<span style="color:var(--danger); font-weight:700">🚨 SERVICE OVERDUE</span>`;
+    }
+  }
 }
 function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
@@ -2233,7 +2238,8 @@ function renderCostChart(){
   const colors=['#B5D4F4','#85B7EB','#378ADD','#185FA5'];
   const now=new Date();
   const labels=[3,2,1,0].map(ago=>{ const d=new Date(now.getFullYear(),now.getMonth()-ago,1); return MONTHS[d.getMonth()]; });
-  document.getElementById('cost-chart').innerHTML=costs.map((v,i)=>
+  const container = document.getElementById('cost-chart-large');
+    document.getElementById('cost-chart').innerHTML=costs.map((v,i)=>
     `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
       <div style="font-size:10px;font-weight:600">${v>=1000?"$"+(v/1000).toFixed(1)+"k":"$"+v.toLocaleString()}</div>
       <div style="width:100%;border-radius:3px 3px 0 0;height:${Math.round(v/max*78)}px;background:${colors[i]}"></div>
@@ -3396,20 +3402,23 @@ async function markComplete(taskId) {
   const t = state.tasks.find(x => x.id === taskId);
   if (!t) return;
 
-  // 1. Update machine hours (Helpful for maintenance tracking)
   const equip = state.equipment.find(e => e.id === t.equipId);
   const currentHours = equip ? equip.hours : 0;
   
+  // 1. Prompt for new hour meter reading
   const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
-  
+  let val = NaN;
+
   if (newHours !== null && newHours.trim() !== '') {
-    const val = parseInt(newHours);
+    val = parseInt(newHours);
     if (!isNaN(val) && val >= currentHours) {
       if (equip) {
         equip.hours = val;
         t.meter = val + ' hrs';
-        await persist('equipment', 'upsert', equip);
       }
+    } else if (!isNaN(val)) {
+      alert("New reading must be greater than current hours.");
+      return;
     }
   }
 
@@ -3417,38 +3426,51 @@ async function markComplete(taskId) {
   t.status = 'Completed';
   t.completed_at = new Date().toISOString();
 
-  // 3. Save to Database
+  // 3. Database Operations
   try {
+    // A. Update Equipment if hours changed
+    if (equip && !isNaN(val)) {
+        await persist('equipment', 'upsert', equip);
+        
+        // B. Log to Meter History (This enables the Adaptive Maintenance math)
+        await window._mpdb.from('meter_history').insert({ 
+            equip_id: t.equipId, 
+            reading: val, 
+            status_at_reading: equip.status 
+        });
+    }
+
+    // C. Save the completed Task
     await persist('tasks', 'upsert', t);
 
-    // SAFETY CHECK: Only log to audit if the function exists
+    // D. RESET THE RECURRENCE CYCLE (Adaptive Maintenance logic)
+    // This makes the next "500hr service" start counting from the CURRENT hours
+    const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type.toLowerCase() === 'hours');
+    if (rule && equip) {
+        rule.last_generated_hours = equip.hours; // Update local memory
+        await window._mpdb.from('recurrence_rules').update({ 
+            last_generated_hours: equip.hours 
+        }).eq('id', rule.id);
+    }
+
+    // E. Log to Audit System
     if (typeof logAuditAction === 'function') {
         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
     }
 
-    // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
+    // 4. Cleanup and Refresh UI
     await runRecurrenceEngine();
-    
-    // 5. UI Refresh
     closeModal('detail-modal');
-    renderDashboard();
     
-    // Ensure the task list also refreshes
-    if (typeof renderTasks === 'function') {
-        renderTasks();
-    }
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof renderTasks === 'function') renderTasks();
     
     showToast("Work Order Completed ✓");
+
   } catch (e) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
-
-await window._mpdb.from('meter_history').insert({ 
-    equip_id: equipId, 
-    reading: val, 
-    status_at_reading: e.status 
-});
 }
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
@@ -6297,42 +6319,40 @@ function setZerkMode(mode) {
     }
 async function getAdaptivePrediction(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
-    if (!e || e.status === 'Down') return { status: 'PAUSED' };
+    if (!e || e.status === 'Down' || e.status === 'In Service') return { status: 'PAUSED' };
 
+    // 1. Get history
     const { data: history } = await window._mpdb.from('meter_history')
-        .select('reading, created_at')
-        .eq('equip_id', equipId)
+        .select('reading, created_at').eq('equip_id', equipId)
         .order('created_at', { ascending: false }).limit(7);
 
     if (!history || history.length < 2) return null;
 
+    // 2. Calculate Burn Rate
     const newest = history[0];
     const oldest = history[history.length - 1];
+    const totalHoursUsed = newest.reading - oldest.reading;
+    const daysPassed = (new Date(newest.created_at) - new Date(oldest.created_at)) / (1000 * 60 * 60 * 24);
     
-    const totalHoursUsed = Number(newest.reading) - Number(oldest.reading);
-    
-    // Calculate time difference
-    const msDiff = new Date(newest.created_at) - new Date(oldest.created_at);
-    const daysPassed = msDiff / (1000 * 60 * 60 * 24);
-    
-    // If daysPassed is 0 (same day), we treat it as 1 day to avoid "0.00" error
-    const effectiveDays = daysPassed < 0.1 ? 0.1 : daysPassed;
-    const burnRate = totalHoursUsed / effectiveDays; 
+    if (daysPassed < 0.5 || totalHoursUsed <= 0) return null;
+    const burnRate = totalHoursUsed / daysPassed; 
 
+    // 3. Check for Hour-based Rule
     const rule = state.recurrenceRules.find(r => r.equip_id === equipId && r.type.toLowerCase() === 'hours');
     if (!rule) return null;
 
-    const nextServiceAt = Number(rule.last_generated_hours || 0) + Number(rule.runtime_hours || 500);
+    const nextServiceAt = (rule.last_generated_hours || 0) + (rule.runtime_hours || 500);
     const hoursRemaining = nextServiceAt - e.hours;
 
     if (hoursRemaining <= 0) return { status: 'OVERDUE', hours: hoursRemaining };
+    
+    // 4. THE 40 HOUR THRESHOLD (Only show if close)
     if (hoursRemaining > 40) return { status: 'HIDDEN' };
 
     return {
         status: 'ACTIVE',
         hoursRemaining: Math.round(hoursRemaining * 10) / 10,
-        predictedDate: new Date(Date.now() + (hoursRemaining / burnRate) * 86400000),
-        burnRate: burnRate.toFixed(1)
+        predictedDate: new Date(Date.now() + (hoursRemaining / burnRate) * 86400000)
     };
 }
 async function saveQuickLogHours() {
