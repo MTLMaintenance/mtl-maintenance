@@ -5730,58 +5730,58 @@ function insertMention(username, atPos) {
     input.focus();
 }
 function showPanel(id) {
-    // 1. Reset the view to the top (Fixes the "Sinking" issue)
+    // 1. Force the page to the top
     window.scrollTo(0, 0);
 
-    // 2. Hide all pages
+    // 2. Hide all panels
     const panels = document.querySelectorAll('.panel');
     panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    // 3. Deactivate all navigation buttons
+    // 3. Deactivate all buttons
     const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(b => b.classList.remove('active'));
 
-    // 4. Show the page you clicked
+    // 4. Show the selected panel
     const targetPanel = document.getElementById('panel-' + id);
     if (targetPanel) {
         targetPanel.style.display = 'block';
         targetPanel.classList.add('active');
     }
 
-    // 5. Highlight the correct button in the top bar
+    // 5. Highlight the active button
     navButtons.forEach(btn => {
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 6. THE RENDER MAP (Tells the app what to draw)
+    // 6. Define the Render Map (INSIDE THE FUNCTION)
     const renderMap = {
-        'dashboard': renderDashboard,
-        'calendar': renderCalendar,
-        'equipment': renderEquipmentTable,
-        'tasks': renderTasks,
-        'schedule': renderSchedule,
-        'parts': renderParts,
-        'suppliers': renderSuppliers,
-        'documents': renderDocuments,
-        'analytics': renderAnalytics,
-        'admin': renderAdminPanel,
-        'checklists': renderChecklistTemplates,
+        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
+        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
+        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
+        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
+        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
+        'parts': typeof renderParts === 'function' ? renderParts : null,
+        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
+        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
+        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
+        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
+        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
         'chat': () => { 
-            renderChat(); 
-            if(typeof markChannelRead === 'function') markChannelRead(currentChannel); 
+            if (typeof renderChat === 'function') renderChat(); 
+            if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
         'tools': () => { 
-            renderTools(); 
-            if(typeof updateWishCount === 'function') updateWishCount(); 
+            if (typeof renderTools === 'function') renderTools(); 
+            if (typeof updateWishCount === 'function') updateWishCount(); 
         }
     };
 
-    // 7. Run the drawing function
+    // 7. Execute the function (STILL INSIDE THE FUNCTION)
     if (renderMap[id]) {
         renderMap[id]();
     }
