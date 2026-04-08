@@ -3453,20 +3453,23 @@ async function markComplete(taskId) {
   const t = state.tasks.find(x => x.id === taskId);
   if (!t) return;
 
-  // 1. Update machine hours (Helpful for maintenance tracking)
   const equip = state.equipment.find(e => e.id === t.equipId);
   const currentHours = equip ? equip.hours : 0;
   
+  // 1. Prompt for new hours
   const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
-  
+  let val = NaN;
+
   if (newHours !== null && newHours.trim() !== '') {
-    const val = parseInt(newHours);
+    val = parseInt(newHours);
     if (!isNaN(val) && val >= currentHours) {
       if (equip) {
         equip.hours = val;
         t.meter = val + ' hrs';
-        await persist('equipment', 'upsert', equip);
       }
+    } else if (!isNaN(val)) {
+      alert("New reading must be greater than current hours.");
+      return;
     }
   }
 
@@ -3474,51 +3477,50 @@ async function markComplete(taskId) {
   t.status = 'Completed';
   t.completed_at = new Date().toISOString();
 
-  // 3. Save to Database
+  // 3. Main Database Operations
   try {
-    await persist('tasks', 'upsert', t);
-
-    // SAFETY CHECK: Only log to audit if the function exists
-    if (typeof logAuditAction === 'function') {
-        logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
+    // A. Update Equipment hours if changed
+    if (equip && !isNaN(val)) {
+        await persist('equipment', 'upsert', equip);
+        
+        // B. Save to Meter History (Crucial for Adaptive Maintenance)
+        await window._mpdb.from('meter_history').insert({ 
+            equip_id: t.equipId, 
+            reading: val, 
+            status_at_reading: equip.status 
+        });
     }
 
-    // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
-    await runRecurrenceEngine();
-     try {
+    // C. Update Task to Completed
     await persist('tasks', 'upsert', t);
 
-    // RESET THE RECURRENCE CYCLE
+    // D. RESET THE RECURRENCE CYCLE (Early Completion logic)
     const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
-    if (rule) {
-        rule.last_generated_hours = equip.hours; // Set "Starting Line" to current hours
+    if (rule && equip) {
+        rule.last_generated_hours = equip.hours; // Sync local memory
         await window._mpdb.from('recurrence_rules').update({ 
             last_generated_hours: equip.hours 
         }).eq('id', rule.id);
     }
- 
-    // 5. UI Refresh
-    closeModal('detail-modal');
-    renderDashboard();
-    
-    // Ensure the task list also refreshes
-    if (typeof renderTasks === 'function') {
-        renderTasks();
+
+    // E. Audit Logging
+    if (typeof logAuditAction === 'function') {
+        logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
     }
+
+    // 4. Refresh Everything
+    await runRecurrenceEngine();
+    closeModal('detail-modal');
+    
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof renderTasks === 'function') renderTasks();
     
     showToast("Work Order Completed ✓");
+
   } catch (e) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
-
-await window._mpdb.from('meter_history').insert({ 
-    equip_id: equipId, 
-    reading: val, 
-    status_at_reading: e.status 
-  } catch(e) {}
-}
-});
 }
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
