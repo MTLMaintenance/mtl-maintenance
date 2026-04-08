@@ -4309,9 +4309,17 @@ const panelContainer = document.querySelector('.panel.active');
 updateUnreadBadge(); 
         },
         'tools': () => { 
-            if (typeof renderTools === 'function') renderTools(); 
-            if (typeof updateWishCount === 'function') updateWishCount(); 
-        }
+        // Force the sub-tabs to reset
+        const invV = document.getElementById('tool-inventory-view');
+        const wishV = document.getElementById('tool-wishlist-view');
+        const denV = document.getElementById('tool-denied-view');
+        if(invV) invV.style.display = 'block';
+        if(wishV) wishV.style.display = 'none';
+        if(denV) denV.style.display = 'none';
+        
+        renderTools(); 
+        updateWishCount(); 
+    }
     };
 
     if (renderMap[id]) {
