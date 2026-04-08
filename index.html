@@ -1034,41 +1034,34 @@ body.dark-mode .spec-row:hover {
     <div class="grid-2" id="wishlist-container"></div>
   </div>
  <div class="panel" id="panel-tools">
-        <div class="section-header">
-            <span class="section-title">Tool Crib & Wishlist</span>
-            <div style="display:flex; gap:8px">
-                <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
-                <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
-            </div>
+      <div class="section-header">
+        <span class="section-title">Tool Crib & Wishlist</span>
+        <div style="display:flex; gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
+            <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
         </div>
+      </div>
 
-        <div class="tab-bar">
-            <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
-            <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
-            <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
-        </div>
+      <div class="tab-bar">
+        <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
+        <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
+        <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
+      </div>
 
-        <div id="tool-inventory-view">
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-                    <tbody id="tools-table-body"></tbody>
-                </table>
-            </div>
+      <div id="tool-inventory-view">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
+            <tbody id="tools-table-body"></tbody>
+          </table>
         </div>
-        <div id="tool-wishlist-view" style="display:none"><div class="grid-2" id="wishlist-container"></div></div>
-        <div id="tool-denied-view" style="display:none"><div class="grid-2" id="denied-container"></div></div>
- </div>
-</div>
-  <!-- Denied View -->
-  <div id="tool-denied-view" style="display:none">
-    <div style="background:var(--danger-bg); color:var(--danger-text); padding:10px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:12px; border:1px solid var(--danger)">
-        <b>Note to Crew:</b> Please review this list before submitting new suggestions to avoid duplicates.
-    </div>
-    <div class="grid-2" id="denied-container"></div>
+      </div>
+      <div id="tool-wishlist-view" style="display:none"><div class="grid-2" id="wishlist-container"></div></div>
+      <div id="tool-denied-view" style="display:none"><div class="grid-2" id="denied-container"></div></div>
+    </div> <!-- This CLOSES panel-tools -->
+
   </div>
-</div>
-  
+    
   <!-- ADMIN -->
   <div class="panel" id="panel-admin">
     <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
