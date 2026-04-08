@@ -2890,6 +2890,15 @@ function openSupplierDetail(id){
     </div>`;
 
   openModal('detail-modal');
+getAdaptivePrediction(id).then(res => {
+    const el = document.getElementById(`adaptive-prediction-${id}`);
+    if(!el || !res) return;
+    if(res.status === 'PAUSED') el.innerHTML = `<div style="font-size:11px; color:var(--text3)">⏸ Maintenance paused while machine is Down</div>`;
+    else if(res.status === 'OVERDUE') el.innerHTML = `<div style="font-size:11px; color:var(--danger); font-weight:bold">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
+    else el.innerHTML = `
+        <div style="font-size:13px; font-weight:700; color:var(--accent-text)">~${res.hoursRemaining} Working Hours Left</div>
+        <div style="font-size:11px; color:var(--text2)">Est. Service: ${res.predictedDate.toLocaleDateString()}</div>`;
+});
 }
 
 function openDocDetail(id){
@@ -2906,16 +2915,7 @@ function openDocDetail(id){
     <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
-getAdaptivePrediction(id).then(res => {
-    const el = document.getElementById(`adaptive-prediction-${id}`);
-    if(!el || !res) return;
-    if(res.status === 'PAUSED') el.innerHTML = `<div class="badge bg">⏸ Maintenance Paused: Machine Down</div>`;
-    else if(res.status === 'OVERDUE') el.innerHTML = `<div class="badge bd">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
-    else el.innerHTML = `<div class="eq-widget" style="background:var(--accent-bg); border:1px solid var(--accent); padding:10px; border-radius:8px">
-        <div style="font-size:14px; font-weight:700; color:var(--accent-text)">~${res.hoursRemaining} Working Hours Remaining</div>
-        <div style="font-size:11px; color:var(--text2)">Est. Service: ${res.predictedDate.toLocaleDateString()} (${res.burnRate} hrs/day)</div>
-    </div>`;
-});
+
 // ============================================================
 // WO PARTS
 // ============================================================
