@@ -2210,7 +2210,7 @@ async function renderEquipListDash(){
 }
 function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
-  // Combine scheduled maintenance + open/overdue work orders
+  if(!el) return;
   const schedItems = state.schedules.filter(s=>{
     const [sy,sm,sd]=(s.date||'').split('-').map(Number);
     const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
@@ -2248,7 +2248,8 @@ function renderSchedDash(){
 }
 function renderRecentTasks(){
   const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
-  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
+ if(!container) return;
+    document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
   document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
     const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
     return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
@@ -4342,10 +4343,20 @@ updateUnreadBadge();
 }
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
-  renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
-  const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
-    if(document.getElementById('recent-obs-list'))renderRecentObservations();
-  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
+  console.log("Safe Render: Starting Dashboard...");
+  try {
+      updateMetrics();
+      renderAlerts();
+      renderEquipListDash(); // This now handles the predictions
+      renderRecentTasks();
+      
+      // These functions are now "Defensive" - they won't crash if the card is missing
+      renderSchedDash(); 
+      renderRecentObservations();
+      renderFleetHealthDash();
+  } catch (e) {
+      console.warn("Dashboard partially rendered:", e.message);
+  }
 }
 
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
