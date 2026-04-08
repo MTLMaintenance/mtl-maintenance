@@ -1024,16 +1024,8 @@ body.dark-mode .spec-row:hover {
     </div>
   </div>
 
-    <!-- THE NOTE TO CREW BOX -->
-    <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
-        <span style="font-size:18px">💡</span>
-        <div>
-          <b>Note to Crew:</b> Before suggesting a new tool, please review the <b>Denied History</b> tab to see if the item was previously rejected and why.
-        </div>
-    </div>
-    <div class="grid-2" id="wishlist-container"></div>
-  </div>
- <div class="panel" id="panel-tools">
+    <!-- THE ONLY TOOL CRIB PANEL -->
+    <div class="panel" id="panel-tools">
       <div class="section-header">
         <span class="section-title">Tool Crib & Wishlist</span>
         <div style="display:flex; gap:8px">
@@ -1048,6 +1040,7 @@ body.dark-mode .spec-row:hover {
         <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
       </div>
 
+      <!-- 1. Inventory View -->
       <div id="tool-inventory-view">
         <div class="table-wrap">
           <table>
@@ -1056,12 +1049,22 @@ body.dark-mode .spec-row:hover {
           </table>
         </div>
       </div>
-      <div id="tool-wishlist-view" style="display:none"><div class="grid-2" id="wishlist-container"></div></div>
-      <div id="tool-denied-view" style="display:none"><div class="grid-2" id="denied-container"></div></div>
-    </div> <!-- This CLOSES panel-tools -->
 
-  </div>
-    
+      <!-- 2. Wishlist View (Note box is now INSIDE here) -->
+      <div id="tool-wishlist-view" style="display:none">
+        <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
+            <span style="font-size:18px">💡</span>
+            <div><b>Note to Crew:</b> Before suggesting a new tool, please review the <u>Denied History</u> tab to see if the item was previously rejected.</div>
+        </div>
+        <div class="grid-2" id="wishlist-container"></div>
+      </div>
+
+      <!-- 3. Denied View -->
+      <div id="tool-denied-view" style="display:none">
+        <div class="grid-2" id="denied-container"></div>
+      </div>
+
+    </div> <!-- This CLOSES panel-tools -->
   <!-- ADMIN -->
   <div class="panel" id="panel-admin">
     <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
