@@ -3389,8 +3389,7 @@ function compressImage(dataUrl, maxWidth=800, quality=0.75) {
   });
 }
 
-// Override handlePhotoUpload to compress
-const _origHandlePhoto = handlePhotoUpload;
+
 async function handlePhotoUpload(input, key) {
   const files = Array.from(input.files);
   for(const file of files) {
@@ -3416,8 +3415,7 @@ function saveOfflineQueue() {
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
 
-// Override persist to queue when offline
-const _origPersist = persist;
+
 async function persist(table, action, record) {
   if(!navigator.onLine) {
     offlineQueue.push({ table, action, record, ts: Date.now() });
@@ -3715,10 +3713,6 @@ function checkBudgetAlerts() {
   });
   return alerts;
 }
-
-// ============================================================
-// PATCH: saveEquipment — add budget fields
-// ============================================================
 const _origSaveEquipment = saveEquipment;
 async function saveEquipment() {
   const name = document.getElementById('e-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
@@ -3747,23 +3741,6 @@ async function saveEquipment() {
   closeModal('equip-modal'); renderEquipmentTable(); updateMetrics();
   ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
-
-// ============================================================
-// PATCH: renderDashboard — add budget alerts + push check
-// ============================================================
-const _origRenderDashboard = renderDashboard;
-
-// ============================================================
-// PATCH: enterApp — request push, init push check
-// ============================================================
-const _origEnterApp = enterApp;
-
-// ============================================================
-// PATCH: renderEquipmentTable — add QR button for admin
-// ============================================================
-const _origRenderEquipmentTable = renderEquipmentTable;
-
-
 
 // ============================================================
 // PERMISSIONS
