@@ -3057,37 +3057,55 @@ async function saveSched(){
   ['s-name','s-date','s-dur','s-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
-async function saveRecurRule(){
-  const name=document.getElementById('r-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const type=document.getElementById('r-type').value;
-  const today=new Date(); today.setHours(0,0,0,0);
-  // Calculate first next_due
-  let next=new Date(today);
-  if(type==='calendar'){
-    const unit=document.getElementById('r-interval-unit').value;
-    const val=parseInt(document.getElementById('r-interval-val').value)||1;
-    if(unit==='day')   next.setDate(next.getDate()+val);
-    if(unit==='week')  next.setDate(next.getDate()+(val*7));
-    if(unit==='month') next.setMonth(next.getMonth()+val);
-    if(unit==='year')  next.setFullYear(next.getFullYear()+val);
-  }
-  const record={
-    id:uid(), name,
-    equip_id:       document.getElementById('r-equip').value,
-    type,
-    interval_unit:  document.getElementById('r-interval-unit')?.value||'month',
-    interval_value: parseInt(document.getElementById('r-interval-val')?.value)||1,
-    runtime_hours:  parseInt(document.getElementById('r-hours')?.value)||500,
-    priority:       document.getElementById('r-priority').value,
-    notes:          document.getElementById('r-notes').value,
-    next_due:       next.toISOString().slice(0,10),
-    active:         true,
-    template:       {assign: document.getElementById('r-assign').value},
+async function saveRecurRule() {
+  const name = document.getElementById('r-name').value.trim();
+  if (!name) { showToast("Rule name is required"); return; }
+
+  const type = document.getElementById('r-type').value;
+  const today = new Date().toISOString().split('T')[0];
+
+  // Prepare the data object
+  const record = {
+    id: uid(),
+    name: name,
+    equip_id: document.getElementById('r-equip').value,
+    type: type,
+    interval_unit: document.getElementById('r-interval-unit')?.value || 'month',
+    interval_value: parseInt(document.getElementById('r-interval-val')?.value) || 1,
+    runtime_hours: parseInt(document.getElementById('r-hours')?.value) || 500,
+    priority: document.getElementById('r-priority').value,
+    notes: document.getElementById('r-notes').value,
+    next_due: today, // Start checking immediately
+    active: true,
+    last_generated_hours: 0,
+    template: {
+        assign: document.getElementById('r-assign')?.value || ''
+    }
   };
-  state.recurrenceRules.push(record);
-  await persist('recurrence_rules','upsert',record);
-  closeModal('recur-modal'); renderCalendar();
-  ['r-name','r-notes','r-hours'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+
+  try {
+    const { error } = await window._mpdb.from('recurrence_rules').insert(record);
+    
+    if (error) {
+        console.error("Supabase Error:", error);
+        showToast("Database Error: " + error.message);
+        return;
+    }
+
+    state.recurrenceRules.push(record);
+    closeModal('recur-modal');
+    renderCalendar();
+    showToast("Recurrence rule saved ✓");
+    
+    // Log to Audit if function exists
+    if(typeof logAuditAction === 'function') {
+        logAuditAction("Created Rule", `${name} for ${equipName(record.equip_id)}`);
+    }
+
+  } catch (e) {
+    console.error("Connection error:", e);
+    showToast("Failed to save rule. Check console.");
+  }
 }
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
