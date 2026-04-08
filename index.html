@@ -6296,68 +6296,38 @@ function setZerkMode(mode) {
 
     }
 async function getAdaptivePrediction(equipId) {
-    console.log("Adaptive Engine: Starting for", equipId);
     const e = state.equipment.find(x => x.id === equipId);
-    
-    if (!e) { console.log("Adaptive Engine: Machine not found in state"); return null; }
-    if (e.status === 'Down' || e.status === 'In Service') {
-        console.log("Adaptive Engine: Machine is DOWN, pausing.");
-        return { status: 'PAUSED' };
-    }
+    if (!e || e.status === 'Down') return { status: 'PAUSED' };
 
-    // 1. Fetch History
-    console.log("Adaptive Engine: Fetching meter history...");
-    const { data: history, error } = await window._mpdb.from('meter_history')
+    const { data: history } = await window._mpdb.from('meter_history')
         .select('reading, created_at')
         .eq('equip_id', equipId)
         .order('created_at', { ascending: false }).limit(7);
 
-    if (error) { console.error("Adaptive Engine: DB Error", error); return null; }
-    if (!history || history.length < 2) {
-        console.log("Adaptive Engine: Not enough history (need at least 2 readings)");
-        return null;
-    }
+    if (!history || history.length < 2) return null;
 
-    // 2. Calculate Usage
     const newest = history[0];
     const oldest = history[history.length - 1];
-    const totalHoursUsed = Number(newest.reading) - Number(oldest.reading);
-    const daysPassed = (new Date(newest.created_at) - new Date(oldest.created_at)) / (1000 * 60 * 60 * 24);
     
-    console.log(`Adaptive Engine: Used ${totalHoursUsed} hrs in ${daysPassed.toFixed(2)} days`);
+    const totalHoursUsed = Number(newest.reading) - Number(oldest.reading);
+    
+    // Calculate time difference
+    const msDiff = new Date(newest.created_at) - new Date(oldest.created_at);
+    const daysPassed = msDiff / (1000 * 60 * 60 * 24);
+    
+    // If daysPassed is 0 (same day), we treat it as 1 day to avoid "0.00" error
+    const effectiveDays = daysPassed < 0.1 ? 0.1 : daysPassed;
+    const burnRate = totalHoursUsed / effectiveDays; 
 
-    if (daysPassed < 0.1 || totalHoursUsed <= 0) {
-        console.log("Adaptive Engine: Readings too close together or no usage trend.");
-        return null;
-    }
-    const burnRate = totalHoursUsed / daysPassed; 
+    const rule = state.recurrenceRules.find(r => r.equip_id === equipId && r.type.toLowerCase() === 'hours');
+    if (!rule) return null;
 
-    // 3. Find Rule (CRITICAL CHECK)
-    console.log("Adaptive Engine: Looking for 'hours' type rule in:", state.recurrenceRules);
-    const rule = state.recurrenceRules.find(r => 
-        r.equip_id === equipId && 
-        r.type.toLowerCase() === 'hours' // Check lowercase to be safe
-    );
-
-    if (!rule) {
-        console.log("Adaptive Engine: No 'hours' rule found for this machine ID.");
-        return null;
-    }
-
-    // 4. Calculate Threshold
     const nextServiceAt = Number(rule.last_generated_hours || 0) + Number(rule.runtime_hours || 500);
-    const hoursRemaining = nextServiceAt - Number(e.hours);
-    console.log(`Adaptive Engine: Next service at ${nextServiceAt}. Hours remaining: ${hoursRemaining}`);
+    const hoursRemaining = nextServiceAt - e.hours;
 
     if (hoursRemaining <= 0) return { status: 'OVERDUE', hours: hoursRemaining };
+    if (hoursRemaining > 40) return { status: 'HIDDEN' };
 
-    // 5. Threshold Check (The 40 Hour Rule)
-    if (hoursRemaining > 40) {
-        console.log("Adaptive Engine: " + hoursRemaining + " hrs left. Staying hidden (>40).");
-        return { status: 'HIDDEN' };
-    }
-
-    console.log("Adaptive Engine: SUCCESS. Within threshold.");
     return {
         status: 'ACTIVE',
         hoursRemaining: Math.round(hoursRemaining * 10) / 10,
@@ -6367,17 +6337,14 @@ async function getAdaptivePrediction(equipId) {
 }
 async function saveQuickLogHours() {
   const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value;
+  const date = document.getElementById('lh-date').value; // Get the date from the box
   const val = parseInt(document.getElementById('lh-val').value);
   
   const e = state.equipment.find(x => x.id === equipId);
-  if (!e) {
-      showToast("Error: Machine not found");
-      return;
-  }
+  if (!e) return;
 
   if (isNaN(val) || val < e.hours) {
-    alert("New reading must be a number and cannot be less than the current reading.");
+    alert("New reading must be a number and cannot be less than current.");
     return;
   }
 
@@ -6386,24 +6353,20 @@ async function saveQuickLogHours() {
   try {
     await persist('equipment', 'upsert', e);
 
+    // FIX: We now send the 'created_at' as the date you picked in the calendar box
     await window._mpdb.from('meter_history').insert({ 
         equip_id: equipId, 
         reading: val, 
-        status_at_reading: e.status 
+        status_at_reading: e.status,
+        created_at: new Date(date).toISOString() // <--- THIS is the fix
     });
 
     await runRecurrenceEngine();
     closeModal('log-hours-modal');
     renderDashboard();
-    
-    showToast(`Updated ${e.name} to ${val} hrs ✓`);
-    
-    if (typeof logAuditAction === 'function') {
-        logAuditAction("Updated Hours", `${e.name} set to ${val} hrs`);
-    }
+    showToast(`Updated ${e.name} ✓`);
   } catch (err) {
-    console.error("Save failed:", err);
-    showToast("Database error: Save failed");
+    console.error(err);
   }
 }
     
