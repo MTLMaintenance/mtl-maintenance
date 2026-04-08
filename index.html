@@ -4237,35 +4237,7 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 // --- THE MASTER SWITCHBOARD ---
 
 
-    // 4. Drawing Logic
-    const renderMap = {
-        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
-        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
-        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
-        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
-        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
-        'parts': typeof renderParts === 'function' ? renderParts : null,
-        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
-        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
-        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
-        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
-        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
-        'chat': () => { 
-    if (typeof renderChat === 'function') renderChat(); 
-    if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
-updateUnreadBadge(); 
-        },
-        'tools': () => { 
-            if (typeof renderTools === 'function') renderTools(); 
-            if (typeof updateWishCount === 'function') updateWishCount(); 
-        }
-    };
-
-    if (renderMap[id]) {
-        if (typeof renderMap[id] === 'function') {
-            renderMap[id]();
-        }
-    }
+   
 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 function renderDashboard(){
@@ -5730,35 +5702,31 @@ function insertMention(username, atPos) {
     input.focus();
 }
 function showPanel(id) {
-    // 1. Force the page to the top
+    // 1. Force scroll to top
     window.scrollTo(0, 0);
 
     // 2. Hide all panels
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(p => {
+    document.querySelectorAll('.panel').forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    // 3. Deactivate all buttons
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
-
-    // 4. Show the selected panel
-    const targetPanel = document.getElementById('panel-' + id);
-    if (targetPanel) {
-        targetPanel.style.display = 'block';
-        targetPanel.classList.add('active');
+    // 3. Show the target panel
+    const target = document.getElementById('panel-' + id);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
     }
 
-    // 5. Highlight the active button
-    navButtons.forEach(btn => {
+    // 4. Update nav buttons (Highlights the active one)
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 6. Define the Render Map (INSIDE THE FUNCTION)
+    // 5. The Render Map (The Switchboard)
     const renderMap = {
         'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
         'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
@@ -5774,6 +5742,7 @@ function showPanel(id) {
         'chat': () => { 
             if (typeof renderChat === 'function') renderChat(); 
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
+            if (typeof updateUnreadBadge === 'function') updateUnreadBadge(); 
         },
         'tools': () => { 
             if (typeof renderTools === 'function') renderTools(); 
@@ -5781,9 +5750,11 @@ function showPanel(id) {
         }
     };
 
-    // 7. Execute the function (STILL INSIDE THE FUNCTION)
+    // 6. Execute the function
     if (renderMap[id]) {
-        renderMap[id]();
+        if (typeof renderMap[id] === 'function') {
+            renderMap[id]();
+        }
     }
 }
 // Toggle the sidebar on mobile
