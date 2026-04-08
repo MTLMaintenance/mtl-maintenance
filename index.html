@@ -4240,31 +4240,7 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 
 // ── OVERRIDDEN showPanel ──────────────────────────────────────
 // --- THE MASTER SWITCHBOARD ---
-function showPanel(id) {
-    
-    window.scrollTo(0, 0);
-const panelContainer = document.querySelector('.panel.active');
-    if(panelContainer) panelContainer.scrollTop = 0;
-    // 1. Hide all panels
-    document.querySelectorAll('.panel').forEach(p => {
-        p.style.display = 'none';
-        p.classList.remove('active');
-    });
 
-    // 2. Show the target panel
-    const target = document.getElementById('panel-' + id);
-    if (target) {
-        target.style.display = 'block';
-        target.classList.add('active');
-    }
-
-    // 3. Update nav buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
-            btn.classList.add('active');
-        }
-    });
 
     // 4. Drawing Logic
     const renderMap = {
@@ -5758,59 +5734,61 @@ function insertMention(username, atPos) {
     hideMentionDropdown();
     input.focus();
 }
-// --- THE MASTER SWITCHBOARD ---
 function showPanel(id) {
+    // 1. Reset the view to the top (Fixes the "Sinking" issue)
     window.scrollTo(0, 0);
 
-    // 1. Hide all panels
-    document.querySelectorAll('.panel').forEach(p => {
+    // 2. Hide all pages
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    // 2. Show the target panel
-    const target = document.getElementById('panel-' + id);
-    if (target) {
-        target.style.display = 'block';
-        target.classList.add('active');
+    // 3. Deactivate all navigation buttons
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(b => b.classList.remove('active'));
+
+    // 4. Show the page you clicked
+    const targetPanel = document.getElementById('panel-' + id);
+    if (targetPanel) {
+        targetPanel.style.display = 'block';
+        targetPanel.classList.add('active');
     }
 
-    // 3. Update nav buttons (Highlights the one you clicked)
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
+    // 5. Highlight the correct button in the top bar
+    navButtons.forEach(btn => {
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 4. Create the Mapping (The Switchboard)
+    // 6. THE RENDER MAP (Tells the app what to draw)
     const renderMap = {
-        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
-        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
-        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
-        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
-        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
-        'parts': typeof renderParts === 'function' ? renderParts : null,
-        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
-        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
-        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
-        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
-        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
+        'dashboard': renderDashboard,
+        'calendar': renderCalendar,
+        'equipment': renderEquipmentTable,
+        'tasks': renderTasks,
+        'schedule': renderSchedule,
+        'parts': renderParts,
+        'suppliers': renderSuppliers,
+        'documents': renderDocuments,
+        'analytics': renderAnalytics,
+        'admin': renderAdminPanel,
+        'checklists': renderChecklistTemplates,
         'chat': () => { 
-            if (typeof renderChat === 'function') renderChat(); 
-            if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
+            renderChat(); 
+            if(typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
         'tools': () => { 
-            if (typeof renderTools === 'function') renderTools(); 
-            if (typeof updateWishCount === 'function') updateWishCount(); 
+            renderTools(); 
+            if(typeof updateWishCount === 'function') updateWishCount(); 
         }
     };
 
-    // 5. Run the function if it exists in our map
+    // 7. Run the drawing function
     if (renderMap[id]) {
         renderMap[id]();
-    } else {
-        console.warn("No render function found for panel ID:", id);
     }
 }
 // Toggle the sidebar on mobile
