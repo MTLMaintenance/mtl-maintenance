@@ -799,7 +799,11 @@ body.dark-mode .spec-row:hover {
     <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
     <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
-
+<div class="card" style="margin-top:12px">
+  <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
+  <!-- THIS ID MUST MATCH EXACTLY -->
+  <div id="sched-list-dash"></div> 
+</div>
   <div class="grid-2">
     <!-- Card 1: Machine Status + Adaptive Alerts -->
     <div class="card">
@@ -836,11 +840,7 @@ body.dark-mode .spec-row:hover {
       <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
     </div>
   </div>
-<div class="card" style="margin-top:12px">
-  <div class="card-header"><span class="card-title">Upcoming Maintenance</span></div>
-  <!-- THIS ID MUST MATCH EXACTLY -->
-  <div id="sched-list-dash"></div> 
-</div>
+
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
