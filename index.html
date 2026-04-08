@@ -2386,8 +2386,42 @@ function renderEquipmentTable(){
 }
 function getLastService(id){ const d=state.tasks.filter(t=>t.equipId===id&&t.status==='Completed'); return d.length?fmtDate(d.sort((a,b)=>new Date(b.due)-new Date(a.due))[0].due):'—'; }
 function getNextDue(id){ const o=state.tasks.filter(t=>t.equipId===id&&t.status!=='Completed'); if(!o.length)return'—'; const n=o.sort((a,b)=>new Date(a.due)-new Date(b.due))[0]; return `<span style="color:${isOverdue(n.due)?'var(--danger)':'inherit'}">${fmtDate(n.due)}</span>`; }
-async function deleteEquip(id){ if(!confirm('Delete this equipment?'))return; state.equipment=state.equipment.filter(e=>e.id!==id); await persist('equipment','delete',{id}); renderEquipmentTable(); updateMetrics(); }
+async function deleteEquip(id) {
+  const e = state.equipment.find(x => x.id === id);
+  if (!e) return;
 
+  if (!confirm(`Permanently delete ${e.name}? This will also delete all its Work Orders, History, and Zerk Maps.`)) {
+    return;
+  }
+
+  try {
+    // 1. Send delete command to Supabase
+    // Because of the SQL change in Step 1, this will now work!
+    const { error } = await window._mpdb
+      .from('equipment')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // 2. Remove from local memory
+    state.equipment = state.equipment.filter(eq => eq.id !== id);
+    
+    // 3. Update Audit Log
+    if (typeof logAuditAction === 'function') {
+        logAuditAction("Deleted Machine", `${e.name} removed from fleet`);
+    }
+
+    // 4. Refresh UI
+    renderEquipmentTable();
+    renderDashboard();
+    showToast(`${e.name} removed ✓`);
+    
+  } catch (e) {
+    console.error("Delete failed:", e);
+    showToast("Error: Could not delete machine. Check Console.");
+  }
+}
 // Custom fields
 let customFieldsTemp={};
 function renderCustomFields(){
