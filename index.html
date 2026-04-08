@@ -4400,74 +4400,75 @@ function openModal(id) {
 
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
-  // 1. Session & UI Setup
-  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  console.log("Entering app UI...");
+  
+  // 1. Toggle Visibility
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  const appContainer = document.getElementById('app');
+  const appHeader = document.getElementById('app-header');
+  
+  if(appContainer) appContainer.style.display = 'flex';
+  if(appHeader) appHeader.style.display = 'flex';
+  
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
-  // 2. Fetch Profile & Permissions
-  try {
-    const { data: profile } = await window._mpdb.from('profiles')
-      .select('group_tag, custom_permissions, role')
-      .eq('username', currentUser.username)
-      .single();
-    
-    if (profile) {
-      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
-      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
-      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
-        currentUser.role = profile.role;
-      }
-    }
-  } catch(e) { console.error("Error loading profile:", e); }
-
+  // 2. Build and Alphabetize Navigation
   const nav = document.getElementById('main-nav');
+  if (nav) {
+      nav.innerHTML = '';
+      const menuItems = [
+        { id: 'analytics', label: 'Analytics' },
+        { id: 'calendar', label: 'Calendar' },
+        { id: 'chat', label: 'Chat' },
+        { id: 'checklists', label: 'Checklists' },
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'documents', label: 'Docs' },
+        { id: 'equipment', label: 'Equipment' },
+        { id: 'parts', label: 'Parts' },
+        { id: 'schedule', label: 'Schedule' },
+        { id: 'suppliers', label: 'Suppliers' },
+        { id: 'tools', label: 'Tool Crib' },
+        { id: 'tasks', label: 'Work Orders' }
+      ].sort((a, b) => a.label.localeCompare(b.label));
 
-  // 3. Handle Navigation Permissions
-  if(!can('canViewReports')){
-    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
-    if(btn) btn.remove();
+      // Create buttons A-Z
+      menuItems.forEach(btn => {
+        // Skip if user doesn't have permission
+        if (btn.id === 'analytics' && !can('canViewReports')) return;
+        if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
+
+        const b = document.createElement('button');
+        b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
+        b.onclick = () => showPanel(btn.id);
+        b.innerHTML = btn.id === 'chat' ? 
+          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
+        nav.appendChild(b);
+      });
+
+      // Add Admin button last
+      if (currentUser.role === 'admin') {
+        const adminBtn = document.createElement('button');
+        adminBtn.className = 'nav-btn';
+        adminBtn.onclick = () => showPanel('admin');
+        adminBtn.textContent = 'Admin';
+        nav.appendChild(adminBtn);
+      }
   }
-  if(!can('canManageSuppliers')){
-    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
-    if(btn) btn.remove();
-  }
 
-  // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
-  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
-  
-  // Filter out Admin if it exists so it doesn't get sorted into the middle
-  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
-
-  // Sort remaining buttons A to Z
-  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
-
-  // Re-build the Nav bar
-  nav.innerHTML = '';
-  buttons.forEach(btn => nav.appendChild(btn));
-
-  // 5. Add Admin button last for Admin users
-  if(currentUser.role === 'admin' && !document.getElementById('admin-nav-btn')){
-      const adminBtn = document.createElement('button');
-      adminBtn.className = 'nav-btn';
-      adminBtn.id = 'admin-nav-btn';
-      adminBtn.textContent = 'Admin';
-      adminBtn.onclick = () => showPanel('admin');
-      nav.appendChild(adminBtn);
-  }
-
-  // 6. Final Initialization
+  // 3. Initialize Data & Logic
+  console.log("Loading system data...");
   await loadState();
   await runRecurrenceEngine();
-  applyUserGroupFilter();
-  renderDashboard();
+  
+  // Show dashboard immediately
+  showPanel('dashboard');
+  
   await initChat();
   
+  // 4. Set up Heartbeat
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
 }
-
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
 function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
