@@ -268,44 +268,7 @@ button[onclick="saveInvoice()"] {
   max-width: 180px !important;
 }
   
-.panel {
-  display: none !important;
-  height: 0;
-  overflow: hidden;
-}
-
-.panel.active {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important; /* Pushes content to the TOP */
-    align-items: center !important;
-    padding-top: 20px !important; /* Adjust this to sit nicely under your header */
-    min-height: 100vh;
-}
-
-#panel-tools {
-    display: none;
-    margin: 0 auto !important;
-    vertical-align: top !important;
-}
- #panel-tools.active {
-    display: flex !important;
-}   
-/* If anything is sitting at the very bottom of the body, hide it */
-body > .form-grid, body > .form-row {
-    display: none !important;
-}
-#tool-inventory-view, #tool-wishlist-view, #tool-denied-view {
-    width: 100%;
-    margin-top: 0 !important;
-}
-/* Ensure the App container doesn't have extra height pushing things down */
-#app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-    /* BUTTONS */
+/* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
 .btn-primary:hover{opacity:.88}
@@ -832,6 +795,7 @@ body.dark-mode .spec-row:hover {
   <div class="metrics">
     <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
     <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">This Month Cost</div><div class="metric-value" id="m-cost">$0</div></div>
     <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
     <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
@@ -1029,11 +993,7 @@ body.dark-mode .spec-row:hover {
       <div class="metric-card"><div class="metric-label">Parts Consumed</div><div class="metric-value" id="r-parts-used">0</div></div>
       <div class="metric-card"><div class="metric-label">Avg Health Score</div><div class="metric-value" id="r-health">—</div></div>
     </div>
-    <div class="metric-card">
-  <div class="metric-label">This Month Spend</div>
-  <div class="metric-value v-success" id="r-month-cost">$0</div>
-</div>
-      <div class="grid-2">
+    <div class="grid-2">
       <div class="card"><div class="card-header"><span class="card-title">Cost by Equipment</span></div><div id="cost-by-equip"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">Work Order Breakdown</span></div><div id="task-breakdown"></div></div>
     </div>
@@ -1045,7 +1005,50 @@ body.dark-mode .spec-row:hover {
 </div>
     </div>
   </div>
-    
+  <!-- THE ONLY TOOL CRIB PANEL -->
+<div class="panel" id="panel-tools">
+  <div class="section-header">
+    <span class="section-title">Tool Crib & Wishlist</span>
+    <div style="display:flex; gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
+        <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
+    <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
+    <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
+  </div>
+<!-- Inventory View (Clean again) -->
+  <div id="tool-inventory-view">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
+      <tbody id="tools-table-body"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Wishlist View (Note moved here) -->
+  <div id="tool-wishlist-view" style="display:none">
+    <!-- THE NOTE TO CREW BOX -->
+    <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
+        <span style="font-size:18px">💡</span>
+        <div>
+          <b>Note to Crew:</b> Before suggesting a new tool, please review the <b>Denied History</b> tab to see if the item was previously rejected and why.
+        </div>
+    </div>
+    <div class="grid-2" id="wishlist-container"></div>
+  </div>
+
+  <!-- Denied View -->
+  <div id="tool-denied-view" style="display:none">
+    <div style="background:var(--danger-bg); color:var(--danger-text); padding:10px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:12px; border:1px solid var(--danger)">
+        <b>Note to Crew:</b> Please review this list before submitting new suggestions to avoid duplicates.
+    </div>
+    <div class="grid-2" id="denied-container"></div>
+  </div>
+</div>
+  
   <!-- ADMIN -->
   <div class="panel" id="panel-admin">
     <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
@@ -1453,41 +1456,7 @@ body.dark-mode .spec-row:hover {
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit Request</button></div>
   </div>
 </div>
-<!-- 2. THE ONLY TOOL CRIB PANEL (Inside the App) -->
-    <div class="panel" id="panel-tools">
-      <div class="section-header">
-        <span class="section-title">Tool Crib & Wishlist</span>
-        <div style="display:flex; gap:8px">
-            <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
-            <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
-        </div>
-      </div>
 
-      <div class="tab-bar">
-        <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
-        <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
-        <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
-      </div>
-
-      <div id="tool-inventory-view">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-            <tbody id="tools-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-      <div id="tool-wishlist-view" style="display:none">
-        <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
-            <span style="font-size:18px">💡</span>
-            <div><b>Note to Crew:</b> Before suggesting a new tool, please review the <u>Denied History</u> tab to see if the item was previously rejected.</div>
-        </div>
-        <div class="grid-2" id="wishlist-container"></div>
-      </div>
-      <div id="tool-denied-view" style="display:none"><div class="grid-2" id="denied-container"></div></div>
-    </div> <!-- This CLOSES panel-tools -->
-
-  </div> <!-- THIS IS THE MASTER TAG. It CLOSES <div id="app"> -->
 <script>
 // ============================================================
 let zerkPinMode = 'dot'; // 'dot' or 'line'
@@ -2181,7 +2150,7 @@ function updateMetrics(){
 
   // 3. Update only what is present on the screen
   safeSet('m-total', state.equipment.length);
-  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString());
+  safeSet('m-cost', '$' + currentMonthCost.toLocaleString());
   safeSet('m-parts', lowCount);
   safeSet('m-open', openCount);
   safeSet('m-health', avgHealth + '%'); // This won't crash if you deleted the box
@@ -2669,13 +2638,7 @@ async function deleteDoc(id){ if(!confirm('Delete this document?'))return; state
 // ============================================================
 function renderAnalytics(){
   document.getElementById('task-breakdown').innerHTML='';
-  const currentMonthCost = state.monthlyCosts[state.monthlyCosts.length - 1] || 0;
-  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString());
-    const costs = state.monthlyCosts || [0,0,0,0];
-  const currentMonth = costs[costs.length - 1] || 0;
-  const monthEl = document.getElementById('r-month-cost');
-  if(monthEl) monthEl.textContent = '$' + currentMonth.toLocaleString();
- const completed=state.tasks.filter(t=>t.status==='Completed');
+  const completed=state.tasks.filter(t=>t.status==='Completed');
   const total=state.tasks.reduce((a,t)=>a+(t.cost||0),0);
   const avg=completed.length?Math.round(total/completed.length):0;
   const inv=state.parts.reduce((a,p)=>a+(p.qty*p.cost),0);
@@ -4322,17 +4285,9 @@ const panelContainer = document.querySelector('.panel.active');
 updateUnreadBadge(); 
         },
         'tools': () => { 
-        // Force the sub-tabs to reset
-        const invV = document.getElementById('tool-inventory-view');
-        const wishV = document.getElementById('tool-wishlist-view');
-        const denV = document.getElementById('tool-denied-view');
-        if(invV) invV.style.display = 'block';
-        if(wishV) wishV.style.display = 'none';
-        if(denV) denV.style.display = 'none';
-        
-        renderTools(); 
-        updateWishCount(); 
-    }
+            if (typeof renderTools === 'function') renderTools(); 
+            if (typeof updateWishCount === 'function') updateWishCount(); 
+        }
     };
 
     if (renderMap[id]) {
@@ -5194,34 +5149,30 @@ async function toggleToolStatus(id) {
   renderTools();
 }  
 function switchToolTab(view) {
-    // 1. Force the page to scroll to the top of the panel
-    const panel = document.getElementById('panel-tools');
-    if (panel) panel.scrollTop = 0;
-
-    // 2. Hide all internal views
+    // Hide all views
     document.getElementById('tool-inventory-view').style.display = 'none';
     document.getElementById('tool-wishlist-view').style.display = 'none';
     document.getElementById('tool-denied-view').style.display = 'none';
     
-    // 3. Reset all tab buttons
+    // Deactivate all tabs
     document.getElementById('tool-inv-tab').classList.remove('active');
     document.getElementById('tool-wish-tab').classList.remove('active');
     document.getElementById('tool-denied-tab').classList.remove('active');
 
-    // 4. Show the selected view AT THE TOP
-    const targetView = document.getElementById('tool-' + view + '-view');
-    if (targetView) {
-        targetView.style.display = 'block';
-        targetView.style.marginTop = '0';
+    // Show selected
+    if (view === 'inventory') {
+        document.getElementById('tool-inventory-view').style.display = 'block';
+        document.getElementById('tool-inv-tab').classList.add('active');
+        renderTools();
+    } else if (view === 'wishlist') {
+        document.getElementById('tool-wishlist-view').style.display = 'block';
+        document.getElementById('tool-wish-tab').classList.add('active');
+        renderWishlist();
+    } else if (view === 'denied') {
+        document.getElementById('tool-denied-view').style.display = 'block';
+        document.getElementById('tool-denied-tab').classList.add('active');
+        renderDeniedList();
     }
-    
-    const targetTab = document.getElementById('tool-' + view + '-tab');
-    if (targetTab) targetTab.classList.add('active');
-
-    // 5. Draw the data
-    if (view === 'inventory') renderTools();
-    if (view === 'wishlist') renderWishlist();
-    if (view === 'denied') renderDeniedList();
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
