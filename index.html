@@ -2906,6 +2906,7 @@ function openEquipDetail(id){
   renderMiniTimeline(id);
   renderQuickSpecs(id);
 }
+    
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
   if(!s) return;
@@ -6339,43 +6340,46 @@ async function getAdaptivePrediction(equipId) {
     };
 }
 async function saveQuickLogHours() {
-  // 1. Get the data from the popup boxes
   const equipId = document.getElementById('lh-equip-id').value;
   const date = document.getElementById('lh-date').value;
   const val = parseInt(document.getElementById('lh-val').value);
   
-  // 2. Find the machine in our list
   const e = state.equipment.find(x => x.id === equipId);
   if (!e) {
       showToast("Error: Machine not found");
       return;
   }
 
-  // 3. Validation
   if (isNaN(val) || val < e.hours) {
     alert("New reading must be a number and cannot be less than the current reading.");
     return;
   }
 
-  // 4. Update the local data
   e.hours = val;
 
   try {
-    // 5. Update the main Equipment table in Supabase
     await persist('equipment', 'upsert', e);
 
-    // 6. SAVE SNAPSHOT TO HISTORY (Fixed the 'id' error here)
     await window._mpdb.from('meter_history').insert({ 
-        equip_id: equipId, // Used 'equipId' to match the variable above
+        equip_id: equipId, 
         reading: val, 
         status_at_reading: e.status 
     });
 
-    // 7. Cleanup and Refresh
     await runRecurrenceEngine();
     closeModal('log-hours-modal');
     renderDashboard();
     
+    showToast(`Updated ${e.name} to ${val} hrs ✓`);
+    
+    if (typeof logAuditAction === 'function') {
+        logAuditAction("Updated Hours", `${e.name} set to ${val} hrs`);
+    }
+  } catch (err) {
+    console.error("Save failed:", err);
+    showToast("Database error: Save failed");
+  }
+}
     
 getAdaptivePrediction(id).then(res => {
     const el = document.getElementById(`adaptive-prediction-${id}`);
@@ -6403,9 +6407,7 @@ getAdaptivePrediction(id).then(res => {
             </div>`;
     }
   });
-  // ---------------------------
 
-}
     
     
 </script>
