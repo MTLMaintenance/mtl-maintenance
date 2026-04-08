@@ -6441,9 +6441,10 @@ async function getAdaptivePrediction(equipId) {
         burnRate: burnRate.toFixed(1)
     };
 }
-async function saveQuickLogHours() {
+
+    async function saveQuickLogHours() {
   const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value; // Get the date from the box
+  const date = document.getElementById('lh-date').value; 
   const val = parseInt(document.getElementById('lh-val').value);
   
   const e = state.equipment.find(x => x.id === equipId);
@@ -6458,43 +6459,40 @@ async function saveQuickLogHours() {
 
   try {
     await persist('equipment', 'upsert', e);
-
-    // FIX: We now send the 'created_at' as the date you picked in the calendar box
     await window._mpdb.from('meter_history').insert({ 
         equip_id: equipId, 
         reading: val, 
         status_at_reading: e.status,
-        created_at: new Date(date).toISOString() // <--- THIS is the fix
+        created_at: new Date(date).toISOString()
     });
 
     await runRecurrenceEngine();
     closeModal('log-hours-modal');
-    renderDashboard();
+    if (typeof renderDashboard === 'function') renderDashboard();
     showToast(`Updated ${e.name} ✓`);
   } catch (err) {
     console.error(err);
   }
 }
-    
 
 
     
     
 </script>
 <!-- Checklist Template Modal -->
-<div class="modal-backdrop" id="tpl-modal">
+<!-- Checklist Template Modal -->
+<div class="modal-backdrop" id="tpl-modal" style="display:none">
   <div class="modal" style="max-width:600px">
     <div class="modal-header"><span class="modal-title">Add Checklist Template</span><button class="modal-close" onclick="closeModal('tpl-modal')">✕</button></div>
     <div class="form-grid">
       <div class="form-group full"><label class="form-label">Template Name *</label><input class="form-input" id="tpl-name" placeholder="e.g. CAT 320 Daily Inspection"/></div>
       <div class="form-group"><label class="form-label">Equipment Model</label><input class="form-input" id="tpl-model" placeholder="e.g. CAT 320BLL"/></div>
       <div class="form-group"><label class="form-label">Equipment Type</label><input class="form-input" id="tpl-type" placeholder="e.g. Excavator"/></div>
-      <div class="form-group full"><label class="form-label">Checklist Items (one per line)</label><textarea class="form-textarea" id="tpl-items" style="min-height:200px" placeholder="Check engine oil level&#10;Check hydraulic fluid level&#10;..."></textarea></div>
+      <div class="form-group full"><label class="form-label">Checklist Items (one per line)</label><textarea class="form-textarea" id="tpl-items" style="min-height:200px" placeholder="Check oil level..."></textarea></div>
     </div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('tpl-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTpl()">Save Template</button></div>
   </div>
 </div>
-
 <!-- User Permissions Modal -->
 <div class="modal-backdrop" id="user-perms-modal">
   <div class="modal" style="max-width:500px">
