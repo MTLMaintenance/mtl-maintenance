@@ -2212,7 +2212,25 @@ async function renderEquipListDash(){
     }
   }
 }
-function renderSchedDash(){
+function renderRecentTasks(){
+  const container = document.getElementById('recent-tasks'); // Explicitly defined
+  if(!container) return;
+
+  const recent = [...state.tasks].sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0,5);
+  
+  const badgeEl = document.getElementById('task-count-badge');
+  if(badgeEl) badgeEl.textContent = state.tasks.length + ' work orders';
+
+  container.innerHTML = recent.map(t => `
+    <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
+      <div style="flex:1">
+        <div style="font-weight:500">${t.name}</div>
+        <div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}</div>
+      </div>
+      ${badge(t.status)}
+    </div>`).join('') || '<div style="color:var(--text3); padding:10px">No recent work orders</div>';
+}
+    function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
   if(!el) return;
   const schedItems = state.schedules.filter(s=>{
@@ -2250,18 +2268,7 @@ function renderSchedDash(){
     </div>`;
   }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
 }
-function renderRecentTasks(){
-  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
- if(!container) return;
-    document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
-  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
-    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
-    return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
-      <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
-      ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
-    </div>`;
-  }).join('');
-}
+
 function renderCostChart(){
   const costs = state.monthlyCosts; 
   const max = Math.max(...costs, 1);
@@ -3929,22 +3936,34 @@ function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group
 
 // ── RECENT OBS + FLEET HEALTH ────────────────────────────────
 function renderRecentObservations(){
-  const listEl=document.getElementById('recent-obs-list');const badgeEl=document.getElementById('obs-count-badge');if(!listEl)return;
-  let obs=[...(state.observations||[])];if(activeGroupFilter!=='all'){const ids=new Set(filteredEquipment(activeGroupFilter).map(e=>e.id));obs=obs.filter(o=>ids.has(o.equip_id));}
-  if(badgeEl)badgeEl.textContent=obs.length+' total';
-  if(!obs.length){listEl.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">No observations yet</div>';return;}
-  listEl.innerHTML=obs.slice(0,6).map(o=>`<div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
-    <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
-    <div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
-      <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author} · ${new Date(o.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
-    </div><span class="badge ${o.severity==='critical'?'bd':o.severity==='watch'?'bw':'bg'}">${o.severity}</span>
-  </div>`).join('');
-}
+  const container = document.getElementById('recent-obs-list'); // Explicitly defined
+  if(!container) return;
+
+  const obs = [...(state.observations || [])].slice(0, 6);
+  container.innerHTML = obs.map(o => `
+    <div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
+      <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
+        <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author}</div>
+      </div>
+    </div>`).join('') || '<div style="color:var(--text3); padding:10px">No observations yet</div>';
 function renderFleetHealthDash(){
-  const el=document.getElementById('fleet-health-dash');if(!el)return;
-  const equip=filteredEquipment(activeGroupFilter).slice(0,6);
-  if(!equip.length){el.innerHTML='<div style="color:var(--text2);font-size:13px">No equipment in this group</div>';return;}
-  el.innerHTML=equip.map(e=>{const score=calcHealth(e.id);return`<div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div><div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div></div><span style="font-size:12px;font-weight:600;color:${healthColor(score)};flex-shrink:0;margin-left:8px">${score}%</span></div>`;}).join('');
+  const container = document.getElementById('fleet-health-dash'); // Explicitly defined
+  if(!container) return;
+
+  const equip = filteredEquipment(activeGroupFilter).slice(0, 6);
+  container.innerHTML = equip.map(e => {
+    const score = calcHealth(e.id);
+    return `
+    <div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px">${e.name}</div>
+        <div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+      </div>
+      <span style="font-size:12px;font-weight:600;color:${healthColor(score)};margin-left:8px">${score}%</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--text3); padding:10px">No equipment in group</div>';
 }
 
 // ── PERMISSIONS ADMIN ────────────────────────────────────────
@@ -4351,15 +4370,15 @@ function renderDashboard(){
   try {
       updateMetrics();
       renderAlerts();
-      renderEquipListDash(); // This now handles the predictions
+      renderEquipListDash();
       renderRecentTasks();
-      
-      // These functions are now "Defensive" - they won't crash if the card is missing
-      renderSchedDash(); 
+      renderSchedDash();
       renderRecentObservations();
       renderFleetHealthDash();
+      console.log("Safe Render: Dashboard Complete ✓");
   } catch (e) {
-      console.warn("Dashboard partially rendered:", e.message);
+      console.error("Dashboard drawing crashed:", e);
+      // This is the line that was showing your error
   }
 }
 
