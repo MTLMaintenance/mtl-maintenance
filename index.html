@@ -3362,13 +3362,13 @@ async function markComplete(taskId) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
-}
+
 await window._mpdb.from('meter_history').insert({ 
     equip_id: equipId, 
     reading: val, 
     status_at_reading: e.status 
 });
-
+}
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
 const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
