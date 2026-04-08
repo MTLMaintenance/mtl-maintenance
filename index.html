@@ -2917,15 +2917,10 @@ function openEquipDetail(id){
   openModal('detail-modal');
   renderMiniTimeline(id);
   renderQuickSpecs(id);
-console.log("UI: Requesting prediction for", id);
-    getAdaptivePrediction(id).then(res => {
-    console.log("UI: Prediction result received:", res);
+
+  getAdaptivePrediction(id).then(res => {
     const el = document.getElementById(`adaptive-prediction-${id}`);
-    
-    if(!el) {
-        console.error("UI Error: Could not find div ID", `adaptive-prediction-${id}`);
-        return;
-    }
+    if(!el) return;
 
     if (!res || res.status === 'HIDDEN') {
         el.innerHTML = ''; 
