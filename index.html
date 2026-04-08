@@ -2804,7 +2804,8 @@ async function toggleCheck(taskId,idx){
   await persist('tasks','upsert',t); openTaskDetail(taskId);
 }
 function openEquipDetail(id){
-  const e = state.equipment.find(x => x.id === id); 
+
+    const e = state.equipment.find(x => x.id === id); 
   if(!e) return;
   
   window._currentDetailEquipId = id;
@@ -2813,6 +2814,7 @@ function openEquipDetail(id){
   document.getElementById('detail-title').textContent = e.name;
   
   document.getElementById('detail-body').innerHTML = `
+   
     <!-- BIG METRICS -->
     <div class="metrics" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
       <div class="metric-card" style="padding: 10px; text-align: center;">
@@ -6272,33 +6274,68 @@ function setZerkMode(mode) {
     }
 async function getAdaptivePrediction(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
-    if (!e || e.status === 'Down' || e.status === 'In Service') {
+    if (!e) return null;
+
+    // 1. Status Check
+    if (e.status === 'Down' || e.status === 'In Service') {
         return { status: 'PAUSED', reason: 'Machine is currently Down' };
     }
 
-    const { data: history } = await window._mpdb.from('meter_history')
-        .select('reading, created_at').eq('equip_id', equipId)
-        .order('created_at', { ascending: false }).limit(7);
+    // 2. Fetch history (Need at least 2 readings to see a trend)
+    const { data: history } = await window._mpdb
+        .from('meter_history')
+        .select('reading, created_at')
+        .eq('equip_id', equipId)
+        .order('created_at', { ascending: false })
+        .limit(7);
 
-    if (!history || history.length < 2) return null;
+    if (!history || history.length < 2) {
+        console.log("Adaptive Math: Not enough meter history yet.");
+        return null;
+    }
 
-    const totalHoursUsed = history[0].reading - history[history.length - 1].reading;
-    const totalDays = (new Date(history[0].created_at) - new Date(history[history.length-1].created_at)) / (1000*60*60*24);
-    
-    if (totalDays < 1 || totalHoursUsed <= 0) return null;
-    const burnRate = totalHoursUsed / totalDays; // e.g. 2.2 hrs/day
+    // 3. Calculate Burn Rate
+    const newest = history[0];
+    const oldest = history[history.length - 1];
+    const totalHoursUsed = newest.reading - oldest.reading;
+    const daysPassed = (new Date(newest.created_at) - new Date(oldest.created_at)) / (1000 * 60 * 60 * 24);
 
+    if (daysPassed < 0.5 || totalHoursUsed <= 0) {
+        console.log("Adaptive Math: Readings too close together or no hours added.");
+        return null;
+    }
+
+    const avgDailyHours = totalHoursUsed / daysPassed;
+
+    // 4. Find the Rule
     const rule = state.recurrenceRules.find(r => r.equip_id === equipId && r.type === 'hours');
-    if (!rule) return null;
+    if (!rule) {
+        console.log("Adaptive Math: No hour-based rule found for this machine.");
+        return null;
+    }
 
-    const hoursRemaining = (rule.last_generated_hours + rule.runtime_hours) - e.hours;
+    const nextServiceAt = (rule.last_generated_hours || 0) + (rule.runtime_hours || 500);
+    const hoursRemaining = nextServiceAt - e.hours;
+
     if (hoursRemaining <= 0) return { status: 'OVERDUE', hours: hoursRemaining };
+
+    // --- 40 HOUR THRESHOLD ---
+    // If there's more than 40 hours left, we don't show the box yet
+    if (hoursRemaining > 40) {
+        console.log("Adaptive Math: More than 40 hours left. Staying hidden.");
+        return { status: 'HIDDEN', hours: hoursRemaining };
+    }
+
+    // 5. Predict the Date
+    const daysUntilDue = hoursRemaining / avgDailyHours;
+    const predictedDate = new Date();
+    predictedDate.setDate(predictedDate.getDate() + daysUntilDue);
 
     return {
         status: 'ACTIVE',
         hoursRemaining: Math.round(hoursRemaining * 10) / 10,
-        predictedDate: new Date(Date.now() + (hoursRemaining / burnRate) * 86400000),
-        burnRate: burnRate.toFixed(1)
+        predictedDate: predictedDate,
+        burnRate: avgDailyHours.toFixed(1)
     };
 }
 async function saveQuickLogHours() {
@@ -6338,6 +6375,33 @@ async function saveQuickLogHours() {
   } catch (err) {
     showToast("Save failed");
   }
+ getAdaptivePrediction(id).then(res => {
+    const el = document.getElementById(`adaptive-prediction-${id}`);
+    if(!el) return;
+
+    // If more than 40 hours left or no data, keep the spot empty
+    if (!res || res.status === 'HIDDEN') {
+        el.innerHTML = ''; 
+        return;
+    }
+
+    if (res.status === 'PAUSED') {
+        el.innerHTML = `<div class="badge bg" style="width:100%; justify-content:center">⏸ Maintenance paused: Machine Down</div>`;
+    } 
+    else if (res.status === 'OVERDUE') {
+        el.innerHTML = `<div class="badge bd" style="width:100%; justify-content:center">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
+    }
+    else if (res.status === 'ACTIVE') {
+        el.innerHTML = `
+            <div style="background:var(--accent-bg); padding:12px; border-radius:8px; border:1px solid var(--accent); margin-top:10px">
+                <div style="font-size:11px; text-transform:uppercase; color:var(--accent-text); font-weight:700">Predictive Service Alert</div>
+                <div style="font-size:16px; font-weight:800; margin:4px 0">~${res.hoursRemaining} Hours Left</div>
+                <div style="font-size:11px; color:var(--text2)">
+                    Est. Due: <b>${res.predictedDate.toLocaleDateString()}</b> (${res.burnRate} hrs/day usage)
+                </div>
+            </div>`;
+    }
+  });
 }
     
 </script>
