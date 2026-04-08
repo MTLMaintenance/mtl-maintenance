@@ -269,12 +269,20 @@ button[onclick="saveInvoice()"] {
 }
   
 .panel {
-  display: none;
-  width: 100%;
+  display: none !important;
+  height: 0;
+  overflow: hidden;
 }
 
 .panel.active {
   display: block !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* If anything is sitting at the very bottom of the body, hide it */
+body > .form-grid, body > .form-row {
+    display: none !important;
 }
 
 /* Ensure the App container doesn't have extra height pushing things down */
