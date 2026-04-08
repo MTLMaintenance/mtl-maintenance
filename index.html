@@ -1822,24 +1822,20 @@ async function stopQRScanner() {
   if(reader) reader.innerHTML = ""; 
 }
 function quickLogHours(equipId) {
-  
   const e = state.equipment.find(x => x.id === equipId);
   if (!e) return;
 
-  const modal = document.getElementById('log-hours-modal');
+  // Set up the modal fields
   const idField = document.getElementById('lh-equip-id');
+  const dateField = document.getElementById('lh-date');
+  const valField = document.getElementById('lh-val');
   
-  if (!modal || !idField) {
-      console.error("Log Hours Modal HTML is missing from the bottom of the file!");
-      showToast("System Error: Modal not found");
-      return;
-  }
-
-  // Setup the modal fields
-  idField.value = equipId;
-  document.getElementById('lh-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('lh-val').value = e.hours;
-  document.getElementById('lh-current-display').textContent = `Currently: ${e.hours.toLocaleString()} hrs`;
+  if (idField) idField.value = equipId;
+  if (dateField) dateField.value = new Date().toISOString().split('T')[0];
+  if (valField) valField.value = e.hours;
+  
+  const display = document.getElementById('lh-current-display');
+  if (display) display.textContent = `Current: ${e.hours.toLocaleString()} hrs`;
   
   openModal('log-hours-modal');
 }
@@ -2807,6 +2803,7 @@ function openEquipDetail(id){
 
     <!-- 1. OVERVIEW VIEW -->
     <div id="eq-overview" class="tab-content">
+      <div id="adaptive-prediction-${e.id}" style="margin-top:10px; border-top: 1px dashed var(--border); padding-top: 8px;"></div>
       <div class="eq-dash-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;">
         <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
           <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Recent Activity</div>
@@ -2909,7 +2906,16 @@ function openDocDetail(id){
     <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
-
+getAdaptivePrediction(id).then(res => {
+    const el = document.getElementById(`adaptive-prediction-${id}`);
+    if(!el || !res) return;
+    if(res.status === 'PAUSED') el.innerHTML = `<div class="badge bg">⏸ Maintenance Paused: Machine Down</div>`;
+    else if(res.status === 'OVERDUE') el.innerHTML = `<div class="badge bd">🚨 SERVICE OVERDUE (${Math.abs(res.hours)} hrs)</div>`;
+    else el.innerHTML = `<div class="eq-widget" style="background:var(--accent-bg); border:1px solid var(--accent); padding:10px; border-radius:8px">
+        <div style="font-size:14px; font-weight:700; color:var(--accent-text)">~${res.hoursRemaining} Working Hours Remaining</div>
+        <div style="font-size:11px; color:var(--text2)">Est. Service: ${res.predictedDate.toLocaleDateString()} (${res.burnRate} hrs/day)</div>
+    </div>`;
+});
 // ============================================================
 // WO PARTS
 // ============================================================
@@ -3357,12 +3363,12 @@ async function markComplete(taskId) {
     showToast("Failed to save. Check connection.");
   }
 }
+await window._mpdb.from('meter_history').insert({ 
+    equip_id: equipId, 
+    reading: val, 
+    status_at_reading: e.status 
+});
 
-// ============================================================
-// SIGN OFF & COMPLETE
-// ============================================================
-
-// ============================================================
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
 const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
@@ -6206,7 +6212,78 @@ function setZerkMode(mode) {
             <div class="doc-info"><b>${d.name}</b><div style="font-size:11px">${d.type}</div></div>
             ${d.file_data ? `<button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>` : ''}
         </div>`).join('') || '<div style="color:var(--text3); padding:20px">No documents found</div>';
+
+    }
+async function getAdaptivePrediction(equipId) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e || e.status === 'Down' || e.status === 'In Service') {
+        return { status: 'PAUSED', reason: 'Machine is currently Down' };
+    }
+
+    const { data: history } = await window._mpdb.from('meter_history')
+        .select('reading, created_at').eq('equip_id', equipId)
+        .order('created_at', { ascending: false }).limit(7);
+
+    if (!history || history.length < 2) return null;
+
+    const totalHoursUsed = history[0].reading - history[history.length - 1].reading;
+    const totalDays = (new Date(history[0].created_at) - new Date(history[history.length-1].created_at)) / (1000*60*60*24);
+    
+    if (totalDays < 1 || totalHoursUsed <= 0) return null;
+    const burnRate = totalHoursUsed / totalDays; // e.g. 2.2 hrs/day
+
+    const rule = state.recurrenceRules.find(r => r.equip_id === equipId && r.type === 'hours');
+    if (!rule) return null;
+
+    const hoursRemaining = (rule.last_generated_hours + rule.runtime_hours) - e.hours;
+    if (hoursRemaining <= 0) return { status: 'OVERDUE', hours: hoursRemaining };
+
+    return {
+        status: 'ACTIVE',
+        hoursRemaining: Math.round(hoursRemaining * 10) / 10,
+        predictedDate: new Date(Date.now() + (hoursRemaining / burnRate) * 86400000),
+        burnRate: burnRate.toFixed(1)
+    };
 }
+async function saveQuickLogHours() {
+  const equipId = document.getElementById('lh-equip-id').value;
+  const date = document.getElementById('lh-date').value;
+  const val = parseInt(document.getElementById('lh-val').value);
+  
+  const e = state.equipment.find(x => x.id === equipId);
+  if (!e) return;
+
+  if (isNaN(val) || val < e.hours) {
+    alert("Reading must be a number and cannot be less than current.");
+    return;
+  }
+
+  e.hours = val;
+
+  try {
+    // 1. Update the main Equipment table
+    await persist('equipment', 'upsert', e);
+
+    // 2. Save a snapshot to the History table for the "Adaptive" math
+    await window._mpdb.from('meter_history').insert({ 
+        equip_id: equipId, 
+        reading: val, 
+        status_at_reading: e.status 
+    });
+
+    await runRecurrenceEngine();
+    closeModal('log-hours-modal');
+    renderDashboard();
+    showToast(`Updated ${e.name} ✓`);
+    
+    if (typeof logAuditAction === 'function') {
+        logAuditAction("Updated Hours", `${e.name} to ${val} hrs`);
+    }
+  } catch (err) {
+    showToast("Save failed");
+  }
+}
+    
 </script>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal">
