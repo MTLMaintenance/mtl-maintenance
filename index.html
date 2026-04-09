@@ -6,7 +6,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-#panel-calendar {
+/* --- CALENDAR BELLS & WHISTLES --- */
+.cal-event {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Event Colors */
+.cal-event.work-order { background: var(--accent-bg); color: var(--accent-text); border: 1px solid rgba(24, 95, 165, 0.2); }
+.cal-event.completed { background: var(--success-bg); color: var(--success-text); opacity: 0.8; }
+.cal-event.overdue { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger); }
+.cal-event.forecast { background: #FAEEDA; color: #854F0B; border: 1px dashed #BA7517; font-style: italic; }
+.cal-event.scheduled { background: #eee; color: #666; border: 1px solid #ddd; }
+
+.cal-day:hover {
+    background: rgba(255, 255, 255, 1) !important;
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+    #panel-calendar {
     display: none;
 }
 
@@ -2367,47 +2391,76 @@ function renderCostChart(){
 // ============================================================
 // CALENDAR
 // ============================================================
-
-function renderCalendar() {
-    console.log("Calendar: Manual Jumpstart initiated.");
+async function renderCalendar() {
     const year = calDate.getFullYear();
     const month = calDate.getMonth();
     
     const titleEl = document.getElementById('cal-title');
-    const headersEl = document.getElementById('cal-headers');
     const daysEl = document.getElementById('cal-days');
+    const headersEl = document.getElementById('cal-headers');
+    if(!titleEl || !daysEl || !headersEl) return;
 
-    if(!titleEl || !headersEl || !daysEl) return;
+    titleEl.textContent = `${MONTHS[month]} ${year}`;
+    
+    // 1. Set Headers
+    headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+        .map(d => `<div class="cal-header" style="font-weight:600; padding:5px">${d}</div>`).join('');
+    
+    // 2. Pre-Calculate Adaptive Forecasts
+    // We do this here so we can place the orange boxes in the loop below
+    for (let e of state.equipment) {
+        try {
+            const pred = await getAdaptivePrediction(e.id);
+            // Only store if it's within the 40hr threshold we set
+            e._predictedDate = (pred && pred.status === 'ACTIVE') ? 
+                pred.predictedDate.toISOString().split('T')[0] : null;
+        } catch(err) { e._predictedDate = null; }
+    }
 
-    // 1. Setup Headers
-    titleEl.textContent = MONTHS[month] + " " + year;
-    const daysArr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    headersEl.innerHTML = daysArr.map(d => `<div class="cal-header" style="font-weight:bold; color:#666">${d}</div>`).join('');
-
-    // 2. Simple Date Logic
+    // 3. Month Calculation
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrev = new Date(year, month, 0).getDate();
     
-    let html = '';
-    // Padding
-    for (let i = 0; i < firstDay; i++) {
-        html += `<div class="cal-day" style="background:#f9f9f3; opacity:0.5; border:1px solid #eee"></div>`;
+    let cells = '';
+
+    // 4. Padding (Previous Month)
+    for(let i = firstDay - 1; i >= 0; i--){
+        cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
     }
-    // Days
-    for (let d = 1; d <= daysInMonth; d++) {
+
+    // 5. Current Month Days
+    for(let d = 1; d <= daysInMonth; d++){
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
+        
+        // Find Work Orders
+        const dayTasks = state.tasks.filter(t => t.due === dateStr);
+        // Find Scheduled Items
+        const dayScheds = state.schedules.filter(s => s.date === dateStr);
+        // Find Adaptive Forecasts
+        const dayForecasts = state.equipment.filter(e => e._predictedDate === dateStr);
+        
+        const eventsHtml = [
+            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
+            ...dayScheds.map(s => `<div class="cal-event scheduled">${s.name}</div>`),
+            ...dayForecasts.map(e => `<div class="cal-event forecast">📈 Forecast: ${e.name}</div>`)
+        ].join('');
 
-        html += `
-            <div class="cal-day" style="min-height:90px; border:1px solid #ddd; background:${isToday ? '#fff8e1' : '#fff'}; padding:5px; color:#000" onclick="alert('You clicked day ${d}')">
-                <div style="font-weight:bold; margin-bottom:5px">${d}</div>
-                <div id="events-${dateStr}"></div>
+        cells += `
+            <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')">
+                <div class="cal-day-num">${d}</div>
+                <div class="cal-event-container">${eventsHtml}</div>
             </div>`;
     }
 
-    daysEl.innerHTML = html;
-    console.log("Calendar: Jumpstart complete ✓");
+    daysEl.innerHTML = cells;
+
+    // 6. Refresh Sidebars
+    renderMonthSchedList();
+    renderRecurList();
 }
+
 async function fillAdaptiveCalendarMarkers(year, month) {
     for (let e of state.equipment) {
         try {
@@ -2441,16 +2494,23 @@ async function fillAdaptiveForecasts() {
         }
     }
 }
-
 function renderMonthSchedList() {
     const list = document.getElementById('sched-month-list');
     if(!list) return;
-    list.innerHTML = state.schedules.map(s => `
-        <div class="parts-row">
-            <div style="flex:1"><b>${s.name}</b><div style="font-size:11px">${fmtDate(s.date)}</div></div>
+    
+    // Sort by date
+    const sorted = [...state.schedules].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    list.innerHTML = sorted.map(s => `
+        <div class="sched-item" style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
+            <div class="sched-body">
+                <div style="font-weight:600; font-size:13px">${s.name}</div>
+                <div style="font-size:11px; color:var(--text3)">${equipName(s.equipId)} · ${fmtDate(s.date)}</div>
+            </div>
             <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
-        </div>`).join('') || 'No tasks';
+        </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
+
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
@@ -2459,25 +2519,25 @@ function calDayClick(dateStr) {
     if(input) input.value = dateStr;
     openModal('sched-modal');
 }
-function renderRecurList(){
-  document.getElementById('recur-list').innerHTML=state.recurrenceRules.map(r=>
-    `<div class="recur-item">
-      <div style="flex:1">
-        <div style="font-weight:500">${r.name}</div>
-        <div style="font-size:11px;color:var(--text2)">${equipName(r.equip_id)} · ${r.type==='hours'?'Every '+r.runtime_hours+' hrs':'Every '+r.interval_value+' '+r.interval_unit+'(s)'}</div>
-        ${r.next_due?`<div style="font-size:11px;color:var(--text3)">Next: ${fmtDate(r.next_due)}</div>`:''}
-      </div>
-      <span class="badge ${r.active?'bs':'bg'}">${r.active?'Active':'Paused'}</span>
-      <button class="btn btn-danger" onclick="deleteRecurRule('${r.id}')">✕</button>
-    </div>`
-  ).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No recurrence rules set up</div>';
-}
+
 function toggleRecurType(){
   const t=document.getElementById('r-type').value;
   document.getElementById('r-interval-group').style.display=t==='calendar'?'block':'none';
   document.getElementById('r-hours-group').style.display=t==='hours'?'block':'none';
 }
-
+function renderRecurList() {
+    const list = document.getElementById('recur-list');
+    if(!list) return;
+    
+    list.innerHTML = state.recurrenceRules.map(r => `
+        <div class="recur-item" style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
+            <div style="flex:1">
+                <div style="font-weight:600; font-size:13px">${r.name}</div>
+                <div style="font-size:11px; color:var(--text3)">${equipName(r.equip_id)} · Every ${r.runtime_hours || r.interval_value} ${r.type === 'hours' ? 'hrs' : r.interval_unit}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteRecurRule('${r.id}')">✕</button>
+        </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No rules set.</div>';
+}
 // ============================================================
 // EQUIPMENT
 // ============================================================
@@ -5815,66 +5875,101 @@ function insertMention(username, atPos) {
 }
 // --- THE MASTER SWITCHBOARD ---
 async function showPanel(id) {
+    // 1. Reset view to top of page
     window.scrollTo(0, 0);
 
-    // 1. Hide all panels
+    // 2. Hide all panels and deactivate nav buttons
     const panels = document.querySelectorAll('.panel');
     panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    // 2. Show the target panel
-const targetPanel = document.getElementById('panel-' + id);
-if (targetPanel) {
-    targetPanel.style.display = 'block';
-    targetPanel.classList.add('active'); // <--- THIS MUST BE HERE
-}
-
-    // 3. Update nav buttons (Highlights the one you clicked)
     const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(b => b.classList.remove('active'));
+
+    // 3. Show the requested panel
+    const targetPanel = document.getElementById('panel-' + id);
+    if (targetPanel) {
+        targetPanel.style.display = 'block';
+        targetPanel.classList.add('active');
+    } else {
+        console.warn("Panel not found:", 'panel-' + id);
+    }
+
+    // 4. Highlight the clicked button
     navButtons.forEach(btn => {
-        btn.classList.remove('active');
+        // This checks if the button's onclick contains the panel ID
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 4. Create the Mapping (THE { BRACKET WAS ADDED HERE)
+    // 5. THE SWITCHBOARD (Logic for every tab)
     const renderMap = {
-        'dashboard': renderDashboard,
-       'calendar': () => { 
-    renderCalendar(); // This builds the 1-31 grid
-    if(typeof renderMonthSchedList === 'function') renderMonthSchedList(); // This builds the list
-},
-        'equipment': renderEquipmentTable,
-        'tasks': renderTasks,
-        'schedule': renderSchedule,
-        'parts': renderParts,
-        'suppliers': renderSuppliers,
-        'documents': renderDocuments,
-        'analytics': renderAnalytics,
-        'admin': renderAdminPanel,
-        'checklists': renderChecklistTemplates,
+        'dashboard': async () => {
+            if (typeof renderDashboard === 'function') await renderDashboard();
+        },
+        'calendar': async () => {
+            if (typeof renderCalendar === 'function') await renderCalendar();
+        },
+        'equipment': () => {
+            if (typeof renderEquipmentTable === 'function') renderEquipmentTable();
+        },
+        'tasks': () => {
+            if (typeof renderTasks === 'function') renderTasks();
+        },
+        'schedule': () => {
+            if (typeof renderSchedule === 'function') renderSchedule();
+        },
+        'parts': () => {
+            if (typeof renderParts === 'function') renderParts();
+        },
+        'suppliers': () => {
+            if (typeof renderSuppliers === 'function') renderSuppliers();
+        },
+        'documents': () => {
+            if (typeof renderDocuments === 'function') renderDocuments();
+        },
+        'analytics': () => {
+            if (typeof renderAnalytics === 'function') renderAnalytics();
+        },
+        'admin': () => {
+            if (typeof renderAdminPanel === 'function') renderAdminPanel();
+        },
+        'checklists': () => {
+            if (typeof renderChecklistTemplates === 'function') renderChecklistTemplates();
+        },
         'chat': () => { 
             if (typeof renderChat === 'function') renderChat(); 
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
         'tools': () => { 
+            // This forces the Tool Crib to reset to the 'Inventory' tab when opened
+            if (typeof switchToolTab === 'function') switchToolTab('inventory');
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
         }
-    }; // This closes the map
+    };
 
-    // 5. Run the function if it exists in our map
+    // 6. Execute the render if it exists
     if (renderMap[id]) {
-        // We use await to handle the async calendar and dashboard logic
-        await renderMap[id](); 
-    } else {
-        console.warn("No render function found for panel ID:", id);
+        await renderMap[id]();
     }
 }
 
+// Ensure the Mobile Chat Auto-Close logic is placed OUTSIDE of showPanel
+const _baseSwitchChannel = typeof switchChannel === 'function' ? switchChannel : null;
+if (_baseSwitchChannel) {
+    switchChannel = function(channel, btn) {
+        _baseSwitchChannel(channel, btn);
+        // AUTO-CLOSE SIDEBAR ON MOBILE
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('chat-sidebar');
+            if (sidebar) sidebar.classList.remove('open');
+        }
+    };
+}
 // Update your existing switchChannel to close the menu on mobile
 const _baseSwitchChannel = switchChannel; // Keep your old logic
 switchChannel = function(channel, btn) {
