@@ -1066,7 +1066,18 @@ body.dark-mode .spec-row:hover {
       <div class="card"><div class="card-header"><span class="card-title">Cost by Equipment</span></div><div id="cost-by-equip"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">Work Order Breakdown</span></div><div id="task-breakdown"></div></div>
     </div>
-    <div class="grid-2" style="margin-top:12px">
+    <div class="metric-card">
+  <div class="metric-label">Avg Fleet Uptime</div>
+  <div class="metric-value v-success" id="r-uptime">100%</div>
+  <div class="metric-sub">Last 30 Days</div>
+</div>
+      <div class="card" style="margin-top:12px">
+  <div class="card-header"><span class="card-title">Downtime by Machine (Hours)</span></div>
+  <div id="downtime-chart" style="display:flex; align-items:flex-end; gap:8px; height:120px">
+     <!-- Bars will load here -->
+  </div>
+</div>
+      <div class="grid-2" style="margin-top:12px">
       <div class="card"><div class="card-header"><span class="card-title">Equipment Health Scores</span></div><div id="health-scores"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">Top Parts Consumed</span></div><div id="parts-consumed"></div></div>
     </div>
@@ -2808,6 +2819,51 @@ function renderAnalytics(){
     <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(qty/mp*100)}%;background:#BA7517"></div></div>
     <div style="width:30px;text-align:right;font-weight:600">${qty}</div></div>`
   ).join('')||'<div style="color:var(--text3);font-size:13px">No parts consumed yet</div>';
+async function renderDowntimeAnalytics() {
+    // 1. Fetch all downtime logs for the last 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+    const { data: logs } = await window._mpdb
+        .from('downtime_logs')
+        .select('*')
+        .gte('created_at', thirtyDaysAgo);
+
+    if (!logs) return;
+
+    // 2. Calculate Uptime %
+    // (Total possible minutes in 30 days for the whole fleet)
+    const totalFleetMinutes = state.equipment.length * 30 * 24 * 60;
+    const totalDownMinutes = logs.reduce((sum, l) => sum + (l.total_minutes || 0), 0);
+    const uptime = totalFleetMinutes > 0 ? 
+        Math.max(0, Math.min(100, ((totalFleetMinutes - totalDownMinutes) / totalFleetMinutes) * 100)) : 100;
+
+    const uptimeEl = document.getElementById('r-uptime');
+    if(uptimeEl) {
+        uptimeEl.textContent = uptime.toFixed(1) + '%';
+        uptimeEl.className = 'metric-value ' + (uptime > 95 ? 'v-success' : uptime > 85 ? 'v-warning' : 'v-danger');
+    }
+
+    // 3. Build the Downtime Chart
+    const chart = document.getElementById('downtime-chart');
+    if(!chart) return;
+
+    // Group by machine
+    const machineMap = {};
+    logs.forEach(l => {
+        const name = equipName(l.equip_id);
+        machineMap[name] = (machineMap[name] || 0) + (l.total_minutes / 60); // Convert to hours
+    });
+
+    const entries = Object.entries(machineMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    const maxH = Math.max(...Object.values(machineMap), 1);
+
+    chart.innerHTML = entries.map(([name, hrs]) => `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px">
+            <div style="font-size:10px; font-weight:700">${hrs.toFixed(1)}h</div>
+            <div style="width:100%; background:#E24B4A; height:${Math.round(hrs/maxH * 80)}px; border-radius:3px 3px 0 0"></div>
+            <div style="font-size:9px; color:var(--text2); text-align:center; white-space:nowrap; overflow:hidden; width:100%">${name}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:20px">No downtime recorded</div>';
+}
 }
 
 // ============================================================
@@ -3788,9 +3844,58 @@ async function logStatusChange(equipId,oldStatus,newStatus){
   else if(oldStatus==='Down'){const open=state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);if(open){open.endedAt=now;open.status='resolved';open.downtimeMins=Math.round((new Date(now)-new Date(open.startedAt))/60000);showToast('Downtime: '+formatDuration(open.downtimeMins));}}
   try{localStorage.setItem('mp_downtime',JSON.stringify(state.downtimeLog));}catch(e){}
 }
-async function updateEquipStatus(equipId,newStatus){const equip=state.equipment.find(e=>e.id===equipId);if(!equip)return;const old=equip.status;equip.status=newStatus;await logStatusChange(equipId,old,newStatus);await persist('equipment','upsert',equip);renderEquipmentTable();renderDashboard();}
+async function updateEquipStatus(equipId, newStatus) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
 
-// ── MACHINE HISTORY REPORT ───────────────────────────────────
+    const oldStatus = e.status;
+    e.status = newStatus;
+    const now = new Date().toISOString();
+
+    try {
+        // 1. Save the status change to the main equipment table
+        await persist('equipment', 'upsert', e);
+
+        // 2. DOWNTIME TRACKING LOGIC
+        if (newStatus === 'Down') {
+            // Started Downtime: Create a new log entry
+            await window._mpdb.from('downtime_logs').insert({
+                equip_id: equipId,
+                start_time: now,
+                reason: prompt("Brief reason for downtime? (e.g., Hydraulic leak, waiting for parts)") || "Unspecified"
+            });
+            showToast(`${e.name} marked as DOWN`);
+        } 
+        else if (oldStatus === 'Down' && (newStatus === 'Operational' || newStatus === 'Standby')) {
+            // Ended Downtime: Find the open log and close it
+            const { data: openLogs } = await window._mpdb
+                .from('downtime_logs')
+                .select('*')
+                .eq('equip_id', equipId)
+                .is('end_time', null)
+                .order('start_time', { ascending: false });
+
+            if (openLogs && openLogs.length > 0) {
+                const log = openLogs[0];
+                const start = new Date(log.start_time);
+                const end = new Date(now);
+                const diffMinutes = Math.round((end - start) / 60000);
+
+                await window._mpdb.from('downtime_logs').update({
+                    end_time: now,
+                    total_minutes: diffMinutes
+                }).eq('id', log.id);
+                
+                showToast(`Downtime ended: ${formatDuration(diffMinutes)}`);
+            }
+        }
+
+        renderEquipmentTable();
+        renderDashboard();
+    } catch (err) {
+        showToast("Status update failed");
+    }
+}
 function printMachineHistory(equipId){
   const e=state.equipment.find(x=>x.id===equipId);if(!e)return;
   const tasks=state.tasks.filter(t=>t.equipId===equipId).sort((a,b)=>new Date(b.due)-new Date(a.due));
