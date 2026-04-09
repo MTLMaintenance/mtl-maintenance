@@ -2252,33 +2252,50 @@ function updateMetrics(){
   document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
   document.getElementById('m-open').textContent=open;
 }
-function renderEquipListDash(){
-  const el=document.getElementById('equip-list-dash');
-  el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
-    const score=calcHealth(e.id);
-      const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
-    return `<div class="equip-row">
-      <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
-      <div class="equip-info" onclick="openEquipDetail('${e.id}')">
-        <div class="equip-name">${e.name}</div>
-        <div class="equip-meta">${e.type} · ${e.hours.toLocaleString()} hrs</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+async function renderEquipListDash(){
+  const el = document.getElementById('equip-list-dash');
+  if(!el) return;
+
+  // 1. Get the list of machines based on current group filter
+  const list = filteredEquipment(activeGroupFilter).slice(0, 8);
+  
+  // 2. Build the list rows
+  el.innerHTML = list.map(e => {
+    // Check if the machine is currently redlined (locked out)
+    const isLocked = e.is_locked === true;
+    
+    return `
+    <div class="equip-row" onclick="openEquipDetail('${e.id}')" 
+         style="cursor:pointer; ${isLocked ? 'background:rgba(226,75,74,0.12); border-left:4px solid var(--danger)' : ''}">
+      <div class="equip-info">
+        <div class="equip-name" style="${isLocked ? 'color:var(--danger-text); font-weight:800' : ''}">
+            ${isLocked ? '🚨 ' : ''}${e.name}
+        </div>
+        <div class="equip-meta">${e.hours.toLocaleString()} hrs · ${badge(e.status)}</div>
+        <div id="dash-predict-${e.id}" style="font-size:11px; margin-top:2px"></div>
       </div>
-      <div style="text-align:right;flex-shrink:0; display:flex; flex-direction:column; gap:4px; align-items:flex-end">
-        <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size:10px" onclick="quickLogHours('${e.id}')">⏱ Log Hours</button>
-        <div style="font-size:11px;color:var(--text2)">Health: <b style="color:${healthColor(score)}">${score}%</b></div>
+      <div style="text-align:right">
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); quickLogHours('${e.id}')">⏱ Log</button>
       </div>
     </div>`;
   }).join('');
-const isLocked = e.is_locked;
 
-return `
-<div class="equip-row" onclick="openEquipDetail('${e.id}')" 
-     style="cursor:pointer; ${isLocked ? 'background:rgba(226,75,74,0.15); border-left:4px solid var(--danger)' : ''}">
-  <div class="equip-info">
-    <div class="equip-name" style="${isLocked ? 'color:var(--danger-text); font-weight:800' : ''}">
-        ${isLocked ? '🚨 ' : ''}${e.name}
-    </div>`
+  // 3. Inject the Adaptive Predictions (Working Hours Left)
+  for (const e of list) {
+    try {
+        const res = await getAdaptivePrediction(e.id);
+        const pEl = document.getElementById(`dash-predict-${e.id}`);
+        if (pEl && res) {
+            if (res.status === 'ACTIVE') {
+                pEl.innerHTML = `<span style="color:var(--warning); font-weight:700">⚠️ ~${res.hoursRemaining} hrs until service</span>`;
+            } else if (res.status === 'OVERDUE') {
+                pEl.innerHTML = `<span style="color:var(--danger); font-weight:700">🚨 SERVICE OVERDUE</span>`;
+            } else if (res.status === 'PAUSED') {
+                pEl.innerHTML = `<span style="color:var(--text3); font-style:italic">Maintenance Paused</span>`;
+            }
+        }
+    } catch(err) { console.warn("Prediction failed for", e.name); }
+  }
 }
 function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
