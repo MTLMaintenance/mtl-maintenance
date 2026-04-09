@@ -790,65 +790,72 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
-  <div class="panel active" id="panel-dashboard">
+   <div class="panel active" id="panel-dashboard">
     <div id="alert-section"></div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Viewing:</span>
-      <button class="btn btn-sm" id="grp-all" onclick="setGroupFilter('all')" style="background:#fff;color:#1a1a18;font-weight:700;border:1px solid #fff">All</button>
-      <button class="btn btn-sm" id="grp-outside" onclick="setGroupFilter('outside')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Outside</button>
-      <button class="btn btn-sm" id="grp-production" onclick="setGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
-    </div>
+    
+    <!-- METRICS ROW -->
     <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-total-sub"></div></div>
-      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">—</div><div class="metric-sub">Work orders</div></div>
-      <div class="metric-card" id="m-cost-card"> <!-- Added id here -->
-  <div class="metric-label">This Month</div>
-  <div class="metric-value" id="m-cost">—</div>
-</div>
-      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">—</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">—</div><div class="metric-sub">Fleet score</div></div>
-      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">—</div><div class="metric-sub">Work orders</div></div>
-    </div>
-    <div class="grid-2" style="margin-bottom:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div><div id="equip-list-dash"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div><div id="sched-list-dash"></div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div><div id="recent-tasks"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Monthly Costs ($)</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div></div>
-    </div>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
-      <div class="card" id="fleet-health-card"> <!-- Added id here -->
-  <div class="card-header"><span class="card-title">Fleet Health</span></div>
-  <div id="fleet-health-dash"></div>
-</div>
-    </div>
-  </div>
-
-<!-- CALENDAR PANEL -->
-  <div class="panel" id="panel-calendar">
-    <div class="section-header"><span class="section-title">Maintenance Calendar</span>
-      <div style="display:flex;gap:6px"><button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('recur-modal')">+ Recurrence Rule</button><button class="btn btn-primary btn-sm" onclick="openModal('sched-modal')">+ Schedule Work</button></div>
-    </div>
-    <div class="card">
-      <div class="cal-nav">
-        <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
-        <!-- Ensure this ID is here -->
-        <div class="cal-nav-title" id="cal-title"></div>
-        <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
-        <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
+      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div><div class="metric-sub" id="m-total-sub">0 operational</div></div>
+      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div><div class="metric-sub">Work orders</div></div>
+      
+      <!-- SENSITIVE METRIC: MONTHLY COST -->
+      <div class="metric-card" id="m-cost-card">
+        <div class="metric-label">This Month Cost</div>
+        <div class="metric-value" id="m-cost">$0</div>
+        <div class="metric-sub" id="m-cost-sub">+$0 vs last month</div>
       </div>
-      <!-- Ensure these IDs are here -->
-      <div class="cal-grid" id="cal-headers"></div>
-      <div class="cal-grid" id="cal-days" style="margin-top:4px"></div>
+
+      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
+      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
     </div>
+
+    <!-- ROW 1: STATUS AND SCHEDULE -->
+    <div class="grid-2" style="margin-bottom: 12px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
+        <div id="equip-list-dash"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+        <div id="sched-list-dash"></div>
+      </div>
+    </div>
+
+    <!-- ROW 2: WORK ORDERS AND COST CHART -->
     <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">Recurrence Rules</span></div><div id="recur-list"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Work Orders</span>
+          <span class="badge bg" id="task-count-badge">0 work orders</span>
+        </div>
+        <div id="recent-tasks"></div>
+      </div>
+
+      <!-- SENSITIVE CARD: MONTHLY COST CHART -->
+      <div class="card" id="m-monthly-chart-card">
+        <div class="card-header"><span class="card-title">Monthly Costs ($)</span></div>
+        <div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div>
+      </div>
+    </div>
+
+    <!-- ROW 3: OBSERVATIONS AND FLEET HEALTH -->
+    <div class="grid-2" style="margin-top:12px">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Observations</span>
+          <span class="badge bg" id="obs-count-badge">0 total</span>
+        </div>
+        <div id="recent-obs-list"></div>
+      </div>
+
+      <!-- SENSITIVE CARD: FLEET HEALTH -->
+      <div class="card" id="m-fleet-health-card">
+        <div class="card-header"><span class="card-title">Fleet Health</span></div>
+        <div id="fleet-health-dash"></div>
+      </div>
     </div>
   </div>
-
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -6396,32 +6403,21 @@ async function saveQuickLogHours() {
 }
  function applyPrivacyFilters() {
     const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const userPref = currentUser.show_sensitive_metrics !== false; // Default to true
+    // If setting is missing, we assume 'true' (show them)
+    const userPref = currentUser.show_sensitive_metrics !== false; 
 
-    const costCard = document.getElementById('m-cost-card');
-    const healthCard = document.getElementById('fleet-health-card');
+    // Our three targets
+    const costMetric = document.getElementById('m-cost-card');
+    const costChart = document.getElementById('m-monthly-chart-card');
+    const healthCard = document.getElementById('m-fleet-health-card');
 
-    // RULE: Hide if NOT a manager, OR if the manager turned the setting OFF
+    // HIDE if: User is NOT a manager OR User IS a manager but turned the toggle OFF
     const shouldHide = !isManager || !userPref;
 
-    if (costCard) costCard.style.display = shouldHide ? 'none' : 'block';
+    if (costMetric) costMetric.style.display = shouldHide ? 'none' : 'block';
+    if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
     if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
 }
- async function toggleSensitiveMetrics(isVisible) {
-    currentUser.show_sensitive_metrics = isVisible;
-    showToast(isVisible ? "Metrics shown" : "Metrics hidden");
-    
-    // 1. Update UI immediately
-    applyPrivacyFilters();
-
-    // 2. Save to Database
-    try {
-        await window._mpdb.from('profiles')
-            .update({ show_sensitive_metrics: isVisible })
-            .eq('id', currentUser.id);
-    } catch(e) { console.error("Setting save failed"); }
-}   
-
 
     
     
