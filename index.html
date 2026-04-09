@@ -2256,7 +2256,7 @@ function renderEquipListDash(){
   const el=document.getElementById('equip-list-dash');
   el.innerHTML=filteredEquipment(activeGroupFilter).slice(0,6).map(e=>{
     const score=calcHealth(e.id);
-    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
+      const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}"/>`:(ICONS[e.type]||'⚙');
     return `<div class="equip-row">
       <div class="equip-icon" onclick="openEquipDetail('${e.id}')">${icon}</div>
       <div class="equip-info" onclick="openEquipDetail('${e.id}')">
@@ -2270,6 +2270,15 @@ function renderEquipListDash(){
       </div>
     </div>`;
   }).join('');
+const isLocked = e.is_locked;
+
+return `
+<div class="equip-row" onclick="openEquipDetail('${e.id}')" 
+     style="cursor:pointer; ${isLocked ? 'background:rgba(226,75,74,0.15); border-left:4px solid var(--danger)' : ''}">
+  <div class="equip-info">
+    <div class="equip-name" style="${isLocked ? 'color:var(--danger-text); font-weight:800' : ''}">
+        ${isLocked ? '🚨 ' : ''}${e.name}
+    </div>`
 }
 function renderSchedDash(){
   const el=document.getElementById('sched-list-dash');
@@ -3021,7 +3030,25 @@ function openEquipDetail(id){
         <div class="metric-value" style="font-size: 18px; color:${healthColor(score)}">${score}%</div>
       </div>
     </div>
-
+  <div class="eq-widget" id="status-widget-${e.id}" style="background: ${e.is_locked ? '#FCEBEB' : 'var(--bg2)'}; border: 1px solid ${e.is_locked ? '#E24B4A' : 'var(--border)'}; border-radius: var(--radius-lg); padding: 12px; transition: all 0.3s">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid ${e.is_locked ? 'rgba(226,75,74,0.2)' : 'var(--border)'}; padding-bottom: 5px;">
+            <span style="font-size: 11px; font-weight: 700; color: ${e.is_locked ? 'var(--danger-text)' : 'var(--text2)'}; text-transform: uppercase;">Machine Status</span>
+            
+            <!-- THE LOCKOUT TOGGLE -->
+            <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:10px; font-weight:700; color:${e.is_locked ? 'var(--danger-text)' : 'var(--text3)'}">
+                <input type="checkbox" ${e.is_locked ? 'checked' : ''} onchange="toggleLockout('${e.id}', this.checked)"/> 🚨 LOCKOUT
+            </label>
+          </div>
+          
+          <div style="font-size: 13px; line-height: 2;">
+            <div id="lock-warning-${e.id}" style="display: ${e.is_locked ? 'block' : 'none'}; color:var(--danger-text); font-weight:700; margin-bottom:8px; animation: pulse 2s infinite">
+                ⚠️ DANGER: ${e.lock_reason || 'Safety issue detected'}
+            </div>
+            <div>Status: ${badge(e.status)}</div>
+            <div>Meter: <b>${e.hours.toLocaleString()} hrs</b></div>
+            <div id="adaptive-prediction-${e.id}"></div> <!-- Adaptive math lands here -->
+          </div>
+        </div>
     <!-- TABS -->
     <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; margin-bottom: 15px; display: flex; gap: 4px;">
       <button class="tab active" onclick="switchDetailTab('eq-overview',this)">Overview</button>
@@ -6740,7 +6767,59 @@ async function saveTpl() {
     showToast('Failed to save template');
     console.error(e);
   }
-}   
+}  
+async function toggleLockout(equipId, isLocked) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    let reason = "";
+    if (isLocked) {
+        reason = prompt("REASON FOR SAFETY LOCKOUT:\n(This will be shown to everyone on the dashboard)");
+        if (!reason) {
+            // Cancel if no reason provided
+            document.querySelector(`#status-widget-${equipId} input`).checked = false;
+            return;
+        }
+        e.status = 'Down'; // Automatically mark as down
+    } else {
+        if (!confirm("Clear safety lockout? Ensure all repairs are verified.")) {
+            document.querySelector(`#status-widget-${equipId} input`).checked = true;
+            return;
+        }
+        e.status = 'Operational';
+    }
+
+    e.is_locked = isLocked;
+    e.lock_reason = reason;
+
+    try {
+        await persist('equipment', 'upsert', e);
+        
+        // 1. Update the UI widget immediately
+        const widget = document.getElementById(`status-widget-${equipId}`);
+        const warn = document.getElementById(`lock-warning-${equipId}`);
+        if(widget) {
+            widget.style.background = isLocked ? '#FCEBEB' : 'var(--bg2)';
+            widget.style.borderColor = isLocked ? '#E24B4A' : 'var(--border)';
+        }
+        if(warn) {
+            warn.style.display = isLocked ? 'block' : 'none';
+            warn.textContent = `⚠️ DANGER: ${reason}`;
+        }
+
+        // 2. Send an URGENT message to the chat
+        const alertMsg = isLocked ? 
+            `🚨 **SAFETY LOCKOUT**: ${currentUser.name} locked out **${e.name}**! Reason: ${reason}` : 
+            `✅ **LOCKOUT CLEARED**: ${currentUser.name} cleared the lockout on **${e.name}**. Machine is back in service.`;
+        
+        await sendSystemDMToUsername('general', alertMsg); // Posts to general channel
+
+        renderDashboard();
+        showToast(isLocked ? "Machine LOCKED OUT" : "Lockout Cleared");
+    } catch(err) {
+        showToast("Failed to update lockout status");
+    }
+}    
 </script>
 
 <!-- Checklist Template Modal -->
