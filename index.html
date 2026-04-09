@@ -5970,18 +5970,7 @@ if (_baseSwitchChannel) {
         }
     };
 }
-// Update your existing switchChannel to close the menu on mobile
-const _baseSwitchChannel = switchChannel; // Keep your old logic
-switchChannel = function(channel, btn) {
-    // Run the original switching logic
-    _baseSwitchChannel(channel, btn);
-    
-    // AUTO-CLOSE SIDEBAR ON MOBILE
-    if (window.innerWidth <= 768) {
-        const sidebar = document.getElementById('chat-sidebar');
-        if (sidebar) sidebar.classList.remove('open');
-    }
-};
+
 // Function to send a log to the database
 async function logAuditAction(action, details) {
   try {
