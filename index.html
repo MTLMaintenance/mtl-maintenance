@@ -5742,7 +5742,7 @@ function insertMention(username, atPos) {
     input.focus();
 }
 // --- THE MASTER SWITCHBOARD ---
-function showPanel(id) {
+async function showPanel(id) { // Added 'async'
     window.scrollTo(0, 0);
 
     // 1. Hide all panels
@@ -5768,17 +5768,19 @@ function showPanel(id) {
 
     // 4. Create the Mapping (The Switchboard)
     const renderMap = {
-        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
-        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
-        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
-        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
-        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
-        'parts': typeof renderParts === 'function' ? renderParts : null,
-        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
-        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
-        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
-        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
-        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
+        'dashboard': renderDashboard,
+        'calendar': async () => { // Updated to handle async calendar
+            if (typeof renderCalendar === 'function') await renderCalendar(); 
+        },
+        'equipment': renderEquipmentTable,
+        'tasks': renderTasks,
+        'schedule': renderSchedule,
+        'parts': renderParts,
+        'suppliers': renderSuppliers,
+        'documents': renderDocuments,
+        'analytics': renderAnalytics,
+        'admin': renderAdminPanel,
+        'checklists': renderChecklistTemplates,
         'chat': () => { 
             if (typeof renderChat === 'function') renderChat(); 
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
@@ -5791,15 +5793,11 @@ function showPanel(id) {
 
     // 5. Run the function if it exists in our map
     if (renderMap[id]) {
-        renderMap[id]();
+        // Use await here to ensure the page finishes loading before moving on
+        await renderMap[id](); 
     } else {
         console.warn("No render function found for panel ID:", id);
     }
-}
-// Toggle the sidebar on mobile
-function toggleChatSidebar() {
-    const sidebar = document.getElementById('chat-sidebar');
-    if (sidebar) sidebar.classList.toggle('open');
 }
 
 // Update your existing switchChannel to close the menu on mobile
