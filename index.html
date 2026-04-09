@@ -6,27 +6,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-#cal-days, #cal-headers {
+#panel-calendar {
+    display: none;
+}
+
+#panel-calendar.active {
+    display: block !important;
+    position: relative !important;
+    z-index: 999 !important; /* Sit on top of everything */
+    background: #ffffff !important; /* Solid white background */
+    min-height: 100vh !important;
+}
+
+#cal-days {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    min-height: 100px;
-    background: rgba(255, 255, 255, 0.5) !important;
-    visibility: visible !important;
+    grid-auto-rows: minmax(100px, auto) !important; /* Ensure boxes have height */
+    gap: 2px !important;
+    background-color: #ccc !important; /* Grey lines between boxes */
+    border: 2px solid #000 !important;
 }
 
 .cal-day {
-    min-height: 90px !important;
-    border: 1px solid #ddd !important;
     background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 8px !important;
+    min-height: 100px !important;
     display: block !important;
-    color: #000 !important;
 }
 
-.cal-day-num {
+.cal-header {
+    background: #f5f5f3 !important;
+    color: #333 !important;
     font-weight: bold !important;
-    color: #000 !important;
-    padding: 5px !important;
+    padding: 10px !important;
+    text-align: center !important;
+    border: 1px solid #ddd !important;
 }
+
+    
     #zerk-svg-layer {  
     position: absolute !important;
     top: 0 !important;
@@ -148,19 +166,7 @@ body > #invoice-photo-area {
     padding-bottom: 0 !important;
 }
   /* FORCE TOP NAV BUTTONS TO BE TRANSPARENT WITH WHITE TEXT */
-#panel-calendar {
-    position: relative !important;
-    z-index: 10 !important;
-    background: #fff !important;
-    margin-top: 0 !important;
-}
 
-#cal-days {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
 
     #main-nav .nav-btn {
   background: transparent !important;
@@ -314,34 +320,7 @@ button[onclick="saveInvoice()"] {
 #global-search {
   max-width: 180px !important;
 }
- .cal-grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, 1fr) !important;
-  width: 100%;
-}
 
-.cal-day {
-  min-height: 90px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--border);
-  padding: 5px;
-  cursor: pointer;
-}
-
-.cal-day.today {
-  border: 2px solid var(--accent) !important;
-  background: #fff !important;
-}
-
-.cal-event {
-  font-size: 10px;
-  padding: 2px 4px;
-  border-radius: 3px;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-} 
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -5820,11 +5799,11 @@ async function showPanel(id) {
     });
 
     // 2. Show the target panel
-    const target = document.getElementById('panel-' + id);
-    if (target) {
-        target.style.display = 'block';
-        target.classList.add('active');
-    }
+const targetPanel = document.getElementById('panel-' + id);
+if (targetPanel) {
+    targetPanel.style.display = 'block';
+    targetPanel.classList.add('active'); // <--- THIS MUST BE HERE
+}
 
     // 3. Update nav buttons (Highlights the one you clicked)
     const navButtons = document.querySelectorAll('.nav-btn');
