@@ -7,7 +7,20 @@
 <title>MTL Maintenance</title>
 <style>
 /* --- CALENDAR BELLS & WHISTLES --- */
-.cal-event {
+.modal-backdrop {
+    z-index: 5000 !important; /* Higher than any other element */
+}
+
+/* 2. Lower the Calendar layer so it doesn't block popups */
+#panel-calendar.active {
+    z-index: 100 !important; /* Lowered from 999 to 100 */
+}
+
+/* 3. Keep the Topbar in the middle (Above content, below popups) */
+.topbar {
+    z-index: 1000 !important;
+}
+    .cal-event {
     font-size: 10px;
     padding: 2px 6px;
     border-radius: 4px;
