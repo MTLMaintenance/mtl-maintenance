@@ -959,7 +959,33 @@ body.dark-mode .spec-row:hover {
       <tbody id="tasks-table-body"></tbody>
     </table></div>
   </div>
+ <!-- THE CLEAN CALENDAR PANEL -->
+<div class="panel" id="panel-calendar">
+  <div class="section-header">
+    <span class="section-title">Maintenance Calendar</span>
+    <div style="display:flex; gap:6px">
+      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('recur-modal')">+ Rule</button>
+      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('sched-modal')">+ Work</button>
+    </div>
+  </div>
 
+  <div class="card">
+    <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
+      <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
+      <div id="cal-title" style="font-weight:700; font-size:18px; flex:1; text-align:center; color: #000">Loading...</div>
+      <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
+    </div>
+
+    <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; margin-bottom:10px"></div>
+    <div class="cal-grid" id="cal-days"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Rules</span></div><div id="recur-list"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
+  </div>
+</div>
+    
   <!-- SCHEDULE -->
   <div class="panel" id="panel-schedule">
     <div class="section-header"><span class="section-title">Maintenance Schedule</span><button class="btn btn-primary" onclick="openModal('sched-modal')">+ Schedule Work</button></div>
@@ -5817,7 +5843,10 @@ if (targetPanel) {
     // 4. Create the Mapping (THE { BRACKET WAS ADDED HERE)
     const renderMap = {
         'dashboard': renderDashboard,
-       'calendar': renderCalendar,
+       'calendar': () => { 
+    renderCalendar(); // This builds the 1-31 grid
+    if(typeof renderMonthSchedList === 'function') renderMonthSchedList(); // This builds the list
+},
         'equipment': renderEquipmentTable,
         'tasks': renderTasks,
         'schedule': renderSchedule,
