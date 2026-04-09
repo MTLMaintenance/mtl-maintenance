@@ -2326,7 +2326,7 @@ function renderCostChart(){
 // ============================================================
 // CALENDAR
 // ============================================================
-async function renderCalendar() {
+function renderCalendar() {
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
   
@@ -2336,69 +2336,66 @@ async function renderCalendar() {
 
   if(!titleEl || !headersEl || !daysEl) return;
 
-  // 1. Set the Title
   titleEl.textContent = `${MONTHS[month]} ${year}`;
   
-  // 2. Render Headers
-  const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  headersEl.innerHTML = daysOfWeek.map(d => `<div class="cal-header">${d}</div>`).join('');
+  // 1. Headers
+  headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+    .map(d => `<div class="cal-header" style="font-weight:600">${d}</div>`).join('');
   
-  // 3. Calculate Dates
-  const firstDayIndex = new Date(year, month, 1).getDay();
+  // 2. Month Calculation
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const daysInPrev = new Date(year, month, 0).getDate();
   
   let cells = '';
-
-  // 4. Build the grid (Previous Month Padding)
-  for(let i = firstDayIndex - 1; i >= 0; i--){
-    cells += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrevMonth - i}</div></div>`;
+  // Prev month padding
+  for(let i = firstDay - 1; i >= 0; i--) {
+      cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
   }
 
-  // 5. Build the grid (Current Month Days)
+  // Current month days
   for(let d = 1; d <= daysInMonth; d++){
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isToday = new Date().toISOString().split('T')[0] === dateStr;
     
-    // Find Work Orders and Scheduled items
-    const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
-    const dayScheds = (state.schedules || []).filter(s => s.date === dateStr);
+    // Find Work Orders and manual Schedules
+    const dayTasks = state.tasks.filter(t => t.due === dateStr);
+    const dayScheds = state.schedules.filter(s => s.date === dateStr);
     
     const events = [
       ...dayTasks.map(t => `<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
-      ...dayScheds.map(s => `<div class="cal-event" style="background:#eee; color:#666">${s.name}</div>`)
+      ...dayScheds.map(s => `<div class="cal-event" style="background:#eee">${s.name}</div>`)
     ];
 
     cells += `
-      <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')" style="min-height:100px; border:1px solid var(--border); padding:5px; background:rgba(255,255,255,0.5)">
-        <div class="cal-day-num" style="font-weight:600">${d}</div>
-        <div id="forecast-container-${dateStr}"></div> <!-- Placeholder for Adaptive dots -->
-        <div class="cal-event-container">${events.slice(0, 3).join('')}</div>
+      <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')" style="min-height:90px; border:1px solid var(--border); padding:4px; background:#fff">
+        <div class="cal-day-num" style="font-weight:700; color:black">${d}</div>
+        <div id="forecast-container-${dateStr}"></div> <!-- Placeholder for Adaptive Forecast -->
+        <div class="cal-events-container">${events.slice(0, 3).join('')}</div>
       </div>`;
   }
 
-  // 6. Fill the grid
   daysEl.innerHTML = cells;
 
-  // 7. Render side lists
-  renderMonthSchedList();
-  if (typeof renderRecurList === 'function') renderRecurList();
+  // 3. Trigger Side Lists
+  if(typeof renderMonthSchedList === 'function') renderMonthSchedList();
+  if(typeof renderRecurList === 'function') renderRecurList();
 
-  // 8. ASYNC STEP: Load Predictions without blocking the UI
-  renderAdaptiveForecasts(year, month);
+  // 4. Run Adaptive Math in background
+  fillAdaptiveForecasts();
 }
-async function renderAdaptiveForecasts(year, month) {
+
+// Background function to add orange boxes
+async function fillAdaptiveForecasts() {
     for (let e of state.equipment) {
-        try {
-            const pred = await getAdaptivePrediction(e.id);
-            if (pred && pred.status === 'ACTIVE') {
-                const dateStr = pred.predictedDate.toISOString().split('T')[0];
-                const container = document.getElementById(`forecast-container-${dateStr}`);
-                if (container) {
-                    container.innerHTML += `<div class="cal-event" style="background:rgba(186,117,23,0.1); color:#BA7517; border:1px dashed #BA7517; font-size:9px">📈 Forecast: ${e.name}</div>`;
-                }
+        const pred = await getAdaptivePrediction(e.id);
+        if (pred && pred.status === 'ACTIVE') {
+            const dateStr = pred.predictedDate.toISOString().split('T')[0];
+            const target = document.getElementById(`forecast-container-${dateStr}`);
+            if (target) {
+                target.innerHTML += `<div class="cal-event" style="background:#FAEEDA; color:#854F0B; border:1px dashed #BA7517; font-size:9px">📈 Forecast: ${e.name}</div>`;
             }
-        } catch(err) { console.warn("Forecast failed for", e.name); }
+        }
     }
 }
 
@@ -5798,11 +5795,10 @@ async function showPanel(id) { // Added 'async'
     });
 
     // 4. Create the Mapping (The Switchboard)
-    const renderMap = {
+    const renderMap = 
         'dashboard': renderDashboard,
-        'calendar': async () => { // Updated to handle async calendar
-            if (typeof renderCalendar === 'function') await renderCalendar(); 
-        },
+        'calendar': renderCalendar,  
+    
         'equipment': renderEquipmentTable,
         'tasks': renderTasks,
         'schedule': renderSchedule,
