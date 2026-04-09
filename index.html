@@ -217,7 +217,19 @@ button[onclick="saveInvoice()"] {
   z-index: 1000;
   backdrop-filter: blur(8px);
 }
+.modal-backdrop {
+  display: none; /* Hidden by default */
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
+  align-items: center;
+  justify-content: center;
+}
 
+.modal-backdrop.open {
+  display: flex !important; /* Shown only when 'open' class is added */
+}
 .logo {
   color: #ffffff !important;
   font-weight: 700 !important;
