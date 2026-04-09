@@ -4241,72 +4241,32 @@ function pullEquipSuppliers(){
 const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){const img=entry.target;const src=img.getAttribute('data-src');if(src){img.src=src;img.removeAttribute('data-src');lazyObserver.unobserve(img);}}});},{rootMargin:'100px'});
 function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').forEach(img=>lazyObserver.observe(img));}
 
-// ── OVERRIDDEN showPanel ──────────────────────────────────────
-// --- THE MASTER SWITCHBOARD ---
-function showPanel(id) {
-    
-    window.scrollTo(0, 0);
-const panelContainer = document.querySelector('.panel.active');
-    if(panelContainer) panelContainer.scrollTop = 0;
-    // 1. Hide all panels
-    document.querySelectorAll('.panel').forEach(p => {
-        p.style.display = 'none';
-        p.classList.remove('active');
-    });
-
-    // 2. Show the target panel
-    const target = document.getElementById('panel-' + id);
-    if (target) {
-        target.style.display = 'block';
-        target.classList.add('active');
-    }
-
-    // 3. Update nav buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
-            btn.classList.add('active');
-        }
-    });
-
-    // 4. Drawing Logic
-    const renderMap = {
-        'dashboard': typeof renderDashboard === 'function' ? renderDashboard : null,
-        'calendar': typeof renderCalendar === 'function' ? renderCalendar : null,
-        'equipment': typeof renderEquipmentTable === 'function' ? renderEquipmentTable : null,
-        'tasks': typeof renderTasks === 'function' ? renderTasks : null,
-        'schedule': typeof renderSchedule === 'function' ? renderSchedule : null,
-        'parts': typeof renderParts === 'function' ? renderParts : null,
-        'suppliers': typeof renderSuppliers === 'function' ? renderSuppliers : null,
-        'documents': typeof renderDocuments === 'function' ? renderDocuments : null,
-        'analytics': typeof renderAnalytics === 'function' ? renderAnalytics : null,
-        'admin': typeof renderAdminPanel === 'function' ? renderAdminPanel : null,
-        'checklists': typeof renderChecklistTemplates === 'function' ? renderChecklistTemplates : null,
-        'chat': () => { 
-    if (typeof renderChat === 'function') renderChat(); 
-    if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
-updateUnreadBadge(); 
-        },
-        'tools': () => { 
-            if (typeof renderTools === 'function') renderTools(); 
-            if (typeof updateWishCount === 'function') updateWishCount(); 
-        }
-    };
-
-    if (renderMap[id]) {
-        if (typeof renderMap[id] === 'function') {
-            renderMap[id]();
-        }
-    }
-}
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
-function renderDashboard(){
-  renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
-  const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
-    if(document.getElementById('recent-obs-list'))renderRecentObservations();
-  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash(); applyPrivacyFilters();
-}
 
+async function renderDashboard(){ // Added 'async'
+  // 1. Run standard renders
+  renderAlerts();
+  await renderEquipListDash(); // Added 'await'
+  renderSchedDash();
+  renderRecentTasks();
+  renderCostChart();
+  updateMetrics();
+
+  // 2. Handle Budget Alerts
+  const budgetAlerts = checkBudgetAlerts();
+  if(budgetAlerts.length){
+    const sec = document.getElementById('alert-section');
+    if(sec) sec.innerHTML += budgetAlerts.map(a => `<div class="alert alert-w">💰 ${a}</div>`).join('');
+  }
+
+  // 3. Handle list checks
+  if(document.getElementById('recent-obs-list')) renderRecentObservations();
+  if(document.getElementById('fleet-health-dash')) renderFleetHealthDash(); 
+
+  // 4. APPLY THE FILTER LAST
+  // This ensures the sensitive data is hidden the moment it appears
+  applyPrivacyFilters(); 
+}
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -4351,7 +4311,11 @@ async function enterApp(){
     if (profile) {
       if (profile.group_tag) currentUser.group_tag = profile.group_tag;
       if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
-      if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
+      if (profile && profile.show_sensitive_metrics !== undefined) {
+    currentUser.show_sensitive_metrics = profile.show_sensitive_metrics;
+}
+applyPrivacyFilters();
+        if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
         currentUser.role = profile.role;
       }
     }
