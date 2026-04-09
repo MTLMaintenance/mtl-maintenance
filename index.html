@@ -1054,78 +1054,88 @@ body.dark-mode .spec-row:hover {
   </div>
 </div>
   
-  <!-- ADMIN -->
-  <div class="panel" id="panel-admin">
-    <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
-    <div class="tab-bar" style="background:rgba(0,0,0,0.4);border-radius:var(--radius);padding:4px;border:none;gap:4px">
-      <button class="tab active" onclick="switchAdminTab('approvals',this)" style="color:#fff;background:rgba(255,255,255,0.25);font-weight:600;border:none">Pending Approvals</button>
-      <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
-      <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
-      <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
-      <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
-    </div>
-    <div class="card" style="margin-top:12px">
-  <div class="card-header">
-    <span class="card-title">System Audit Log</span>
-    <button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button>
+ <!-- ADMIN PANEL -->
+<div class="panel" id="panel-admin">
+  <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
+  
+  <div class="tab-bar" style="background:rgba(0,0,0,0.4);border-radius:var(--radius);padding:4px;border:none;gap:4px">
+    <button class="tab active" onclick="switchAdminTab('approvals',this)" style="color:#fff;background:rgba(255,255,255,0.25);font-weight:600;border:none">Pending Approvals</button>
+    <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
+    <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
+    <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
+    <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
   </div>
-  <div id="audit-log-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,0.03)">
-    <div style="padding:20px; text-align:center; color:var(--text3); font-size:12px">Logs will appear here...</div>
-  </div>
-</div>
-      <div id="admin-approvals">
-      <div class="grid-2">
-        <div class="card"><div class="card-header"><span class="card-title">Pending Approvals</span><span class="badge bd" id="pending-count">0</span></div><div id="pending-list"></div></div>
-        <div class="card"><div class="card-header"><span class="card-title">Denied</span></div><div id="denied-list"></div></div>
-      </div>
+
+  <!-- 1. PENDING APPROVALS -->
+  <div id="admin-approvals">
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><span class="card-title">Pending Requests</span><span class="badge bd" id="pending-count">0</span></div><div id="pending-list"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Denied</span></div><div id="denied-list"></div></div>
     </div>
-    <div id="admin-users" style="display:none">
-      <div class="card" style="padding:0"><table class="data-table">
+  </div>
+
+  <!-- 2. ACTIVE USERS -->
+  <div id="admin-users" style="display:none">
+    <div class="table-wrap">
+      <table>
         <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="users-table-body"></tbody>
-      </table></div>
+      </table>
     </div>
-    <div id="admin-deleted-msgs" style="display:none">
-      <div class="card"><div class="card-header"><span class="card-title">Deleted Messages</span><span style="font-size:12px;color:var(--text2)">Recoverable for 30 days</span></div><div id="deleted-msgs-list"></div></div>
-      <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
+  </div>
+
+  <!-- 3. PERMISSIONS & ROLES -->
+  <div id="admin-permissions" style="display:none">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
+      <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
     </div>
-    <div id="admin-settings" style="display:none">
-      <div class="card">
-        <div class="card-header"><span class="card-title">AI Settings</span></div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Configure the Gemini API key for invoice scanning and tool suggestions. Get a free key at <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">aistudio.google.com</a></div>
-        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="form-group" style="flex:1"><label class="form-label">Gemini API Key</label>
-            <input class="form-input" id="gemini-key-input" type="password" placeholder="AIza..." style="font-family:monospace"/>
-          </div>
-          <button class="btn btn-primary" onclick="saveGeminiKey()">Save Key</button>
-        </div>
-        <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
-      </div>
-    </div>
-    <div id="admin-permissions" style="display:none">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
-        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
-      </div>
-      <div class="card" style="margin-top:12px">
-        <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
-        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select></div>
-          <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="role-select"><option value="manager">Manager</option><option value="tech" selected>Technician</option><option value="viewer">Viewer</option></select></div>
-          <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="group-select"><option value="">None</option><option value="outside">Outside</option><option value="production">Production</option></select></div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select></div>
+        <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="role-select"><option value="manager">Manager</option><option value="tech" selected>Technician</option><option value="viewer">Viewer</option></select></div>
+        <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="group-select"><option value="">None</option><option value="outside">Outside</option><option value="production">Production</option></select></div>
         <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
-        <div class="card" style="margin-top:12px">
-  <div class="card-header"><span class="card-title">Dashboard Preferences</span></div>
-  <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px">
-    <input type="checkbox" id="setting-show-metrics" onchange="toggleSensitiveMetrics(this.checked)"/>
-    <span>Show sensitive metrics (Costs & Health) on Dashboard</span>
-  </label>
-  <div style="font-size:11px; color:var(--text3); margin-top:4px">If disabled, financial and health data will be hidden from your view.</div>
-</div>
-        </div>
       </div>
     </div>
   </div>
+
+  <!-- 4. DELETED MESSAGES -->
+  <div id="admin-deleted-msgs" style="display:none">
+    <div class="card"><div class="card-header"><span class="card-title">Deleted Messages</span></div><div id="deleted-msgs-list"></div></div>
+    <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
+  </div>
+
+  <!-- 5. SETTINGS (All System Settings go here) -->
+  <div id="admin-settings" style="display:none">
+    <!-- AI Key Section -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">AI Settings</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="flex:1"><label class="form-label">Gemini API Key</label><input class="form-input" id="gemini-key-input" type="password" placeholder="AIza..."/></div>
+        <button class="btn btn-primary" onclick="saveGeminiKey()">Save Key</button>
+      </div>
+      <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
+    </div>
+
+    <!-- Dashboard Privacy Toggle -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-header"><span class="card-title">Dashboard Preferences</span></div>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px">
+        <input type="checkbox" id="setting-show-metrics" onchange="toggleSensitiveMetrics(this.checked)"/>
+        <span>Show sensitive metrics (Costs & Health) on Dashboard</span>
+      </label>
+      <div style="font-size:11px; color:var(--text3); margin-top:4px">If disabled, financial data will be hidden from your view.</div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-header"><span class="card-title">System Audit Log</span><button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button></div>
+      <div id="audit-log-list" style="max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,0.03)"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== MODALS ===== -->
