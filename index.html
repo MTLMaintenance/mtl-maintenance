@@ -1199,6 +1199,32 @@ body.dark-mode .spec-row:hover {
 
 </div>
 
+  <!-- CALENDAR PANEL -->
+<div class="panel" id="panel-calendar">
+  <div class="section-header">
+    <span class="section-title">Maintenance Calendar</span>
+    <div style="display:flex; gap:6px">
+     <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
+      <button class="btn btn-secondary btn-sm" onclick="calPrev()">&#8249;</button>
+      <div id="cal-title" style="font-weight:700; font-size:18px; flex:1; text-align:center; color: #000">Loading...</div>
+      <button class="btn btn-secondary btn-sm" onclick="calNext()">&#8250;</button>
+    </div>
+
+    <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; margin-bottom:10px"></div>
+    <div class="cal-grid" id="cal-days" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px" ></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Rules</span></div><div id="recur-list"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
+  </div>
+</div>
+
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
@@ -6664,33 +6690,6 @@ async function saveCalendarEntry() {
     </div>
   </div>
 </div>
-  <!-- CALENDAR PANEL                             -->
-  <!-- ========================================== -->
-  <!-- THE CLEAN CALENDAR PANEL -->
-<div class="panel" id="panel-calendar">
-  <div class="section-header">
-    <span class="section-title">Maintenance Calendar</span>
-    <div style="display:flex; gap:6px">
-     <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
-      <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
-      <div id="cal-title" style="font-weight:700; font-size:18px; flex:1; text-align:center; color: #000">Loading...</div>
-      <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
-    </div>
-
-    <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; margin-bottom:10px"></div>
-    <div class="cal-grid" id="cal-days" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px" ></div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Rules</span></div><div id="recur-list"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
-  </div>
-</div>
     <div class="modal-backdrop" id="calendar-entry-modal" style="display:none">
   <div class="modal" style="max-width:450px">
     <div class="modal-header">
@@ -6746,7 +6745,6 @@ async function saveCalendarEntry() {
     </div>
   </div>
 </div>
-    </script>
         <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
