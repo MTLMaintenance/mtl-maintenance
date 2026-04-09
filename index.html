@@ -1641,7 +1641,7 @@ async function uploadZerkView(input) {
 const ADMIN_USERNAME = 'tangal99';
 let currentUser = null;
 let calDate = new Date();
-
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 // ============================================================
 // INIT
 // ============================================================
@@ -6577,28 +6577,43 @@ function applyPrivacyFilters() {
     </div>
   </div>
 </div>
-   <div class="panel" id="panel-calendar">
-  <div class="section-header">
-    <span class="section-title">Maintenance Calendar</span>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-primary btn-sm" onclick="openModal('recur-modal')">+ Rule</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('sched-modal')">+ Work</button>
+  <!-- CALENDAR PANEL                             -->
+  <!-- ========================================== -->
+  <div class="panel" id="panel-calendar">
+    <div class="section-header">
+      <span class="section-title">Maintenance Calendar</span>
+      <div style="display:flex; gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('recur-modal')">+ Recurrence Rule</button>
+        <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('sched-modal')">+ Schedule Work</button>
+      </div>
+    </div>
+
+    <!-- The Calendar Card -->
+    <div class="card">
+      <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
+        <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
+        <div id="cal-title" style="font-weight:700; font-size:16px; flex:1; text-align:center"></div>
+        <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
+        <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-weight:600; font-size:11px; color:var(--text3); margin-bottom:8px"></div>
+      <div class="cal-grid" id="cal-days" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px"></div>
+    </div>
+
+    <!-- Side Lists below the Calendar -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recurrence Rules</span></div>
+        <div id="recur-list" style="max-height:300px; overflow-y:auto"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">This Month's Schedule</span></div>
+        <div id="sched-month-list" style="max-height:300px; overflow-y:auto"></div>
+      </div>
     </div>
   </div>
-  <div class="card">
-    <div class="cal-nav">
-      <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
-      <div class="cal-nav-title" id="cal-title"></div> <!-- ID 1 -->
-      <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
-    </div>
-    <div class="cal-grid" id="cal-headers"></div> <!-- ID 2 -->
-    <div class="cal-grid" id="cal-days" style="margin-top:4px"></div> <!-- ID 3 -->
-  </div>
-  <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Recurrence Rules</span></div><div id="recur-list"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
-  </div>
-</div>     
     
     </script>
         <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
