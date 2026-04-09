@@ -835,7 +835,7 @@ body.dark-mode .spec-row:hover {
       <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
       <button class="btn btn-secondary btn-sm" onclick="exportPDF()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">PDF</button>
       <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('task-modal')">+ Work Order</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ Work Order</button>
       <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🌙</button>
       <button class="btn btn-secondary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">💬</button>
       <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign out">↩ Sign Out</button>
@@ -2141,7 +2141,23 @@ function closeModal(id) {
 }
 function populateSelects() {
     console.log("Starting populateSelects...");
+    const tEquip = document.getElementById('t-equip');
     
+    if (!tEquip) {
+        console.error("CRITICAL: The dropdown box 't-equip' was not found in your HTML!");
+        return;
+    }
+
+    // Build the list
+    const options = state.equipment.map(e => 
+        `<option value="${e.id}">${e.name}</option>`
+    ).join('');
+
+    // Put the list into the box
+    tEquip.innerHTML = options || '<option value="">No equipment found</option>';
+    
+    console.log("Success: Put " + state.equipment.length + " machines into the Work Order box.");
+}
     // 1. Identify the dropdowns
     const tEquip = document.getElementById('t-equip');
     const tAssign = document.getElementById('t-assign');
