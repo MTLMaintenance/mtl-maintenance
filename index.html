@@ -801,7 +801,10 @@ body.dark-mode .spec-row:hover {
     <div class="metrics">
       <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-total-sub"></div></div>
       <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">—</div><div class="metric-sub">Work orders</div></div>
-      <div class="metric-card"><div class="metric-label">This Month</div><div class="metric-value" id="m-cost">—</div><div class="metric-sub" id="m-cost-sub"></div></div>
+      <div class="metric-card" id="m-cost-card"> <!-- Added id here -->
+  <div class="metric-label">This Month</div>
+  <div class="metric-value" id="m-cost">—</div>
+</div>
       <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">—</div><div class="metric-sub">Below reorder</div></div>
       <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">—</div><div class="metric-sub">Fleet score</div></div>
       <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">—</div><div class="metric-sub">Work orders</div></div>
@@ -816,7 +819,10 @@ body.dark-mode .spec-row:hover {
     </div>
     <div class="grid-2" style="margin-top:12px">
       <div class="card"><div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div><div id="recent-obs-list"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Fleet Health</span></div><div id="fleet-health-dash"></div></div>
+      <div class="card" id="fleet-health-card"> <!-- Added id here -->
+  <div class="card-header"><span class="card-title">Fleet Health</span></div>
+  <div id="fleet-health-dash"></div>
+</div>
     </div>
   </div>
 
@@ -1107,7 +1113,15 @@ body.dark-mode .spec-row:hover {
           <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select></div>
           <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="role-select"><option value="manager">Manager</option><option value="tech" selected>Technician</option><option value="viewer">Viewer</option></select></div>
           <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="group-select"><option value="">None</option><option value="outside">Outside</option><option value="production">Production</option></select></div>
-          <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
+        <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
+        <div class="card" style="margin-top:12px">
+  <div class="card-header"><span class="card-title">Dashboard Preferences</span></div>
+  <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px">
+    <input type="checkbox" id="setting-show-metrics" onchange="toggleSensitiveMetrics(this.checked)"/>
+    <span>Show sensitive metrics (Costs & Health) on Dashboard</span>
+  </label>
+  <div style="font-size:11px; color:var(--text3); margin-top:4px">If disabled, financial and health data will be hidden from your view.</div>
+</div>
         </div>
       </div>
     </div>
@@ -4273,7 +4287,7 @@ function renderDashboard(){
   renderAlerts();renderEquipListDash();renderSchedDash();renderRecentTasks();renderCostChart();updateMetrics();
   const budgetAlerts=checkBudgetAlerts();if(budgetAlerts.length){const sec=document.getElementById('alert-section');if(sec)sec.innerHTML+=budgetAlerts.map(a=>`<div class="alert alert-w">💰 ${a}</div>`).join('');}
     if(document.getElementById('recent-obs-list'))renderRecentObservations();
-  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash();
+  if(document.getElementById('fleet-health-dash'))renderFleetHealthDash(); applyPrivacyFilters();
 }
 
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
@@ -5597,7 +5611,8 @@ async function renderAdminPanel(){
     
     const pending = profiles.filter(p => p.status === 'pending');
     const active = profiles.filter(p => p.status === 'approved');
-
+const checkbox = document.getElementById('setting-show-metrics');
+if(checkbox) checkbox.checked = currentUser.show_sensitive_metrics !== false;
     document.getElementById('pending-count').textContent = pending.length || '0';
     document.getElementById('pending-list').innerHTML = pending.map(p => `
       <div class="parts-row">
@@ -6369,7 +6384,33 @@ async function saveQuickLogHours() {
     console.error(err);
   }
 }
+ function applyPrivacyFilters() {
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
+    const userPref = currentUser.show_sensitive_metrics !== false; // Default to true
+
+    const costCard = document.getElementById('m-cost-card');
+    const healthCard = document.getElementById('fleet-health-card');
+
+    // RULE: Hide if NOT a manager, OR if the manager turned the setting OFF
+    const shouldHide = !isManager || !userPref;
+
+    if (costCard) costCard.style.display = shouldHide ? 'none' : 'block';
+    if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
+}
+ async function toggleSensitiveMetrics(isVisible) {
+    currentUser.show_sensitive_metrics = isVisible;
+    showToast(isVisible ? "Metrics shown" : "Metrics hidden");
     
+    // 1. Update UI immediately
+    applyPrivacyFilters();
+
+    // 2. Save to Database
+    try {
+        await window._mpdb.from('profiles')
+            .update({ show_sensitive_metrics: isVisible })
+            .eq('id', currentUser.id);
+    } catch(e) { console.error("Setting save failed"); }
+}   
 
 
     
