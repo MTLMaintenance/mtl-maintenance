@@ -2408,12 +2408,13 @@ function renderMonthSchedList() {
             <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
         </div>`).join('') || 'No tasks';
 }
-function calPrev(){ calDate.setMonth(calDate.getMonth()-1); renderCalendar(); }
-function calNext(){ calDate.setMonth(calDate.getMonth()+1); renderCalendar(); }
-function calToday(){ calDate=new Date(); renderCalendar(); }
-function calDayClick(dateStr){
-  document.getElementById('s-date').value=dateStr;
-  openModal('sched-modal');
+function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
+function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
+function calToday() { calDate = new Date(); renderCalendar(); }
+function calDayClick(dateStr) {
+    const input = document.getElementById('s-date');
+    if(input) input.value = dateStr;
+    openModal('sched-modal');
 }
 function renderRecurList(){
   document.getElementById('recur-list').innerHTML=state.recurrenceRules.map(r=>
