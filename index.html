@@ -1556,6 +1556,8 @@ let woPartsTemp = [];
 let currentZerkView = 'side_1';
 let allMachineZerks = [];
 let tempZerkCoords = { x: 0, y: 0 };
+let calDate = new Date();
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
@@ -1688,7 +1690,7 @@ async function uploadZerkView(input) {
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 const ADMIN_USERNAME = 'tangal99';
 let currentUser = null;
-let calDate = new Date();
+
 
 // ============================================================
 // INIT
