@@ -6,7 +6,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-#zerk-svg-layer {
+#cal-days, #cal-headers {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    min-height: 100px;
+    background: rgba(255, 255, 255, 0.5) !important;
+    visibility: visible !important;
+}
+
+.cal-day {
+    min-height: 90px !important;
+    border: 1px solid #ddd !important;
+    background-color: #ffffff !important;
+    display: block !important;
+    color: #000 !important;
+}
+
+.cal-day-num {
+    font-weight: bold !important;
+    color: #000 !important;
+    padding: 5px !important;
+}
+    #zerk-svg-layer {  
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
