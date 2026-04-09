@@ -1005,116 +1005,58 @@ body.dark-mode .spec-row:hover {
 </div>
     </div>
   </div>
-  <!-- THE ONLY TOOL CRIB PANEL -->
-<div class="panel" id="panel-tools">
-  <div class="section-header">
-    <span class="section-title">Tool Crib & Wishlist</span>
-    <div style="display:flex; gap:8px">
-        <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
-        <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
+ 
+  <!-- ADMIN -->
+
+<div class="panel" id="panel-admin">
+  <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
+  
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchAdminTab('approvals', this)">Pending Approvals</button>
+    <button class="tab" onclick="switchAdminTab('users', this)">Active Users</button>
+    <button class="tab" onclick="switchAdminTab('permissions', this)">Permissions</button>
+    <button class="tab" onclick="switchAdminTab('settings', this)">Settings</button>
+  </div>
+
+  <!-- Sub-Panel: Approvals -->
+  <div id="admin-approvals">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Pending Requests</span><span class="badge bd" id="pending-count">0</span></div>
+      <div id="pending-list"></div>
     </div>
   </div>
 
-  <div class="tab-bar">
-    <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
-    <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span></button>
-    <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
-  </div>
-<!-- Inventory View (Clean again) -->
-  <div id="tool-inventory-view">
+  <!-- Sub-Panel: Users -->
+  <div id="admin-users" style="display:none">
     <div class="table-wrap"><table>
-      <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-      <tbody id="tools-table-body"></tbody>
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="users-table-body"></tbody>
     </table></div>
   </div>
 
-  <!-- Wishlist View (Note moved here) -->
-  <div id="tool-wishlist-view" style="display:none">
-    <!-- THE NOTE TO CREW BOX -->
-    <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
-        <span style="font-size:18px">💡</span>
-        <div>
-          <b>Note to Crew:</b> Before suggesting a new tool, please review the <b>Denied History</b> tab to see if the item was previously rejected and why.
-        </div>
+  <!-- Sub-Panel: Permissions -->
+  <div id="admin-permissions" style="display:none">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Role Permissions</span></div>
+      <div id="permissions-table-body"></div>
     </div>
-    <div class="grid-2" id="wishlist-container"></div>
+    <!-- The Role/Group Change Box -->
+    <div class="card" style="margin-top:15px">
+      <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
+      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+        <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" onchange="syncAdminRoleSelects()"></select></div>
+        <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="role-select"><option value="manager">Manager</option><option value="tech">Technician</option><option value="viewer">Viewer</option></select></div>
+        <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="group-select"><option value="">None</option><option value="outside">Outside</option><option value="production">Production</option></select></div>
+        <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Denied View -->
-  <div id="tool-denied-view" style="display:none">
-    <div style="background:var(--danger-bg); color:var(--danger-text); padding:10px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:12px; border:1px solid var(--danger)">
-        <b>Note to Crew:</b> Please review this list before submitting new suggestions to avoid duplicates.
-    </div>
-    <div class="grid-2" id="denied-container"></div>
+  <!-- Sub-Panel: Settings -->
+  <div id="admin-settings" style="display:none">
+    <div class="card"><div class="card-header"><span class="card-title">System Audit Log</span><button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button></div><div id="audit-log-list" style="max-height:300px; overflow-y:auto"></div></div>
   </div>
 </div>
-  
-  <!-- ADMIN -->
-  <div class="panel" id="panel-admin">
-    <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
-    <div class="tab-bar" style="background:rgba(0,0,0,0.4);border-radius:var(--radius);padding:4px;border:none;gap:4px">
-      <button class="tab active" onclick="switchAdminTab('approvals',this)" style="color:#fff;background:rgba(255,255,255,0.25);font-weight:600;border:none">Pending Approvals</button>
-      <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
-      <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
-      <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
-      <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
-    </div>
-    <div class="card" style="margin-top:12px">
-  <div class="card-header">
-    <span class="card-title">System Audit Log</span>
-    <button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button>
-  </div>
-  <div id="audit-log-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,0.03)">
-    <div style="padding:20px; text-align:center; color:var(--text3); font-size:12px">Logs will appear here...</div>
-  </div>
-</div>
-      <div id="admin-approvals">
-      <div class="grid-2">
-        <div class="card"><div class="card-header"><span class="card-title">Pending Approvals</span><span class="badge bd" id="pending-count">0</span></div><div id="pending-list"></div></div>
-        <div class="card"><div class="card-header"><span class="card-title">Denied</span></div><div id="denied-list"></div></div>
-      </div>
-    </div>
-    <div id="admin-users" style="display:none">
-      <div class="card" style="padding:0"><table class="data-table">
-        <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody id="users-table-body"></tbody>
-      </table></div>
-    </div>
-    <div id="admin-deleted-msgs" style="display:none">
-      <div class="card"><div class="card-header"><span class="card-title">Deleted Messages</span><span style="font-size:12px;color:var(--text2)">Recoverable for 30 days</span></div><div id="deleted-msgs-list"></div></div>
-      <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
-    </div>
-    <div id="admin-settings" style="display:none">
-      <div class="card">
-        <div class="card-header"><span class="card-title">AI Settings</span></div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Configure the Gemini API key for invoice scanning and tool suggestions. Get a free key at <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">aistudio.google.com</a></div>
-        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="form-group" style="flex:1"><label class="form-label">Gemini API Key</label>
-            <input class="form-input" id="gemini-key-input" type="password" placeholder="AIza..." style="font-family:monospace"/>
-          </div>
-          <button class="btn btn-primary" onclick="saveGeminiKey()">Save Key</button>
-        </div>
-        <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
-      </div>
-    </div>
-    <div id="admin-permissions" style="display:none">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
-        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
-      </div>
-      <div class="card" style="margin-top:12px">
-        <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
-        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select></div>
-          <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="role-select"><option value="manager">Manager</option><option value="tech" selected>Technician</option><option value="viewer">Viewer</option></select></div>
-          <div class="form-group"><label class="form-label">Group</label><select class="form-select" id="group-select"><option value="">None</option><option value="outside">Outside</option><option value="production">Production</option></select></div>
-          <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ===== MODALS ===== -->
 <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
@@ -1456,7 +1398,68 @@ body.dark-mode .spec-row:hover {
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('wishlist-modal')">Cancel</button><button class="btn btn-primary" onclick="saveWishRequest()">Submit Request</button></div>
   </div>
 </div>
+<!-- TOOL CRIB & WISHLIST PANEL                 -->
+  <!-- ========================================== -->
+  <div class="panel" id="panel-tools">
+    <div class="section-header">
+      <span class="section-title">Tool Crib & Wishlist</span>
+      <div style="display:flex; gap:8px">
+          <!-- Note: resetToolForm ensures the "Delete" button is hidden when adding new -->
+          <button class="btn btn-primary btn-sm" onclick="promptWishlistCheck()">💡 Suggest New Tool</button>
+          <button class="btn btn-primary btn-sm" onclick="resetToolForm(); openModal('tool-modal');">+ Add Tool</button>
+      </div>
+    </div>
 
+    <!-- Sub-Navigation Tabs -->
+    <div class="tab-bar">
+      <button class="tab active" id="tool-inv-tab" onclick="switchToolTab('inventory')">Inventory</button>
+      <button class="tab" id="tool-wish-tab" onclick="switchToolTab('wishlist')">
+        Wishlist <span id="wish-count" class="badge bd" style="display:none">0</span>
+      </button>
+      <button class="tab" id="tool-denied-tab" onclick="switchToolTab('denied')">Denied History</button>
+    </div>
+
+    <!-- Tab 1: Inventory View -->
+    <div id="tool-inventory-view">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tool Name</th>
+              <th>Category</th>
+              <th>Location</th>
+              <th>Condition</th>
+              <th>Status</th>
+              <th>Procurement</th>
+            </tr>
+          </thead>
+          <tbody id="tools-table-body">
+            <!-- JavaScript draws rows here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Wishlist View -->
+    <div id="tool-wishlist-view" style="display:none">
+      <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
+          <span style="font-size:18px">💡</span>
+          <div>
+            <b>Note to Crew:</b> Before suggesting a new tool, please review the <u>Denied History</u> tab to see if the item was previously rejected and why.
+          </div>
+      </div>
+      <div class="grid-2" id="wishlist-container">
+        <!-- JavaScript draws cards here -->
+      </div>
+    </div>
+
+    <!-- Tab 3: Denied History View -->
+    <div id="tool-denied-view" style="display:none">
+      <div class="grid-2" id="denied-container">
+        <!-- JavaScript draws cards here -->
+      </div>
+    </div>
+  </div>
 <script>
 // ============================================================
 let zerkPinMode = 'dot'; // 'dot' or 'line'
@@ -5569,26 +5572,38 @@ function syncAdminRoleSelects() {
         console.log(`Syncing UI for ${profile.username}: Role=${profile.role}, Group=${profile.group_tag}`);
     }
 }
-async function renderAdminPanel(){
+async function renderAdminPanel() {
+  console.log("Admin: Drawing Admin Panel...");
+  const adminPanel = document.getElementById('panel-admin');
+  
+  // Safety: If for some reason we are in the wrong room, stop.
+  if (!adminPanel || adminPanel.style.display === 'none') return;
+
   try {
-    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
+    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
     if (!profiles) return;
-    
+
+    // 1. Update the "Approvals" section
     const pending = profiles.filter(p => p.status === 'pending');
-    const active = profiles.filter(p => p.status === 'approved');
+    const pendingCountEl = document.getElementById('pending-count');
+    if (pendingCountEl) pendingCountEl.textContent = pending.length;
 
-    document.getElementById('pending-count').textContent = pending.length || '0';
-    document.getElementById('pending-list').innerHTML = pending.map(p => `
-      <div class="parts-row">
-        <div style="flex:1"><b>${p.full_name}</b> (${p.username})</div>
-        <button class="btn btn-success btn-sm" onclick="approveUser('${p.id}')">Approve</button>
-      </div>`).join('') || 'No pending requests';
+    const pendingListEl = document.getElementById('pending-list');
+    if (pendingListEl) {
+        pendingListEl.innerHTML = pending.map(p => `
+          <div class="parts-row">
+            <div style="flex:1"><b>${p.full_name}</b> (${p.username})</div>
+            <button class="btn btn-success btn-sm" onclick="approveUser('${p.id}', '${p.full_name}')">Approve</button>
+          </div>`).join('') || '<div style="padding:10px; color:var(--text3)">No pending requests</div>';
+    }
 
-    // Call user table render to fill the rest
+    // 2. ONLY DRAW THE USER TABLE (NO TOOLS ALLOWED HERE)
     renderUsersTable();
-  } catch(e){ console.error(e); }
-}
 
+  } catch (e) {
+    console.error("Admin render failed:", e);
+  }
+}
 async function approveUser(id){
   await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);
   showToast('User approved ✓');
