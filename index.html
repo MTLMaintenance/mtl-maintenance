@@ -5771,11 +5771,12 @@ function insertMention(username, atPos) {
     input.focus();
 }
 // --- THE MASTER SWITCHBOARD ---
-async function showPanel(id) { // Added 'async'
+async function showPanel(id) {
     window.scrollTo(0, 0);
 
     // 1. Hide all panels
-    document.querySelectorAll('.panel').forEach(p => {
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
@@ -5788,18 +5789,18 @@ async function showPanel(id) { // Added 'async'
     }
 
     // 3. Update nav buttons (Highlights the one you clicked)
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 4. Create the Mapping (The Switchboard)
-    const renderMap = 
+    // 4. Create the Mapping (THE { BRACKET WAS ADDED HERE)
+    const renderMap = {
         'dashboard': renderDashboard,
         'calendar': renderCalendar,  
-    
         'equipment': renderEquipmentTable,
         'tasks': renderTasks,
         'schedule': renderSchedule,
@@ -5817,11 +5818,11 @@ async function showPanel(id) { // Added 'async'
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
         }
-    };
+    }; // This closes the map
 
     // 5. Run the function if it exists in our map
     if (renderMap[id]) {
-        // Use await here to ensure the page finishes loading before moving on
+        // We use await to handle the async calendar and dashboard logic
         await renderMap[id](); 
     } else {
         console.warn("No render function found for panel ID:", id);
