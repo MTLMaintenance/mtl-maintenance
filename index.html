@@ -279,7 +279,34 @@ button[onclick="saveInvoice()"] {
 #global-search {
   max-width: 180px !important;
 }
-  
+ .cal-grid {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  width: 100%;
+}
+
+.cal-day {
+  min-height: 90px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  padding: 5px;
+  cursor: pointer;
+}
+
+.cal-day.today {
+  border: 2px solid var(--accent) !important;
+  background: #fff !important;
+}
+
+.cal-event {
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+} 
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -2300,7 +2327,6 @@ function renderCostChart(){
 // CALENDAR
 // ============================================================
 async function renderCalendar() {
-  console.log("Calendar: Starting render...");
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
   
@@ -2308,64 +2334,72 @@ async function renderCalendar() {
   const headersEl = document.getElementById('cal-headers');
   const daysEl = document.getElementById('cal-days');
 
-  if(!titleEl || !headersEl || !daysEl) {
-    console.error("Calendar Error: Missing HTML IDs! Need cal-title, cal-headers, and cal-days.");
-    return;
-  }
+  if(!titleEl || !headersEl || !daysEl) return;
 
+  // 1. Set the Title
   titleEl.textContent = `${MONTHS[month]} ${year}`;
   
-  // 1. Render Headers
-  console.log("Calendar: Drawing headers...");
+  // 2. Render Headers
   const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  headersEl.innerHTML = daysOfWeek.map(d => `<div class="cal-header" style="font-weight:bold; padding:5px">${d}</div>`).join('');
+  headersEl.innerHTML = daysOfWeek.map(d => `<div class="cal-header">${d}</div>`).join('');
   
-  // 2. Pre-calculate Predictions
-  console.log("Calendar: Calculating adaptive forecasts...");
-  for (let e of state.equipment) {
-      try {
-          const pred = await getAdaptivePrediction(e.id);
-          e._predictedDate = (pred && pred.status === 'ACTIVE') ? pred.predictedDate.toISOString().split('T')[0] : null;
-      } catch(e) { e._predictedDate = null; }
-  }
-
-  // 3. Month Logic
-  const firstDay = new Date(year, month, 1).getDay();
+  // 3. Calculate Dates
+  const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrev = new Date(year, month, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
   
   let cells = '';
-  for(let i = firstDay - 1; i >= 0; i--) {
-      cells += `<div class="cal-day other-month" style="opacity:0.3; padding:10px; border:1px solid #eee"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
+
+  // 4. Build the grid (Previous Month Padding)
+  for(let i = firstDayIndex - 1; i >= 0; i--){
+    cells += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrevMonth - i}</div></div>`;
   }
 
-  console.log("Calendar: Drawing month days...");
+  // 5. Build the grid (Current Month Days)
   for(let d = 1; d <= daysInMonth; d++){
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isToday = new Date().toISOString().split('T')[0] === dateStr;
     
-    const dayTasks = state.tasks.filter(t => t.due === dateStr);
-    const dayScheds = state.schedules.filter(s => s.date === dateStr);
-    const forecastEvents = state.equipment.filter(e => e._predictedDate === dateStr).map(e => 
-        `<div class="cal-event" style="background:#FAEEDA; color:#854F0B; border:1px dashed #BA7517; font-size:10px; padding:2px; margin-top:2px">📈 ${e.name}</div>`
-    );
-
+    // Find Work Orders and Scheduled items
+    const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
+    const dayScheds = (state.schedules || []).filter(s => s.date === dateStr);
+    
     const events = [
-      ...dayTasks.map(t => `<div class="cal-event" style="background:var(--accent-bg); color:var(--accent-text); font-size:10px; padding:2px; margin-top:2px; cursor:pointer" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
-      ...dayScheds.map(s => `<div class="cal-event" style="background:#eee; font-size:10px; padding:2px; margin-top:2px">${s.name}</div>`),
-      ...forecastEvents
+      ...dayTasks.map(t => `<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
+      ...dayScheds.map(s => `<div class="cal-event" style="background:#eee; color:#666">${s.name}</div>`)
     ];
 
     cells += `
-      <div class="cal-day" style="min-height:80px; border:1px solid #eee; padding:5px; background:${isToday ? '#fff8e1' : '#fff'}">
-        <div class="cal-day-num" style="font-weight:bold; margin-bottom:5px">${d}</div>
-        <div class="cal-events-container">${events.slice(0, 3).join('')}</div>
+      <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')" style="min-height:100px; border:1px solid var(--border); padding:5px; background:rgba(255,255,255,0.5)">
+        <div class="cal-day-num" style="font-weight:600">${d}</div>
+        <div id="forecast-container-${dateStr}"></div> <!-- Placeholder for Adaptive dots -->
+        <div class="cal-event-container">${events.slice(0, 3).join('')}</div>
       </div>`;
   }
-  
+
+  // 6. Fill the grid
   daysEl.innerHTML = cells;
-  console.log("Calendar: Render Complete ✓");
+
+  // 7. Render side lists
   renderMonthSchedList();
+  if (typeof renderRecurList === 'function') renderRecurList();
+
+  // 8. ASYNC STEP: Load Predictions without blocking the UI
+  renderAdaptiveForecasts(year, month);
+}
+async function renderAdaptiveForecasts(year, month) {
+    for (let e of state.equipment) {
+        try {
+            const pred = await getAdaptivePrediction(e.id);
+            if (pred && pred.status === 'ACTIVE') {
+                const dateStr = pred.predictedDate.toISOString().split('T')[0];
+                const container = document.getElementById(`forecast-container-${dateStr}`);
+                if (container) {
+                    container.innerHTML += `<div class="cal-event" style="background:rgba(186,117,23,0.1); color:#BA7517; border:1px dashed #BA7517; font-size:9px">📈 Forecast: ${e.name}</div>`;
+                }
+            }
+        } catch(err) { console.warn("Forecast failed for", e.name); }
+    }
 }
 
 function renderMonthSchedList() {
