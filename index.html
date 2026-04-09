@@ -1905,11 +1905,23 @@ async function loadState() {
     state.tools           = tl.data||[];
     state.wishlist        = wl.data||[];
     
-    // 2. Load Profiles for the Chat Mention Dropdown
+    // 2. Load Profiles (Added 'show_sensitive_metrics' to the selection)
     const { data: profiles } = await window._mpdb.from('profiles')
-        .select('id, username, full_name, role, group_tag')
+        .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
         .eq('status', 'approved');
     state.users_list_cache = profiles || [];
+
+    // --- DASHBOARD PRIVACY SYNC ---
+    // Find the current user in the profile list to get their preference
+    const myProfile = state.users_list_cache.find(p => p.username === currentUser.username);
+    if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
+        currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
+    }
+    // Apply the filter immediately so the UI knows what to hide
+    if (typeof applyPrivacyFilters === 'function') {
+        applyPrivacyFilters();
+    }
+    // ------------------------------
 
     // 3. Calculate metrics
     state.monthlyCosts = computeMonthlyCosts();
@@ -1925,8 +1937,7 @@ async function loadState() {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
   } catch(e) {}
-}    
-
+}
 function computeMonthlyCosts() {
   const now=new Date();
   return [3,2,1,0].map(ago=>{
@@ -6382,7 +6393,49 @@ async function saveQuickLogHours() {
     if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
     if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
 }
+// This function handles the checkbox click
+async function toggleSensitiveMetrics(isVisible) {
+    console.log("Privacy toggle changed to:", isVisible);
+    
+    // 1. Update the local user object so the app remembers the choice
+    currentUser.show_sensitive_metrics = isVisible;
+    
+    // 2. Run the filter to hide/show boxes immediately
+    applyPrivacyFilters();
 
+    // 3. Save the choice to the database (Supabase)
+    try {
+        await window._mpdb.from('profiles')
+            .update({ show_sensitive_metrics: isVisible })
+            .eq('id', currentUser.id);
+        showToast(isVisible ? "Financials shown" : "Financials hidden");
+    } catch(e) {
+        console.error("Failed to save dashboard preference:", e);
+        showToast("Setting not saved to database");
+    }
+}
+
+// This helper function actually hides or shows the HTML elements
+function applyPrivacyFilters() {
+    // Determine if the user is authorized and wants to see the data
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
+    const userPref = currentUser.show_sensitive_metrics !== false; 
+
+    // The targets we want to hide
+    const targets = ['m-cost-card', 'm-monthly-chart-card', 'm-fleet-health-card'];
+
+    // RULE: Hide if:
+    // - User is NOT a manager (Technician/Viewer)
+    // - OR if the user is a manager but turned the setting OFF
+    const shouldHide = !isManager || !userPref;
+
+    targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.display = shouldHide ? 'none' : 'block';
+        }
+    });
+}
     
     
 </script>
