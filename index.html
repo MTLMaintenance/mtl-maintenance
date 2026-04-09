@@ -6502,17 +6502,6 @@ function applyPrivacyFilters() {
   </div>
 </div>
 
-
-    <!-- Photo upload area -->
-    <div id="invoice-photo-area" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s" onclick="document.getElementById('invoice-photo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondrop="handleInvoiceDrop(event)">
-      <div id="invoice-photo-preview-area">
-        <div style="font-size:32px;margin-bottom:8px">📄</div>
-        <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>
-      </div>
-      <input type="file" id="invoice-photo-input" accept="image/*" style="display:none" onchange="handleInvoicePhoto(this)"/>
-    </div>
-
     <!-- Scanning status -->
     <div id="invoice-scanning" style="display:none;text-align:center;padding:16px;background:var(--accent-bg);border-radius:var(--radius);margin-bottom:16px">
       <div style="font-size:20px;margin-bottom:6px">🔍</div>
