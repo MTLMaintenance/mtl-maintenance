@@ -6577,6 +6577,28 @@ function applyPrivacyFilters() {
     </div>
   </div>
 </div>
+   <div class="panel" id="panel-calendar">
+  <div class="section-header">
+    <span class="section-title">Maintenance Calendar</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-primary btn-sm" onclick="openModal('recur-modal')">+ Rule</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('sched-modal')">+ Work</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="cal-nav">
+      <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
+      <div class="cal-nav-title" id="cal-title"></div> <!-- ID 1 -->
+      <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-grid" id="cal-headers"></div> <!-- ID 2 -->
+    <div class="cal-grid" id="cal-days" style="margin-top:4px"></div> <!-- ID 3 -->
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Recurrence Rules</span></div><div id="recur-list"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
+  </div>
+</div>     
     
     </script>
         <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
