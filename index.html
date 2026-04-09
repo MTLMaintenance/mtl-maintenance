@@ -2348,65 +2348,89 @@ function renderCostChart(){
 // ============================================================
 // CALENDAR
 // ============================================================
-function renderCalendar() {
+async function renderCalendar() {
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
   
   const titleEl = document.getElementById('cal-title');
-  const headersEl = document.getElementById('cal-headers');
   const daysEl = document.getElementById('cal-days');
+  const headersEl = document.getElementById('cal-headers');
 
-  if(!titleEl || !headersEl || !daysEl) return;
+  if(!titleEl || !daysEl || !headersEl) return;
 
+  // 1. Set the Title
   titleEl.textContent = `${MONTHS[month]} ${year}`;
   
-  // 1. Headers
-  headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-    .map(d => `<div class="cal-header" style="font-weight:600">${d}</div>`).join('');
+  // 2. Render Day Headers
+  const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  headersEl.innerHTML = daysOfWeek.map(d => `<div class="cal-header" style="font-weight:600; padding:5px">${d}</div>`).join('');
   
-  // 2. Month Calculation
+  // 3. Calculate Month Layout
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrev = new Date(year, month, 0).getDate();
   
   let cells = '';
-  // Prev month padding
-  for(let i = firstDay - 1; i >= 0; i--) {
-      cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
+
+  // 4. Add Padding for Previous Month
+  for(let i = firstDay - 1; i >= 0; i--){
+    cells += `<div class="cal-day other-month" style="opacity:0.3; padding:10px; border:1px solid var(--border)"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
   }
 
-  // Current month days
+  // 5. Build Current Month Days
   for(let d = 1; d <= daysInMonth; d++){
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isToday = new Date().toISOString().split('T')[0] === dateStr;
     
-    // Find Work Orders and manual Schedules
-    const dayTasks = state.tasks.filter(t => t.due === dateStr);
-    const dayScheds = state.schedules.filter(s => s.date === dateStr);
+    // Get Work Orders and Schedules for this day
+    const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
+    const dayScheds = (state.schedules || []).filter(s => s.date === dateStr);
     
     const events = [
-      ...dayTasks.map(t => `<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
-      ...dayScheds.map(s => `<div class="cal-event" style="background:#eee">${s.name}</div>`)
+      ...dayTasks.map(t => `<div class="cal-event ${t.status==='Overdue'?'overdue':t.status==='Completed'?'completed':''}" onclick="openTaskDetail('${t.id}')" style="cursor:pointer; font-size:10px; margin-bottom:2px; padding:2px; border-radius:3px; background:var(--accent-bg); color:var(--accent-text)">${t.name}</div>`),
+      ...dayScheds.map(s => `<div class="cal-event" style="font-size:10px; margin-bottom:2px; padding:2px; border-radius:3px; background:#eee; color:#666">${s.name}</div>`)
     ];
 
     cells += `
-      <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')" style="min-height:90px; border:1px solid var(--border); padding:4px; background:#fff">
+      <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')" style="min-height:90px; border:1px solid var(--border); padding:5px; background:#fff; position:relative">
         <div class="cal-day-num" style="font-weight:700; color:black">${d}</div>
-        <div id="forecast-container-${dateStr}"></div> <!-- Placeholder for Adaptive Forecast -->
-        <div class="cal-events-container">${events.slice(0, 3).join('')}</div>
+        <!-- This container is where the Adaptive orange boxes will appear later -->
+        <div id="forecast-box-${dateStr}" style="display:flex; flex-direction:column; gap:2px"></div>
+        <div class="cal-events-container">${events.join('')}</div>
       </div>`;
   }
 
+  // 6. Push the grid to the screen IMMEDIATELY
   daysEl.innerHTML = cells;
 
-  // 3. Trigger Side Lists
-  if(typeof renderMonthSchedList === 'function') renderMonthSchedList();
-  if(typeof renderRecurList === 'function') renderRecurList();
+  // 7. Refresh the side list
+  if (typeof renderMonthSchedList === 'function') renderMonthSchedList();
 
-  // 4. Run Adaptive Math in background
-  fillAdaptiveForecasts();
+  // 8. ASYNC BACKGROUND STEP: Fill in the Adaptive Forecasts
+  // We do this in a separate loop so it doesn't freeze the calendar
+  fillAdaptiveCalendarMarkers(year, month);
 }
 
+async function fillAdaptiveCalendarMarkers(year, month) {
+    for (let e of state.equipment) {
+        try {
+            // We only look for predictions if the machine has a rule
+            const hasRule = state.recurrenceRules.some(r => r.equip_id === e.id && r.type === 'hours');
+            if (!hasRule) continue;
+
+            const pred = await getAdaptivePrediction(e.id);
+            if (pred && pred.status === 'ACTIVE') {
+                const predDateStr = pred.predictedDate.toISOString().split('T')[0];
+                const container = document.getElementById(`forecast-box-${predDateStr}`);
+                if (container) {
+                    container.innerHTML += `<div class="cal-event" style="background:#FAEEDA; color:#854F0B; border:1px dashed #BA7517; font-size:9px; padding:2px">📈 Forecast: ${e.name}</div>`;
+                }
+            }
+        } catch (err) {
+            console.warn("Forecast skipped for:", e.name);
+        }
+    }
+}
 // Background function to add orange boxes
 async function fillAdaptiveForecasts() {
     for (let e of state.equipment) {
@@ -5822,7 +5846,7 @@ async function showPanel(id) {
     // 4. Create the Mapping (THE { BRACKET WAS ADDED HERE)
     const renderMap = {
         'dashboard': renderDashboard,
-        'calendar': renderCalendar,  
+        'calendar': () => { renderCalendar(); },
         'equipment': renderEquipmentTable,
         'tasks': renderTasks,
         'schedule': renderSchedule,
