@@ -2095,10 +2095,24 @@ function isOverdue(d){
 }
 function equipName(id){ const e=state.equipment.find(x=>x.id===id); return e?e.name:'—'; }
 function supplierName(id){ const s=state.suppliers.find(x=>x.id===id); return s?s.name:'—'; }
-function badge(s){
-  const m={Operational:'bs','In Service':'bi',Down:'bd',Standby:'bg',Completed:'bs',Open:'bi',Overdue:'bd',Critical:'bd',High:'bw',Medium:'bi',Low:'bg' 'In Progress': 'b-progress',
-    'Waiting for Parts': 'b-parts'};
-  return `<span class="badge ${m[s]||'bg'}">${s}</span>`;
+function badge(s) {
+  const m = {
+    'Operational': 'bs',
+    'In Service': 'bi',
+    'Down': 'bd',
+    'Standby': 'bg',
+    'Completed': 'bs',
+    'Open': 'bi',
+    'Overdue': 'bd',
+    'Critical': 'bd',
+    'High': 'bw',
+    'Medium': 'bi',
+    'Low': 'bg',
+    // ADD THESE TWO LINES:
+    'In Progress': 'b-progress',
+    'Waiting for Parts': 'b-parts'
+  };
+  return `<span class="badge ${m[s] || 'bg'}">${s}</span>`;
 }
 function healthColor(score){ return score>=80?'#3B6D11':score>=50?'#BA7517':'#E24B4A'; }
 function calcHealth(equipId){
