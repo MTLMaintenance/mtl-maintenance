@@ -2365,6 +2365,17 @@ async function renderCalendar() {
     // 6. Refresh Sidebars
     renderMonthSchedList();
     renderRecurList();
+if (typeof renderMonthSchedList === 'function') {
+      try { renderMonthSchedList(); } catch(e) { console.warn("Side list failed"); }
+  }
+  
+  // RUN ADAPTIVE MATH (BACKGROUND)
+  if (typeof fillAdaptiveCalendarMarkers === 'function') {
+      fillAdaptiveCalendarMarkers(year, month);
+  }
+  
+  console.log("Calendar Render: Success ✓");
+}
 }
 
 async function fillAdaptiveCalendarMarkers(year, month) {
