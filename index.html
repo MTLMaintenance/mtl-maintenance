@@ -2132,60 +2132,58 @@ function closePhotoViewer(){ document.getElementById('photo-viewer').classList.r
 
 // MODALS
 // ============================================================
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.style.display = 'none'; // Hide it
-    el.classList.remove('open');
-  }
-}
-function populateSelects() {
-    console.log("Starting populateSelects...");
-    const tEquip = document.getElementById('t-equip');
-    
-    if (!tEquip) {
-        console.error("CRITICAL: The dropdown box 't-equip' was not found in your HTML!");
-        return;
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        el.classList.add('open');
+
+        // Fill dropdowns if the modal needs them
+        if (id === 'task-modal' || id === 'calendar-entry-modal') {
+            populateSelects();
+        }
+    } else {
+        console.error("Modal not found:", id);
     }
-
-    // Build the list
-    const options = state.equipment.map(e => 
-        `<option value="${e.id}">${e.name}</option>`
-    ).join('');
-
-    // Put the list into the box
-    tEquip.innerHTML = options || '<option value="">No equipment found</option>';
-    
-    console.log("Success: Put " + state.equipment.length + " machines into the Work Order box.");
 }
-    // 1. Identify the dropdowns
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'none';
+        el.classList.remove('open');
+    }
+}
+
+// --- THE DROPDOWN PAINTER ---
+function populateSelects() {
     const tEquip = document.getElementById('t-equip');
     const tAssign = document.getElementById('t-assign');
-    
-    if (!tEquip) {
-        console.error("ERROR: Could not find HTML element with ID 't-equip'");
-        return;
-    }
+    const ceEquip = document.getElementById('ce-equip');
+    const ceAssign = document.getElementById('ce-assign');
 
-    // 2. Build the Equipment list
-    const options = state.equipment.map(e => 
+    // 1. Prepare Data
+    const equipOpts = (state.equipment || []).map(e => 
         `<option value="${e.id}">${e.name}</option>`
-    ).join('');
+    ).join('') || '<option value="">No equipment found</option>';
 
-    tEquip.innerHTML = options || '<option value="">No equipment found</option>';
-    console.log("Equipment dropdown filled with " + state.equipment.length + " items.");
+    const userOpts = '<option value="">— Unassigned —</option>' +
+        (state.users_list_cache || []).map(u => 
+            `<option value="${u.full_name}">${u.full_name}</option>`
+        ).join('');
 
-    // 3. Build the User list
-    if (tAssign) {
-        const users = state.users_list_cache || [];
-        tAssign.innerHTML = '<option value="">— Unassigned —</option>' +
-            users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
-    }
+    // 2. Safely apply to Work Order Modal
+    if (tEquip) { tEquip.innerHTML = equipOpts; }
+    if (tAssign) { tAssign.innerHTML = userOpts; }
 
-    // 4. Fill the parts select
+    // 3. Safely apply to Calendar Entry Modal
+    if (ceEquip) { ceEquip.innerHTML = equipOpts; }
+    if (ceAssign) { ceAssign.innerHTML = userOpts; }
+
+    // 4. Fill Parts Select
     const pSel = document.getElementById('wo-part-select');
     if (pSel) {
-        pSel.innerHTML = state.parts.map(p => 
+        pSel.innerHTML = (state.parts || []).map(p => 
             `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`
         ).join('');
     }
@@ -4457,15 +4455,19 @@ function renderAlerts(){
 
 // ── OVERRIDDEN openModal ──────────────────────────────────────
 function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.style.display = 'flex'; // Force it to show
-    el.classList.add('open');  // Apply the CSS transition
-  } else {
-    console.error("Could not find modal with ID:", id);
-  }
-}
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        el.classList.add('open');
 
+        // Fill dropdowns if the modal needs them
+        if (id === 'task-modal' || id === 'calendar-entry-modal') {
+            populateSelects();
+        }
+    } else {
+        console.error("Modal not found:", id);
+    }
+}
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
   // 1. Session & UI Setup
