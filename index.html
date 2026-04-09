@@ -2139,53 +2139,48 @@ function closeModal(id) {
     el.classList.remove('open');
   }
 }
-
 function populateSelects() {
-    console.log("Populating all dropdowns...");
+    console.log("Populating all modal dropdowns...");
     
-    // 1. Build the list of equipment
-    const equipOpts = (state.equipment || []).map(e => 
+    // 1. Get the list of equipment from memory
+    const equipOptions = state.equipment.map(e => 
         `<option value="${e.id}">${e.name}</option>`
     ).join('') || '<option value="">No equipment found</option>';
 
-    // 2. Build the list of users
+    // 2. Get the list of users from memory
     const users = state.users_list_cache || [];
     const userOptions = '<option value="">— Unassigned —</option>' +
         users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
 
-    // --- APPLY TO RECURRENCE MODAL ---
-    const rEquip = document.getElementById('r-equip');
-    if (rEquip) rEquip.innerHTML = equipOpts;
-    
-    const rAssign = document.getElementById('r-assign');
-    if (rAssign) rAssign.innerHTML = userOptions;
-
     // --- APPLY TO WORK ORDER MODAL ---
     const tEquip = document.getElementById('t-equip');
-    if (tEquip) tEquip.innerHTML = equipOpts;
+    if (tEquip) tEquip.innerHTML = equipOptions;
     
     const tAssign = document.getElementById('t-assign');
     if (tAssign) tAssign.innerHTML = userOptions;
 
-    // --- APPLY TO SCHEDULE MODAL ---
-    const sEquip = document.getElementById('s-equip');
-    if (sEquip) sEquip.innerHTML = equipOpts;
-    
-    const sTech = document.getElementById('s-tech');
-    if (sTech) sTech.innerHTML = userOptions;
-    
-    // --- APPLY TO DOCUMENT MODAL ---
-    const dEquip = document.getElementById('d-equip');
-    if (dEquip) dEquip.innerHTML = '<option value="">— None —</option>' + equipOpts;
+    // --- APPLY TO CALENDAR/ENTRY MODAL ---
+    const ceEquip = document.getElementById('ce-equip');
+    if (ceEquip) ceEquip.innerHTML = equipOptions;
+
+    const ceAssign = document.getElementById('ce-assign');
+    if (ceAssign) ceAssign.innerHTML = userOptions;
+
+    // --- APPLY TO FILTERS ---
+    const taskFilter = document.getElementById('task-equip-filter');
+    if (taskFilter) {
+        taskFilter.innerHTML = `<option value="all">All Equipment</option>` + equipOptions;
+    }
     
     // --- APPLY TO PARTS SELECT ---
     const pSel = document.getElementById('wo-part-select');
     if (pSel) {
         pSel.innerHTML = state.parts.map(p => 
             `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`
-        ).join('');
+        ).join('') || '<option value="">No parts in inventory</option>';
     }
 }
+
     // Also populate WO part select
   const partOpts=state.parts.map(p=>`<option value="${p.id}">${p.name} (Stock: ${p.qty}${p.cost?', $'+p.cost.toFixed(2)+' ea':''})</option>`).join('');
   const psel=document.getElementById('wo-part-select'); if(psel) psel.innerHTML=partOpts;
