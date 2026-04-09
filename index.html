@@ -959,32 +959,7 @@ body.dark-mode .spec-row:hover {
       <tbody id="tasks-table-body"></tbody>
     </table></div>
   </div>
- <!-- THE CLEAN CALENDAR PANEL -->
-<div class="panel" id="panel-calendar">
-  <div class="section-header">
-    <span class="section-title">Maintenance Calendar</span>
-    <div style="display:flex; gap:6px">
-      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('recur-modal')">+ Rule</button>
-      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('sched-modal')">+ Work</button>
-    </div>
-  </div>
 
-  <div class="card">
-    <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
-      <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
-      <div id="cal-title" style="font-weight:700; font-size:18px; flex:1; text-align:center; color: #000">Loading...</div>
-      <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
-    </div>
-
-    <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; margin-bottom:10px"></div>
-    <div class="cal-grid" id="cal-days"></div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Rules</span></div><div id="recur-list"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
-  </div>
-</div>
     
   <!-- SCHEDULE -->
   <div class="panel" id="panel-schedule">
@@ -1358,52 +1333,6 @@ body.dark-mode .spec-row:hover {
       <div id="assign-users-list"></div>
     </div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('equip-modal')">Cancel</button><button class="btn btn-primary" onclick="saveEquipment()">Add Equipment</button></div>
-  </div>
-</div>
-
-<!-- Schedule Modal -->
-<div class="modal-backdrop" id="sched-modal">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">Schedule Maintenance</span><button class="modal-close" onclick="closeModal('sched-modal')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><label class="form-label">Job Name *</label><input class="form-input" id="s-name" placeholder="e.g. 500-hour service"/></div>
-      <div class="form-group"><label class="form-label">Equipment</label><select class="form-select" id="s-equip"></select></div>
-      <div class="form-group"><label class="form-label">Scheduled Date</label><input class="form-input" id="s-date" type="date"/></div>
-      <div class="form-group"><label class="form-label">Technician</label><select class="form-select" id="s-tech"></select></div>
-      <div class="form-group"><label class="form-label">Est. Duration (hrs)</label><input class="form-input" id="s-dur" type="number" placeholder="2"/></div>
-      <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="s-notes"></textarea></div>
-    </div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('sched-modal')">Cancel</button><button class="btn btn-primary" onclick="saveSched()">Schedule</button></div>
-  </div>
-</div>
-
-<!-- Recurrence Rule Modal -->
-<div class="modal-backdrop" id="recur-modal">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">Add Recurrence Rule</span><button class="modal-close" onclick="closeModal('recur-modal')">✕</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><label class="form-label">Rule Name *</label><input class="form-input" id="r-name" placeholder="e.g. Monthly oil change"/></div>
-      <div class="form-group"><label class="form-label">Equipment</label><select class="form-select" id="r-equip"></select></div>
-      <div class="form-group"><label class="form-label">Trigger Type</label>
-        <select class="form-select" id="r-type" onchange="toggleRecurType()">
-          <option value="calendar">Calendar (time-based)</option>
-          <option value="hours">Runtime Hours</option>
-        </select>
-      </div>
-      <div class="form-group" id="r-interval-group"><label class="form-label">Every</label>
-        <div style="display:flex;gap:6px">
-          <input class="form-input" id="r-interval-val" type="number" min="1" value="1" style="width:70px"/>
-          <select class="form-select" id="r-interval-unit"><option value="day">Day(s)</option><option value="week">Week(s)</option><option value="month" selected>Month(s)</option><option value="year">Year(s)</option></select>
-        </div>
-      </div>
-      <div class="form-group" id="r-hours-group" style="display:none"><label class="form-label">Every X Runtime Hours</label>
-        <input class="form-input" id="r-hours" type="number" min="1" placeholder="e.g. 500"/>
-      </div>
-      <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="r-priority"><option>Low</option><option>Medium</option><option selected>High</option><option>Critical</option></select></div>
-      <div class="form-group"><label class="form-label">Assign To</label><select class="form-select" id="r-assign"></select></div>
-      <div class="form-group full"><label class="form-label">Work Order Template Notes</label><textarea class="form-textarea" id="r-notes" placeholder="Notes to include on auto-generated work orders..."></textarea></div>
-    </div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('recur-modal')">Cancel</button><button class="btn btn-primary" onclick="saveRecurRule()">Save Rule</button></div>
   </div>
 </div>
 
@@ -2492,11 +2421,16 @@ function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar();
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
 function calDayClick(dateStr) {
-    const input = document.getElementById('s-date');
-    if(input) input.value = dateStr;
-    openModal('sched-modal');
+    // 1. Clear the modal and set to 'one-time' mode
+    resetCalModal();
+    
+    // 2. Set the specific date the user clicked on
+    const dateInput = document.getElementById('ce-date');
+    if (dateInput) dateInput.value = dateStr;
+    
+    // 3. Open the NEW master modal
+    openModal('calendar-entry-modal');
 }
-
 function toggleRecurType(){
   const t=document.getElementById('r-type').value;
   document.getElementById('r-interval-group').style.display=t==='calendar'?'block':'none';
@@ -3229,72 +3163,7 @@ async function saveTask(){
   document.getElementById('wo-parts-list').innerHTML='<div style="color:var(--text3);font-size:13px">No parts added yet</div>';
 }
 
-async function saveSched(){
-  const name=document.getElementById('s-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const record={
-    id:uid(), name,
-    equipId: document.getElementById('s-equip').value,
-    date:    document.getElementById('s-date').value,
-    tech:    document.getElementById('s-tech').value,
-    dur:     parseInt(document.getElementById('s-dur').value)||1,
-    notes:   document.getElementById('s-notes').value,
-  };
-  state.schedules.push(record);
-  await persist('schedules','upsert',record);
-  closeModal('sched-modal'); renderSchedule(); renderCalendar();
-  ['s-name','s-date','s-dur','s-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-}
 
-async function saveRecurRule() {
-  const name = document.getElementById('r-name').value.trim();
-  if (!name) { showToast("Rule name is required"); return; }
-
-  const type = document.getElementById('r-type').value;
-  const today = new Date().toISOString().split('T')[0];
-
-  // Prepare the data object
-  const record = {
-    id: uid(),
-    name: name,
-    equip_id: document.getElementById('r-equip').value,
-    type: type,
-    interval_unit: document.getElementById('r-interval-unit')?.value || 'month',
-    interval_value: parseInt(document.getElementById('r-interval-val')?.value) || 1,
-    runtime_hours: parseInt(document.getElementById('r-hours')?.value) || 500,
-    priority: document.getElementById('r-priority').value,
-    notes: document.getElementById('r-notes').value,
-    next_due: today, // Start checking immediately
-    active: true,
-    last_generated_hours: 0,
-    template: {
-        assign: document.getElementById('r-assign')?.value || ''
-    }
-  };
-
-  try {
-    const { error } = await window._mpdb.from('recurrence_rules').insert(record);
-    
-    if (error) {
-        console.error("Supabase Error:", error);
-        showToast("Database Error: " + error.message);
-        return;
-    }
-
-    state.recurrenceRules.push(record);
-    closeModal('recur-modal');
-    renderCalendar();
-    showToast("Recurrence rule saved ✓");
-    
-    // Log to Audit if function exists
-    if(typeof logAuditAction === 'function') {
-        logAuditAction("Created Rule", `${name} for ${equipName(record.equip_id)}`);
-    }
-
-  } catch (e) {
-    console.error("Connection error:", e);
-    showToast("Failed to save rule. Check console.");
-  }
-}
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart(){
