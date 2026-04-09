@@ -1577,6 +1577,7 @@ let allMachineZerks = [];
 let tempZerkCoords = { x: 0, y: 0 };
 let calDate = new Date();
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+ let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
 // ── SESSION TOKEN ────────────────────────────────────────────
@@ -6581,7 +6582,82 @@ function applyPrivacyFilters() {
         }
     });
 }
+ function setCalEntryType(type) {
+    currentCalEntryType = type;
+    const isOne = type === 'one-time';
     
+    // Toggle UI Groups
+    document.getElementById('ce-group-one').style.display = isOne ? 'contents' : 'none';
+    document.getElementById('ce-group-recur').style.display = isOne ? 'none' : 'block';
+    
+    // Toggle Button Styles
+    document.getElementById('cal-type-one').style.background = isOne ? 'var(--accent)' : 'transparent';
+    document.getElementById('cal-type-one').style.color = isOne ? '#fff' : 'var(--text2)';
+    document.getElementById('cal-type-recur').style.background = !isOne ? 'var(--accent)' : 'transparent';
+    document.getElementById('cal-type-recur').style.color = !isOne ? '#fff' : 'var(--text2)';
+}
+
+function toggleRecurFields() {
+    const type = document.getElementById('ce-recur-type').value;
+    document.getElementById('ce-recur-val-wrap').style.display = type === 'calendar' ? 'block' : 'none';
+    document.getElementById('ce-recur-hrs-wrap').style.display = type === 'hours' ? 'block' : 'none';
+}
+
+function resetCalModal() {
+    setCalEntryType('one-time');
+    document.getElementById('ce-name').value = '';
+    document.getElementById('ce-notes').value = '';
+    document.getElementById('ce-date').value = new Date().toISOString().split('T')[0];
+    
+    // Fill dropdowns
+    const equipSelect = document.getElementById('ce-equip');
+    const userSelect = document.getElementById('ce-assign');
+    if(equipSelect) equipSelect.innerHTML = (state.equipment || []).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+    if(userSelect) userSelect.innerHTML = '<option value="">— Unassigned —</option>' + (state.users_list_cache || []).map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
+}
+
+async function saveCalendarEntry() {
+    const name = document.getElementById('ce-name').value.trim();
+    if(!name) { showToast("Enter a name"); return; }
+
+    if (currentCalEntryType === 'one-time') {
+        // Build one-time job record
+        const record = {
+            id: uid(),
+            name: name,
+            equipId: document.getElementById('ce-equip').value,
+            date: document.getElementById('ce-date').value,
+            tech: document.getElementById('ce-assign').value,
+            dur: parseInt(document.getElementById('ce-dur').value) || 1,
+            notes: document.getElementById('ce-notes').value
+        };
+        await persist('schedules', 'upsert', record);
+        state.schedules.push(record);
+    } else {
+        // Build recurring rule record
+        const type = document.getElementById('ce-recur-type').value;
+        const record = {
+            id: uid(),
+            name: name,
+            equip_id: document.getElementById('ce-equip').value,
+            type: type,
+            interval_unit: document.getElementById('ce-unit').value,
+            interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
+            runtime_hours: parseInt(document.getElementById('ce-runtime').value) || 500,
+            priority: 'High',
+            notes: document.getElementById('ce-notes').value,
+            active: true,
+            next_due: new Date().toISOString().split('T')[0],
+            template: { assign: document.getElementById('ce-assign').value }
+        };
+        await window._mpdb.from('recurrence_rules').insert(record);
+        state.recurrenceRules.push(record);
+    }
+
+    closeModal('calendar-entry-modal');
+    renderCalendar();
+    showToast("Added to Calendar ✓");
+}   
     
 </script>
 <!-- Checklist Template Modal -->
@@ -6717,8 +6793,7 @@ function applyPrivacyFilters() {
   <div class="section-header">
     <span class="section-title">Maintenance Calendar</span>
     <div style="display:flex; gap:6px">
-      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('recur-modal')">+ Rule</button>
-      <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('sched-modal')">+ Work</button>
+     <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
     </div>
   </div>
 
@@ -6738,7 +6813,61 @@ function applyPrivacyFilters() {
     <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
   </div>
 </div>
-    
+    <div class="modal-backdrop" id="calendar-entry-modal" style="display:none">
+  <div class="modal" style="max-width:450px">
+    <div class="modal-header">
+      <span class="modal-title">Add Calendar Entry</span>
+      <button class="modal-close" onclick="closeModal('calendar-entry-modal')">✕</button>
+    </div>
+
+    <!-- Toggle Selector -->
+    <div style="background:var(--bg2); padding:4px; border-radius:var(--radius); display:flex; gap:2px; margin-bottom:15px; border:1px solid var(--border)">
+        <button class="btn btn-sm" id="cal-type-one" onclick="setCalEntryType('one-time')" style="flex:1; background:var(--accent); color:#fff">One-time Job</button>
+        <button class="btn btn-sm" id="cal-type-recur" onclick="setCalEntryType('recurring')" style="flex:1; background:transparent; color:var(--text2)">Recurring Rule</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full"><label class="form-label">Name / Job Description *</label><input class="form-input" id="ce-name" placeholder="e.g. 500hr Service"/></div>
+      <div class="form-group"><label class="form-label">Equipment</label><select class="form-select" id="ce-equip"></select></div>
+      <div class="form-group"><label class="form-label">Assign To</label><select class="form-select" id="ce-assign"></select></div>
+
+      <!-- ONE-TIME FIELDS -->
+      <div id="ce-group-one" class="form-group full" style="display:contents">
+        <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="ce-date" type="date"/></div>
+        <div class="form-group"><label class="form-label">Est. Hours</label><input class="form-input" id="ce-dur" type="number" placeholder="2"/></div>
+      </div>
+
+      <!-- RECURRING FIELDS -->
+      <div id="ce-group-recur" style="display:none; grid-column: 1/-1;">
+        <div class="form-grid">
+            <div class="form-group"><label class="form-label">Interval Type</label>
+                <select class="form-select" id="ce-recur-type" onchange="toggleRecurFields()">
+                    <option value="calendar">Time (Months/Weeks)</option>
+                    <option value="hours">Usage Hours</option>
+                </select>
+            </div>
+            <div class="form-group" id="ce-recur-val-wrap"><label class="form-label">Every</label>
+                <div style="display:flex; gap:4px">
+                    <input class="form-input" id="ce-interval" type="number" value="1" style="width:60px"/>
+                    <select class="form-select" id="ce-unit"><option value="month">Month(s)</option><option value="week">Week(s)</option></select>
+                </div>
+            </div>
+            <div class="form-group" id="ce-recur-hrs-wrap" style="display:none">
+                <label class="form-label">Hours Interval</label>
+                <input class="form-input" id="ce-runtime" type="number" placeholder="500"/>
+            </div>
+        </div>
+      </div>
+
+      <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="ce-notes"></textarea></div>
+    </div>
+
+    <div class="form-row" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeModal('calendar-entry-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCalendarEntry()">Add to Calendar</button>
+    </div>
+  </div>
+</div>
     </script>
         <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
