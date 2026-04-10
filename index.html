@@ -2458,7 +2458,7 @@ function updateMetrics(){
   const openAndOverdue = open + overdue;
   document.getElementById('m-overdue').textContent=openAndOverdue;
   document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
-  document.getElementById('m-cost').textContent='$'+cost.toLocaleString();
+   safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
   document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
   document.getElementById('m-parts').textContent=low;
   document.getElementById('m-parts').className='metric-value '+(low>0?'v-danger':'v-success');
