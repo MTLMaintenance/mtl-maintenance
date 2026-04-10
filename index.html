@@ -995,72 +995,40 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
-   <div class="panel active" id="panel-dashboard">
-    <div id="alert-section"></div>
-    
-    <!-- METRICS ROW -->
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div><div class="metric-sub" id="m-total-sub">0 operational</div></div>
-      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div><div class="metric-sub">Work orders</div></div>
-      
-      <!-- SENSITIVE METRIC: MONTHLY COST -->
-      <div class="metric-card" id="m-cost-card">
-        <div class="metric-label">This Month Cost</div>
-        <div class="metric-value" id="m-cost">$0</div>
-        <div class="metric-sub" id="m-cost-sub">+$0 vs last month</div>
-      </div>
+  <div class="panel active" id="panel-dashboard">
+  <div id="alert-section"></div>
 
-      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
-      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
+      <div id="equip-list-dash"></div>
     </div>
-
-    <!-- ROW 1: STATUS AND SCHEDULE -->
-    <div class="grid-2" style="margin-bottom: 12px">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
-        <div id="equip-list-dash"></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
-        <div id="sched-list-dash"></div>
-      </div>
-    </div>
-
-    <!-- ROW 2: WORK ORDERS AND COST CHART -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Work Orders</span>
-          <span class="badge bg" id="task-count-badge">0 work orders</span>
-        </div>
-        <div id="recent-tasks"></div>
-      </div>
-
-      <!-- SENSITIVE CARD: MONTHLY COST CHART -->
-      <div class="card" id="m-monthly-chart-card">
-        <div class="card-header"><span class="card-title">Monthly Costs ($)</span></div>
-        <div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div>
-      </div>
-    </div>
-
-    <!-- ROW 3: OBSERVATIONS AND FLEET HEALTH -->
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Observations</span>
-          <span class="badge bg" id="obs-count-badge">0 total</span>
-        </div>
-        <div id="recent-obs-list"></div>
-      </div>
-
-      <!-- SENSITIVE CARD: FLEET HEALTH -->
-      <div class="card" id="m-fleet-health-card">
-        <div class="card-header"><span class="card-title">Fleet Health</span></div>
-        <div id="fleet-health-dash"></div>
-      </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+      <div id="sched-list-dash"></div>
     </div>
   </div>
+
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
+      <div id="recent-tasks"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
+      <div id="recent-obs-list"></div>
+    </div>
+  </div>
+</div>
+
+      
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -2441,35 +2409,28 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
-  const overdue=state.tasks.filter(t=>t.status==='Overdue').length;
-  const open=state.tasks.filter(t=>t.status==='Open').length;
-  const low=state.parts.filter(p=>p.qty<=p.reorder).length;
-  const costs=state.monthlyCosts; const cost=costs[costs.length-1]; const prev=costs[costs.length-2]||0;
-  const diff=cost-prev; const sign=diff>=0?'+':'-';
-  const avgHealth=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):100;
-  // Make metric cards clickable
-  ['m-total','m-overdue','m-cost','m-parts','m-health','m-open'].forEach(id=>{
-    const el=document.getElementById(id);
-    const card=el?.closest('.metric-card');
-    if(card&&!card.dataset.clickable){
-      card.dataset.clickable='1';
-      card.style.cursor='pointer';
-      const panelMap={'m-total':'equipment','m-overdue':'tasks','m-open':'tasks','m-cost':'analytics','m-parts':'parts','m-health':'analytics'};
-      card.onclick=()=>showPanel(panelMap[id]||'dashboard');
-    }
-  });
-  document.getElementById('m-total').textContent=state.equipment.length;
-  document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
-  const openAndOverdue = open + overdue;
-  document.getElementById('m-overdue').textContent=openAndOverdue;
-  document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
-  document.getElementById('m-cost').textContent='$'+cost.toLocaleString();
-  document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
-  document.getElementById('m-parts').textContent=low;
-  document.getElementById('m-parts').className='metric-value '+(low>0?'v-danger':'v-success');
-  document.getElementById('m-health').textContent=avgHealth+'%';
-  document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
-  document.getElementById('m-open').textContent=open;
+  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
+  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
+  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
+  const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
+
+  // SAFE HELPER: This prevents the app from crashing if a card is missing
+  const safeSet = (id, val) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = val;
+  };
+
+  safeSet('m-total', state.equipment.length);
+  safeSet('m-parts', lowCount);
+  safeSet('m-open', openCount);
+  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString()); // Update Analytics Spend
+
+  const mo = document.getElementById('m-overdue'); 
+  if(mo) {
+    const totalActive = openCount + overdueCount;
+    mo.textContent = totalActive;
+    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
+  }
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
@@ -4549,29 +4510,21 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 
-async function renderDashboard(){ // Added 'async'
-  // 1. Run standard renders
-  renderAlerts();
-  await renderEquipListDash(); // Added 'await'
-  renderSchedDash();
-  renderRecentTasks();
-  renderCostChart();
-  updateMetrics();
-
-  // 2. Handle Budget Alerts
-  const budgetAlerts = checkBudgetAlerts();
-  if(budgetAlerts.length){
-    const sec = document.getElementById('alert-section');
-    if(sec) sec.innerHTML += budgetAlerts.map(a => `<div class="alert alert-w">💰 ${a}</div>`).join('');
+async function renderDashboard(){
+  console.log("Safe Render: Starting Dashboard...");
+  try {
+      updateMetrics();
+      renderAlerts();
+      await renderEquipListDash(); // Predictions
+      renderRecentTasks();
+      renderRecentObservations();
+      renderSchedDash();
+      
+      // We REMOVED renderFleetHealthDash() and renderCostChart() from here
+      
+  } catch (e) {
+      console.error("Dashboard error:", e);
   }
-
-  // 3. Handle list checks
-  if(document.getElementById('recent-obs-list')) renderRecentObservations();
-  if(document.getElementById('fleet-health-dash')) renderFleetHealthDash(); 
-
-  // 4. APPLY THE FILTER LAST
-  // This ensures the sensitive data is hidden the moment it appears
-  applyPrivacyFilters(); 
 }
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
