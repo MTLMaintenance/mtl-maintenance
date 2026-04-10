@@ -1881,7 +1881,7 @@ async function uploadZerkView(input) {
         if (error) throw error;
 
         showToast("View added ✓");
-        refreshZerkMap(equipId);
+        (equipId);
     } catch(err) { 
         console.error(err);
         showToast("Upload failed"); 
@@ -3157,7 +3157,7 @@ function switchDetailTab(tab, btn){
   if(tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
   if(tab === 'eq-history') renderFullHistoryList(id); // <--- Fixed name
   if(tab === 'eq-obs') refreshObsList(id);
-  if(tab === 'eq-zerks') refreshZerkMap(id);
+  if(tab === 'eq-zerks') (id);
   if(tab === 'eq-invoices') renderInvoicesList(id);
   if(tab === 'eq-docs') renderDocsList(id);
 }
@@ -6125,7 +6125,7 @@ async function renderAuditLogs() {
     container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--danger)">Failed to load logs</div>';
   }
 }
-async function refreshZerkMap(equipId) {
+async function (equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
@@ -6334,7 +6334,7 @@ async function deleteZerk(id) {
     }
 }
 
-// UPDATE: refreshZerkMap to use the new zerk_photos field
+// UPDATE:  to use the new zerk_photos field
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
