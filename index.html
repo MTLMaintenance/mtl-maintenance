@@ -1337,15 +1337,7 @@ body.dark-mode .spec-row:hover {
       <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
     </div>
 
-    <!-- Dashboard Privacy Toggle -->
-    <div class="card" style="margin-top:12px">
-      <div class="card-header"><span class="card-title">Dashboard Preferences</span></div>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px">
-        <input type="checkbox" id="setting-show-metrics" onchange="toggleSensitiveMetrics(this.checked)"/>
-        <span>Show sensitive metrics (Costs & Health) on Dashboard</span>
-      </label>
-      <div style="font-size:11px; color:var(--text3); margin-top:4px">If disabled, financial data will be hidden from your view.</div>
-    </div>
+
 
     <!-- Audit Log -->
     <div class="card" style="margin-top:12px">
@@ -5855,8 +5847,6 @@ async function renderAdminPanel(){
     
     const pending = profiles.filter(p => p.status === 'pending');
     const active = profiles.filter(p => p.status === 'approved');
-const checkbox = document.getElementById('setting-show-metrics');
-if(checkbox) checkbox.checked = currentUser.show_sensitive_metrics !== false;
     document.getElementById('pending-count').textContent = pending.length || '0';
     document.getElementById('pending-list').innerHTML = pending.map(p => `
       <div class="parts-row">
@@ -6670,52 +6660,7 @@ async function saveQuickLogHours() {
     if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
     if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
 }
-// This function handles the checkbox click
-async function toggleSensitiveMetrics(isVisible) {
-    console.log("Privacy toggle changed to:", isVisible);
-    
-    // 1. Update the local user object so the app remembers the choice
-    currentUser.show_sensitive_metrics = isVisible;
-    
-    // 2. Run the filter to hide/show boxes immediately
-    applyPrivacyFilters();
 
-    // 3. Save the choice to the database (Supabase)
-    try {
-        await window._mpdb.from('profiles')
-            .update({ show_sensitive_metrics: isVisible })
-            .eq('id', currentUser.id);
-        showToast(isVisible ? "Financials shown" : "Financials hidden");
-    } catch(e) {
-        console.error("Failed to save dashboard preference:", e);
-        showToast("Setting not saved to database");
-    }
-}
-
-// This helper function actually hides or shows the HTML elements
-function applyPrivacyFilters() {
-    // Determine if the user is authorized and wants to see the data
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const userPref = currentUser.show_sensitive_metrics !== false; 
-
-    // The targets we want to hide
-    const targets = ['m-cost-card', 'm-monthly-chart-card', 'm-fleet-health-card'];
-
-    // RULE: Hide if:
-    // - User is NOT a manager (Technician/Viewer)
-    // - OR if the user is a manager but turned the setting OFF
-    const shouldHide = !isManager || !userPref;
-
-    targets.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.style.display = shouldHide ? 'none' : 'block';
-        }
-    });
-}
- function setCalEntryType(type) {
-    currentCalEntryType = type;
-    const isOne = type === 'one-time';
     
     // Toggle UI Groups
     document.getElementById('ce-group-one').style.display = isOne ? 'contents' : 'none';
