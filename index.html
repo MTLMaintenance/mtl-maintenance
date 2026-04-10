@@ -6,8 +6,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
 
+/* --- UNIVERSAL PRO THEME RESTORATION --- */
+.metrics {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 4px solid var(--accent) !important;
+  border-radius: 8px;
+  padding: 15px;
+  color: #1a1a18 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #6b6b66;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  border-top: 4px solid var(--accent) !important;
+  border-radius: 12px;
+  padding: 20px !important;
+  margin-bottom: 15px;
+  color: #1a1a18 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+.grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 15px !important;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding-bottom: 10px;
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-text);
+  text-transform: uppercase;
+}
 /* --- TAB CONTRAST FIX --- */
 
 /* 1. Inactive Tabs (The ones that were blending in) */
@@ -489,7 +552,7 @@ button[onclick="saveInvoice()"] {
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
 .section-title{font-size:16px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* METRICS */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
 .metric-card{background:rgba(255,255,255,0.88);border-radius:var(--radius);padding:12px 14px}
 .metric-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .metric-value{font-size:24px;font-weight:600;line-height:1}
@@ -995,60 +1058,41 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
-   <div class="panel active" id="panel-dashboard">
-    <div id="alert-section"></div>
-    
-    <!-- METRICS ROW -->
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div><div class="metric-sub" id="m-total-sub">0 operational</div></div>
-      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div><div class="metric-sub">Work orders</div></div>
-      
-      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
-     <div class="metric-sub">Fleet score</div></div>
-      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
+ <div class="panel active" id="panel-dashboard">
+  <div id="alert-section"></div>
+
+  <!-- METRICS (4 operational boxes) -->
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+  </div>
+
+  <!-- ROW 1 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
+      <div id="equip-list-dash"></div>
     </div>
-
-    <!-- ROW 1: STATUS AND SCHEDULE -->
-    <div class="grid-2" style="margin-bottom: 12px">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
-        <div id="equip-list-dash"></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
-        <div id="sched-list-dash"></div>
-      </div>
-    </div>
-
-    <!-- ROW 2: WORK ORDERS AND COST CHART -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Work Orders</span>
-          <span class="badge bg" id="task-count-badge">0 work orders</span>
-        </div>
-        <div id="recent-tasks"></div>
-      </div>
-
-      <!-- SENSITIVE CARD: MONTHLY COST CHART -->
-      <div class="card" id="m-monthly-chart-card">
-        <div class="card-header"><span class="card-title">Monthly Costs ($)</span></div>
-        <div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div>
-      </div>
-    </div>
-
-    <!-- ROW 3: OBSERVATIONS AND FLEET HEALTH -->
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Observations</span>
-          <span class="badge bg" id="obs-count-badge">0 total</span>
-        </div>
-        <div id="recent-obs-list"></div>
-      </div>
-
+    <div class="card">
+      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+      <div id="sched-list-dash"></div>
     </div>
   </div>
+
+  <!-- ROW 2 -->
+  <div class="grid-2" style="margin-top:15px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
+      <div id="recent-tasks"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
+      <div id="recent-obs-list"></div>
+    </div>
+  </div>
+</div>
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -2426,7 +2470,8 @@ function updateMetrics(){
   const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
   const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
   const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
-  
+  // Safe update helper
+  const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
   // 2. Prepare the Monthly Spend for the Analytics tab
   const costs = state.monthlyCosts || [0,0,0,0];
   const currentMonthCost = costs[costs.length - 1] || 0;
