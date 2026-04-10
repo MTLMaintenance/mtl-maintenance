@@ -1006,7 +1006,6 @@ body.dark-mode .spec-row:hover {
      
 
       <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
       <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
     </div>
 
@@ -2432,18 +2431,19 @@ function updateMetrics(){
   const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
   const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
   
-  // Costs (Now only used for the Analytics tab)
+  // Costs (Still used for the Analytics tab)
   const costs = state.monthlyCosts || [0,0,0,0];
   const currentMonthCost = costs[costs.length - 1] || 0;
 
-  // Update Top Row Metrics Safely
+  // 1. Update Remaining Dashboard Metrics Safely
   safeUpdate('m-total', state.equipment.length);
   safeUpdate('m-parts', lowCount);
   safeUpdate('m-open', openCount);
   
-  // This updates the 'This Month Spend' in the Analytics tab
+  // 2. Update the 'This Month Spend' in the Analytics tab
   safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
 
+  // 3. Handle the Overdue/Active box styling
   const mo = document.getElementById('m-overdue'); 
   if(mo) {
     const totalActive = openCount + overdueCount;
