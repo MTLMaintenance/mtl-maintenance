@@ -4608,7 +4608,7 @@ function openModal(id) {
     } else {
         console.error("Modal not found:", id);
     }
-}
+} 
 // ── FULL enterApp ────────────────────────────────────────────
 async function enterApp(){
   // 1. Session & UI Setup
@@ -4631,7 +4631,7 @@ async function enterApp(){
     currentUser.show_sensitive_metrics = profile.show_sensitive_metrics;
 }
 
-
+    
   // 3. Handle Navigation Permissions
   if(!can('canViewReports')){
     const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
@@ -4641,7 +4641,7 @@ async function enterApp(){
     const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
     if(btn) btn.remove();
   }
-
+    
   // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
   let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
   
@@ -4675,7 +4675,7 @@ async function enterApp(){
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
 }
-
+  
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
 function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
@@ -4752,7 +4752,7 @@ async function deleteChatMessage(msgId,channel,author){
     showToast('Message deleted');
   }catch(e){showToast('Failed to delete');}
 }
-
+  
 // ── BLOCK CHAT USER ───────────────────────────────────────────
 async function blockChatUser(username,displayName){
   if(!confirm('Block '+displayName+' from sending chat messages?'))return;
@@ -4885,7 +4885,7 @@ async function autoCreateCriticalWO(obs, equipId) {
     console.error('Failed to auto-create WO:', e);
   }
 }
-
+  
 // ── WO COST CALCULATOR ───────────────────────────────────────
 function updateWOCostFromParts() {
   const partsCost = woPartsAdded.reduce((sum,p)=>sum+(p.unit_cost||0)*p.qty_used, 0);
@@ -5002,7 +5002,7 @@ async function saveEditObservation(obsId, equipId) {
     showToast('Failed to update');
   }
 }
-
+  
 async function sendCriticalObsEmail(obs, equipId) {
   const equip = state.equipment.find(e=>e.id===equipId);
   try {
@@ -5370,7 +5370,7 @@ function acceptToolSuggestion() {
     toolsField.value = _lastToolSuggestion;
   }
   document.getElementById('tools-suggestion-area').style.display = 'none';
-}
+} 
 function handleGlobalSearch() {
   const q = document.getElementById('global-search').value.toLowerCase().trim();
   const res = document.getElementById('search-results');
@@ -5460,30 +5460,54 @@ function renderTools() {
         </tr>`;
     }).join('');
 }
-
+  
 async function saveTool() {
     const id = document.getElementById('tool-edit-id').value;
+    const name = document.getElementById('tool-name').value.trim(); // Grab name as a variable first
+    
+    if(!name) {
+        showToast("Please enter a tool name");
+        return;
+    }
+
     const tool = {
         id: id || uid(),
-        name: document.getElementById('tool-name').value.trim(),
+        name: name,
         category: document.getElementById('tool-cat').value,
         location: document.getElementById('tool-loc').value.trim(),
         health: parseInt(document.getElementById('tool-health').value),
         is_lost: document.getElementById('tool-lost').checked,
         last_updated: new Date().toISOString()
     };
-    if(!tool.name) return;
-    await window._mpdb.from('shop_tools').upsert(tool);
-    logAuditAction("Tool Updated", `${name} - Health: ${tool.health}%, Lost: ${tool.is_lost}`);
-  const idx = state.tools.findIndex(x => x.id === tool.id);
-    if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
-    
-    if(tool.health <= 40 || tool.is_lost) {
-        await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
-    }
-    closeModal('tool-modal'); renderTools();
-}
-  }
+
+    try { // Start of the Try block
+        await window._mpdb.from('shop_tools').upsert(tool);
+        
+        // 1. RUN THE AUDIT LOG
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Tool Updated", `${tool.name} - Health: ${tool.health}%, Lost: ${tool.is_lost}`);
+        }
+
+        // 2. Update local state
+        const idx = state.tools.findIndex(x => x.id === tool.id);
+        if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+        
+        // 3. Notify managers if broken or lost
+        if(tool.health <= 40 || tool.is_lost) {
+            if (typeof notifyManagers === 'function') {
+                await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
+            }
+        }
+
+        closeModal('tool-modal'); 
+        renderTools();
+        showToast("Tool saved ✓");
+
+    } catch (e) { // Start of the Catch block (This fixes the 'Missing catch' error)
+        console.error("Save Tool failed:", e);
+        showToast("Failed to save tool to database");
+    } // End of Catch
+} // End of function
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
