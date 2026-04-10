@@ -2115,7 +2115,7 @@ async function loadState() {
     }
     // Apply the filter immediately so the UI knows what to hide
     if (typeof applyPrivacyFilters === 'function') {
-        applyPrivacyFilters();
+        
     }
     // ------------------------------
 const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
@@ -4569,7 +4569,7 @@ async function enterApp(){
       if (profile && profile.show_sensitive_metrics !== undefined) {
     currentUser.show_sensitive_metrics = profile.show_sensitive_metrics;
 }
-applyPrivacyFilters();
+
         if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
         currentUser.role = profile.role;
       }
