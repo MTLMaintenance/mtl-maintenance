@@ -6,7 +6,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-.badge.b-progress { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; } /* In Progress - Blue */
+#panel-analytics .card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+}
+
+#panel-analytics .metric-card {
+    background: #ffffff !important;
+    border-bottom: 3px solid var(--accent);
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bg3);
+}
+
+.stat-row:last-child { border-bottom: none; }
+    .badge.b-progress { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; } /* In Progress - Blue */
 .badge.b-parts { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }    /* Waiting for Parts - Orange */
     /* --- CALENDAR BELLS & WHISTLES --- */
 .modal-backdrop {
@@ -1054,36 +1074,67 @@ body.dark-mode .spec-row:hover {
 </div>
 
   <!-- ANALYTICS -->
-  <div class="panel" id="panel-analytics">
-    <div class="section-header"><span class="section-title">Analytics</span><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export Health CSV</button><button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export All CSV</button></div></div>
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Total YTD Cost</div><div class="metric-value" id="r-ytd">$0</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Cost / WO</div><div class="metric-value" id="r-avg">$0</div></div>
-      <div class="metric-card"><div class="metric-label">WOs Completed</div><div class="metric-value v-success" id="r-done">0</div></div>
-      <div class="metric-card"><div class="metric-label">Inventory Value</div><div class="metric-value" id="r-inv">$0</div></div>
-      <div class="metric-card"><div class="metric-label">Parts Consumed</div><div class="metric-value" id="r-parts-used">0</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health Score</div><div class="metric-value" id="r-health">—</div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">Cost by Equipment</span></div><div id="cost-by-equip"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Work Order Breakdown</span></div><div id="task-breakdown"></div></div>
-    </div>
-    <div class="metric-card">
-  <div class="metric-label">Avg Fleet Uptime</div>
-  <div class="metric-value v-success" id="r-uptime">100%</div>
-  <div class="metric-sub">Last 30 Days</div>
-</div>
-      <div class="card" style="margin-top:12px">
-  <div class="card-header"><span class="card-title">Downtime by Machine (Hours)</span></div>
-  <div id="downtime-chart" style="display:flex; align-items:flex-end; gap:8px; height:120px">
-     <!-- Bars will load here -->
-  </div>
-</div>
-      <div class="grid-2" style="margin-top:12px">
-      <div class="card"><div class="card-header"><span class="card-title">Equipment Health Scores</span></div><div id="health-scores"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Top Parts Consumed</span></div><div id="parts-consumed"></div></div>
+ <div class="panel" id="panel-analytics">
+  <div class="section-header">
+    <span class="section-title">Fleet Intelligence</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()">Health CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">All Data CSV</button>
     </div>
   </div>
+
+  <!-- ROW 1: TOP METRICS (6 across) -->
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">YTD Spend</div><div class="metric-value" id="r-ytd">$0</div></div>
+    <div class="metric-card"><div class="metric-label">Avg WO Cost</div><div class="metric-value" id="r-avg">$0</div></div>
+    <div class="metric-card"><div class="metric-label">Uptime</div><div class="metric-value v-success" id="r-uptime">100%</div></div>
+    <div class="metric-card"><div class="metric-label">Inv. Value</div><div class="metric-value" id="r-inv">$0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Out</div><div class="metric-value" id="r-parts-used">0</div></div>
+    <div class="metric-card"><div class="metric-label">Fleet Health</div><div class="metric-value" id="r-health">—</div></div>
+  </div>
+
+  <!-- ROW 2: COSTS & STATUS -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Cost by Equipment</span></div>
+      <div id="cost-by-equip" style="min-height: 120px"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Work Order Status</span></div>
+      <div id="task-breakdown" style="min-height: 120px"></div>
+    </div>
+  </div>
+
+  <!-- ROW 3: DOWNTIME ANALYSIS -->
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Hours Lost per Machine</span></div>
+      <div id="downtime-chart" style="display:flex; align-items:flex-end; gap:8px; height:120px"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Downtime Reasons</span></div>
+      <div id="downtime-reasons" style="min-height: 120px"></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: HEALTH & PARTS -->
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Individual Health Scores</span></div>
+      <div id="health-scores" style="max-height: 200px; overflow-y: auto;"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Most Replaced Parts</span></div>
+      <div id="parts-consumed" style="max-height: 200px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <!-- ROW 5: PREDICTIVE (New Feature!) -->
+  <div class="card" style="margin-top:12px; background: var(--accent-bg); border: 1px solid var(--accent)">
+    <div class="card-header"><span class="card-title" style="color:var(--accent-text)">✨ Maintenance Projection (Next 30 Days)</span></div>
+    <div id="predictive-analytics-list" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px"></div>
+  </div>
+</div>
   <!-- THE ONLY TOOL CRIB PANEL -->
 <div class="panel" id="panel-tools">
   <div class="section-header">
@@ -2829,105 +2880,42 @@ async function deleteDoc(id){ if(!confirm('Delete this document?'))return; state
 // ============================================================
 // ANALYTICS
 // ============================================================
-function renderAnalytics(){
-  document.getElementById('task-breakdown').innerHTML='';
-  const completed=state.tasks.filter(t=>t.status==='Completed');
-  const total=state.tasks.reduce((a,t)=>a+(t.cost||0),0);
-  const avg=completed.length?Math.round(total/completed.length):0;
-  const inv=state.parts.reduce((a,p)=>a+(p.qty*p.cost),0);
-  const partsUsedTotal=state.partUsage.reduce((a,p)=>a+p.qty_used,0);
-  const avgH=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):0;
-  document.getElementById('r-ytd').textContent='$'+total.toLocaleString();
-  document.getElementById('r-avg').textContent='$'+avg.toLocaleString();
-  document.getElementById('r-done').textContent=completed.length;
-  document.getElementById('r-inv').textContent='$'+inv.toLocaleString();
-  document.getElementById('r-parts-used').textContent=partsUsedTotal;
-  document.getElementById('r-health').textContent=avgH+'%';
-  // Cost by equip
-  const ec=state.equipment.map(e=>{
-    const c=state.tasks.filter(t=>t.equipId===e.id).reduce((a,t)=>a+(t.cost||0),0);
-    return {name:e.name.split(' ').slice(0,2).join(' '),cost:c};
-  }).filter(x=>x.cost>0).sort((a,b)=>b.cost-a.cost);
-  const mc=Math.max(...ec.map(x=>x.cost),1);
-  document.getElementById('cost-by-equip').innerHTML=ec.map(x=>
-    `<div class="stat-row"><div style="width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)">${x.name}</div>
-    <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(x.cost/mc*100)}%;background:var(--accent)"></div></div>
-    <div style="width:60px;text-align:right;font-weight:600">$${x.cost.toLocaleString()}</div></div>`
-  ).join('')||'<div style="color:var(--text3);font-size:13px">No cost data yet</div>';
-  // Task breakdown
-  const tot=state.tasks.length||1;
-  [['Completed',completed.length,'var(--success)'],['Open',state.tasks.filter(t=>t.status==='Open').length,'var(--accent)'],['Overdue',state.tasks.filter(t=>t.status==='Overdue').length,'var(--danger)']].forEach(([l,c,col])=>{
-    document.getElementById('task-breakdown').innerHTML+=`<div class="stat-row">
-      <div style="width:80px;color:var(--text2)">${l}</div>
-      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(c/tot*100)}%;background:${col}"></div></div>
-      <div style="width:24px;text-align:right;font-weight:600">${c}</div></div>`;
-  });
-  // Health scores
-  document.getElementById('health-scores').innerHTML=state.equipment.map(e=>{
-    const score=calcHealth(e.id);
-    return `<div class="stat-row">
-      <div style="width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)">${e.name.split(' ').slice(0,2).join(' ')}</div>
-      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${score}%;background:${healthColor(score)}"></div></div>
-      <div style="width:40px;text-align:right;font-weight:600;color:${healthColor(score)}">${score}%</div>
-    </div>`;
-  }).join('')||'<div style="color:var(--text3);font-size:13px">No equipment yet</div>';
-  // Top parts consumed
-  const partMap={};
-  state.partUsage.forEach(p=>{ partMap[p.part_name]=(partMap[p.part_name]||0)+p.qty_used; });
-  const topParts=Object.entries(partMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const mp=Math.max(...topParts.map(x=>x[1]),1);
-  document.getElementById('parts-consumed').innerHTML=topParts.map(([name,qty])=>
-    `<div class="stat-row"><div style="width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)">${name}</div>
-    <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(qty/mp*100)}%;background:#BA7517"></div></div>
-    <div style="width:30px;text-align:right;font-weight:600">${qty}</div></div>`
-  ).join('')||'<div style="color:var(--text3);font-size:13px">No parts consumed yet</div>';
-async function renderDowntimeAnalytics() {
-    // 1. Fetch all downtime logs for the last 30 days
-    const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
-    const { data: logs } = await window._mpdb
-        .from('downtime_logs')
-        .select('*')
-        .gte('created_at', thirtyDaysAgo);
 
-    if (!logs) return;
+async function renderAnalytics() {
+  console.log("Analytics: Starting render...");
+  
+  // 1. Core Calculations
+  const completed = state.tasks.filter(t => t.status === 'Completed');
+  const totalYTD = state.tasks.reduce((a, t) => a + (t.cost || 0), 0);
+  const avgCost = completed.length ? Math.round(totalYTD / completed.length) : 0;
+  const invValue = state.parts.reduce((a, p) => a + (p.qty * p.cost), 0);
+  const totalPartsUsed = state.partUsage.reduce((a, p) => a + p.qty_used, 0);
+  const fleetHealth = state.equipment.length ? 
+    Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
 
-    // 2. Calculate Uptime %
-    // (Total possible minutes in 30 days for the whole fleet)
-    const totalFleetMinutes = state.equipment.length * 30 * 24 * 60;
-    const totalDownMinutes = logs.reduce((sum, l) => sum + (l.total_minutes || 0), 0);
-    const uptime = totalFleetMinutes > 0 ? 
-        Math.max(0, Math.min(100, ((totalFleetMinutes - totalDownMinutes) / totalFleetMinutes) * 100)) : 100;
+  // 2. Update Metric Cards Safely
+  const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  safeSet('r-ytd', '$' + totalYTD.toLocaleString());
+  safeSet('r-avg', '$' + avgCost.toLocaleString());
+  safeSet('r-done', completed.length);
+  safeSet('r-inv', '$' + invValue.toLocaleString());
+  safeSet('r-parts-used', totalPartsUsed);
+  safeSet('r-health', fleetHealth + '%');
 
-    const uptimeEl = document.getElementById('r-uptime');
-    if(uptimeEl) {
-        uptimeEl.textContent = uptime.toFixed(1) + '%';
-        uptimeEl.className = 'metric-value ' + (uptime > 95 ? 'v-success' : uptime > 85 ? 'v-warning' : 'v-danger');
-    }
-
-    // 3. Build the Downtime Chart
-    const chart = document.getElementById('downtime-chart');
-    if(!chart) return;
-
-    // Group by machine
-    const machineMap = {};
-    logs.forEach(l => {
-        const name = equipName(l.equip_id);
-        machineMap[name] = (machineMap[name] || 0) + (l.total_minutes / 60); // Convert to hours
-    });
-
-    const entries = Object.entries(machineMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    const maxH = Math.max(...Object.values(machineMap), 1);
-
-    chart.innerHTML = entries.map(([name, hrs]) => `
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px">
-            <div style="font-size:10px; font-weight:700">${hrs.toFixed(1)}h</div>
-            <div style="width:100%; background:#E24B4A; height:${Math.round(hrs/maxH * 80)}px; border-radius:3px 3px 0 0"></div>
-            <div style="font-size:9px; color:var(--text2); text-align:center; white-space:nowrap; overflow:hidden; width:100%">${name}</div>
-        </div>
-    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:20px">No downtime recorded</div>';
+  // 3. Run Sub-Renderers (The Specialists)
+  // Each of these handles its own specific chart or list
+  try {
+    renderCostChart();            // Monthly Spend Bars
+    renderCostByEquip();          // Horizontal Bars per machine
+    renderTaskBreakdown();        // WO status bars
+    renderHealthScores();         // Individual machine health
+    renderTopPartsUsed();         // Most common parts
+    await renderDowntimeStats();  // NEW: Downtime & Uptime
+    await renderServiceForecast();// NEW: Adaptive 30-day projection
+  } catch (e) {
+    console.error("One or more charts failed to load:", e);
+  }
 }
-}
-
 // ============================================================
 // ADMIN
 // ============================================================
@@ -6827,6 +6815,98 @@ async function toggleLockout(equipId, isLocked) {
     } catch(err) {
         showToast("Failed to save link");
     }
+}
+// Specialists: Downtime & Uptime
+async function renderDowntimeStats() {
+    const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+    const { data: logs } = await window._mpdb.from('downtime_logs').select('*').gte('created_at', thirtyDaysAgo);
+    if (!logs) return;
+
+    // Calculate Uptime %
+    const totalPossibleMins = state.equipment.length * 30 * 24 * 60;
+    const totalDownMins = logs.reduce((sum, l) => sum + (l.total_minutes || 0), 0);
+    const uptime = totalPossibleMins > 0 ? Math.max(0, Math.min(100, ((totalPossibleMins - totalDownMins) / totalPossibleMins) * 100)) : 100;
+
+    const uptimeEl = document.getElementById('r-uptime');
+    if(uptimeEl) {
+        uptimeEl.textContent = uptime.toFixed(1) + '%';
+        uptimeEl.className = 'metric-value ' + (uptime > 95 ? 'v-success' : uptime > 85 ? 'v-warning' : 'v-danger');
+    }
+
+    // Draw Downtime Chart
+    const chart = document.getElementById('downtime-chart');
+    if(!chart) return;
+    const machineMap = {};
+    logs.forEach(l => { const name = equipName(l.equip_id); machineMap[name] = (machineMap[name] || 0) + (l.total_minutes / 60); });
+    const entries = Object.entries(machineMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    const maxH = Math.max(...Object.values(machineMap), 1);
+    chart.innerHTML = entries.map(([name, hrs]) => `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px">
+            <div style="font-size:10px; font-weight:700">${hrs.toFixed(1)}h</div>
+            <div style="width:100%; background:#E24B4A; height:${Math.round(hrs/maxH * 80)}px; border-radius:3px 3px 0 0"></div>
+            <div style="font-size:9px; color:var(--text2); text-align:center; white-space:nowrap; overflow:hidden; width:100%">${name}</div>
+        </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:20px">No downtime logged</div>';
+}
+
+// Specialists: 30-Day Adaptive Forecast
+async function renderServiceForecast() {
+    const container = document.getElementById('predictive-analytics-list');
+    if(!container) return;
+    let html = '';
+    for (let e of state.equipment) {
+        const pred = await getAdaptivePrediction(e.id);
+        if (pred && pred.status === 'ACTIVE' && pred.days <= 30) {
+            html += `<div class="card" style="padding:10px; border-left:4px solid var(--warning)">
+                <div style="font-weight:600; font-size:13px">${e.name}</div>
+                <div style="color:var(--warning); font-weight:700; font-size:12px">Due in ~${pred.days} days</div>
+            </div>`;
+        }
+    }
+    container.innerHTML = html || '<div style="color:var(--text3); font-size:12px">No service due in next 30 days</div>';
+}
+
+// Specialists: Cost by Equipment
+function renderCostByEquip() {
+    const el = document.getElementById('cost-by-equip');
+    if(!el) return;
+    const ec = state.equipment.map(e => {
+        const c = state.tasks.filter(t => t.equipId === e.id).reduce((a, t) => a + (t.cost || 0), 0);
+        return { name: e.name.split(' ').slice(0, 2).join(' '), cost: c };
+    }).filter(x => x.cost > 0).sort((a, b) => b.cost - a.cost).slice(0, 6);
+    const mc = Math.max(...ec.map(x => x.cost), 1);
+    el.innerHTML = ec.map(x => `
+        <div class="stat-row"><div style="width:100px; font-size:12px; color:var(--text2)">${x.name}</div>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(x.cost/mc*100)}%; background:var(--accent)"></div></div>
+        <div style="width:60px; text-align:right; font-weight:600">$${x.cost.toLocaleString()}</div></div>`
+    ).join('');
+}
+
+// Specialists: Health Scores
+function renderHealthScores() {
+    const el = document.getElementById('health-scores');
+    if(!el) return;
+    el.innerHTML = state.equipment.map(e => {
+        const s = calcHealth(e.id);
+        return `<div class="stat-row"><div style="flex:1; font-size:12px">${e.name}</div>
+        <div class="stat-bar-wrap" style="width:100px"><div class="stat-bar" style="width:${s}%; background:${healthColor(s)}"></div></div>
+        <div style="width:40px; text-align:right; font-weight:600">${s}%</div></div>`;
+    }).join('');
+}
+
+// Specialists: Task Breakdown
+function renderTaskBreakdown() {
+    const el = document.getElementById('task-breakdown');
+    if(!el) return;
+    const tot = state.tasks.length || 1;
+    const stats = [
+        ['Completed', state.tasks.filter(t=>t.status==='Completed').length, 'var(--success)'],
+        ['Open', state.tasks.filter(t=>t.status==='Open').length, 'var(--accent)'],
+        ['Overdue', state.tasks.filter(t=>t.status==='Overdue').length, 'var(--danger)']
+    ];
+    el.innerHTML = stats.map(([l, c, col]) => `
+        <div class="stat-row"><div style="width:80px; font-size:12px">${l}</div>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(c/tot*100)}%; background:${col}"></div></div>
+        <div style="width:30px; text-align:right; font-weight:600">${c}</div></div>`).join('');
 }
 </script>
 
