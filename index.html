@@ -2134,14 +2134,9 @@ async function loadState() {
     state.tools           = tl.data||[];
     state.wishlist        = wl.data||[];
     
-    // 2. Load Profiles (Added 'show_sensitive_metrics' to the selection)
-    const { data: profiles } = await window._mpdb.from('profiles')
-        .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
-        .eq('status', 'approved');
-    state.users_list_cache = profiles || [];
+ 
 
     }
-    // ------------------------------
 const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
 if(templates && templates.length > 0) {
     state.checklistTemplates = templates;
