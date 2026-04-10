@@ -5834,12 +5834,12 @@ async function handleWishDenial(id) {
     showToast("Request denied and moved to history");
     renderWishlist();
 }
-}
+  
 function promptWishlistCheck() {
     alert("Please ensure you have checked the 'Denied History' tab to see if this tool was previously rejected before submitting your suggestion.");
     openModal('wishlist-modal');
 }
-    
+      
 function syncAdminRoleSelects() {
     const userId = document.getElementById('role-user-select').value;
     if (!userId) return;
