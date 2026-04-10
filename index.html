@@ -6643,34 +6643,6 @@ async function saveQuickLogHours() {
     console.error(err);
   }
 }
- function applyPrivacyFilters() {
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    // If setting is missing, we assume 'true' (show them)
-    const userPref = currentUser.show_sensitive_metrics !== false; 
-
-    // Our three targets
-    const costMetric = document.getElementById('m-cost-card');
-    const costChart = document.getElementById('m-monthly-chart-card');
-    const healthCard = document.getElementById('m-fleet-health-card');
-
-    // HIDE if: User is NOT a manager OR User IS a manager but turned the toggle OFF
-    const shouldHide = !isManager || !userPref;
-
-    if (costMetric) costMetric.style.display = shouldHide ? 'none' : 'block';
-    if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
-    if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
-}
-
-    
-    // Toggle UI Groups
-    document.getElementById('ce-group-one').style.display = isOne ? 'contents' : 'none';
-    document.getElementById('ce-group-recur').style.display = isOne ? 'none' : 'block';
-    
-    // Toggle Button Styles
-    document.getElementById('cal-type-one').style.background = isOne ? 'var(--accent)' : 'transparent';
-    document.getElementById('cal-type-one').style.color = isOne ? '#fff' : 'var(--text2)';
-    document.getElementById('cal-type-recur').style.background = !isOne ? 'var(--accent)' : 'transparent';
-    document.getElementById('cal-type-recur').style.color = !isOne ? '#fff' : 'var(--text2)';
 
 
 function toggleRecurFields() {
