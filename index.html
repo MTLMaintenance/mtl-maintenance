@@ -9,8 +9,72 @@
 /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
 
 /* --- TAB CONTRAST FIX --- */
+/* --- UNIVERSAL PRO THEME RESTORATION --- */
+.metrics {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
 
-/* 1. Inactive Tabs (The ones that were blending in) */
+.metric-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 4px solid var(--accent) !important;
+  border-radius: 8px;
+  padding: 15px;
+  color: #1a1a18 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #6b6b66;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  border-top: 4px solid var(--accent) !important;
+  border-radius: 12px;
+  padding: 20px !important;
+  margin-bottom: 15px;
+  color: #1a1a18 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+.grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 15px !important;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding-bottom: 10px;
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-text);
+  text-transform: uppercase;
+}
+
+  /* 1. Inactive Tabs (The ones that were blending in) */
 .tab {
   background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
   color: #ffffff !important; /* Crisp solid white text */
@@ -995,72 +1059,41 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
-   <div class="panel active" id="panel-dashboard">
-    <div id="alert-section"></div>
-    
-    <!-- METRICS ROW -->
-    <div class="metrics">
-      <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div><div class="metric-sub" id="m-total-sub">0 operational</div></div>
-      <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div><div class="metric-sub">Work orders</div></div>
-      
-      <!-- SENSITIVE METRIC: MONTHLY COST -->
-      <div class="metric-card" id="m-cost-card">
-        <div class="metric-label">This Month Cost</div>
-        <div class="metric-value" id="m-cost">$0</div>
-        <div class="metric-sub" id="m-cost-sub">+$0 vs last month</div>
-      </div>
+  <div class="panel active" id="panel-dashboard">
+  <div id="alert-section"></div>
 
-      <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
-      <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
+  <!-- METRICS (4 operational boxes) -->
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+  </div>
+
+  <!-- ROW 1 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
+      <div id="equip-list-dash"></div>
     </div>
-
-    <!-- ROW 1: STATUS AND SCHEDULE -->
-    <div class="grid-2" style="margin-bottom: 12px">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
-        <div id="equip-list-dash"></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
-        <div id="sched-list-dash"></div>
-      </div>
-    </div>
-
-    <!-- ROW 2: WORK ORDERS AND COST CHART -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Work Orders</span>
-          <span class="badge bg" id="task-count-badge">0 work orders</span>
-        </div>
-        <div id="recent-tasks"></div>
-      </div>
-
-      <!-- SENSITIVE CARD: MONTHLY COST CHART -->
-      <div class="card" id="m-monthly-chart-card">
-        <div class="card-header"><span class="card-title">Monthly Costs ($)</span></div>
-        <div style="display:flex;align-items:flex-end;gap:6px;height:90px" id="cost-chart"></div>
-      </div>
-    </div>
-
-    <!-- ROW 3: OBSERVATIONS AND FLEET HEALTH -->
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Observations</span>
-          <span class="badge bg" id="obs-count-badge">0 total</span>
-        </div>
-        <div id="recent-obs-list"></div>
-      </div>
-
-      <!-- SENSITIVE CARD: FLEET HEALTH -->
-      <div class="card" id="m-fleet-health-card">
-        <div class="card-header"><span class="card-title">Fleet Health</span></div>
-        <div id="fleet-health-dash"></div>
-      </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+      <div id="sched-list-dash"></div>
     </div>
   </div>
+
+  <!-- ROW 2 -->
+  <div class="grid-2" style="margin-top:15px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
+      <div id="recent-tasks"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
+      <div id="recent-obs-list"></div>
+    </div>
+  </div>
+</div>
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -1369,15 +1402,6 @@ body.dark-mode .spec-row:hover {
       <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
     </div>
 
-    <!-- Dashboard Privacy Toggle -->
-    <div class="card" style="margin-top:12px">
-      <div class="card-header"><span class="card-title">Dashboard Preferences</span></div>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px">
-        <input type="checkbox" id="setting-show-metrics" onchange="toggleSensitiveMetrics(this.checked)"/>
-        <span>Show sensitive metrics (Costs & Health) on Dashboard</span>
-      </label>
-      <div style="font-size:11px; color:var(--text3); margin-top:4px">If disabled, financial data will be hidden from your view.</div>
-    </div>
 
     <!-- Audit Log -->
     <div class="card" style="margin-top:12px">
@@ -2116,8 +2140,8 @@ function uid() { return Date.now().toString(36)+Math.random().toString(36).slice
 async function loadState() {
   setSyncStatus('syncing');
   try {
-    // 1. Fetch all 10 main tables (Matches the order in state)
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
+    // 1. Fetch all main data tables (12 tables total)
+    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl, prof, tpl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -2127,9 +2151,12 @@ async function loadState() {
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
       window._mpdb.from('shop_tools').select('*'),
-      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
+      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false}),
+      window._mpdb.from('profiles').select('id, username, full_name, role, group_tag').eq('status', 'approved'),
+      window._mpdb.from('checklist_templates').select('*')
     ]);
 
+    // 2. Map data to State
     state.equipment       = eq.data||[];
     state.tasks           = tk.data||[];
     state.schedules       = sc.data||[];
@@ -2140,30 +2167,13 @@ async function loadState() {
     state.recurrenceRules = rr.data||[];
     state.tools           = tl.data||[];
     state.wishlist        = wl.data||[];
-    
-    // 2. Load Profiles (Added 'show_sensitive_metrics' to the selection)
-    const { data: profiles } = await window._mpdb.from('profiles')
-        .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
-        .eq('status', 'approved');
-    state.users_list_cache = profiles || [];
+    state.users_list_cache = prof.data||[];
+    state.checklistTemplates = tpl.data||[];
 
-    // --- DASHBOARD PRIVACY SYNC ---
-    // Find the current user in the profile list to get their preference
-    const myProfile = state.users_list_cache.find(p => p.username === currentUser.username);
-    if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
-        currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
-    }
-    // Apply the filter immediately so the UI knows what to hide
-    if (typeof applyPrivacyFilters === 'function') {
-        applyPrivacyFilters();
-    }
-    // ------------------------------
-const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
-if(templates && templates.length > 0) {
-    state.checklistTemplates = templates;
-}
-    // 3. Calculate metrics
+    // 3. Calculate metrics and monthly costs
     state.monthlyCosts = computeMonthlyCosts();
+    
+    // 4. Everything loaded successfully
     setSyncStatus('online');
 
   } catch(e) { 
@@ -2171,11 +2181,13 @@ if(templates && templates.length > 0) {
     setSyncStatus('offline'); 
   }
 
-  // 4. Load observations (kept separate for better performance)
+  // 5. Load observations separately (kept separate for better performance)
   try {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
-  } catch(e) {}
+  } catch(e) {
+    console.error('Observations failed to load', e);
+  }
 }
 function computeMonthlyCosts() {
   const now=new Date();
@@ -2441,35 +2453,26 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
-  const overdue=state.tasks.filter(t=>t.status==='Overdue').length;
-  const open=state.tasks.filter(t=>t.status==='Open').length;
-  const low=state.parts.filter(p=>p.qty<=p.reorder).length;
-  const costs=state.monthlyCosts; const cost=costs[costs.length-1]; const prev=costs[costs.length-2]||0;
-  const diff=cost-prev; const sign=diff>=0?'+':'-';
-  const avgHealth=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):100;
-  // Make metric cards clickable
-  ['m-total','m-overdue','m-cost','m-parts','m-health','m-open'].forEach(id=>{
-    const el=document.getElementById(id);
-    const card=el?.closest('.metric-card');
-    if(card&&!card.dataset.clickable){
-      card.dataset.clickable='1';
-      card.style.cursor='pointer';
-      const panelMap={'m-total':'equipment','m-overdue':'tasks','m-open':'tasks','m-cost':'analytics','m-parts':'parts','m-health':'analytics'};
-      card.onclick=()=>showPanel(panelMap[id]||'dashboard');
-    }
-  });
-  document.getElementById('m-total').textContent=state.equipment.length;
-  document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
-  const openAndOverdue = open + overdue;
-  document.getElementById('m-overdue').textContent=openAndOverdue;
-  document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
-  document.getElementById('m-cost').textContent='$'+cost.toLocaleString();
-  document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
-  document.getElementById('m-parts').textContent=low;
-  document.getElementById('m-parts').className='metric-value '+(low>0?'v-danger':'v-success');
-  document.getElementById('m-health').textContent=avgHealth+'%';
-  document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
-  document.getElementById('m-open').textContent=open;
+  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
+  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
+  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
+
+  // Safe update helper
+  const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+
+  safeSet('m-total', state.equipment.length);
+  safeSet('m-parts', lowCount);
+  safeSet('m-open', openCount);
+
+  const mo = document.getElementById('m-overdue'); 
+  if(mo) {
+    const totalActive = openCount + overdueCount;
+    mo.textContent = totalActive;
+    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
+  }
+}
+  // 5. Update the Analytics page spend box
+  safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
@@ -4555,7 +4558,6 @@ async function renderDashboard(){ // Added 'async'
   await renderEquipListDash(); // Added 'await'
   renderSchedDash();
   renderRecentTasks();
-  renderCostChart();
   updateMetrics();
 
   // 2. Handle Budget Alerts
@@ -4569,10 +4571,7 @@ async function renderDashboard(){ // Added 'async'
   if(document.getElementById('recent-obs-list')) renderRecentObservations();
   if(document.getElementById('fleet-health-dash')) renderFleetHealthDash(); 
 
-  // 4. APPLY THE FILTER LAST
-  // This ensures the sensitive data is hidden the moment it appears
-  applyPrivacyFilters(); 
-}
+  
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -5902,8 +5901,6 @@ async function renderAdminPanel(){
     
     const pending = profiles.filter(p => p.status === 'pending');
     const active = profiles.filter(p => p.status === 'approved');
-const checkbox = document.getElementById('setting-show-metrics');
-if(checkbox) checkbox.checked = currentUser.show_sensitive_metrics !== false;
     document.getElementById('pending-count').textContent = pending.length || '0';
     document.getElementById('pending-list').innerHTML = pending.map(p => `
       <div class="parts-row">
@@ -6700,66 +6697,7 @@ async function saveQuickLogHours() {
     console.error(err);
   }
 }
- function applyPrivacyFilters() {
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    // If setting is missing, we assume 'true' (show them)
-    const userPref = currentUser.show_sensitive_metrics !== false; 
 
-    // Our three targets
-    const costMetric = document.getElementById('m-cost-card');
-    const costChart = document.getElementById('m-monthly-chart-card');
-    const healthCard = document.getElementById('m-fleet-health-card');
-
-    // HIDE if: User is NOT a manager OR User IS a manager but turned the toggle OFF
-    const shouldHide = !isManager || !userPref;
-
-    if (costMetric) costMetric.style.display = shouldHide ? 'none' : 'block';
-    if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
-    if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
-}
-// This function handles the checkbox click
-async function toggleSensitiveMetrics(isVisible) {
-    console.log("Privacy toggle changed to:", isVisible);
-    
-    // 1. Update the local user object so the app remembers the choice
-    currentUser.show_sensitive_metrics = isVisible;
-    
-    // 2. Run the filter to hide/show boxes immediately
-    applyPrivacyFilters();
-
-    // 3. Save the choice to the database (Supabase)
-    try {
-        await window._mpdb.from('profiles')
-            .update({ show_sensitive_metrics: isVisible })
-            .eq('id', currentUser.id);
-        showToast(isVisible ? "Financials shown" : "Financials hidden");
-    } catch(e) {
-        console.error("Failed to save dashboard preference:", e);
-        showToast("Setting not saved to database");
-    }
-}
-
-// This helper function actually hides or shows the HTML elements
-function applyPrivacyFilters() {
-    // Determine if the user is authorized and wants to see the data
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const userPref = currentUser.show_sensitive_metrics !== false; 
-
-    // The targets we want to hide
-    const targets = ['m-cost-card', 'm-monthly-chart-card', 'm-fleet-health-card'];
-
-    // RULE: Hide if:
-    // - User is NOT a manager (Technician/Viewer)
-    // - OR if the user is a manager but turned the setting OFF
-    const shouldHide = !isManager || !userPref;
-
-    targets.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.style.display = shouldHide ? 'none' : 'block';
-        }
-    });
-}
  function setCalEntryType(type) {
     currentCalEntryType = type;
     const isOne = type === 'one-time';
