@@ -5815,7 +5815,7 @@ async function handleWishApproval(id) {
     showToast("Approved! Tool added to Inventory as 'On Order'");
     switchToolTab('inventory');
 }
-
+  }
 async function handleWishDenial(id) {
     const reason = prompt("Why is this tool being denied? (This will be shown to the crew)");
     if (reason === null) return;
