@@ -3680,61 +3680,56 @@ if(offlineQueue.length) document.getElementById('offline-queue-banner').style.di
 async function markComplete(taskId) {
   const t = state.tasks.find(x => x.id === taskId);
   if (!t) return;
-
-  // 1. Update machine hours (Helpful for maintenance tracking)
   const equip = state.equipment.find(e => e.id === t.equipId);
-  const currentHours = equip ? equip.hours : 0;
-  
-  const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
-  
+
+  // 1. Optional Hour Meter Update
+  const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${equip?.hours || 0} hrs`);
+  let val = NaN;
   if (newHours !== null && newHours.trim() !== '') {
-    const val = parseInt(newHours);
-    if (!isNaN(val) && val >= currentHours) {
-      if (equip) {
-        equip.hours = val;
-        t.meter = val + ' hrs';
-        await persist('equipment', 'upsert', equip);
-      }
-    }
+    val = parseInt(newHours);
   }
 
-  // 2. Set status to Completed
-  t.status = 'Completed';
-  t.completed_at = new Date().toISOString();
-
-  // 3. Save to Database
+  // 2. Main Process
   try {
+    // A. Update Equipment and Log History if hours were provided
+    if (equip && !isNaN(val)) {
+      equip.hours = val;
+      await persist('equipment', 'upsert', equip);
+      await window._mpdb.from('meter_history').insert({ 
+          equip_id: t.equipId, 
+          reading: val, 
+          status_at_reading: equip.status 
+      });
+    }
+
+    // B. Set Task to Completed
+    t.status = 'Completed';
+    t.completed_at = new Date().toISOString();
     await persist('tasks', 'upsert', t);
 
-    // SAFETY CHECK: Only log to audit if the function exists
+    // C. Reset the Recurrence Cycle (Adaptive Maintenance)
+    const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type.toLowerCase() === 'hours');
+    if (rule && equip) {
+        rule.last_generated_hours = equip.hours;
+        await window._mpdb.from('recurrence_rules').update({ last_generated_hours: equip.hours }).eq('id', rule.id);
+    }
+
+    // D. Log to Audit
     if (typeof logAuditAction === 'function') {
         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
     }
 
-    // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
-    await runRecurrenceEngine();
-    
-    // 5. UI Refresh
+    // 3. Refresh UI
     closeModal('detail-modal');
-    renderDashboard();
-    
-    // Ensure the task list also refreshes
-    if (typeof renderTasks === 'function') {
-        renderTasks();
-    }
-    
-    showToast("Work Order Completed ✓");
-  } catch (e) {
-    console.error("Completion error:", e);
-    showToast("Failed to save. Check connection.");
-  }
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof renderTasks === 'function') renderTasks();
+    showToast("Completed ✓");
 
-await window._mpdb.from('meter_history').insert({ 
-    equip_id: equipId, 
-    reading: val, 
-    status_at_reading: e.status 
-});
-}
+  } catch (e) {
+    console.error("markComplete failed:", e);
+    showToast("Error saving completion");
+  } // This closes the catch
+} // This closes the function
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
 const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
@@ -6630,7 +6625,7 @@ async function getAdaptivePrediction(equipId) {
 }
 async function saveQuickLogHours() {
   const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value; // Get the date from the box
+  const date = document.getElementById('lh-date').value; 
   const val = parseInt(document.getElementById('lh-val').value);
   
   const e = state.equipment.find(x => x.id === equipId);
@@ -6644,24 +6639,32 @@ async function saveQuickLogHours() {
   e.hours = val;
 
   try {
+    // 1. Update main table
     await persist('equipment', 'upsert', e);
-logAuditAction("Updated Hours", `${e.name} set to ${val} hrs (Date: ${date})`);
-    // FIX: We now send the 'created_at' as the date you picked in the calendar box
+
+    // 2. Log history with the chosen date
     await window._mpdb.from('meter_history').insert({ 
         equip_id: equipId, 
         reading: val, 
         status_at_reading: e.status,
-        created_at: new Date(date).toISOString() // <--- THIS is the fix
+        created_at: new Date(date).toISOString()
     });
+
+    // 3. Audit Log
+    if (typeof logAuditAction === 'function') {
+        logAuditAction("Updated Hours", `${e.name} to ${val} hrs`);
+    }
 
     await runRecurrenceEngine();
     closeModal('log-hours-modal');
-    renderDashboard();
+    if (typeof renderDashboard === 'function') renderDashboard();
     showToast(`Updated ${e.name} ✓`);
+
   } catch (err) {
-    console.error(err);
-  }
-}
+    console.error("saveQuickLogHours failed:", err);
+    showToast("Save failed");
+  } // This closes the catch
+} // This closes the function
   
 
  function setCalEntryType(type) {
