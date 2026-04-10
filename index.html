@@ -4600,77 +4600,78 @@ function openModal(id) {
     }
 }
 // ── FULL enterApp ────────────────────────────────────────────
-async function enterApp(){
-  // 1. Session & UI Setup
-  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('user-chip-name').textContent = currentUser.name;
-
-  // 2. Fetch Profile & Permissions
-  try {
-    const { data: profile } = await window._mpdb.from('profiles')
-      .select('group_tag, custom_permissions, role')
-      .eq('username', currentUser.username)
-      .single();
+async function enterApp() {
+    console.log("System: Entering Application UI...");
     
-    if (profile) {
-      if (profile.group_tag) currentUser.group_tag = profile.group_tag;
-      if (profile.custom_permissions) currentUser.custom_permissions = profile.custom_permissions;
-      if (profile && profile.show_sensitive_metrics !== undefined) {
-    currentUser.show_sensitive_metrics = profile.show_sensitive_metrics;
-}
-applyPrivacyFilters();
-        if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
-        currentUser.role = profile.role;
-      }
+    // 1. Save session locally
+    try {
+        localStorage.setItem('mp_session', JSON.stringify(currentUser));
+    } catch(e) {}
+
+    // 2. Toggle Screens
+    document.getElementById('auth-screen').style.display = 'none';
+    const appContainer = document.getElementById('app');
+    if (appContainer) appContainer.style.display = 'flex';
+    
+    const appHeader = document.getElementById('app-header');
+    if (appHeader) appHeader.style.display = 'flex';
+
+    document.getElementById('user-chip-name').textContent = currentUser.name;
+
+    // 3. Build & Alphabetize Navigation
+    const nav = document.getElementById('main-nav');
+    if (nav) {
+        nav.innerHTML = '';
+        const allButtons = [
+            { id: 'analytics', label: 'Analytics' },
+            { id: 'calendar', label: 'Calendar' },
+            { id: 'chat', label: 'Chat' },
+            { id: 'checklists', label: 'Checklists' },
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'documents', label: 'Docs' },
+            { id: 'equipment', label: 'Equipment' },
+            { id: 'parts', label: 'Parts' },
+            { id: 'schedule', label: 'Schedule' },
+            { id: 'suppliers', label: 'Suppliers' },
+            { id: 'tools', label: 'Tool Crib' },
+            { id: 'tasks', label: 'Work Orders' }
+        ];
+
+        // Filter by permissions and Sort A-Z
+        const allowed = allButtons.filter(btn => {
+            if (btn.id === 'analytics' && !can('canViewReports')) return false;
+            if (btn.id === 'suppliers' && !can('canManageSuppliers')) return false;
+            return true;
+        }).sort((a, b) => a.label.localeCompare(b.label));
+
+        allowed.forEach(btn => {
+            const b = document.createElement('button');
+            b.className = 'nav-btn' + (btn.id === 'dashboard' ? ' active' : '');
+            b.onclick = () => showPanel(btn.id);
+            b.innerHTML = btn.id === 'chat' ? 
+                `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
+            nav.appendChild(b);
+        });
+
+        // Add Admin last
+        if (currentUser.role === 'admin') {
+            const adminBtn = document.createElement('button');
+            adminBtn.className = 'nav-btn';
+            adminBtn.onclick = () => showPanel('admin');
+            adminBtn.textContent = 'Admin';
+            nav.appendChild(adminBtn);
+        }
     }
-  } catch(e) { console.error("Error loading profile:", e); }
 
-  const nav = document.getElementById('main-nav');
-
-  // 3. Handle Navigation Permissions
-  if(!can('canViewReports')){
-    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Analytics'));
-    if(btn) btn.remove();
-  }
-  if(!can('canManageSuppliers')){
-    const btn = Array.from(nav.querySelectorAll('.nav-btn')).find(b => b.textContent.trim().includes('Suppliers'));
-    if(btn) btn.remove();
-  }
-
-  // 4. ALPHABETIZE BUTTONS (Keeping Admin at the end)
-  let buttons = Array.from(nav.querySelectorAll('.nav-btn'));
-  
-  // Filter out Admin if it exists so it doesn't get sorted into the middle
-  buttons = buttons.filter(btn => btn.textContent.trim() !== 'Admin');
-
-  // Sort remaining buttons A to Z
-  buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
-
-  // Re-build the Nav bar
-  nav.innerHTML = '';
-  buttons.forEach(btn => nav.appendChild(btn));
-
-  // 5. Add Admin button last for Admin users
-  if(currentUser.role === 'admin' && !document.getElementById('admin-nav-btn')){
-      const adminBtn = document.createElement('button');
-      adminBtn.className = 'nav-btn';
-      adminBtn.id = 'admin-nav-btn';
-      adminBtn.textContent = 'Admin';
-      adminBtn.onclick = () => showPanel('admin');
-      nav.appendChild(adminBtn);
-  }
-
-  // 6. Final Initialization
-  await loadState();
-  await runRecurrenceEngine();
-  applyUserGroupFilter();
-  renderDashboard();
-  await initChat();
-  
-  updateLastSeen();
-  setInterval(updateLastSeen, 2 * 60 * 1000);
+    // 4. Initialize Data
+    await loadState();
+    await runRecurrenceEngine();
+    
+    // 5. Start Services
+    showPanel('dashboard');
+    await initChat();
+    updateLastSeen();
+    setInterval(updateLastSeen, 2 * 60 * 1000);
 }
 
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
