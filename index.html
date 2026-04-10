@@ -2105,12 +2105,11 @@ function quickLogHours(equipId) {
 let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-
 async function loadState() {
   setSyncStatus('syncing');
   try {
-    // 1. Fetch all 10 main tables (Matches the order in state)
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
+    // 1. Fetch all main data tables (12 tables total)
+    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl, prof, tpl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -2120,9 +2119,12 @@ async function loadState() {
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
       window._mpdb.from('shop_tools').select('*'),
-      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
+      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false}),
+      window._mpdb.from('profiles').select('id, username, full_name, role, group_tag').eq('status', 'approved'),
+      window._mpdb.from('checklist_templates').select('*')
     ]);
 
+    // 2. Map data to State
     state.equipment       = eq.data||[];
     state.tasks           = tk.data||[];
     state.schedules       = sc.data||[];
@@ -2133,21 +2135,13 @@ async function loadState() {
     state.recurrenceRules = rr.data||[];
     state.tools           = tl.data||[];
     state.wishlist        = wl.data||[];
-    
- 
+    state.users_list_cache = prof.data||[];
+    state.checklistTemplates = tpl.data||[];
 
-    }
-  const { data: profiles } = await window._mpdb.from('profiles')
-        .select('id, username, full_name, role, group_tag')
-        .eq('status', 'approved');
-    state.users_list_cache = profiles || [];
-
-  const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
-if(templates && templates.length > 0) {
-    state.checklistTemplates = templates;
-}
-    // 3. Calculate metrics
+    // 3. Calculate metrics and monthly costs
     state.monthlyCosts = computeMonthlyCosts();
+    
+    // 4. Everything loaded successfully
     setSyncStatus('online');
 
   } catch(e) { 
@@ -2155,12 +2149,15 @@ if(templates && templates.length > 0) {
     setSyncStatus('offline'); 
   }
 
-  // 4. Load observations (kept separate for better performance)
+  // 5. Load observations separately (kept separate for better performance)
   try {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
-  } catch(e) {}
+  } catch(e) {
+    console.error('Observations failed to load', e);
+  }
 }
+
 function computeMonthlyCosts() {
   const now=new Date();
   return [3,2,1,0].map(ago=>{
