@@ -2744,7 +2744,7 @@ async function deleteEquip(id) {
   if (!confirm(`Permanently delete ${e.name}? This will also delete all its Work Orders, History, and Zerk Maps.`)) {
     return;
   }
-
+ logAuditAction("Deleted Machine", `Removed ${e.name} (S/N: ${e.serial})`);
   try {
     // 1. Send delete command to Supabase
     // Because of the SQL change in Step 1, this will now work!
@@ -2844,6 +2844,9 @@ function renderTasks(){
 }
 async function deleteTask(id){
   if(!confirm('Delete this work order?'))return;
+  // THE LOG (Do this BEFORE deleting so we still have the name)
+  logAuditAction("Deleted WO", `Removed "${task.name}" for ${equipName(task.equipId)}`);
+
   const task = state.tasks.find(t=>t.id===id);
   // Delete linked observation - try obs_id first, then fallback to name matching
   if(task && task.notes && task.notes.startsWith('Auto-created from critical obs')) {
@@ -3634,6 +3637,12 @@ async function markComplete(taskId) {
         equip.hours = val;
         t.meter = val + ' hrs';
         await persist('equipment', 'upsert', equip);
+         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
+
+    const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
+    if (rule && equip) {
+        await window._mpdb.from('recurrence_rules').update({ last_generated_hours: equip.hours }).eq('id', rule.id);
+    }
       }
     }
   }
@@ -5422,7 +5431,7 @@ async function saveTool() {
     await window._mpdb.from('shop_tools').upsert(tool);
     const idx = state.tools.findIndex(x => x.id === tool.id);
     if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
-    
+        logAuditAction("Tool Update", `${name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
     if(tool.health <= 40 || tool.is_lost) {
         await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
     }
@@ -5736,7 +5745,8 @@ async function deleteTool() {
 
     try {
         await window._mpdb.from('shop_tools').delete().eq('id', id);
-        state.tools = state.tools.filter(t => t.id !== id);
+       logAuditAction("Deleted Tool", `Removed ${tool ? tool.name : 'Unknown Tool'}`);  
+      state.tools = state.tools.filter(t => t.id !== id);
         closeModal('tool-modal');
         renderTools();
         showToast("Tool deleted");
@@ -5797,7 +5807,8 @@ async function handleWishApproval(id) {
     await notifyManagers(`✅ Tool Approved & Ordered: "${req.tool_name}" (Requested by ${req.requested_by})`);
     
     showToast("Approved! Tool added to Inventory as 'On Order'");
-    switchToolTab('inventory');
+     logAuditAction("Wishlist Approval", `Approved and Ordered: ${req.tool_name}`);
+  switchToolTab('inventory');
 }
 
 async function handleWishDenial(id) {
@@ -5813,7 +5824,8 @@ async function handleWishDenial(id) {
     await sendDM(req.requested_by, `❌ Your tool request for "${req.tool_name}" was denied. Reason: ${reason}`);
     
     showToast("Request denied and moved to history");
-    renderWishlist();
+       logAuditAction("Wishlist Denial", `Denied "${req.tool_name}". Reason: ${reason}`);
+  renderWishlist();
 }
 
 function promptWishlistCheck() {
@@ -6609,41 +6621,26 @@ async function getAdaptivePrediction(equipId) {
         burnRate: burnRate.toFixed(1)
     };
 }
+
 async function saveQuickLogHours() {
   const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value; // Get the date from the box
+  const date = document.getElementById('lh-date').value; 
   const val = parseInt(document.getElementById('lh-val').value);
-  
   const e = state.equipment.find(x => x.id === equipId);
-  if (!e) return;
-
-  if (isNaN(val) || val < e.hours) {
-    alert("New reading must be a number and cannot be less than current.");
-    return;
-  }
-
-  e.hours = val;
+  if (!e || isNaN(val)) return;
 
   try {
     await persist('equipment', 'upsert', e);
+    await window._mpdb.from('meter_history').insert({ equip_id: equipId, reading: val, created_at: new Date(date).toISOString() });
+    
+    // THE LOG
+    logAuditAction("Meter Update", `${e.name} set to ${val} hrs (Date: ${date})`);
 
-    // FIX: We now send the 'created_at' as the date you picked in the calendar box
-    await window._mpdb.from('meter_history').insert({ 
-        equip_id: equipId, 
-        reading: val, 
-        status_at_reading: e.status,
-        created_at: new Date(date).toISOString() // <--- THIS is the fix
-    });
-
-    await runRecurrenceEngine();
     closeModal('log-hours-modal');
     renderDashboard();
-    showToast(`Updated ${e.name} ✓`);
-  } catch (err) {
-    console.error(err);
-  }
+    showToast("Updated ✓");
+  } catch (err) { console.error(err); }
 }
-
 
 function toggleRecurFields() {
     const type = document.getElementById('ce-recur-type').value;
@@ -7041,6 +7038,36 @@ function saveMarkup() {
 function closeMarkupModal() {
     closeModal('markup-modal');
     isDrawing = false;
+}
+  async function logAuditAction(action, details) {
+  try {
+    await window._mpdb.from('audit_logs').insert({
+      user_name: currentUser?.name || 'System',
+      action: action,
+      details: details,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) { console.warn("Audit log failed silently"); }
+}
+async function renderAuditLogs() {
+  const container = document.getElementById('audit-log-list');
+  if(!container) return;
+  container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
+  try {
+    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(100);
+    if(!data || !data.length) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No activity logged yet</div>';
+        return;
+    }
+    container.innerHTML = data.map(log => `
+      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:flex-start">
+        <div style="font-size:10px; color:var(--text3); white-space:nowrap; width:75px">${new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>${new Date(log.created_at).toLocaleDateString()}</div>
+        <div style="flex:1">
+          <div style="font-size:12px"><b>${log.user_name}</b>: ${log.action}</div>
+          <div style="font-size:11px; color:var(--text2)">${log.details}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) { container.innerHTML = 'Error loading logs'; }
 }
 </script>
 <!-- Photo Markup Modal -->
