@@ -5841,7 +5841,7 @@ async function handleWishApproval(id) {
     // 1. Mark wish as approved
     req.status = 'approved';
     await window._mpdb.from('tool_requests').update({status: 'approved'}).eq('id', id);
-
+ logAuditAction("Wishlist Approval", `Approved and Ordered: ${req.tool_name}`);
     // 2. Create the tool in Inventory as "On Order"
     const newTool = {
         id: uid(),
@@ -5851,7 +5851,6 @@ async function handleWishApproval(id) {
         health: 100,
         is_lost: false,
         last_updated: new Date().toISOString()
-    logAuditAction("Wishlist Approval", `Approved and Ordered: ${req.tool_name}`);
     };
     
     state.tools.push(newTool);
