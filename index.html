@@ -1099,7 +1099,7 @@ body.dark-mode .spec-row:hover {
 </div>
 
   <!-- ANALYTICS -->
- <div class="panel" id="panel-analytics">
+<div class="panel" id="panel-analytics">
   <div class="section-header">
     <span class="section-title">Fleet Intelligence</span>
     <div style="display:flex;gap:6px">
@@ -1108,7 +1108,7 @@ body.dark-mode .spec-row:hover {
     </div>
   </div>
 
-  <!-- ROW 1: TOP METRICS (6 across) -->
+  <!-- ROW 1: TOP METRICS -->
   <div class="metrics">
     <div class="metric-card"><div class="metric-label">YTD Spend</div><div class="metric-value" id="r-ytd">$0</div></div>
     <div class="metric-card"><div class="metric-label">Avg WO Cost</div><div class="metric-value" id="r-avg">$0</div></div>
@@ -1118,19 +1118,19 @@ body.dark-mode .spec-row:hover {
     <div class="metric-card"><div class="metric-label">Fleet Health</div><div class="metric-value" id="r-health">—</div></div>
   </div>
 
-  <!-- ROW 2: COSTS & STATUS -->
+  <!-- ROW 2: SPENDING & TYPES -->
   <div class="grid-2">
     <div class="card">
       <div class="card-header"><span class="card-title">Cost by Equipment</span></div>
-      <div id="cost-by-equip" style="min-height: 120px"></div>
+      <div id="cost-by-equip"></div>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Work Order Status</span></div>
-      <div id="task-breakdown" style="min-height: 120px"></div>
+      <div class="card-header"><span class="card-title">Work Order Types</span></div>
+      <div id="planned-vs-unplanned" style="min-height: 120px"></div>
     </div>
   </div>
 
-  <!-- ROW 3: DOWNTIME ANALYSIS -->
+  <!-- ROW 3: DOWNTIME & REASONS -->
   <div class="grid-2" style="margin-top:12px">
     <div class="card">
       <div class="card-header"><span class="card-title">Hours Lost per Machine</span></div>
@@ -1138,26 +1138,20 @@ body.dark-mode .spec-row:hover {
     </div>
     <div class="card">
       <div class="card-header"><span class="card-title">Downtime Reasons</span></div>
-      <div id="downtime-reasons" style="min-height: 120px"></div>
+      <div id="downtime-reasons"></div>
     </div>
   </div>
 
-  <!-- ROW 4: HEALTH & PARTS -->
+  <!-- ROW 4: HEALTH & PREDICTION -->
   <div class="grid-2" style="margin-top:12px">
     <div class="card">
-      <div class="card-header"><span class="card-title">Individual Health Scores</span></div>
+      <div class="card-header"><span class="card-title">Individual Health</span></div>
       <div id="health-scores" style="max-height: 200px; overflow-y: auto;"></div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Most Replaced Parts</span></div>
-      <div id="parts-consumed" style="max-height: 200px; overflow-y: auto;"></div>
+    <div class="card" style="background: var(--accent-bg) !important; border: 1px solid var(--accent)">
+      <div class="card-header"><span class="card-title" style="color:var(--accent-text)">30-Day Service Forecast</span></div>
+      <div id="predictive-analytics-list"></div>
     </div>
-  </div>
-
-  <!-- ROW 5: PREDICTIVE (New Feature!) -->
-  <div class="card" style="margin-top:12px; background: var(--accent-bg); border: 1px solid var(--accent)">
-    <div class="card-header"><span class="card-title" style="color:var(--accent-text)">✨ Maintenance Projection (Next 30 Days)</span></div>
-    <div id="predictive-analytics-list" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px"></div>
   </div>
 </div>
   <!-- THE ONLY TOOL CRIB PANEL -->
@@ -2939,6 +2933,7 @@ async function renderAnalytics() {
   try {
     renderCostChart();            // Monthly Spend Bars
     renderCostByEquip();          // Horizontal Bars per machine
+    renderPlannedVsUnplanned();
     renderTaskBreakdown();        // WO status bars
     renderHealthScores();         // Individual machine health
     renderTopPartsUsed();         // Most common parts
@@ -6974,6 +6969,31 @@ function renderTopPartsUsed() {
     `).join('');
 }
     
+function renderPlannedVsUnplanned() {
+    const el = document.getElementById('planned-vs-unplanned');
+    if (!el) return;
+
+    // Planned = Auto-generated notes
+    const planned = state.tasks.filter(t => t.notes && t.notes.includes('auto-generated')).length;
+    const unplanned = state.tasks.length - planned;
+    const total = state.tasks.length || 1;
+
+    el.innerHTML = `
+        <div class="stat-row">
+            <div style="width:100px; font-size:12px">Planned</div>
+            <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(planned/total*100)}%; background:var(--success)"></div></div>
+            <div style="width:30px; text-align:right; font-weight:600">${planned}</div>
+        </div>
+        <div class="stat-row">
+            <div style="width:100px; font-size:12px">Breakdowns</div>
+            <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(unplanned/total*100)}%; background:var(--warning)"></div></div>
+            <div style="width:30px; text-align:right; font-weight:600">${unplanned}</div>
+        </div>
+        <div style="font-size:11px; color:var(--text3); margin-top:10px; text-align:center">
+            Higher "Planned" percentage means better fleet reliability.
+        </div>
+    `;
+}
 </script>
 
 <!-- Checklist Template Modal -->
