@@ -2430,20 +2430,27 @@ function renderRecentTasks(){
     </div>`;
   }).join('');
 }
-function renderCostChart(){
-  const costs=state.monthlyCosts; const max=Math.max(...costs,1);
-  const colors=['#B5D4F4','#85B7EB','#378ADD','#185FA5'];
-  const now=new Date();
-  const labels=[3,2,1,0].map(ago=>{ const d=new Date(now.getFullYear(),now.getMonth()-ago,1); return MONTHS[d.getMonth()]; });
-  document.getElementById('cost-chart').innerHTML=costs.map((v,i)=>
-    `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-      <div style="font-size:10px;font-weight:600">${v>=1000?"$"+(v/1000).toFixed(1)+"k":"$"+v.toLocaleString()}</div>
-      <div style="width:100%;border-radius:3px 3px 0 0;height:${Math.round(v/max*78)}px;background:${colors[i]}"></div>
-      <div style="font-size:10px;color:var(--text2)">${labels[i]}</div>
-    </div>`
-  ).join('')
-}
+function renderCostChart() {
+    const container = document.getElementById('cost-chart-large'); // The new ID in Analytics
+    if (!container) return;
 
+    const costs = state.monthlyCosts || [0, 0, 0, 0];
+    const max = Math.max(...costs, 1);
+    const colors = ['#B5D4F4', '#85B7EB', '#378ADD', '#185FA5'];
+    const now = new Date();
+    const labels = [3, 2, 1, 0].map(ago => {
+        const d = new Date(now.getFullYear(), now.getMonth() - ago, 1);
+        return MONTHS[d.getMonth()];
+    });
+
+    container.innerHTML = costs.map((v, i) => `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px">
+            <div style="font-size:11px; font-weight:700">$${v.toLocaleString()}</div>
+            <div style="width:100%; border-radius:4px 4px 0 0; height:${Math.round(v / max * 100)}px; background:${colors[i]}"></div>
+            <div style="font-size:11px; color:var(--text2)">${labels[i]}</div>
+        </div>
+    `).join('');
+}
 // ============================================================
 // CALENDAR
 // ============================================================
@@ -6908,6 +6915,38 @@ function renderTaskBreakdown() {
         <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(c/tot*100)}%; background:${col}"></div></div>
         <div style="width:30px; text-align:right; font-weight:600">${c}</div></div>`).join('');
 }
+function renderTopPartsUsed() {
+    const el = document.getElementById('parts-consumed');
+    if (!el) return;
+
+    // 1. Group usage by part name
+    const partMap = {};
+    (state.partUsage || []).forEach(p => {
+        partMap[p.part_name] = (partMap[p.part_name] || 0) + p.qty_used;
+    });
+
+    // 2. Sort by highest quantity and take top 6
+    const topParts = Object.entries(partMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6);
+
+    if (topParts.length === 0) {
+        el.innerHTML = '<div style="color:var(--text3); font-size:12px; padding:10px">No parts usage recorded yet.</div>';
+        return;
+    }
+
+    const maxQty = Math.max(...topParts.map(x => x[1]), 1);
+
+    // 3. Render horizontal bars
+    el.innerHTML = topParts.map(([name, qty]) => `
+        <div class="stat-row">
+            <div style="width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--text2)">${name}</div>
+            <div class="stat-bar-wrap" style="flex:1">
+                <div class="stat-bar" style="width:${Math.round(qty / maxQty * 100)}%; background:#BA7517"></div>
+            </div>
+            <div style="width:30px; text-align:right; font-weight:600; font-size:12px">${qty}</div>
+        </div>
+    `).join('');
 </script>
 
 <!-- Checklist Template Modal -->
