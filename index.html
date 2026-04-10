@@ -1003,12 +1003,7 @@ body.dark-mode .spec-row:hover {
       <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div><div class="metric-sub" id="m-total-sub">0 operational</div></div>
       <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div><div class="metric-sub">Work orders</div></div>
       
-      <!-- SENSITIVE METRIC: MONTHLY COST -->
-      <div class="metric-card" id="m-cost-card">
-        <div class="metric-label">This Month Cost</div>
-        <div class="metric-value" id="m-cost">$0</div>
-        <div class="metric-sub" id="m-cost-sub">+$0 vs last month</div>
-      </div>
+
 
       <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
       <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
@@ -1732,8 +1727,13 @@ let tempZerkCoords = { x: 0, y: 0 };
 let calDate = new Date();
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
  let currentCalEntryType = 'one-time';   
-    // CONFIG
-// ============================================================
+function safeUpdate(id, value, className = null) {
+  const el = document.getElementById(id);
+  if (el) {
+    if (value !== null && value !== undefined) el.textContent = value;
+    if (className !== null) el.className = className;
+  }
+}
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot'); 
@@ -2463,7 +2463,7 @@ function updateMetrics(){
   const openAndOverdue = open + overdue;
   document.getElementById('m-overdue').textContent=openAndOverdue;
   document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
-  document.getElementById('m-cost').textContent='$'+cost.toLocaleString();
+  safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
   document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
   document.getElementById('m-parts').textContent=low;
   document.getElementById('m-parts').className='metric-value '+(low>0?'v-danger':'v-success');
@@ -6706,7 +6706,6 @@ async function saveQuickLogHours() {
     const userPref = currentUser.show_sensitive_metrics !== false; 
 
     // Our three targets
-    const costMetric = document.getElementById('m-cost-card');
     const costChart = document.getElementById('m-monthly-chart-card');
     const healthCard = document.getElementById('m-fleet-health-card');
 
