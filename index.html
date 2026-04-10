@@ -6003,86 +6003,59 @@ function insertMention(username, atPos) {
     hideMentionDropdown();
     input.focus();
 }
-// --- THE MASTER SWITCHBOARD ---
 async function showPanel(id) {
-    // 1. Reset view to top of page
+    console.log("Navigating to:", id);
     window.scrollTo(0, 0);
 
-    // 2. Hide all panels and deactivate nav buttons
+    // 1. Hide all panels
     const panels = document.querySelectorAll('.panel');
     panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
-
-    // 3. Show the requested panel
-    const targetPanel = document.getElementById('panel-' + id);
-    if (targetPanel) {
-        targetPanel.style.display = 'block';
-        targetPanel.classList.add('active');
+    // 2. Show the target panel
+    const target = document.getElementById('panel-' + id);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
     } else {
-        console.warn("Panel not found:", 'panel-' + id);
+        console.error("Could not find HTML panel for:", id);
     }
 
-    // 4. Highlight the clicked button
-    navButtons.forEach(btn => {
-        // This checks if the button's onclick contains the panel ID
+    // 3. Update nav buttons (Highlights the active one)
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
     });
 
-    // 5. THE SWITCHBOARD (Logic for every tab)
+    // 4. The Render Map (The Switchboard)
+    // This tells the app which function to run for which tab
     const renderMap = {
-        'dashboard': async () => {
-            if (typeof renderDashboard === 'function') await renderDashboard();
-        },
-        'calendar': async () => {
-            if (typeof renderCalendar === 'function') await renderCalendar();
-        },
-        'equipment': () => {
-            if (typeof renderEquipmentTable === 'function') renderEquipmentTable();
-        },
-        'tasks': () => {
-            if (typeof renderTasks === 'function') renderTasks();
-        },
-        'schedule': () => {
-            if (typeof renderSchedule === 'function') renderSchedule();
-        },
-        'parts': () => {
-            if (typeof renderParts === 'function') renderParts();
-        },
-        'suppliers': () => {
-            if (typeof renderSuppliers === 'function') renderSuppliers();
-        },
-        'documents': () => {
-            if (typeof renderDocuments === 'function') renderDocuments();
-        },
-        'analytics': () => {
-            if (typeof renderAnalytics === 'function') renderAnalytics();
-        },
-        'admin': () => {
-            if (typeof renderAdminPanel === 'function') renderAdminPanel();
-        },
-        'checklists': () => {
-            if (typeof renderChecklistTemplates === 'function') renderChecklistTemplates();
-        },
+        'dashboard': async () => { if (typeof renderDashboard === 'function') await renderDashboard(); },
+        'calendar': async () => { if (typeof renderCalendar === 'function') await renderCalendar(); },
+        'equipment': () => { if (typeof renderEquipmentTable === 'function') renderEquipmentTable(); },
+        'tasks': () => { if (typeof renderTasks === 'function') renderTasks(); },
+        'schedule': () => { if (typeof renderSchedule === 'function') renderSchedule(); },
+        'parts': () => { if (typeof renderParts === 'function') renderParts(); },
+        'suppliers': () => { if (typeof renderSuppliers === 'function') renderSuppliers(); },
+        'documents': () => { if (typeof renderDocuments === 'function') renderDocuments(); },
+        'analytics': () => { if (typeof renderAnalytics === 'function') renderAnalytics(); },
+        'admin': () => { if (typeof renderAdminPanel === 'function') renderAdminPanel(); },
+        'checklists': () => { if (typeof renderChecklistTemplates === 'function') renderChecklistTemplates(); },
         'chat': () => { 
             if (typeof renderChat === 'function') renderChat(); 
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
         'tools': () => { 
-            // This forces the Tool Crib to reset to the 'Inventory' tab when opened
-            if (typeof switchToolTab === 'function') switchToolTab('inventory');
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
         }
     };
 
-    // 6. Execute the render if it exists
+    // 5. Run the function if it exists in our map
     if (renderMap[id]) {
         await renderMap[id]();
     }
