@@ -5853,7 +5853,7 @@ async function handleWishApproval(id) {
         last_updated: new Date().toISOString()
     };
     
-    state.tools.push(newTool);
+    slogAuditAction("Wishlist Approval", `Approved and Ordered: ${req.tool_name}`);tate.tools.push(newTool);
     await window._mpdb.from('shop_tools').insert(newTool);
 
     await notifyManagers(`✅ Tool Approved & Ordered: "${req.tool_name}" (Requested by ${req.requested_by})`);
