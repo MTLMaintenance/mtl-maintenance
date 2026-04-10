@@ -2470,9 +2470,6 @@ function updateMetrics(){
     mo.textContent = totalActive;
     mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
   }
-
-  // 5. Update the Analytics page spend box
-  safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
