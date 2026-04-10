@@ -4630,14 +4630,7 @@ async function enterApp(){
       if (profile && profile.show_sensitive_metrics !== undefined) {
     currentUser.show_sensitive_metrics = profile.show_sensitive_metrics;
 }
-applyPrivacyFilters();
-        if (profile.role && currentUser.username.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) {
-        currentUser.role = profile.role;
-      }
-    }
-  } catch(e) { console.error("Error loading profile:", e); }
 
-  const nav = document.getElementById('main-nav');
 
   // 3. Handle Navigation Permissions
   if(!can('canViewReports')){
