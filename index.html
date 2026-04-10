@@ -2422,15 +2422,22 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
+  // 1. Calculate the numbers
   const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
   const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
   const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
   
-  // Dashboard Updates
+  // 2. Prepare the Monthly Spend for the Analytics tab
+  const costs = state.monthlyCosts || [0,0,0,0];
+  const currentMonthCost = costs[costs.length - 1] || 0;
+
+  // 3. Update Dashboard IDs safely (only if they exist in HTML)
+  // We use safeUpdate to prevent crashing if you deleted these boxes
   safeUpdate('m-total', state.equipment.length);
   safeUpdate('m-parts', lowCount);
   safeUpdate('m-open', openCount);
 
+  // 4. Update the Overdue box with color coding
   const mo = document.getElementById('m-overdue'); 
   if(mo) {
     const totalActive = openCount + overdueCount;
@@ -2438,24 +2445,8 @@ function updateMetrics(){
     mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
   }
 
-  // Update the Analytics page spend if the ID exists
-  const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
+  // 5. Update the Analytics page spend box
   safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
-}
-    }
-  });
-  document.getElementById('m-total').textContent=state.equipment.length;
-  document.getElementById('m-total-sub').textContent=state.equipment.filter(e=>e.status==='Operational').length+' operational';
-  const openAndOverdue = open + overdue;
-  document.getElementById('m-overdue').textContent=openAndOverdue;
-  document.getElementById('m-overdue').className='metric-value '+(overdue>0?'v-danger':openAndOverdue>0?'v-warning':'v-success');
-  safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
-  document.getElementById('m-cost-sub').textContent=sign+'$'+Math.abs(diff).toLocaleString()+' vs last month';
-  document.getElementById('m-parts').textContent=low;
-  document.getElementById('m-parts').className='metric-value '+(low>0?'v-danger':'v-success');
-  document.getElementById('m-health').textContent=avgHealth+'%';
-  document.getElementById('m-health').className='metric-value '+(avgHealth>=80?'v-success':avgHealth>=50?'v-warning':'v-danger');
-  document.getElementById('m-open').textContent=open;
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
