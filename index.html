@@ -1205,14 +1205,15 @@ body.dark-mode .spec-row:hover {
 
   <!-- ANALYTICS -->
 <div class="panel" id="panel-analytics">
-  <div class="section-header">
-    <span class="section-title">Fleet Intelligence</span>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-secondary btn-sm" onclick="exportHealthCSV()">Health CSV</button>
-      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">All Data CSV</button>
-    </div>
-  </div>
 
+<div class="section-header">
+  <span class="section-title">Fleet Intelligence</span>
+  <div style="display:flex; gap:6px">
+    <!-- These now match the 'Add Tool' and 'Work Order' buttons -->
+    <button class="btn btn-primary btn-sm" onclick="exportHealthCSV()">Export Health CSV</button>
+    <button class="btn btn-primary btn-sm" onclick="exportCSV()">Export All CSV</button>
+  </div>
+</div>
   <!-- ROW 1: TOP METRICS -->
   <div class="metrics">
     <div class="metric-card"><div class="metric-label">YTD Spend</div><div class="metric-value" id="r-ytd">$0</div></div>
@@ -2415,6 +2416,14 @@ function refreshPhotoGrid(key){
   grid.innerHTML=pendingPhotos[key].map(src=>`<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')+
     `<div class="photo-add" onclick="document.getElementById('${key}-photo-input').click()">+</div>`+
     `<input type="file" id="${key}-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'${key}')"/>`;
+<button onclick="initMarkup('${src}', '${key}', ${i})" 
+              style="position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:3px; font-size:10px; padding:2px 4px; cursor:pointer">
+              ✏️
+      </button>
+    </div>
+  `).join('') +
+  `<div class="photo-add" onclick="document.getElementById('${key}-photo-input').click()">+</div>` +
+  `<input type="file" id="${key}-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'${key}')"/>`;
 }
 function handleDocUpload(input){
   const file=input.files[0]; if(!file) return;
@@ -7099,8 +7108,88 @@ function renderPlannedVsUnplanned() {
         </div>
     `;
 }
-</script>
+let markupCanvas, markupCtx, isDrawing = false;
+let currentMarkupSource = { key: '', index: -1 };
 
+function initMarkup(imgSrc, key, index) {
+    currentMarkupSource = { key, index };
+    const modal = document.getElementById('markup-modal');
+    markupCanvas = document.getElementById('markup-canvas');
+    markupCtx = markupCanvas.getContext('2d');
+    
+    const img = new Image();
+    img.onload = () => {
+        // Set canvas size to match image
+        markupCanvas.width = img.width;
+        markupCanvas.height = img.height;
+        markupCtx.drawImage(img, 0, 0);
+        
+        // Set drawing style
+        markupCtx.strokeStyle = "#ff0000"; // Bright Red
+        markupCtx.lineWidth = Math.max(img.width / 100, 5); // Scale line with image size
+        markupCtx.lineCap = "round";
+        
+        openModal('markup-modal');
+        setupCanvasListeners();
+    };
+    img.src = imgSrc;
+}
+
+function setupCanvasListeners() {
+    const getPos = (e) => {
+        const rect = markupCanvas.getBoundingClientRect();
+        const scaleX = markupCanvas.width / rect.width;
+        const scaleY = markupCanvas.height / rect.height;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    };
+
+    const start = (e) => { isDrawing = true; const pos = getPos(e); markupCtx.beginPath(); markupCtx.moveTo(pos.x, pos.y); };
+    const move = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); markupCtx.lineTo(pos.x, pos.y); markupCtx.stroke(); };
+    const end = () => { isDrawing = false; };
+
+    markupCanvas.onmousedown = start; markupCanvas.onmousemove = move; window.onmouseup = end;
+    markupCanvas.ontouchstart = start; markupCanvas.ontouchmove = move; markupCanvas.ontouchend = end;
+}
+
+function clearMarkup() {
+    const img = new Image();
+    img.onload = () => markupCtx.drawImage(img, 0, 0);
+    img.src = pendingPhotos[currentMarkupSource.key][currentMarkupSource.index];
+}
+
+function saveMarkup() {
+    const editedData = markupCanvas.toDataURL('image/jpeg', 0.8);
+    pendingPhotos[currentMarkupSource.key][currentMarkupSource.index] = editedData;
+    refreshPhotoGrid(currentMarkupSource.key);
+    closeMarkupModal();
+}
+
+function closeMarkupModal() {
+    closeModal('markup-modal');
+    isDrawing = false;
+}
+</script>
+<!-- Photo Markup Modal -->
+<div class="modal-backdrop" id="markup-modal" style="display:none">
+  <div class="modal" style="max-width:95vw; width:800px; padding:10px">
+    <div class="modal-header">
+      <span class="modal-title">Photo Markup</span>
+      <div style="display:flex; gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="clearMarkup()">Clear</button>
+          <button class="modal-close" onclick="closeMarkupModal()">✕</button>
+      </div>
+    </div>
+    <div style="position:relative; background:#000; border-radius:var(--radius); overflow:hidden; display:flex; align-items:center; justify-content:center">
+      <canvas id="markup-canvas" style="max-width:100%; cursor:crosshair"></canvas>
+    </div>
+    <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center">
+      <div style="font-size:11px; color:var(--text2)">Draw with your finger or mouse to highlight issues</div>
+      <button class="btn btn-primary" onclick="saveMarkup()">Save & Apply</button>
+    </div>
+  </div>
+</div>
 <!-- Checklist Template Modal -->
 <div class="modal-backdrop" id="tpl-modal" style="display:none">
   <div class="modal" style="max-width:600px">
