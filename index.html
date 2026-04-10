@@ -1401,16 +1401,6 @@ body.dark-mode .spec-row:hover {
       <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
     </div>
 
-    <!-- Dashboard Privacy Toggle -->
-    <div class="card" style="margin-top:12px">
-      <div class="card-header"><span class="card-title">Dashboard Preferences</span></div>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px">
-        <input type="checkbox" id="setting-show-metrics" onchange="toggleSensitiveMetrics(this.checked)"/>
-        <span>Show sensitive metrics (Costs & Health) on Dashboard</span>
-      </label>
-      <div style="font-size:11px; color:var(--text3); margin-top:4px">If disabled, financial data will be hidden from your view.</div>
-    </div>
-
     <!-- Audit Log -->
     <div class="card" style="margin-top:12px">
       <div class="card-header"><span class="card-title">System Audit Log</span><button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button></div>
@@ -5917,8 +5907,6 @@ async function renderAdminPanel(){
     
     const pending = profiles.filter(p => p.status === 'pending');
     const active = profiles.filter(p => p.status === 'approved');
-const checkbox = document.getElementById('setting-show-metrics');
-if(checkbox) checkbox.checked = currentUser.show_sensitive_metrics !== false;
     document.getElementById('pending-count').textContent = pending.length || '0';
     document.getElementById('pending-list').innerHTML = pending.map(p => `
       <div class="parts-row">
@@ -6715,22 +6703,7 @@ async function saveQuickLogHours() {
     console.error(err);
   }
 }
- function applyPrivacyFilters() {
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    // If setting is missing, we assume 'true' (show them)
-    const userPref = currentUser.show_sensitive_metrics !== false; 
 
-    // Our three targets
-    const costChart = document.getElementById('m-monthly-chart-card');
-    const healthCard = document.getElementById('m-fleet-health-card');
-
-    // HIDE if: User is NOT a manager OR User IS a manager but turned the toggle OFF
-    const shouldHide = !isManager || !userPref;
-
-    if (costMetric) costMetric.style.display = shouldHide ? 'none' : 'block';
-    if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
-    if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
-}
 
  function setCalEntryType(type) {
     currentCalEntryType = type;
