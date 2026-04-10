@@ -6,7 +6,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
+/* --- ANALYTICS LOOK & FEEL POLISH --- */
+#panel-analytics .metric-card {
+    border-top: 4px solid var(--accent); /* Adds a blue bar to the top */
+    background: rgba(255, 255, 255, 0.98) !important; /* Slightly more solid for readability */
+}
+
 #panel-analytics .card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px); /* Blurs the background image behind the card */
+}
+
+#panel-analytics .card-title {
+    color: var(--accent-text);
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.empty-state {
+    color: var(--text3);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+    #panel-analytics .card {
     background: rgba(255, 255, 255, 0.95) !important;
     border: 1px solid rgba(0,0,0,0.05);
     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
