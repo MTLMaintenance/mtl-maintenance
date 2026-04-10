@@ -5483,6 +5483,7 @@ async function saveTool() {
     }
     closeModal('tool-modal'); renderTools();
 }
+  }
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
@@ -5816,6 +5817,8 @@ async function handleWishApproval(id) {
     switchToolTab('inventory');
 }
   }
+
+
 async function handleWishDenial(id) {
     const reason = prompt("Why is this tool being denied? (This will be shown to the crew)");
     if (reason === null) return;
@@ -5831,7 +5834,7 @@ async function handleWishDenial(id) {
     showToast("Request denied and moved to history");
     renderWishlist();
 }
-
+}
 function promptWishlistCheck() {
     alert("Please ensure you have checked the 'Denied History' tab to see if this tool was previously rejected before submitting your suggestion.");
     openModal('wishlist-modal');
@@ -6635,7 +6638,7 @@ logAuditAction("Updated Hours", `${e.name} set to ${val} hrs (Date: ${date})`);
     console.error(err);
   }
 }
-
+  
 
  function setCalEntryType(type) {
     currentCalEntryType = type;
