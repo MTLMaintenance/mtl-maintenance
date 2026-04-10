@@ -1003,10 +1003,8 @@ body.dark-mode .spec-row:hover {
       <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div><div class="metric-sub" id="m-total-sub">0 operational</div></div>
       <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value" id="m-overdue">0</div><div class="metric-sub">Work orders</div></div>
       
-
-
       <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div><div class="metric-sub">Below reorder</div></div>
-      <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
+     <div class="metric-sub">Fleet score</div></div>
       <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
     </div>
 
@@ -1049,11 +1047,6 @@ body.dark-mode .spec-row:hover {
         <div id="recent-obs-list"></div>
       </div>
 
-      <!-- SENSITIVE CARD: FLEET HEALTH -->
-      <div class="card" id="m-fleet-health-card">
-        <div class="card-header"><span class="card-title">Fleet Health</span></div>
-        <div id="fleet-health-dash"></div>
-      </div>
     </div>
   </div>
   <!-- EQUIPMENT -->
@@ -2147,15 +2140,6 @@ async function loadState() {
         .eq('status', 'approved');
     state.users_list_cache = profiles || [];
 
-    // --- DASHBOARD PRIVACY SYNC ---
-    // Find the current user in the profile list to get their preference
-    const myProfile = state.users_list_cache.find(p => p.username === currentUser.username);
-    if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
-        currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
-    }
-    // Apply the filter immediately so the UI knows what to hide
-    if (typeof applyPrivacyFilters === 'function') {
-        applyPrivacyFilters();
     }
     // ------------------------------
 const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
@@ -2441,21 +2425,26 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
-  const overdue=state.tasks.filter(t=>t.status==='Overdue').length;
-  const open=state.tasks.filter(t=>t.status==='Open').length;
-  const low=state.parts.filter(p=>p.qty<=p.reorder).length;
-  const costs=state.monthlyCosts; const cost=costs[costs.length-1]; const prev=costs[costs.length-2]||0;
-  const diff=cost-prev; const sign=diff>=0?'+':'-';
-  const avgHealth=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):100;
-  // Make metric cards clickable
-  ['m-total','m-overdue','m-cost','m-parts','m-health','m-open'].forEach(id=>{
-    const el=document.getElementById(id);
-    const card=el?.closest('.metric-card');
-    if(card&&!card.dataset.clickable){
-      card.dataset.clickable='1';
-      card.style.cursor='pointer';
-      const panelMap={'m-total':'equipment','m-overdue':'tasks','m-open':'tasks','m-cost':'analytics','m-parts':'parts','m-health':'analytics'};
-      card.onclick=()=>showPanel(panelMap[id]||'dashboard');
+  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
+  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
+  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
+  
+  // Dashboard Updates
+  safeUpdate('m-total', state.equipment.length);
+  safeUpdate('m-parts', lowCount);
+  safeUpdate('m-open', openCount);
+
+  const mo = document.getElementById('m-overdue'); 
+  if(mo) {
+    const totalActive = openCount + overdueCount;
+    mo.textContent = totalActive;
+    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
+  }
+
+  // Update the Analytics page spend if the ID exists
+  const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
+  safeUpdate('r-month-cost', '$' + currentMonthCost.toLocaleString());
+}
     }
   });
   document.getElementById('m-total').textContent=state.equipment.length;
@@ -4555,9 +4544,7 @@ async function renderDashboard(){ // Added 'async'
   await renderEquipListDash(); // Added 'await'
   renderSchedDash();
   renderRecentTasks();
-  renderCostChart();
   updateMetrics();
-
   // 2. Handle Budget Alerts
   const budgetAlerts = checkBudgetAlerts();
   if(budgetAlerts.length){
@@ -4567,11 +4554,6 @@ async function renderDashboard(){ // Added 'async'
 
   // 3. Handle list checks
   if(document.getElementById('recent-obs-list')) renderRecentObservations();
-  if(document.getElementById('fleet-health-dash')) renderFleetHealthDash(); 
-
-  // 4. APPLY THE FILTER LAST
-  // This ensures the sensitive data is hidden the moment it appears
-  applyPrivacyFilters(); 
 }
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
@@ -6716,49 +6698,7 @@ async function saveQuickLogHours() {
     if (costChart) costChart.style.display = shouldHide ? 'none' : 'block';
     if (healthCard) healthCard.style.display = shouldHide ? 'none' : 'block';
 }
-// This function handles the checkbox click
-async function toggleSensitiveMetrics(isVisible) {
-    console.log("Privacy toggle changed to:", isVisible);
-    
-    // 1. Update the local user object so the app remembers the choice
-    currentUser.show_sensitive_metrics = isVisible;
-    
-    // 2. Run the filter to hide/show boxes immediately
-    applyPrivacyFilters();
 
-    // 3. Save the choice to the database (Supabase)
-    try {
-        await window._mpdb.from('profiles')
-            .update({ show_sensitive_metrics: isVisible })
-            .eq('id', currentUser.id);
-        showToast(isVisible ? "Financials shown" : "Financials hidden");
-    } catch(e) {
-        console.error("Failed to save dashboard preference:", e);
-        showToast("Setting not saved to database");
-    }
-}
-
-// This helper function actually hides or shows the HTML elements
-function applyPrivacyFilters() {
-    // Determine if the user is authorized and wants to see the data
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const userPref = currentUser.show_sensitive_metrics !== false; 
-
-    // The targets we want to hide
-    const targets = ['m-cost-card', 'm-monthly-chart-card', 'm-fleet-health-card'];
-
-    // RULE: Hide if:
-    // - User is NOT a manager (Technician/Viewer)
-    // - OR if the user is a manager but turned the setting OFF
-    const shouldHide = !isManager || !userPref;
-
-    targets.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.style.display = shouldHide ? 'none' : 'block';
-        }
-    });
-}
  function setCalEntryType(type) {
     currentCalEntryType = type;
     const isOne = type === 'one-time';
