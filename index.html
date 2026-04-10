@@ -2807,6 +2807,7 @@ async function deleteEquip(id) {
   try {
     // 1. Send delete command to Supabase
     // Because of the SQL change in Step 1, this will now work!
+    logAuditAction("Deleted Machine", `Permanently removed ${e.name} (S/N: ${e.serial})`);
     const { error } = await window._mpdb
       .from('equipment')
       .delete()
@@ -2904,7 +2905,7 @@ function renderTasks(){
 async function deleteTask(id){
   if(!confirm('Delete this work order?'))return;
   const task = state.tasks.find(t=>t.id===id);
-  // Delete linked observation - try obs_id first, then fallback to name matching
+  logAuditAction("Deleted Work Order", `Removed "${task.name}" for ${equipName(task.equipId)}`);
   if(task && task.notes && task.notes.startsWith('Auto-created from critical obs')) {
     let obsToDelete = null;
     if(task.obs_id) {
@@ -5480,7 +5481,8 @@ async function saveTool() {
     };
     if(!tool.name) return;
     await window._mpdb.from('shop_tools').upsert(tool);
-    const idx = state.tools.findIndex(x => x.id === tool.id);
+    logAuditAction("Tool Updated", `${name} - Health: ${tool.health}%, Lost: ${tool.is_lost}`);
+  const idx = state.tools.findIndex(x => x.id === tool.id);
     if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
     
     if(tool.health <= 40 || tool.is_lost) {
@@ -5849,6 +5851,7 @@ async function handleWishApproval(id) {
         health: 100,
         is_lost: false,
         last_updated: new Date().toISOString()
+    logAuditAction("Wishlist Approval", `Approved and Ordered: ${req.tool_name}`);
     };
     
     state.tools.push(newTool);
@@ -5871,7 +5874,7 @@ async function handleWishDenial(id) {
     await window._mpdb.from('tool_requests').update({status: 'denied', denial_reason: reason}).eq('id', id);
     
     await sendDM(req.requested_by, `❌ Your tool request for "${req.tool_name}" was denied. Reason: ${reason}`);
-    
+    logAuditAction("Wishlist Denial", `Denied: ${req.tool_name}. Reason: ${reason}`);
     showToast("Request denied and moved to history");
     renderWishlist();
 }
@@ -6129,36 +6132,45 @@ if (_baseSwitchChannel) {
     };
 }
 
-// Function to send a log to the database
 async function logAuditAction(action, details) {
+  const entry = {
+    user_name: currentUser?.name || 'System',
+    action: action,
+    details: details,
+    created_at: new Date().toISOString()
+  };
   try {
-    await window._mpdb.from('audit_logs').insert({
-      user_name: currentUser?.name || 'System',
-      action: action,
-      details: details,
-      created_at: new Date().toISOString()
-    });
-  } catch(e) { console.warn("Logging failed"); }
+    await window._mpdb.from('audit_logs').insert(entry);
+    console.log("Audit Logged:", action);
+  } catch(e) { console.error("Audit log failed:", e); }
 }
 
-// Function to draw the logs on the screen
 async function renderAuditLogs() {
   const container = document.getElementById('audit-log-list');
   if(!container) return;
+  container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
   
   try {
-    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(50);
+    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(100);
     if(!data || !data.length) {
-        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No logs found.</div>';
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No activity logged yet</div>';
         return;
     }
     container.innerHTML = data.map(log => `
-      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; font-size:12px">
-        <div style="color:var(--text3); width:70px; flex-shrink:0">${new Date(log.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-        <div style="flex:1"><b>${log.user_name}</b>: ${log.action} <div style="font-size:11px; color:var(--text2)">${log.details}</div></div>
+      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:flex-start">
+        <div style="font-size:10px; color:var(--text3); white-space:nowrap; width:75px">
+            ${new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>
+            ${new Date(log.created_at).toLocaleDateString()}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px; color:var(--text)"><b>${log.user_name}</b>: ${log.action}</div>
+          <div style="font-size:11px; color:var(--text2)">${log.details}</div>
+        </div>
       </div>
     `).join('');
-  } catch(e) { container.innerHTML = 'Failed to load logs.'; }
+  } catch(e) {
+    container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--danger)">Failed to load logs</div>';
+  }
 }
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
@@ -6686,7 +6698,7 @@ async function saveQuickLogHours() {
 
   try {
     await persist('equipment', 'upsert', e);
-
+logAuditAction("Updated Hours", `${e.name} set to ${val} hrs (Date: ${date})`);
     // FIX: We now send the 'created_at' as the date you picked in the calendar box
     await window._mpdb.from('meter_history').insert({ 
         equip_id: equipId, 
