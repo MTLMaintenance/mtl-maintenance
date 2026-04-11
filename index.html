@@ -10,7 +10,11 @@
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
 .badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
 .badge.obs-critical { background: #FCEBEB; color: #A32D2D; border: 1px solid #E24B4A; }
-
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
 /* Zerk Map UI tweaks */
 #btn-delete-view { margin-top: 10px; display: none; }
   /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
@@ -3234,20 +3238,31 @@ function openEquipDetail(id){
     <!-- 3. FULL HISTORY VIEW -->
     <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list"></div></div>
 
-    <!-- 4. OBSERVATIONS VIEW -->
+   <!-- Observations Tab -->
     <div id="eq-obs" class="tab-content" style="display:none">
       <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
+        <div style="margin-bottom:8px">
+          <label class="form-label" style="font-size:11px">Severity Level</label>
+          <!-- THE SEVERITY SELECTOR -->
+          <select class="form-select" id="obs-severity-${e.id}" style="width:100%; margin-top:4px">
+              <option value="info">ℹ️ Info / Maintenance Log</option>
+              <option value="watch">👀 Watch / Monitoring Required</option>
+              <option value="critical">🚨 Critical / Needs Immediate Action</option>
+          </select>
+        </div>
+
         <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="What do you see?" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
+        
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
           <div style="display:flex; gap:6px; align-items:center">
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('obs-photo-input').click()">📸 Photo</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('obs-photo-input').click()">📸 Add Photo</button>
             <input type="file" id="obs-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this,'obs')"/>
             <span id="obs-photo-status" style="font-size:11px; color:var(--success); font-weight:600"></span>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post Obs</button>
+          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post Observation</button>
         </div>
       </div>
-      <div id="obs-list-${e.id}"></div>
+      <div id="obs-list-${e.id}">Loading history...</div>
     </div>
 
     <div id="eq-invoices" class="tab-content" style="display:none"><div id="invoices-list"></div><button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button></div>
