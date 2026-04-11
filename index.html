@@ -2373,7 +2373,7 @@ function switchTab(group, tab, btn){
 // ============================================================
 // PHOTOS
 // ============================================================
-let pendingPhotos={task:[],equip:[]};
+let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
 let pendingDocFile=null;
 function refreshPhotoGrid(key){
   const gridId = key==='task'?'task-photo-grid':'equip-photo-grid';
@@ -4131,7 +4131,13 @@ async function addObservation(equipId) {
     const body = document.getElementById('obs-input-'+equipId)?.value.trim();
     const severity = document.getElementById('obs-severity-'+equipId)?.value || 'info';
     
-    if(!body && !pendingPhotos.obs.length) return;
+    // SAFE CHECK: This prevents the 'length' error
+    const hasPhoto = (pendingPhotos && pendingPhotos.obs && pendingPhotos.obs.length > 0);
+    
+    if(!body && !hasPhoto) {
+        showToast("Please enter a note or attach a photo");
+        return;
+    }
 
     const obs = {
         id: uid(),
@@ -4139,37 +4145,34 @@ async function addObservation(equipId) {
         author: currentUser.name,
         body: body || "",
         severity: severity,
-        photo: pendingPhotos.obs.length ? pendingPhotos.obs[0] : null,
+        photo: hasPhoto ? pendingPhotos.obs[0] : null,
         created_at: new Date().toISOString()
     };
 
     try {
-        await window._mpdb.from('observations').insert(obs);
+        const { error } = await window._mpdb.from('observations').insert(obs);
+        if (error) throw error;
+
         state.observations.unshift(obs);
         
-        // Handle Critical Alerts (This is where the 'await' belongs!)
         if (severity === 'critical') {
-            try {
-                await sendCriticalObsEmail(obs, equipId);
-                showToast('🚨 Critical alert sent to managers');
-            } catch(e) {
-                showToast('🚨 Critical observation logged');
-            }
-        } else {
-            showToast('Observation saved ✓');
+            await sendCriticalObsEmail(obs, equipId);
         }
 
         // Cleanup
-        pendingPhotos.obs = [];
-        if(document.getElementById('obs-input-'+equipId)) document.getElementById('obs-input-'+equipId).value = '';
+        if(pendingPhotos.obs) pendingPhotos.obs = [];
+        const input = document.getElementById('obs-input-'+equipId);
+        if(input) input.value = '';
+        
         refreshObsList(equipId);
+        showToast('Observation saved ✓');
         renderDashboard();
     } catch(e) {
+        console.error(e);
         showToast('Failed to save');
     }
 }
 
-// 3. THE CLEANUP: Handles deleting observations
 async function deleteObservation(obsId, equipId) {
     if(!confirm("Delete this observation?")) return;
     try {
@@ -4180,6 +4183,35 @@ async function deleteObservation(obsId, equipId) {
         renderDashboard();
     } catch(e) {
         showToast("Failed to delete");
+    }
+}
+ async function editObservation(obsId, equipId) {
+    const o = state.observations.find(x => x.id === obsId);
+    if(!o) return;
+
+    const newText = prompt("Update your observation:", o.body);
+    if (newText === null) return; // User clicked cancel
+
+    const newSev = prompt("Update Severity (info, watch, or critical):", o.severity);
+    if (newSev === null) return;
+
+    try {
+        const { error } = await window._mpdb.from('observations').update({
+            body: newText || o.body,
+            severity: newSev || o.severity
+        }).eq('id', obsId);
+
+        if (error) throw error;
+
+        // Update local memory
+        o.body = newText || o.body;
+        o.severity = newSev || o.severity;
+
+        refreshObsList(equipId);
+        showToast("Updated ✓");
+        renderDashboard();
+    } catch(e) {
+        showToast("Update failed");
     }
 }
   function refreshObsList(equipId) {
