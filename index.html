@@ -6,20 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
+/* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
 
-.dot-live {
-    width: 6px;
-    height: 6px;
-    background: var(--success);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-}
+/* --- TAB CONTRAST FIX --- */
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0px rgba(59, 109, 17, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(59, 109, 17, 0); }
-    100% { box-shadow: 0 0 0 0px rgba(59, 109, 17, 0); }
-}
 /* 1. Inactive Tabs (The ones that were blending in) */
 .tab {
   background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
@@ -1008,47 +998,45 @@ body.dark-mode .spec-row:hover {
  <div class="panel active" id="panel-dashboard">
   <div id="alert-section"></div>
 
-  <!-- METRICS ROW -->
+  <!-- ROW 1: CORE METRICS (Removed Fleet Size) -->
   <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Fleet Size</div><div class="metric-value" id="m-total">0</div></div>
-    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
-    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
-    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div><div class="metric-sub">Critical repairs</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value v-warning" id="m-parts">0</div><div class="metric-sub">Needs reorder</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
+    <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
   </div>
 
   <div class="grid-2">
     
-    <!-- LEFT: FLEET MONITOR (Full Height) -->
-    <div class="card" style="grid-row: span 2; display: flex; flex-direction: column;">
+    <!-- LEFT: FLEET MONITOR (Tall Card) -->
+    <div class="card" style="grid-row: span 2;">
       <div class="card-header">
         <span class="card-title">🚛 Fleet Monitor</span>
-        <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">Full Registry</button>
+        <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">Full List</button>
       </div>
-      <div id="equip-monitor-list" style="flex: 1;">
-         <!-- Machine rows with health and predictions -->
+      <div id="dash-fleet-list" style="display: flex; flex-direction: column; gap: 4px;">
+         <!-- Machine health and adaptive countdowns load here -->
       </div>
     </div>
 
-    <!-- RIGHT TOP: THE WORK QUEUE -->
+    <!-- RIGHT TOP: MINI CALENDAR -->
+    <div class="card" style="padding: 15px !important;">
+      <div class="card-header" style="margin-bottom: 10px;">
+        <span class="card-title">📅 Maintenance Outlook</span>
+        <button class="btn btn-secondary btn-sm" style="font-size: 10px" onclick="showPanel('calendar')">Full Calendar</button>
+      </div>
+      <div id="dash-mini-calendar">
+         <!-- A compact 1-31 grid -->
+      </div>
+    </div>
+
+    <!-- RIGHT BOTTOM: WORK QUEUE -->
     <div class="card">
       <div class="card-header">
         <span class="card-title" id="dash-work-title">📋 Work Queue</span>
         <span class="badge bi" id="dash-work-count">0</span>
       </div>
-      <div id="dash-work-list" style="max-height: 220px; overflow-y: auto;"></div>
-    </div>
-
-    <!-- RIGHT BOTTOM: SHOP PULSE (Activity + Team) -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">⚡ Shop Pulse</span>
-      </div>
-      <!-- This tab bar inside the card lets users switch between Feed and Team -->
-      <div style="display:flex; gap:10px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px">
-          <span style="font-size:12px; font-weight:700; cursor:pointer; color:var(--accent)" onclick="renderShopFeed()">Recent Activity</span>
-          <span style="font-size:12px; font-weight:700; cursor:pointer; color:var(--text3)" onclick="renderShopTeam()">Team Online</span>
-      </div>
-      <div id="dash-pulse-content" style="max-height: 200px; overflow-y: auto;"></div>
+      <div id="dash-work-list"></div>
     </div>
 
   </div>
@@ -2427,28 +2415,15 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
-  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
-  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
-  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
-  const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
+  const overdue = (state.tasks || []).filter(t => t.status === 'Overdue').length;
+  const open = (state.tasks || []).filter(t => t.status === 'Open').length;
+  const low = (state.parts || []).filter(p => p.qty <= p.reorder).length;
+  const avgH = state.equipment.length ? Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length) : 0;
 
-  // SAFE HELPER: This prevents the app from crashing if a card is missing
-  const safeSet = (id, val) => {
-    const el = document.getElementById(id);
-    if(el) el.textContent = val;
-  };
-
-  safeSet('m-total', state.equipment.length);
-  safeSet('m-parts', lowCount);
-  safeSet('m-open', openCount);
-  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString()); // Update Analytics Spend
-
-  const mo = document.getElementById('m-overdue'); 
-  if(mo) {
-    const totalActive = openCount + overdueCount;
-    mo.textContent = totalActive;
-    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
-  }
+  safeUpdate('m-overdue', overdue);
+  safeUpdate('m-parts', low);
+  safeUpdate('m-open', open);
+  safeUpdate('m-health', avgH + '%');
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
@@ -4536,22 +4511,23 @@ const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{
 function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').forEach(img=>lazyObserver.observe(img));}
 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
-
 async function renderDashboard(){
   const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
   
+  // 1. Basic Metrics
   updateMetrics();
   renderAlerts();
   
-  // 1. Render the Tall Fleet Monitor
-  renderEquipMonitor();
+  // 2. The Tall Monitor (List machines + Health + Adaptive Forecasts)
+  renderDashFleetMonitor();
 
-  // 2. Render the Dynamic Work Queue (Personal for Techs, Global for Managers)
-  renderSmartWorkQueue(isManager);
+  // 3. The Mini Calendar
+  renderMiniCalendar();
 
-  // 3. Render the Shop Pulse (Default to Feed)
-  renderShopFeed();
+  // 4. The Work Queue (Personal for Techs, Global for Managers)
+  renderDashWorkQueue(isManager);
 }
+
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -7094,34 +7070,64 @@ async function renderAuditLogs() {
       </div>`).join('');
   } catch(e) { container.innerHTML = 'Error loading logs'; }
 }
-function renderEquipMonitor() {
-    const el = document.getElementById('equip-monitor-list');
+async function renderDashFleetMonitor() {
+    const el = document.getElementById('dash-fleet-list');
     if(!el) return;
     
-    // Sort by status (Down first) then Health (Lowest first)
-    const list = [...state.equipment].sort((a,b) => {
-        if(a.status === 'Down' && b.status !== 'Down') return -1;
-        return calcHealth(a.id) - calcHealth(b.id);
-    }).slice(0, 7);
+    // Show top 8 machines based on health (worst first) or status
+    const list = [...state.equipment].sort((a,b) => calcHealth(a.id) - calcHealth(b.id)).slice(0, 8);
 
-    el.innerHTML = list.map(e => {
-        const score = calcHealth(e.id);
-        const isLocked = e.is_locked;
-        return `
-        <div class="equip-row" onclick="openEquipDetail('${e.id}')" style="${isLocked ? 'background:rgba(226,75,74,0.08)' : ''}">
+    el.innerHTML = list.map(e => `
+        <div class="equip-row" onclick="openEquipDetail('${e.id}')" style="padding: 10px 0; ${e.is_locked ? 'background:rgba(226,75,74,0.05)' : ''}">
           <div class="equip-info">
-            <div class="equip-name">${isLocked ? '🚨 ' : ''}${e.name}</div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+            <div style="font-weight:700; font-size:13px">${e.is_locked ? '🚨 ' : ''}${e.name}</div>
+            <div id="dash-adapt-${e.id}" style="font-size:11px; margin-top:2px; color:var(--text3)">Calculating...</div>
+            <div class="progress-bar" style="height:4px; margin-top:6px"><div class="progress-fill" style="width:${calcHealth(e.id)}%; background:${healthColor(calcHealth(e.id))}"></div></div>
           </div>
-          <div style="text-align:right; min-width:80px">
-            <div style="font-size:12px; font-weight:700">${e.hours.toLocaleString()}h</div>
-            <div style="font-size:10px; color:${healthColor(score)}">${score}% Health</div>
-          </div>
-        </div>`;
-    }).join('');
-}
+          <div style="text-align:right; font-size:11px; font-weight:700; color:${healthColor(calcHealth(e.id))}">${calcHealth(e.id)}%</div>
+        </div>`).join('');
 
-function renderSmartWorkQueue(isManager) {
+    // Background calculation for adaptive hours (so dashboard stays fast)
+    for(let e of list) {
+        const pred = await getAdaptivePrediction(e.id);
+        const pEl = document.getElementById(`dash-adapt-${e.id}`);
+        if(pEl) {
+            if(pred?.status === 'ACTIVE') pEl.innerHTML = `<span style="color:var(--warning); font-weight:700">⚠️ ~${pred.hoursRemaining} hrs left</span>`;
+            else if(pred?.status === 'OVERDUE') pEl.innerHTML = `<span style="color:var(--danger); font-weight:700">🚨 SERVICE OVERDUE</span>`;
+            else pEl.textContent = `${e.hours.toLocaleString()} hrs logged`;
+        }
+    }
+}
+ function renderMiniCalendar() {
+    const el = document.getElementById('dash-mini-calendar');
+    if(!el) return;
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const today = now.getDate();
+
+    // Create a compact horizontal scroll or grid
+    let html = `<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; text-align:center">`;
+    
+    // Simplified: Just showing dots for events
+    for(let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const hasTask = state.tasks.some(t => t.due === dateStr && t.status !== 'Completed');
+        const hasForecast = state.equipment.some(e => e._predictedDate === dateStr);
+        
+        html += `
+            <div style="padding:4px 0; border-radius:4px; background:${d === today ? 'var(--accent)' : 'rgba(0,0,0,0.05)'}; color:${d === today ? '#fff' : 'inherit'}; border:1px solid ${hasTask ? 'var(--danger)' : hasForecast ? 'var(--warning)' : 'transparent'}">
+                <div style="font-size:10px; font-weight:700">${d}</div>
+                <div style="display:flex; justify-content:center; gap:2px; height:4px; margin-top:2px">
+                    ${hasTask ? '<div style="width:4px; height:4px; border-radius:50%; background:var(--danger)"></div>' : ''}
+                    ${hasForecast ? '<div style="width:4px; height:4px; border-radius:50%; background:var(--warning)"></div>' : ''}
+                </div>
+            </div>`;
+    }
+    html += `</div>`;
+    el.innerHTML = html;
+}
+function renderDashWorkQueue(isManager) {
     const container = document.getElementById('dash-work-list');
     const title = document.getElementById('dash-work-title');
     const badgeEl = document.getElementById('dash-work-count');
@@ -7130,50 +7136,18 @@ function renderSmartWorkQueue(isManager) {
     if (!isManager) {
         tasks = tasks.filter(t => t.assign === currentUser.name);
         title.textContent = "📋 My Assignments";
-    } else {
-        title.textContent = "📋 Global Work Queue";
     }
     badgeEl.textContent = tasks.length;
 
-    container.innerHTML = tasks.slice(0, 5).map(t => `
+    container.innerHTML = tasks.slice(0, 4).map(t => `
         <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
             <div style="flex:1">
-                <div style="font-weight:600">${t.name}</div>
-                <div style="font-size:11px; color:var(--text3)">${equipName(t.equipId)} · Due ${fmtDate(t.due)}</div>
+                <div style="font-weight:600; font-size:13px">${t.name}</div>
+                <div style="font-size:11px; color:var(--text3)">${equipName(t.equipId)} · ${fmtDate(t.due)}</div>
             </div>
             ${badge(t.status)}
-        </div>
-    `).join('') || '<div class="empty-state">Clean slate! No work orders.</div>';
-}
-
-async function renderShopFeed() {
-    const container = document.getElementById('dash-pulse-content');
-    try {
-        const { data: logs } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(6);
-        container.innerHTML = (logs || []).map(l => `
-            <div style="padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.03); display:flex; gap:10px; align-items:flex-start">
-                <div style="font-size:16px">${l.action.includes('Meter') ? '⏱' : l.action.includes('Completed') ? '✅' : '⚙'}</div>
-                <div>
-                    <div style="font-size:12px"><b>${l.user_name}</b> ${l.action.toLowerCase()}</div>
-                    <div style="font-size:10px; color:var(--text3)">${new Date(l.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                </div>
-            </div>
-        `).join('') || '<div class="empty-state">Waiting for activity...</div>';
-    } catch(e) {}
-}
-
-async function renderShopTeam() {
-    const container = document.getElementById('dash-pulse-content');
-    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { data: online } = await window._mpdb.from('profiles').select('full_name, last_seen').gt('last_seen', fiveMinsAgo);
-
-    container.innerHTML = (online || []).map(u => `
-        <div style="display:flex; align-items:center; gap:10px; padding:8px 0">
-            <div class="dot" style="background:var(--success); width:8px; height:8px"></div>
-            <div style="font-size:13px; font-weight:500">${u.full_name}</div>
-        </div>
-    `).join('') || '<div class="empty-state">No one else is online</div>';
-}
+        </div>`).join('') || '<div class="empty-state">No open jobs</div>';
+}    
 </script>
 <!-- Photo Markup Modal -->
 <div class="modal-backdrop" id="markup-modal" style="display:none">
