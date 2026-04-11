@@ -6,7 +6,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* Observation Severity Colors */
+.view-toggle {
+  display: flex;
+  background: var(--bg3);
+  padding: 4px;
+  border-radius: var(--radius);
+  margin-bottom: 15px;
+  gap: 4px;
+  width: fit-content;
+}
+
+.view-toggle .btn {
+  padding: 5px 15px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+}
+
+.view-toggle .btn.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+    /* Observation Severity Colors */
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
 .badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
 .badge.obs-critical { background: #FCEBEB; color: #A32D2D; border: 1px solid #E24B4A; }
@@ -1090,14 +1114,7 @@ body.dark-mode .spec-row:hover {
   </div>
 
     
-  <!-- SCHEDULE -->
-  <div class="panel" id="panel-schedule">
-    <div class="section-header"><span class="section-title">Maintenance Schedule</span><button class="btn btn-primary" onclick="openModal('sched-modal')">+ Schedule Work</button></div>
-    <div class="grid-2">
-      <div class="card"><div class="card-header"><span class="card-title">This Week</span></div><div id="sched-week"></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Next 30 Days</span></div><div id="sched-next30"></div></div>
-    </div>
-  </div>
+  
 
   <!-- PARTS -->
   <div class="panel" id="panel-parts">
@@ -1361,25 +1378,35 @@ body.dark-mode .spec-row:hover {
 <div class="panel" id="panel-calendar">
   <div class="section-header">
     <span class="section-title">Maintenance Calendar</span>
-    <div style="display:flex; gap:6px">
-     <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
+    <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
+  </div>
+
+  <!-- THE NEW TOGGLE -->
+  <div class="view-toggle">
+    <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')">📅 Grid View</button>
+    <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')">📝 List View</button>
+  </div>
+
+  <!-- GRID VIEW -->
+  <div id="cal-grid-container">
+    <div class="card">
+      <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
+        <button class="btn btn-secondary btn-sm" onclick="calPrev()">‹</button>
+        <div id="cal-title" style="font-weight:700; font-size:16px; flex:1; text-align:center"></div>
+        <button class="btn btn-secondary btn-sm" onclick="calNext()">›</button>
+        <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
+      </div>
+      <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-weight:600; font-size:11px; color:var(--text3); margin-bottom:8px"></div>
+      <div class="cal-grid" id="cal-days" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px"></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="cal-nav" style="display:flex; align-items:center; gap:12px; margin-bottom:15px">
-      <button class="btn btn-secondary btn-sm" onclick="calPrev()">&#8249;</button>
-      <div id="cal-title" style="font-weight:700; font-size:18px; flex:1; text-align:center; color: #000">Loading...</div>
-      <button class="btn btn-secondary btn-sm" onclick="calNext()">&#8250;</button>
+  <!-- LIST VIEW (The old Schedule tab content) -->
+  <div id="cal-list-container" style="display:none">
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><span class="card-title">This Week</span></div><div id="sched-week"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Next 30 Days</span></div><div id="sched-next30"></div></div>
     </div>
-
-    <div class="cal-grid" id="cal-headers" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; margin-bottom:10px"></div>
-    <div class="cal-grid" id="cal-days" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px" ></div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Rules</span></div><div id="recur-list"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">This Month</span></div><div id="sched-month-list"></div></div>
   </div>
 </div>
 
@@ -6150,9 +6177,6 @@ async function showPanel(id) {
         'tasks': () => {
             if (typeof renderTasks === 'function') renderTasks();
         },
-        'schedule': () => {
-            if (typeof renderSchedule === 'function') renderSchedule();
-        },
         'parts': () => {
             if (typeof renderParts === 'function') renderParts();
         },
@@ -7198,6 +7222,41 @@ async function renderAuditLogs() {
       </div>`).join('');
   } catch(e) { container.innerHTML = 'Error loading logs'; }
 }
+ let currentCalendarView = 'grid';
+
+function switchCalendarView(view) {
+    currentCalendarView = view;
+    
+    // Toggle Visibility
+    document.getElementById('cal-grid-container').style.display = view === 'grid' ? 'block' : 'none';
+    document.getElementById('cal-list-container').style.display = view === 'list' ? 'block' : 'none';
+    
+    // Toggle Button Styles
+    document.getElementById('btn-view-grid').classList.toggle('active', view === 'grid');
+    document.getElementById('btn-view-list').classList.toggle('active', view === 'list');
+    
+    // Refresh the data
+    if(view === 'grid') renderCalendar(); else renderSchedule();
+}
+
+// Ensure the old renderSchedule function points to the new IDs
+function renderSchedule(){
+  const nw = new Date(TODAY); nw.setDate(nw.getDate() + 7);
+  const n30 = new Date(TODAY); n30.setDate(n30.getDate() + 30);
+  const sorted = [...state.schedules].sort((a,b) => new Date(a.date) - new Date(b.date));
+  
+  const mk = s => {
+    const d = new Date(s.date);
+    return `<div class="sched-item">
+      <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${MONTHS[d.getMonth()].slice(0,3)}</div></div>
+      <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'}</div></div>
+      <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
+    </div>`;
+  };
+
+  document.getElementById('sched-week').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= nw).map(mk).join('') || 'Nothing this week';
+  document.getElementById('sched-next30').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= n30).map(mk).join('') || 'Nothing in 30 days';
+}   
 </script>
 <!-- Photo Markup Modal -->
 <div class="modal-backdrop" id="markup-modal" style="display:none">
@@ -7330,8 +7389,6 @@ async function renderAuditLogs() {
       <span class="modal-title">Add Invoice</span>
       <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
     </div>
-    
-    <!-- THE BLOCK YOU ARE DELETING ABOVE NOW LIVES HERE SAFELY -->
     <div id="invoice-photo-area" style="border:2px dashed var(--border2); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:16px; cursor:pointer" onclick="document.getElementById('invoice-photo-input').click()">
       <div id="invoice-photo-preview-area">
         <div style="font-size:32px;margin-bottom:8px">📄</div>
