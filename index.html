@@ -995,45 +995,40 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
- 
-      <div class="grid-2" style="margin-top:12px">
-    <!-- Card 1: Fleet Status (Everyone sees) -->
+  <div class="panel active" id="panel-dashboard">
+  <div id="alert-section"></div>
+
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+  </div>
+
+  <div class="grid-2">
     <div class="card">
-      <div class="card-header"><span class="card-title">Fleet Status & Predictions</span></div>
+      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
       <div id="equip-list-dash"></div>
     </div>
-
-    <!-- Card 2: Live Shop Feed (Everyone sees - keeps the "Alive" feel) -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-title">Live Shop Feed</span>
-        <span class="dot" style="background:var(--success); width:6px; height:6px"></span>
-      </div>
-      <div id="mini-audit-feed"></div>
+      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+      <div id="sched-list-dash"></div>
     </div>
   </div>
 
   <div class="grid-2" style="margin-top:12px">
-    <!-- Card 3: Dynamic Work Queue (Managers see Global, Techs see Personal) -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-title" id="task-card-title">Work Order Queue</span>
-        <span class="badge bg" id="task-count-badge"></span>
-      </div>
+      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
       <div id="recent-tasks"></div>
     </div>
-
-    <!-- Card 4: Role-Based Card (Managers see Procurement, Techs see Team) -->
-    <div class="card" id="dynamic-manager-card">
-      <div class="card-header"><span class="card-title">Procurement / Needs</span></div>
-      <div id="procurement-summary"></div>
-    </div>
-
-    <div class="card" id="dynamic-tech-card" style="display:none">
-      <div class="card-header"><span class="card-title">Team Presence</span></div>
-      <div id="team-online-dash"></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
+      <div id="recent-obs-list"></div>
     </div>
   </div>
+</div>
+
+      
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -2513,27 +2508,15 @@ function renderSchedDash(){
   }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
 }
 function renderRecentTasks(){
-  const container = document.getElementById('recent-tasks');
-  if(!container) return;
-
-  const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-  
-  // LOGIC: If I'm a tech, only show tasks assigned to MY NAME
-  let tasks = [...state.tasks];
-  if (!isManager) {
-      tasks = tasks.filter(t => t.assign === currentUser.name && t.status !== 'Completed');
-  }
-
-  const recent = tasks.sort((a,b) => new Date(b.due) - new Date(a.due)).slice(0,5);
-  
-  const badgeEl = document.getElementById('task-count-badge');
-  if(badgeEl) badgeEl.textContent = tasks.length + (isManager ? ' total' : ' for you');
-
-  container.innerHTML = recent.map(t => `
-    <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
-      <div style="flex:1"><b>${t.name}</b><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}</div></div>
-      ${badge(t.status)}
-    </div>`).join('') || `<div class="empty-state">${isManager ? 'No open work orders' : 'You have no assigned tasks today!'}</div>`;
+  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
+  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
+  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
+    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
+    return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
+      <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
+      ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
+    </div>`;
+  }).join('');
 }
 function renderCostChart() {
     const container = document.getElementById('cost-chart-large'); // The new ID in Analytics
@@ -4527,34 +4510,23 @@ const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{
 function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').forEach(img=>lazyObserver.observe(img));}
 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
+
 async function renderDashboard(){
+  console.log("Safe Render: Starting Dashboard...");
   try {
-      const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-
-      // 1. Toggle visibility based on role
-      document.getElementById('dynamic-manager-card').style.display = isManager ? 'block' : 'none';
-      document.getElementById('dynamic-tech-card').style.display = isManager ? 'none' : 'block';
-      
-      // 2. Change titles for Techs
-      const taskTitle = document.getElementById('task-card-title');
-      if(taskTitle) taskTitle.textContent = isManager ? 'Global Work Queue' : 'My Assigned Work';
-
-      // 3. Run Renders
       updateMetrics();
       renderAlerts();
-      await renderEquipListDash(); 
-      renderRecentTasks(); // We will update this function below to be "Role Aware"
-      renderMiniAuditFeed();
+      await renderEquipListDash(); // Predictions
+      renderRecentTasks();
+      renderRecentObservations();
+      renderSchedDash();
       
-      if (isManager) {
-          renderProcurementSummary();
-      } else {
-          renderTeamPresence();
-      }
-
-  } catch (e) { console.error("Dashboard error:", e); }
+      // We REMOVED renderFleetHealthDash() and renderCostChart() from here
+      
+  } catch (e) {
+      console.error("Dashboard error:", e);
+  }
 }
-
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -7096,78 +7068,6 @@ async function renderAuditLogs() {
         </div>
       </div>`).join('');
   } catch(e) { container.innerHTML = 'Error loading logs'; }
-}
-async function renderTeamPresence() {
-    const container = document.getElementById('team-online-dash');
-    if (!container) return;
-
-    // We look at users seen in the last 15 minutes
-    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    
-    try {
-        const { data: onlineUsers } = await window._mpdb.from('profiles')
-            .select('full_name, last_seen')
-            .gt('last_seen', fifteenMinsAgo);
-
-        if (!onlineUsers || onlineUsers.length <= 1) { // Only me
-            container.innerHTML = '<div style="color:var(--text3); padding:10px">No one else is currently in the app.</div>';
-            return;
-        }
-
-        container.innerHTML = onlineUsers.map(u => {
-            if(u.full_name === currentUser.name) return ''; // Skip self
-            return `
-                <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.05)">
-                    <div class="dot" style="background:var(--success); width:8px; height:8px"></div>
-                    <div style="font-size:13px; font-weight:500">${u.full_name}</div>
-                    <div style="font-size:10px; color:var(--text3); margin-left:auto">Active now</div>
-                </div>`;
-        }).join('');
-    } catch(e) { container.innerHTML = 'Could not load presence'; }
-}
-// 1. MINI AUDIT FEED (Shows the last 5 things that happened)
-async function renderMiniAuditFeed() {
-    const container = document.getElementById('mini-audit-feed');
-    if (!container) return;
-
-    try {
-        const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(5);
-        if (!data || !data.length) {
-            container.innerHTML = '<div style="color:var(--text3); padding:10px">No recent activity</div>';
-            return;
-        }
-
-        container.innerHTML = data.map(log => `
-            <div style="padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05); display:flex; gap:8px; align-items:baseline">
-                <span style="font-size:9px; color:var(--text3); white-space:nowrap">${new Date(log.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                <div style="flex:1"><b>${log.user_name}</b> ${log.action.toLowerCase()}</div>
-            </div>
-        `).join('');
-    } catch (e) { container.innerHTML = 'Error loading feed'; }
-}
-
-// 2. PROCUREMENT SUMMARY (Combines Low Parts + Broken Tools + Approved Wishes)
-function renderProcurementSummary() {
-    const container = document.getElementById('procurement-summary');
-    if (!container) return;
-
-    const lowParts = state.parts.filter(p => p.qty <= p.reorder).map(p => ({ name: p.name, type: 'Part' }));
-    const brokenTools = state.tools.filter(t => t.health <= 40 || t.is_lost).map(t => ({ name: t.name, type: 'Tool' }));
-    const approvedWishes = state.wishlist.filter(w => w.status === 'approved').map(w => ({ name: w.tool_name, type: 'New Tool' }));
-
-    const allNeeds = [...lowParts, ...brokenTools, ...approvedWishes];
-
-    if (!allNeeds.length) {
-        container.innerHTML = '<div style="color:var(--success); padding:10px; font-weight:600">✅ All systems go. No parts or tools needed.</div>';
-        return;
-    }
-
-    container.innerHTML = allNeeds.slice(0, 6).map(item => `
-        <div class="parts-row">
-            <div style="flex:1"><b>${item.name}</b></div>
-            <span class="badge ${item.type === 'Part' ? 'bd' : item.type === 'Tool' ? 'bw' : 'bi'}">${item.type}</span>
-        </div>
-    `).join('');
 }
 </script>
 <!-- Photo Markup Modal -->
