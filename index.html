@@ -4126,37 +4126,72 @@ function applyTemplate(){
 }
 
 // ── OBSERVATIONS ─────────────────────────────────────────────
-async function addObservation(equipId){
-  const body=document.getElementById('obs-input-'+equipId)?.value.trim();
-  const severity=document.getElementById('obs-severity-'+equipId)?.value||'info';
-  if(!body){showToast('Please enter an observation');return;}
-  const yesterday=new Date(Date.now()-24*60*60*1000);
-  const dup=state.observations.find(o=>o.equip_id===equipId&&new Date(o.created_at)>yesterday&&o.body.slice(0,30).toLowerCase()===body.slice(0,30).toLowerCase());
-  if(dup&&!confirm('Similar observation already logged by '+dup.author+'. Add anyway?'))return;
-  const obs={id:uid(),equip_id:equipId,author:currentUser.name,body,severity,created_at:new Date().toISOString()};
-  try{
-    await window._mpdb.from('observations').insert(obs);state.observations.unshift(obs);
-    showToast('Observation saved ✓');
-    document.getElementById('obs-input-'+equipId).value='';
-    document.getElementById('obs-severity-'+equipId).value='info';
-    refreshObsList(equipId);
-    if(severity==='critical'){
-      await sendCriticalObsNotification(obs,equipId);
-      await autoCreateCriticalWO(obs,equipId);
+// 2. THE ACTION: Handles adding a new observation and sending alerts
+async function addObservation(equipId) {
+    const body = document.getElementById('obs-input-'+equipId)?.value.trim();
+    const severity = document.getElementById('obs-severity-'+equipId)?.value || 'info';
+    
+    if(!body && !pendingPhotos.obs.length) return;
+
+    const obs = {
+        id: uid(),
+        equip_id: equipId,
+        author: currentUser.name,
+        body: body || "",
+        severity: severity,
+        photo: pendingPhotos.obs.length ? pendingPhotos.obs[0] : null,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        await window._mpdb.from('observations').insert(obs);
+        state.observations.unshift(obs);
+        
+        // Handle Critical Alerts (This is where the 'await' belongs!)
+        if (severity === 'critical') {
+            try {
+                await sendCriticalObsEmail(obs, equipId);
+                showToast('🚨 Critical alert sent to managers');
+            } catch(e) {
+                showToast('🚨 Critical observation logged');
+            }
+        } else {
+            showToast('Observation saved ✓');
+        }
+
+        // Cleanup
+        pendingPhotos.obs = [];
+        if(document.getElementById('obs-input-'+equipId)) document.getElementById('obs-input-'+equipId).value = '';
+        refreshObsList(equipId);
+        renderDashboard();
+    } catch(e) {
+        showToast('Failed to save');
     }
-    renderAlerts();if(document.getElementById('recent-obs-list'))renderRecentObservations();
-  }catch(e){showToast('Failed to save');}
 }
-function refreshObsList(equipId) {
+
+// 3. THE CLEANUP: Handles deleting observations
+async function deleteObservation(obsId, equipId) {
+    if(!confirm("Delete this observation?")) return;
+    try {
+        await window._mpdb.from('observations').delete().eq('id', obsId);
+        state.observations = state.observations.filter(o => o.id !== obsId);
+        refreshObsList(equipId);
+        showToast("Observation deleted");
+        renderDashboard();
+    } catch(e) {
+        showToast("Failed to delete");
+    }
+}
+  function refreshObsList(equipId) {
     const container = document.getElementById('obs-list-' + equipId);
     if (!container) return;
 
-    const obs = state.observations.filter(o => o.equip_id === equipId);
+    const obs = (state.observations || []).filter(o => o.equip_id === equipId);
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
 
     container.innerHTML = obs.map(o => {
         const sevClass = o.severity === 'critical' ? 'obs-critical' : o.severity === 'watch' ? 'obs-watch' : 'obs-info';
-        const isAuthor = o.author === currentUser.name;
+        const isAuthor = o.author === currentUser.username || o.author === currentUser.name;
 
         return `
         <div class="card" style="margin-bottom: 12px; border-left: 5px solid ${o.severity === 'critical' ? 'var(--danger)' : 'var(--border)'}">
@@ -4165,30 +4200,15 @@ function refreshObsList(equipId) {
                 <span style="font-size:11px; color:var(--text3)">${o.author} · ${fmtDate(o.created_at)}</span>
             </div>
             <div style="font-size:13px; line-height:1.5">${o.body}</div>
-            ${o.photo ? `<img src="${o.photo}" style="width:100px; margin-top:8px; border-radius:4px; cursor:pointer" onclick="viewPhoto('${o.photo}')"/>` : ''}
+            ${o.photo ? `<img src="${o.photo}" style="width:100%; max-height:200px; object-fit:cover; margin-top:8px; border-radius:4px; cursor:pointer" onclick="viewPhoto('${o.photo}')"/>` : ''}
             
             <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end">
-                ${(isAuthor || isAdmin) ? `<button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="editObservation('${o.id}')">Edit</button>` : ''}
+                ${(isAuthor || isAdmin) ? `<button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="editObservation('${o.id}', '${equipId}')">Edit</button>` : ''}
                 ${(isAdmin) ? `<button class="btn btn-danger btn-sm" style="font-size:10px" onclick="deleteObservation('${o.id}', '${equipId}')">Delete</button>` : ''}
             </div>
         </div>`;
     }).join('') || '<div style="color:var(--text3); padding:20px; text-align:center">No observations yet.</div>';
 }
-
-  const equip=state.equipment.find(e=>e.id===equipId);
-  
-  try{ await sendCriticalObsEmail(obs, equipId); showToast('🚨 Critical alert sent'); }catch(e){ showToast('🚨 Critical observation logged'); }
-
-async function deleteObservation(obsId, equipId) {
-    if(!confirm("Delete this observation?")) return;
-    try {
-        await window._mpdb.from('observations').delete().eq('id', obsId);
-        state.observations = state.observations.filter(o => o.id !== obsId);
-        refreshObsList(equipId);
-        showToast("Observation deleted");
-    } catch(e) { showToast("Failed"); }
-}
-
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
