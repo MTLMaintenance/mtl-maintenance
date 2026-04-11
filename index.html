@@ -6,11 +6,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
+.empty-state {
+    padding: 30px 10px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    font-style: italic;
+}
 
-/* --- TAB CONTRAST FIX --- */
+#dash-social-content .parts-row, 
+#dash-work-list .parts-row {
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+    transition: background 0.2s;
+}
 
-/* 1. Inactive Tabs (The ones that were blending in) */
+#dash-work-list .parts-row:hover {
+    background: rgba(24, 95, 165, 0.05);
+}
 .tab {
   background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
   color: #ffffff !important; /* Crisp solid white text */
@@ -998,6 +1010,7 @@ body.dark-mode .spec-row:hover {
   <div class="panel active" id="panel-dashboard">
   <div id="alert-section"></div>
 
+  <!-- METRICS -->
   <div class="metrics">
     <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
     <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
@@ -1005,29 +1018,37 @@ body.dark-mode .spec-row:hover {
     <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
 
+  <!-- THE SMART GRID -->
   <div class="grid-2">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
-      <div id="equip-list-dash"></div>
+    
+    <!-- LEFT COLUMN: Fleet Status (Everyone) -->
+    <div class="card" style="grid-row: span 2;">
+      <div class="card-header">
+        <span class="card-title">Fleet Status & Forecast</span>
+        <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View Registry</button>
+      </div>
+      <div id="equip-list-dash" style="display: flex; flex-direction: column; gap: 4px;"></div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
-      <div id="sched-list-dash"></div>
-    </div>
-  </div>
 
-  <div class="grid-2" style="margin-top:12px">
+    <!-- RIGHT COLUMN TOP: Dynamic Work Queue -->
     <div class="card">
-      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
-      <div id="recent-tasks"></div>
+      <div class="card-header">
+        <span class="card-title" id="dash-work-title">Work Queue</span>
+        <span class="badge bi" id="dash-work-count">0</span>
+      </div>
+      <div id="dash-work-list"></div>
     </div>
+
+    <!-- RIGHT COLUMN BOTTOM: Shop Connection -->
     <div class="card">
-      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
-      <div id="recent-obs-list"></div>
+      <div class="card-header">
+        <span class="card-title" id="dash-social-title">Shop Activity</span>
+      </div>
+      <div id="dash-social-content"></div>
     </div>
+
   </div>
 </div>
-
       
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
@@ -4512,21 +4533,24 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 
 async function renderDashboard(){
-  console.log("Safe Render: Starting Dashboard...");
-  try {
-      updateMetrics();
-      renderAlerts();
-      await renderEquipListDash(); // Predictions
-      renderRecentTasks();
-      renderRecentObservations();
-      renderSchedDash();
-      
-      // We REMOVED renderFleetHealthDash() and renderCostChart() from here
-      
-  } catch (e) {
-      console.error("Dashboard error:", e);
+  const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
+  
+  // 1. Core Renders
+  updateMetrics();
+  renderAlerts();
+  await renderEquipListDash(); 
+
+  // 2. Setup the Work Queue (Filtered for Techs)
+  renderSmartWorkQueue(isManager);
+
+  // 3. Setup the Social/Procurement Widget
+  if (isManager) {
+      renderManagerProcurement();
+  } else {
+      renderTechPresence();
   }
 }
+
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -7068,6 +7092,66 @@ async function renderAuditLogs() {
         </div>
       </div>`).join('');
   } catch(e) { container.innerHTML = 'Error loading logs'; }
+}
+function renderSmartWorkQueue(isManager) {
+    const container = document.getElementById('dash-work-list');
+    const title = document.getElementById('dash-work-title');
+    const badgeEl = document.getElementById('dash-work-count');
+    
+    let tasks = [...state.tasks].filter(t => t.status !== 'Completed');
+    if (!isManager) {
+        tasks = tasks.filter(t => t.assign === currentUser.name);
+        title.textContent = "My Assignments";
+    } else {
+        title.textContent = "Global Work Queue";
+    }
+
+    badgeEl.textContent = tasks.length;
+    
+    container.innerHTML = tasks.slice(0, 4).map(t => `
+        <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer; padding: 10px 0">
+            <div style="flex:1">
+                <div style="font-weight:600; font-size:13px">${t.name}</div>
+                <div style="font-size:11px; color:var(--text3)">${equipName(t.equipId)}</div>
+            </div>
+            ${badge(t.status)}
+        </div>
+    `).join('') || `<div class="empty-state" style="padding:20px; text-align:center; color:var(--text3); font-size:12px">No active work orders</div>`;
+}
+
+async function renderTechPresence() {
+    const container = document.getElementById('dash-social-content');
+    const title = document.getElementById('dash-social-title');
+    title.textContent = "Team Presence";
+
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: online } = await window._mpdb.from('profiles').select('full_name, last_seen').gt('last_seen', fiveMinsAgo);
+
+    container.innerHTML = (online || []).map(u => `
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 0">
+            <div style="width:8px; height:8px; border-radius:50%; background:var(--success); box-shadow: 0 0 8px var(--success)"></div>
+            <div style="font-size:13px; font-weight:500">${u.full_name}${u.full_name === currentUser.name ? ' (You)' : ''}</div>
+            <div style="font-size:11px; color:var(--text3); margin-left:auto">Online Now</div>
+        </div>
+    `).join('') || '<div style="font-size:12px; color:var(--text3)">No one else online</div>';
+}
+
+function renderManagerProcurement() {
+    const container = document.getElementById('dash-social-content');
+    const title = document.getElementById('dash-social-title');
+    title.textContent = "Procurement Needs";
+
+    const needs = [
+        ...state.parts.filter(p => p.qty <= p.reorder).map(p => ({ n: p.name, t: 'Part' })),
+        ...state.tools.filter(t => t.health <= 40 || t.is_lost).map(t => ({ n: t.name, t: 'Tool' }))
+    ];
+
+    container.innerHTML = needs.slice(0, 4).map(item => `
+        <div class="parts-row">
+            <div style="flex:1; font-size:13px"><b>${item.n}</b></div>
+            <span class="badge ${item.t === 'Part' ? 'bd' : 'bw'}">${item.t}</span>
+        </div>
+    `).join('') || '<div style="font-size:12px; color:var(--success); font-weight:600">✓ Inventory Healthy</div>';
 }
 </script>
 <!-- Photo Markup Modal -->
