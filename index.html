@@ -6,7 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-/* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
+/* Observation Severity Colors */
+.badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
+.badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
+.badge.obs-critical { background: #FCEBEB; color: #A32D2D; border: 1px solid #E24B4A; }
+
+/* Zerk Map UI tweaks */
+#btn-delete-view { margin-top: 10px; display: none; }
+  /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
 
 /* --- TAB CONTRAST FIX --- */
 
@@ -2019,7 +2026,7 @@ async function startQRScanner() {
         const equipId = url.searchParams.get("equip");
         if (equipId) {
           stopQRScanner();
-          openEquipDetail(equipId);
+          (equipId);
         } else {
           showToast("Invalid QR Code");
         }
@@ -4140,32 +4147,47 @@ async function addObservation(equipId){
     renderAlerts();if(document.getElementById('recent-obs-list'))renderRecentObservations();
   }catch(e){showToast('Failed to save');}
 }
-function refreshObsList(equipId){
-  const list=document.getElementById('obs-list-'+equipId);if(!list)return;
-  const obs=state.observations.filter(o=>o.equip_id===equipId);
-  if(!obs.length){list.innerHTML='<div style="color:var(--text3);font-size:13px">No observations yet</div>';return;}
-  list.innerHTML=obs.map(o=>`<div style="background:${o.severity==='critical'?'var(--danger-bg)':o.severity==='watch'?'var(--warning-bg)':'var(--bg2)'};border:1px solid ${o.severity==='critical'?'var(--danger)':o.severity==='watch'?'var(--warning)':'var(--border)'};border-radius:var(--radius);padding:10px 12px;margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-      <span>${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
-      <span style="font-weight:600;font-size:12px">${o.severity.toUpperCase()}</span>
-      <span style="font-size:11px;color:var(--text3);margin-left:auto">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</span>
-      ${can('canDelete')?`<button class="btn btn-danger" style="padding:2px 6px;font-size:10px" onclick="deleteObservation('${o.id}','${o.equip_id}')">✕</button>`:''}
-    </div>
-    <div style="font-size:13px">${o.body}</div>
-    <div style="display:flex;gap:6px;margin-top:6px">
-      <button class="btn btn-secondary btn-sm" onclick="editObservation(this)" data-obs-id="${o.id}" data-equip-id="${o.equip_id}">Edit</button>
-      ${can('canDelete')?`<button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}','${o.equip_id}')">Delete</button>`:''}
-    </div>
-  </div>`).join('');
+function refreshObsList(equipId) {
+    const container = document.getElementById('obs-list-' + equipId);
+    if (!container) return;
+
+    const obs = state.observations.filter(o => o.equip_id === equipId);
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+
+    container.innerHTML = obs.map(o => {
+        const sevClass = o.severity === 'critical' ? 'obs-critical' : o.severity === 'watch' ? 'obs-watch' : 'obs-info';
+        const isAuthor = o.author === currentUser.name;
+
+        return `
+        <div class="card" style="margin-bottom: 12px; border-left: 5px solid ${o.severity === 'critical' ? 'var(--danger)' : 'var(--border)'}">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+                <span class="badge ${sevClass}">${o.severity.toUpperCase()}</span>
+                <span style="font-size:11px; color:var(--text3)">${o.author} · ${fmtDate(o.created_at)}</span>
+            </div>
+            <div style="font-size:13px; line-height:1.5">${o.body}</div>
+            ${o.photo ? `<img src="${o.photo}" style="width:100px; margin-top:8px; border-radius:4px; cursor:pointer" onclick="viewPhoto('${o.photo}')"/>` : ''}
+            
+            <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end">
+                ${(isAuthor || isAdmin) ? `<button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="editObservation('${o.id}')">Edit</button>` : ''}
+                ${(isAdmin) ? `<button class="btn btn-danger btn-sm" style="font-size:10px" onclick="deleteObservation('${o.id}', '${equipId}')">Delete</button>` : ''}
+            </div>
+        </div>`;
+    }).join('') || '<div style="color:var(--text3); padding:20px; text-align:center">No observations yet.</div>';
 }
-async function deleteObservation(obsId,equipId){if(!confirm('Delete?'))return;try{await window._mpdb.from('observations').delete().eq('id',obsId);state.observations=state.observations.filter(o=>o.id!==obsId);refreshObsList(equipId);renderAlerts();}catch(e){showToast('Failed');}}
-async function sendCriticalObsNotification(obs,equipId){
+
   const equip=state.equipment.find(e=>e.id===equipId);
   
   try{ await sendCriticalObsEmail(obs, equipId); showToast('🚨 Critical alert sent'); }catch(e){ showToast('🚨 Critical observation logged'); }
 }
-
-// ── OVERDUE EMAIL ────────────────────────────────────────────
+async function deleteObservation(obsId, equipId) {
+    if(!confirm("Delete this observation?")) return;
+    try {
+        await window._mpdb.from('observations').delete().eq('id', obsId);
+        state.observations = state.observations.filter(o => o.id !== obsId);
+        refreshObsList(equipId);
+        showToast("Observation deleted");
+    } catch(e) { showToast("Failed"); }
+}
 
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
@@ -4923,44 +4945,38 @@ function updateTotalCostDisplay() {
 }
 
 // ── EDIT OBSERVATION ─────────────────────────────────────────
-function editObservation(btnOrId, equipId) {
-  let obsId = btnOrId;
-  let eqId = equipId;
-  // Support both direct call and button click with data attributes
-  if(btnOrId && btnOrId.dataset) {
-    obsId = btnOrId.dataset.obsId;
-    eqId = btnOrId.dataset.equipId;
-  }
-  const obs = state.observations.find(o=>o.id===obsId);
-  if(!obs) return;
-  const equipId2 = eqId || obs.equip_id;
 
-  const modal = document.createElement('div');
-  modal.id = 'edit-obs-modal-temp';
-  modal.className = 'modal-backdrop open';
-  modal.innerHTML = `
-    <div class="modal" style="max-width:460px">
-      <div class="modal-header"><span class="modal-title">Edit Observation</span><button class="modal-close" onclick="document.getElementById('edit-obs-modal-temp').remove()">✕</button></div>
-      <div class="form-grid">
-        <div class="form-group full"><label class="form-label">Severity</label>
-          <select class="form-select" id="edit-obs-severity">
-            <option value="info" ${obs.severity==='info'?'selected':''}>ℹ Info</option>
-            <option value="watch" ${obs.severity==='watch'?'selected':''}>👀 Watch</option>
-            <option value="critical" ${obs.severity==='critical'?'selected':''}>🚨 Critical</option>
-          </select>
-        </div>
-        <div class="form-group full"><label class="form-label">Observation</label>
-          <textarea class="form-textarea" id="edit-obs-body" style="min-height:90px">${obs.body}</textarea>
-        </div>
-      </div>
-      <div class="form-row">
-        <button class="btn btn-secondary" onclick="document.getElementById('edit-obs-modal-temp').remove()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveEditObservation('${obsId}','${equipId2}')">Save</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
+async function deleteObservation(obsId, equipId) {
+    if(!confirm("Delete this observation?")) return;
+    try {
+        await window._mpdb.from('observations').delete().eq('id', obsId);
+        state.observations = state.observations.filter(o => o.id !== obsId);
+        refreshObsList(equipId);
+        showToast("Observation deleted");
+    } catch(e) { showToast("Failed"); }
 }
 
+function editObservation(obsId) {
+    const o = state.observations.find(x => x.id === obsId);
+    if(!o) return;
+
+    const newText = prompt("Edit Observation:", o.body);
+    if(newText === null || newText.trim() === "") return;
+
+    const newSev = prompt("Change Severity? (info, watch, or critical):", o.severity);
+    const validSevs = ['info', 'watch', 'critical'];
+    
+    o.body = newText;
+    if(validSevs.includes(newSev)) o.severity = newSev;
+
+    window._mpdb.from('observations').update({
+        body: o.body,
+        severity: o.severity
+    }).eq('id', obsId).then(() => {
+        refreshObsList(o.equip_id);
+        showToast("Updated ✓");
+    });
+}
 async function saveEditObservation(obsId, equipId) {
   const body = document.getElementById('edit-obs-body')?.value.trim();
   const severity = document.getElementById('edit-obs-severity')?.value;
@@ -6328,37 +6344,45 @@ async function handleMapClick(event) {
         }
     }
 }
+// DELETE AN ENTIRE PHOTO VIEW
+async function deleteZerkView() {
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e || !e.zerk_photos) return;
 
-async function deleteZerk(id) {
-    // 1. Confirmation
-    if (!confirm("Are you sure you want to permanently delete this grease point?")) return;
+    if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
+
+    // 1. Identify index (e.g., 'side_1' -> index 0)
+    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
 
     try {
-        // 2. Remove from Supabase
-        const { error } = await window._mpdb
-            .from('grease_points')
-            .delete()
-            .eq('id', id);
+        // 2. Remove photo from array
+        e.zerk_photos.splice(viewIndex, 1);
 
-        if (error) throw error;
+        // 3. Remove associated dots from DB
+        await window._mpdb.from('grease_points').delete()
+            .eq('equip_id', equipId)
+            .eq('view_name', currentZerkView);
 
-        // 3. Remove from local memory
-        allMachineZerks = allMachineZerks.filter(z => z.id !== id);
-
-        // 4. UI Refresh
-        renderZerkDots();
+        // 4. Update machine record
+        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
         
-        // 5. Hide the detail box since the point is gone
-        const box = document.getElementById('zerk-detail-box');
-        if (box) box.style.display = 'none';
-
-        showToast("Point deleted ✓");
-    } catch (e) {
-        console.error("Delete failed:", e);
-        showToast("Error: Could not delete from database");
-    }
+        showToast("View deleted ✓");
+        refreshZerkMap(equipId); // Full refresh of the zerk tab
+    } catch(err) { showToast("Delete failed"); }
 }
 
+async function deleteZerk(id) {
+    if(!confirm("Delete this grease point?")) return;
+    try {
+        await window._mpdb.from('grease_points').delete().eq('id', id);
+        allMachineZerks = allMachineZerks.filter(z => z.id !== id);
+        renderZerkDots();
+        document.getElementById('zerk-detail-box').style.display = 'none';
+        showToast("Point removed");
+    } catch(e) { console.error(e); }
+}
+  
 // UPDATE: refreshZerkMap to use the new zerk_photos field
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
