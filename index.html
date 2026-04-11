@@ -6,23 +6,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-.empty-state {
-    padding: 30px 10px;
-    text-align: center;
-    color: var(--text3);
-    font-size: 13px;
-    font-style: italic;
+
+.dot-live {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
 }
 
-#dash-social-content .parts-row, 
-#dash-work-list .parts-row {
-    border-bottom: 1px solid rgba(0,0,0,0.03);
-    transition: background 0.2s;
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0px rgba(59, 109, 17, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 109, 17, 0); }
+    100% { box-shadow: 0 0 0 0px rgba(59, 109, 17, 0); }
 }
-
-#dash-work-list .parts-row:hover {
-    background: rgba(24, 95, 165, 0.05);
-}
+/* 1. Inactive Tabs (The ones that were blending in) */
 .tab {
   background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
   color: #ffffff !important; /* Crisp solid white text */
@@ -1007,48 +1005,55 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
-  <div class="panel active" id="panel-dashboard">
+ <div class="panel active" id="panel-dashboard">
   <div id="alert-section"></div>
 
-  <!-- METRICS -->
+  <!-- METRICS ROW -->
   <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Fleet Size</div><div class="metric-value" id="m-total">0</div></div>
     <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
     <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
     <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
 
-  <!-- THE SMART GRID -->
   <div class="grid-2">
     
-    <!-- LEFT COLUMN: Fleet Status (Everyone) -->
-    <div class="card" style="grid-row: span 2;">
+    <!-- LEFT: FLEET MONITOR (Full Height) -->
+    <div class="card" style="grid-row: span 2; display: flex; flex-direction: column;">
       <div class="card-header">
-        <span class="card-title">Fleet Status & Forecast</span>
-        <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View Registry</button>
+        <span class="card-title">🚛 Fleet Monitor</span>
+        <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">Full Registry</button>
       </div>
-      <div id="equip-list-dash" style="display: flex; flex-direction: column; gap: 4px;"></div>
+      <div id="equip-monitor-list" style="flex: 1;">
+         <!-- Machine rows with health and predictions -->
+      </div>
     </div>
 
-    <!-- RIGHT COLUMN TOP: Dynamic Work Queue -->
+    <!-- RIGHT TOP: THE WORK QUEUE -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title" id="dash-work-title">Work Queue</span>
+        <span class="card-title" id="dash-work-title">📋 Work Queue</span>
         <span class="badge bi" id="dash-work-count">0</span>
       </div>
-      <div id="dash-work-list"></div>
+      <div id="dash-work-list" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
 
-    <!-- RIGHT COLUMN BOTTOM: Shop Connection -->
+    <!-- RIGHT BOTTOM: SHOP PULSE (Activity + Team) -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title" id="dash-social-title">Shop Activity</span>
+        <span class="card-title">⚡ Shop Pulse</span>
       </div>
-      <div id="dash-social-content"></div>
+      <!-- This tab bar inside the card lets users switch between Feed and Team -->
+      <div style="display:flex; gap:10px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px">
+          <span style="font-size:12px; font-weight:700; cursor:pointer; color:var(--accent)" onclick="renderShopFeed()">Recent Activity</span>
+          <span style="font-size:12px; font-weight:700; cursor:pointer; color:var(--text3)" onclick="renderShopTeam()">Team Online</span>
+      </div>
+      <div id="dash-pulse-content" style="max-height: 200px; overflow-y: auto;"></div>
     </div>
 
   </div>
 </div>
+
       
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
@@ -4535,22 +4540,18 @@ function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').fo
 async function renderDashboard(){
   const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
   
-  // 1. Core Renders
   updateMetrics();
   renderAlerts();
-  await renderEquipListDash(); 
+  
+  // 1. Render the Tall Fleet Monitor
+  renderEquipMonitor();
 
-  // 2. Setup the Work Queue (Filtered for Techs)
+  // 2. Render the Dynamic Work Queue (Personal for Techs, Global for Managers)
   renderSmartWorkQueue(isManager);
 
-  // 3. Setup the Social/Procurement Widget
-  if (isManager) {
-      renderManagerProcurement();
-  } else {
-      renderTechPresence();
-  }
+  // 3. Render the Shop Pulse (Default to Feed)
+  renderShopFeed();
 }
-
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -7093,6 +7094,33 @@ async function renderAuditLogs() {
       </div>`).join('');
   } catch(e) { container.innerHTML = 'Error loading logs'; }
 }
+function renderEquipMonitor() {
+    const el = document.getElementById('equip-monitor-list');
+    if(!el) return;
+    
+    // Sort by status (Down first) then Health (Lowest first)
+    const list = [...state.equipment].sort((a,b) => {
+        if(a.status === 'Down' && b.status !== 'Down') return -1;
+        return calcHealth(a.id) - calcHealth(b.id);
+    }).slice(0, 7);
+
+    el.innerHTML = list.map(e => {
+        const score = calcHealth(e.id);
+        const isLocked = e.is_locked;
+        return `
+        <div class="equip-row" onclick="openEquipDetail('${e.id}')" style="${isLocked ? 'background:rgba(226,75,74,0.08)' : ''}">
+          <div class="equip-info">
+            <div class="equip-name">${isLocked ? '🚨 ' : ''}${e.name}</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+          </div>
+          <div style="text-align:right; min-width:80px">
+            <div style="font-size:12px; font-weight:700">${e.hours.toLocaleString()}h</div>
+            <div style="font-size:10px; color:${healthColor(score)}">${score}% Health</div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
 function renderSmartWorkQueue(isManager) {
     const container = document.getElementById('dash-work-list');
     const title = document.getElementById('dash-work-title');
@@ -7101,57 +7129,50 @@ function renderSmartWorkQueue(isManager) {
     let tasks = [...state.tasks].filter(t => t.status !== 'Completed');
     if (!isManager) {
         tasks = tasks.filter(t => t.assign === currentUser.name);
-        title.textContent = "My Assignments";
+        title.textContent = "📋 My Assignments";
     } else {
-        title.textContent = "Global Work Queue";
+        title.textContent = "📋 Global Work Queue";
     }
-
     badgeEl.textContent = tasks.length;
-    
-    container.innerHTML = tasks.slice(0, 4).map(t => `
-        <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer; padding: 10px 0">
+
+    container.innerHTML = tasks.slice(0, 5).map(t => `
+        <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
             <div style="flex:1">
-                <div style="font-weight:600; font-size:13px">${t.name}</div>
-                <div style="font-size:11px; color:var(--text3)">${equipName(t.equipId)}</div>
+                <div style="font-weight:600">${t.name}</div>
+                <div style="font-size:11px; color:var(--text3)">${equipName(t.equipId)} · Due ${fmtDate(t.due)}</div>
             </div>
             ${badge(t.status)}
         </div>
-    `).join('') || `<div class="empty-state" style="padding:20px; text-align:center; color:var(--text3); font-size:12px">No active work orders</div>`;
+    `).join('') || '<div class="empty-state">Clean slate! No work orders.</div>';
 }
 
-async function renderTechPresence() {
-    const container = document.getElementById('dash-social-content');
-    const title = document.getElementById('dash-social-title');
-    title.textContent = "Team Presence";
+async function renderShopFeed() {
+    const container = document.getElementById('dash-pulse-content');
+    try {
+        const { data: logs } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(6);
+        container.innerHTML = (logs || []).map(l => `
+            <div style="padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.03); display:flex; gap:10px; align-items:flex-start">
+                <div style="font-size:16px">${l.action.includes('Meter') ? '⏱' : l.action.includes('Completed') ? '✅' : '⚙'}</div>
+                <div>
+                    <div style="font-size:12px"><b>${l.user_name}</b> ${l.action.toLowerCase()}</div>
+                    <div style="font-size:10px; color:var(--text3)">${new Date(l.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                </div>
+            </div>
+        `).join('') || '<div class="empty-state">Waiting for activity...</div>';
+    } catch(e) {}
+}
 
+async function renderShopTeam() {
+    const container = document.getElementById('dash-pulse-content');
     const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: online } = await window._mpdb.from('profiles').select('full_name, last_seen').gt('last_seen', fiveMinsAgo);
 
     container.innerHTML = (online || []).map(u => `
         <div style="display:flex; align-items:center; gap:10px; padding:8px 0">
-            <div style="width:8px; height:8px; border-radius:50%; background:var(--success); box-shadow: 0 0 8px var(--success)"></div>
-            <div style="font-size:13px; font-weight:500">${u.full_name}${u.full_name === currentUser.name ? ' (You)' : ''}</div>
-            <div style="font-size:11px; color:var(--text3); margin-left:auto">Online Now</div>
+            <div class="dot" style="background:var(--success); width:8px; height:8px"></div>
+            <div style="font-size:13px; font-weight:500">${u.full_name}</div>
         </div>
-    `).join('') || '<div style="font-size:12px; color:var(--text3)">No one else online</div>';
-}
-
-function renderManagerProcurement() {
-    const container = document.getElementById('dash-social-content');
-    const title = document.getElementById('dash-social-title');
-    title.textContent = "Procurement Needs";
-
-    const needs = [
-        ...state.parts.filter(p => p.qty <= p.reorder).map(p => ({ n: p.name, t: 'Part' })),
-        ...state.tools.filter(t => t.health <= 40 || t.is_lost).map(t => ({ n: t.name, t: 'Tool' }))
-    ];
-
-    container.innerHTML = needs.slice(0, 4).map(item => `
-        <div class="parts-row">
-            <div style="flex:1; font-size:13px"><b>${item.n}</b></div>
-            <span class="badge ${item.t === 'Part' ? 'bd' : 'bw'}">${item.t}</span>
-        </div>
-    `).join('') || '<div style="font-size:12px; color:var(--success); font-weight:600">✓ Inventory Healthy</div>';
+    `).join('') || '<div class="empty-state">No one else is online</div>';
 }
 </script>
 <!-- Photo Markup Modal -->
