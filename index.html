@@ -12,34 +12,32 @@
 
 /* 1. Inactive Tabs (The ones that were blending in) */
 .tab {
-  background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
-  color: #ffffff !important; /* Crisp solid white text */
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
   padding: 8px 16px !important;
-  border-radius: var(--radius) var(--radius) 0 0;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px); /* Slight blur under the tab */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); /* Subtle shadow on text */
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  color: #1a1a18 !important; 
+  background: rgba(0, 0, 0, 0.04) !important; 
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--radius) var(--radius) 0 0 !important;
+  margin-right: 2px !important;
+  transition: all 0.15s ease;
 }
 
 /* 2. Hover State */
 .tab:hover {
-  background: rgba(255, 255, 255, 0.35) !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: #000000 !important;
 }
 
 /* 3. Active Tab (The one you are currently looking at) */
 .tab.active {
-  background: #ffffff !important; /* Solid white */
-  color: #1a1a18 !important; /* Dark text for high contrast */
-  border: 1px solid #ffffff !important;
-  border-bottom-color: transparent !important; /* Blends into the white table header */
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  text-shadow: none;
+  background: #ffffff !important; /* Solid white background */
+  color: var(--accent) !important; /* Pro Blue text */
+  border: 1px solid var(--border) !important;
+  border-bottom: 2px solid var(--accent) !important; /* Blue indicator line */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 /* 4. Fix for Mobile Tabs */
