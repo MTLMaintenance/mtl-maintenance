@@ -3080,23 +3080,24 @@ function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
   if(!modal) return;
 
-  // 1. Hide all contents
-  modal.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-  
-  // 2. Show selected
+  // 1. Hide all tab-content divs
+  const contents = modal.querySelectorAll('.tab-content');
+  contents.forEach(c => c.style.display = 'none');
+
+  // 2. Show the specific tab clicked
   const el = document.getElementById(tab);
   if(el) el.style.display = 'block';
 
-  // 3. Highlight active tab
+  // 3. Highlight button
   modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
+  // 4. TRIGGER DATA RELOADS
   const id = window._currentDetailEquipId;
   if(!id) return;
 
-  // 4. TRIGGER THE RENDERERS
   if(tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
-  if(tab === 'eq-history') renderFullHistoryList(id); // <--- Fixed name
+  if(tab === 'eq-history') renderFullHistoryList(id);
   if(tab === 'eq-obs') refreshObsList(id);
   if(tab === 'eq-zerks') refreshZerkMap(id);
   if(tab === 'eq-invoices') renderInvoicesList(id);
@@ -3148,7 +3149,7 @@ function openEquipDetail(id){
   document.getElementById('detail-title').textContent = e.name;
   
   document.getElementById('detail-body').innerHTML = `
-    <!-- NAVIGATION TABS -->
+    <!-- QUICK NAVIGATION -->
     <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; margin-bottom: 15px; display: flex; gap: 4px;">
       <button class="tab active" onclick="switchDetailTab('eq-overview',this)">Overview</button>
       <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
@@ -3163,9 +3164,9 @@ function openEquipDetail(id){
       <div class="eq-dash-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
         
         <!-- Widget: Machine Status -->
-        <div class="eq-widget" id="status-widget-${e.id}" style="background: ${e.is_locked ? '#FCEBEB' : 'var(--bg2)'}; border: 1px solid ${e.is_locked ? '#E24B4A' : 'var(--border)'}; border-radius: var(--radius-lg); padding: 12px;">
+        <div class="eq-widget" id="status-widget-${e.id}" style="background: ${e.is_locked ? '#FCEBEB' : 'var(--bg2)'}; border: 1px solid ${e.is_locked ? '#E24B4A' : 'var(--border)'}; border-radius: 8px; padding: 12px; transition: all 0.3s">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid ${e.is_locked ? 'rgba(226,75,74,0.2)' : 'var(--border)'}; padding-bottom: 5px;">
-            <span style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase;">Status</span>
+            <span style="font-size: 11px; font-weight: 700; color: ${e.is_locked ? 'var(--danger-text)' : 'var(--text2)'}; text-transform: uppercase;">Status</span>
             <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:10px; font-weight:700; color:${e.is_locked ? 'var(--danger-text)' : 'var(--text3)'}">
                 <input type="checkbox" ${e.is_locked ? 'checked' : ''} onchange="toggleLockout('${e.id}', this.checked)"/> 🚨 LOCKOUT
             </label>
@@ -3176,39 +3177,73 @@ function openEquipDetail(id){
             <div>Meter: <b>${e.hours.toLocaleString()} hrs</b></div>
             <div id="adaptive-prediction-${e.id}"></div>
           </div>
-          
-          <!-- NEW: MANUAL / PARTS WEB BUTTON -->
           <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border)">
             ${e.manual_url ? 
-              `<button class="btn btn-primary btn-sm" style="width:100%" onclick="window.open('${e.manual_url}', '_blank')">📖 Open Parts Manual</button>` : 
-              `<button class="btn btn-secondary btn-sm" style="width:100%" onclick="setManualLink('${e.id}')">🔗 Link Parts Catalog</button>`
+              `<button class="btn btn-primary btn-sm" style="width:100%" onclick="window.open('${e.manual_url}', '_blank')">📖 Open Manual</button>` : 
+              `<button class="btn btn-secondary btn-sm" style="width:100%" onclick="setManualLink('${e.id}')">🔗 Link Manual</button>`
             }
           </div>
         </div>
 
         <!-- Widget: Quick Specs -->
-        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
+        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
             <span style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase;">Quick Specs</span>
             <button class="btn btn-secondary btn-sm" style="font-size:10px; padding: 2px 6px" onclick="addQuickSpec('${e.id}')">+ Add</button>
           </div>
-          <div id="eq-quick-specs" style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;"></div>
+          <div id="eq-quick-specs"></div>
         </div>
 
         <!-- Widget: Recent Activity -->
-        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px;">
+        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
           <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Recent Activity</div>
           <div id="eq-timeline-content-mini" style="max-height: 180px; overflow-y: auto;"></div>
         </div>
-
       </div>
     </div>
 
-    <!-- OTHER VIEWS ... (Keep these exactly as you have them now) ... -->
+    <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
+    <div id="eq-zerks" class="tab-content" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
+        <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
+        <div style="background:var(--bg3); padding:4px; border-radius:var(--radius); display:flex; gap:2px; border:1px solid var(--border)">
+            <button class="btn btn-sm" id="mode-dot" onclick="setZerkMode('dot')" style="background:var(--accent); color:#fff; font-size:10px">Point Only</button>
+            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')" style="background:transparent; color:var(--text2); font-size:10px">Pointer Line</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+      </div>
+      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+          <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+          <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
+          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+      </div>
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center"><div id="zerk-label" style="font-weight:700"></div><button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px" onclick="deleteZerk()">Delete</button></div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
+      </div>
+      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+    </div>
+
+    <!-- 3. FULL HISTORY VIEW -->
     <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list"></div></div>
-    <div id="eq-obs" class="tab-content" style="display:none"><div id="obs-list-full"></div></div>
-    <div id="eq-zerks" class="tab-content" style="display:none"></div>
-    <div id="eq-invoices" class="tab-content" style="display:none"><div id="invoices-list"></div></div>
+
+    <!-- 4. OBSERVATIONS VIEW -->
+    <div id="eq-obs" class="tab-content" style="display:none">
+      <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
+        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="What do you see?" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+          <div style="display:flex; gap:6px; align-items:center">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('obs-photo-input').click()">📸 Photo</button>
+            <input type="file" id="obs-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this,'obs')"/>
+            <span id="obs-photo-status" style="font-size:11px; color:var(--success); font-weight:600"></span>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post Obs</button>
+        </div>
+      </div>
+      <div id="obs-list-${e.id}"></div>
+    </div>
+
+    <div id="eq-invoices" class="tab-content" style="display:none"><div id="invoices-list"></div><button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button></div>
     <div id="eq-docs" class="tab-content" style="display:none"><div id="docs-list"></div></div>
 
     <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
@@ -3219,14 +3254,6 @@ function openEquipDetail(id){
   openModal('detail-modal');
   renderMiniTimeline(id);
   renderQuickSpecs(id);
-  
-  // Adaptive math trigger
-  if(typeof getAdaptivePrediction === 'function') {
-      getAdaptivePrediction(id).then(res => {
-        const el = document.getElementById(`adaptive-prediction-${id}`);
-        if(el && res && res.status === 'ACTIVE') el.innerHTML = `<div style="font-size:12px; font-weight:700; color:var(--accent-text); border-top:1px dashed var(--border); margin-top:8px; padding-top:8px">📈 ~${res.hoursRemaining} hrs until service</div>`;
-      });
-  }
 }
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
