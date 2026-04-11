@@ -4178,7 +4178,7 @@ function refreshObsList(equipId) {
   const equip=state.equipment.find(e=>e.id===equipId);
   
   try{ await sendCriticalObsEmail(obs, equipId); showToast('🚨 Critical alert sent'); }catch(e){ showToast('🚨 Critical observation logged'); }
-}
+
 async function deleteObservation(obsId, equipId) {
     if(!confirm("Delete this observation?")) return;
     try {
