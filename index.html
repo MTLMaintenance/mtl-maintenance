@@ -995,50 +995,36 @@ body.dark-mode .spec-row:hover {
   </div>
 
   <!-- DASHBOARD -->
- <div class="panel active" id="panel-dashboard">
+  <div class="panel active" id="panel-dashboard">
   <div id="alert-section"></div>
 
-  <!-- ROW 1: CORE METRICS (Removed Fleet Size) -->
   <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div><div class="metric-sub">Critical repairs</div></div>
-    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value v-warning" id="m-parts">0</div><div class="metric-sub">Needs reorder</div></div>
-    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div><div class="metric-sub">In progress</div></div>
-    <div class="metric-card"><div class="metric-label">Avg Health</div><div class="metric-value" id="m-health">100%</div><div class="metric-sub">Fleet score</div></div>
+    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
+    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
+    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
 
   <div class="grid-2">
-    
-    <!-- LEFT: FLEET MONITOR (Tall Card) -->
-    <div class="card" style="grid-row: span 2;">
-      <div class="card-header">
-        <span class="card-title">🚛 Fleet Monitor</span>
-        <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">Full List</button>
-      </div>
-      <div id="dash-fleet-list" style="display: flex; flex-direction: column; gap: 4px;">
-         <!-- Machine health and adaptive countdowns load here -->
-      </div>
-    </div>
-
-    <!-- RIGHT TOP: MINI CALENDAR -->
-    <div class="card" style="padding: 15px !important;">
-      <div class="card-header" style="margin-bottom: 10px;">
-        <span class="card-title">📅 Maintenance Outlook</span>
-        <button class="btn btn-secondary btn-sm" style="font-size: 10px" onclick="showPanel('calendar')">Full Calendar</button>
-      </div>
-      <div id="dash-mini-calendar">
-         <!-- A compact 1-31 grid -->
-      </div>
-    </div>
-
-    <!-- RIGHT BOTTOM: WORK QUEUE -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-title" id="dash-work-title">📋 Work Queue</span>
-        <span class="badge bi" id="dash-work-count">0</span>
-      </div>
-      <div id="dash-work-list"></div>
+      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
+      <div id="equip-list-dash"></div>
     </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+      <div id="sched-list-dash"></div>
+    </div>
+  </div>
 
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
+      <div id="recent-tasks"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
+      <div id="recent-obs-list"></div>
+    </div>
   </div>
 </div>
 
@@ -2415,15 +2401,28 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics(){
-  const overdue = (state.tasks || []).filter(t => t.status === 'Overdue').length;
-  const open = (state.tasks || []).filter(t => t.status === 'Open').length;
-  const low = (state.parts || []).filter(p => p.qty <= p.reorder).length;
-  const avgH = state.equipment.length ? Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length) : 0;
+  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
+  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
+  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
+  const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
 
-  safeUpdate('m-overdue', overdue);
-  safeUpdate('m-parts', low);
-  safeUpdate('m-open', open);
-  safeUpdate('m-health', avgH + '%');
+  // SAFE HELPER: This prevents the app from crashing if a card is missing
+  const safeSet = (id, val) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = val;
+  };
+
+  safeSet('m-total', state.equipment.length);
+  safeSet('m-parts', lowCount);
+  safeSet('m-open', openCount);
+  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString()); // Update Analytics Spend
+
+  const mo = document.getElementById('m-overdue'); 
+  if(mo) {
+    const totalActive = openCount + overdueCount;
+    mo.textContent = totalActive;
+    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
+  }
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
@@ -3920,10 +3919,10 @@ const _origRenderEquipmentTable = renderEquipmentTable;
 // PERMISSIONS
 // ============================================================
 const PERMISSIONS = {
-  admin:   {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:true,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true},
-  manager: {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:false,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true},
-  tech:    {canCreate:true,canEdit:true,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false},
-  viewer:  {canCreate:false,canEdit:false,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false},
+  admin:   {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:true,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
+  manager: {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:false,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
+  tech:    {canCreate:true,canEdit:true,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false,canManageTools:true},
+  viewer:  {canCreate:false,canEdit:false,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false,canManageTools:false},
 };
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_permissions')||'null');if(s){['manager','tech','viewer'].forEach(r=>{if(s[r])PERMISSIONS[r]={...PERMISSIONS[r],...s[r]};});}}catch(e){}})();
 function can(permission){
@@ -4171,7 +4170,18 @@ function renderFleetHealthDash(){
 }
 
 // ── PERMISSIONS ADMIN ────────────────────────────────────────
-const PERM_LABELS={'canCreate':'Create work orders','canEdit':'Edit records','canDelete':'Delete records','canViewReports':'View reports & analytics','canViewCosts':'View costs','canManageEquip':'Manage equipment','canManageParts':'Manage parts','canManageSuppliers':'Manage suppliers','canManageUsers':'Manage users'};
+const PERM_LABELS = {
+  'canCreate': 'Create work orders',
+  'canEdit': 'Edit records',
+  'canDelete': 'Delete records',
+  'canViewReports': 'View reports & analytics',
+  'canViewCosts': 'View costs',
+  'canManageEquip': 'Manage equipment',
+  'canManageParts': 'Manage parts',
+  'canManageSuppliers': 'Manage suppliers',
+  'canManageUsers': 'Manage users',
+  'canManageTools': 'Manage Tool Crib (Add/Edit)' // <--- ADD THIS LINE
+};
 let editingUserId=null,editingUserRole=null,editingPerms={};
 function openUserPerms(userId,userName,userRole,customPerms){editingUserId=userId;editingUserRole=userRole;editingPerms={...PERMISSIONS[userRole]||PERMISSIONS.tech,...(customPerms||{})};document.getElementById('user-perms-title').textContent=userName+' — Permissions';document.getElementById('user-perms-role').textContent=userRole;renderUserPermsList();openModal('user-perms-modal');}
 function renderUserPermsList(){const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;document.getElementById('user-perms-list').innerHTML=Object.entries(PERM_LABELS).map(([key,label])=>{const def=!!(rd[key]),cur=!!(editingPerms[key]),ov=cur!==def;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">${label}</div><div style="font-size:11px;color:var(--text3)">Default: ${def?'✅':'❌'}${ov?' <span style="color:var(--warning)">● Override</span>':''}</div></div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;margin-left:12px"><span style="font-size:12px;color:${cur?'var(--success)':'var(--danger)'};font-weight:600;min-width:60px;text-align:right">${cur?'Allowed':'Denied'}</span><div style="position:relative;width:40px;height:22px;flex-shrink:0"><input type="checkbox" ${cur?'checked':''} onchange="editingPerms['${key}']=this.checked;renderUserPermsList()" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0;z-index:2"/><div style="width:40px;height:22px;border-radius:11px;background:${cur?'#3B6D11':'#E24B4A'};position:absolute;top:0;left:0"></div><div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${cur?'21px':'3px'};transition:left .2s;pointer-events:none"></div></div></label></div>`;}).join('');}
@@ -4511,23 +4521,23 @@ const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{
 function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').forEach(img=>lazyObserver.observe(img));}
 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
+
 async function renderDashboard(){
-  const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-  
-  // 1. Basic Metrics
-  updateMetrics();
-  renderAlerts();
-  
-  // 2. The Tall Monitor (List machines + Health + Adaptive Forecasts)
-  renderDashFleetMonitor();
-
-  // 3. The Mini Calendar
-  renderMiniCalendar();
-
-  // 4. The Work Queue (Personal for Techs, Global for Managers)
-  renderDashWorkQueue(isManager);
+  console.log("Safe Render: Starting Dashboard...");
+  try {
+      updateMetrics();
+      renderAlerts();
+      await renderEquipListDash(); // Predictions
+      renderRecentTasks();
+      renderRecentObservations();
+      renderSchedDash();
+      
+      // We REMOVED renderFleetHealthDash() and renderCostChart() from here
+      
+  } catch (e) {
+      console.error("Dashboard error:", e);
+  }
 }
-
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
@@ -5405,7 +5415,9 @@ function renderTools() {
     tableBody.innerHTML = state.tools.map(t => {
         const isOnOrder = t.location && t.location.includes('ON ORDER');
         const critical = (t.health <= 40 || t.is_lost) && !isOnOrder;
-        
+        const rowClick = can('canManageTools') ? `onclick="editTool('${t.id}')"` : '';
+        const rowCursor = can('canManageTools') ? 'pointer' : 'default';
+
         return `<tr onclick="editTool('${t.id}')" style="cursor:pointer; ${isOnOrder ? 'background: var(--accent-bg)' : ''}">
             <td><b>${t.name}</b></td>
             <td>${t.category}</td>
@@ -7070,84 +7082,6 @@ async function renderAuditLogs() {
       </div>`).join('');
   } catch(e) { container.innerHTML = 'Error loading logs'; }
 }
-async function renderDashFleetMonitor() {
-    const el = document.getElementById('dash-fleet-list');
-    if(!el) return;
-    
-    // Show top 8 machines based on health (worst first) or status
-    const list = [...state.equipment].sort((a,b) => calcHealth(a.id) - calcHealth(b.id)).slice(0, 8);
-
-    el.innerHTML = list.map(e => `
-        <div class="equip-row" onclick="openEquipDetail('${e.id}')" style="padding: 10px 0; ${e.is_locked ? 'background:rgba(226,75,74,0.05)' : ''}">
-          <div class="equip-info">
-            <div style="font-weight:700; font-size:13px">${e.is_locked ? '🚨 ' : ''}${e.name}</div>
-            <div id="dash-adapt-${e.id}" style="font-size:11px; margin-top:2px; color:var(--text3)">Calculating...</div>
-            <div class="progress-bar" style="height:4px; margin-top:6px"><div class="progress-fill" style="width:${calcHealth(e.id)}%; background:${healthColor(calcHealth(e.id))}"></div></div>
-          </div>
-          <div style="text-align:right; font-size:11px; font-weight:700; color:${healthColor(calcHealth(e.id))}">${calcHealth(e.id)}%</div>
-        </div>`).join('');
-
-    // Background calculation for adaptive hours (so dashboard stays fast)
-    for(let e of list) {
-        const pred = await getAdaptivePrediction(e.id);
-        const pEl = document.getElementById(`dash-adapt-${e.id}`);
-        if(pEl) {
-            if(pred?.status === 'ACTIVE') pEl.innerHTML = `<span style="color:var(--warning); font-weight:700">⚠️ ~${pred.hoursRemaining} hrs left</span>`;
-            else if(pred?.status === 'OVERDUE') pEl.innerHTML = `<span style="color:var(--danger); font-weight:700">🚨 SERVICE OVERDUE</span>`;
-            else pEl.textContent = `${e.hours.toLocaleString()} hrs logged`;
-        }
-    }
-}
- function renderMiniCalendar() {
-    const el = document.getElementById('dash-mini-calendar');
-    if(!el) return;
-
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const today = now.getDate();
-
-    // Create a compact horizontal scroll or grid
-    let html = `<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; text-align:center">`;
-    
-    // Simplified: Just showing dots for events
-    for(let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const hasTask = state.tasks.some(t => t.due === dateStr && t.status !== 'Completed');
-        const hasForecast = state.equipment.some(e => e._predictedDate === dateStr);
-        
-        html += `
-            <div style="padding:4px 0; border-radius:4px; background:${d === today ? 'var(--accent)' : 'rgba(0,0,0,0.05)'}; color:${d === today ? '#fff' : 'inherit'}; border:1px solid ${hasTask ? 'var(--danger)' : hasForecast ? 'var(--warning)' : 'transparent'}">
-                <div style="font-size:10px; font-weight:700">${d}</div>
-                <div style="display:flex; justify-content:center; gap:2px; height:4px; margin-top:2px">
-                    ${hasTask ? '<div style="width:4px; height:4px; border-radius:50%; background:var(--danger)"></div>' : ''}
-                    ${hasForecast ? '<div style="width:4px; height:4px; border-radius:50%; background:var(--warning)"></div>' : ''}
-                </div>
-            </div>`;
-    }
-    html += `</div>`;
-    el.innerHTML = html;
-}
-function renderDashWorkQueue(isManager) {
-    const container = document.getElementById('dash-work-list');
-    const title = document.getElementById('dash-work-title');
-    const badgeEl = document.getElementById('dash-work-count');
-    
-    let tasks = [...state.tasks].filter(t => t.status !== 'Completed');
-    if (!isManager) {
-        tasks = tasks.filter(t => t.assign === currentUser.name);
-        title.textContent = "📋 My Assignments";
-    }
-    badgeEl.textContent = tasks.length;
-
-    container.innerHTML = tasks.slice(0, 4).map(t => `
-        <div class="parts-row" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
-            <div style="flex:1">
-                <div style="font-weight:600; font-size:13px">${t.name}</div>
-                <div style="font-size:11px; color:var(--text3)">${equipName(t.equipId)} · ${fmtDate(t.due)}</div>
-            </div>
-            ${badge(t.status)}
-        </div>`).join('') || '<div class="empty-state">No open jobs</div>';
-}    
 </script>
 <!-- Photo Markup Modal -->
 <div class="modal-backdrop" id="markup-modal" style="display:none">
