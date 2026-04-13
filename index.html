@@ -957,6 +957,17 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 body.dark-mode .spec-row:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+#panel-chat.active {
+    display: flex !important;
+    flex-direction: column;
+    height: 100%; /* Forces it to fill the parent from the top down */
+}
+
+/* Fix for the chat content area */
+#panel-chat > div {
+    flex: 1;
+    min-height: 0;
+}
 </style>
 </head>
 <body>
@@ -1172,8 +1183,7 @@ body.dark-mode .spec-row:hover {
   <!-- CLEAN CHAT PANEL -->
 <div class="panel" id="panel-chat">
   <div class="section-header"><span class="section-title">Team Chat</span></div>
-  <div class="chat-layout" style="display:flex; gap:15px; height:calc(100vh - 180px); min-height:550px; align-items: stretch;">
- 
+  <div class="chat-layout" style="display:flex; gap:15px; flex:1; min-height:0; align-items: stretch;">
     
     <!-- SIDEBAR -->
     <div id="chat-sidebar">
