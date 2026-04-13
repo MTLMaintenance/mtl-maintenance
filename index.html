@@ -717,44 +717,42 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 /* MOBILE RESPONSIVE OVERRIDES                */
 /* ========================================== */
 @media (max-width: 768px) {
-  /* 1. Stop the browser from scrolling the whole page */
+  /* 1. Lock the screen height */
   body, html {
     overflow: hidden !important;
-    height: 100% !important;
-    width: 100% !important;
-    position: fixed; /* Stops the "bounce" on iPhone */
+    height: 100dvh !important;
+    margin: 0;
   }
 
-  /* 2. Force the App to be exactly the size of the screen */
+  /* 2. Force the App to be a vertical stack that fills the screen */
   #app {
     display: flex !important;
     flex-direction: column !important;
-    height: 100dvh !important; /* Locks height to visible screen */
+    height: 100dvh !important;
     width: 100vw !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: hidden !important;
+    /* This sets the image as a wallpaper so it doesn't push the chat */
+    background: url('data:image/png;base64,iVBOR...') center/cover fixed no-repeat !important;
   }
 
-  /* 3. Ensure the header stays at the top */
+  /* 3. Keep the header at the top */
   .topbar {
-    flex-shrink: 0 !important; /* Header will NEVER move or shrink */
-    height: auto !important;
+    flex-shrink: 0 !important;
+    background: rgba(0, 0, 0, 0.85) !important;
   }
 
-  /* 4. This is the fix: The Panel fills the remaining gap */
+  /* 4. THE FIX: Make the panel fill all the remaining space */
   .panel.active {
-    flex-grow: 1 !important; /* Takes up every available pixel under the header */
+    flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow-y: auto !important; /* Only the data scrolls, not the app */
-    margin-top: 0 !important;
+    overflow-y: auto !important;
     padding: 10px !important;
+    background: transparent !important; /* Lets the machinery show through */
   }
 
-  /* 5. Force Chat to behave */
+  /* 5. Force the Chat Box to stay at the top of the panel */
   #panel-chat {
-    height: 100% !important;
+    justify-content: flex-start !important;
   }
 
   #panel-chat > div {
@@ -763,35 +761,12 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     height: 100% !important;
   }
 
+  /* 6. Make messages scrollable */
   #chat-messages {
-    flex-grow: 1 !important;
+    flex: 1 !important;
     overflow-y: auto !important;
-  }
-}
-  /* 2. Hide the sidebar off-screen to the left */
-  #chat-sidebar {
-    position: fixed !important;
-    left: -260px; /* Off-screen */
-    top: 52px;
-    bottom: 0;
-    z-index: 2000;
-    transition: left 0.3s ease;
-    width: 240px !important;
-    background: rgba(20, 20, 20, 0.98) !important; /* Solid dark background for mobile menu */
-    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-    padding-top: 60px !important;
-  }
-  #chat-sidebar.open {
-    left: 0;
-  }
-
-  #panel-chat .main-chat-window {
-    width: 100% !important;
-    border-radius: 0 !important;
-  }
-
-  #chat-mobile-toggle {
-    display: flex !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 8px 8px 0 0;
   }
 }
 
@@ -6177,7 +6152,7 @@ function insertMention(username, atPos) {
 async function showPanel(id) {
     // 1. Reset view to top of page
     window.scrollTo(0, 0);
-    document.body.scrollTop = 0; 
+
     // 2. Hide all panels and deactivate nav buttons
     const panels = document.querySelectorAll('.panel');
     panels.forEach(p => {
