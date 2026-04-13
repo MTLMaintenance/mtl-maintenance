@@ -964,6 +964,23 @@ body.dark-mode .spec-row:hover {
         justify-content: flex-start !important;
     }
 }
+  @media (max-width: 768px) {
+  .chat-layout {
+    /* Subtracts the header height so it fits perfectly on a phone screen */
+    height: calc(100dvh - 140px) !important; 
+    min-height: 0 !important; /* THIS STOPS THE SINKING */
+    flex-direction: column !important; /* Stacks sidebar and messages */
+    gap: 10px !important;
+  }
+  
+  /* Ensure the active page pulls everything to the ceiling */
+  .panel.active {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    padding: 10px !important;
+  }
+}
 </style>
 </head>
 <body>
