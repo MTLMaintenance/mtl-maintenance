@@ -717,56 +717,38 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 /* MOBILE RESPONSIVE OVERRIDES                */
 /* ========================================== */
 @media (max-width: 768px) {
-  /* 1. Lock the screen height */
-  body, html {
-    overflow: hidden !important;
-    height: 100dvh !important;
-    margin: 0;
-  }
-
-  /* 2. Force the App to be a vertical stack that fills the screen */
-  #app {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100dvh !important;
-    width: 100vw !important;
-    /* This sets the image as a wallpaper so it doesn't push the chat */
-    background: url('data:image/png;base64,iVBOR...') center/cover fixed no-repeat !important;
-  }
-
-  /* 3. Keep the header at the top */
-  .topbar {
-    flex-shrink: 0 !important;
-    background: rgba(0, 0, 0, 0.85) !important;
-  }
-
-  /* 4. THE FIX: Make the panel fill all the remaining space */
-  .panel.active {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    padding: 10px !important;
-    background: transparent !important; /* Lets the machinery show through */
-  }
-
-  /* 5. Force the Chat Box to stay at the top of the panel */
-  #panel-chat {
-    justify-content: flex-start !important;
-  }
-
+ 
+    @media (max-width: 768px) {
+  /* 1. Make the chat container stack vertically */
   #panel-chat > div {
-    display: flex !important;
     flex-direction: column !important;
-    height: 100% !important;
+    height: calc(100vh - 160px) !important;
   }
 
-  /* 6. Make messages scrollable */
-  #chat-messages {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    border-radius: 8px 8px 0 0;
+  /* 2. Hide the sidebar off-screen to the left */
+  #chat-sidebar {
+    position: fixed !important;
+    left: -260px; /* Off-screen */
+    top: 52px;
+    bottom: 0;
+    z-index: 2000;
+    transition: left 0.3s ease;
+    width: 240px !important;
+    background: rgba(20, 20, 20, 0.98) !important; /* Solid dark background for mobile menu */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    padding-top: 60px !important;
+  }
+  #chat-sidebar.open {
+    left: 0;
+  }
+
+  #panel-chat .main-chat-window {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  #chat-mobile-toggle {
+    display: flex !important;
   }
 }
 
@@ -956,17 +938,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 body.dark-mode .spec-row:hover {
     background: rgba(255, 255, 255, 0.1);
-}
-#panel-chat.active {
-    display: flex !important;
-    flex-direction: column;
-    height: 100%; /* Forces it to fill the parent from the top down */
-}
-
-/* Fix for the chat content area */
-#panel-chat > div {
-    flex: 1;
-    min-height: 0;
 }
 </style>
 </head>
@@ -1183,7 +1154,8 @@ body.dark-mode .spec-row:hover {
   <!-- CLEAN CHAT PANEL -->
 <div class="panel" id="panel-chat">
   <div class="section-header"><span class="section-title">Team Chat</span></div>
-  <div class="chat-layout" style="display:flex; gap:15px; flex:1; min-height:0; align-items: stretch;">
+  <div class="chat-layout" style="display:flex; gap:15px; height:calc(100vh - 180px); min-height:550px; align-items: stretch;">
+ 
     
     <!-- SIDEBAR -->
     <div id="chat-sidebar">
