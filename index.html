@@ -939,6 +939,31 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 body.dark-mode .spec-row:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+/* 1. PC Version: Keep it look exactly like it does now */
+.chat-main-container {
+    height: calc(100vh - 180px);
+    min-height: 500px;
+}
+
+/* 2. Mobile Version: Force it to stay at the top and stop pushing down */
+@media (max-width: 768px) {
+    .chat-main-container {
+        /* dVH is "Dynamic Viewport Height" - perfect for mobile browsers */
+        height: calc(100dvh - 150px) !important; 
+        min-height: 0 !important; /* THIS STOPS THE SINKING */
+        flex-direction: column !important;
+    }
+
+    #chat-messages {
+        flex: 1 !important; /* Makes messages fill the gap */
+    }
+    
+    .panel.active {
+        /* Ensure the panel itself pulls everything to the top */
+        display: block !important;
+        justify-content: flex-start !important;
+    }
+}
 </style>
 </head>
 <body>
@@ -1154,8 +1179,7 @@ body.dark-mode .spec-row:hover {
   <!-- CLEAN CHAT PANEL -->
 <div class="panel" id="panel-chat">
   <div class="section-header"><span class="section-title">Team Chat</span></div>
-  <div class="chat-layout" style="display:flex; gap:15px; height:calc(100vh - 180px); min-height:550px; align-items: stretch;">
- 
+  <div class="chat-layout" style="display:flex; gap:15px; align-items: stretch;">
     
     <!-- SIDEBAR -->
     <div id="chat-sidebar">
