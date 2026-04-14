@@ -425,6 +425,16 @@ button[onclick="saveInvoice()"] {
   white-space: nowrap !important;
   flex-shrink: 0 !important;
 }
+/* The middle navigation area */
+.nav {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  flex: 1 !important; /* Makes this section fill the middle space */
+  justify-content: flex-start !important;
+  overflow: hidden !important; /* Prevents buttons from pushing the bar wide */
+}
 
 
 
@@ -532,15 +542,6 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .health-score{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:13px}
 .health-bar{width:60px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;display:inline-block}
 .health-fill{height:100%;border-radius:3px}
-/* SCHEDULE */
-.sched-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
-.sched-item:last-child{border-bottom:none}
-.sched-date{width:40px;text-align:center;flex-shrink:0}
-.sched-day{font-size:18px;font-weight:600;line-height:1}
-.sched-month{font-size:10px;color:var(--text2);text-transform:uppercase}
-.sched-body{flex:1}
-.sched-title{font-size:13px;font-weight:500}
-.sched-detail{font-size:11px;color:var(--text2);margin-top:2px}
 /* CHECKLIST */
 .check-item{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
 .check-item:last-child{border-bottom:none}
