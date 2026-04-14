@@ -4693,6 +4693,16 @@ function enableHorizontalDragScroll(el){
     el.addEventListener('touchcancel', function(){ dragging = false; }, { passive: true });
     el.dataset.dragScrollBound = '1';
 }
+function applyDesktopChatHeight(){
+    if (window.matchMedia('(max-width: 768px)').matches) return;
+    const layout = document.querySelector('#panel-chat .chat-layout');
+    if (!layout) return;
+    const rect = layout.getBoundingClientRect();
+    const bottomGap = 14;
+    const desired = Math.max(640, Math.floor(window.innerHeight - rect.top - bottomGap));
+    layout.style.height = desired + 'px';
+    layout.style.minHeight = desired + 'px';
+}
 function enforceChatMobileLayout(){
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const layout = document.querySelector('#panel-chat .chat-layout');
@@ -4785,6 +4795,7 @@ function enforceChatMobileLayout(){
         if(mobileMenuBtn) mobileMenuBtn.style.display = 'none';
         if(mobileMenu) mobileMenu.style.display = 'none';
         if(headerTitle) headerTitle.style.display = '';
+        applyDesktopChatHeight();
     }
 }
 window.addEventListener('resize', enforceChatMobileLayout);
@@ -6427,6 +6438,11 @@ async function showPanel(id) {
     // 6. Execute the render if it exists
     if (renderMap[id]) {
         await renderMap[id]();
+    }
+    if (id === 'chat') {
+        requestAnimationFrame(() => {
+            applyDesktopChatHeight();
+        });
     }
 }
 
