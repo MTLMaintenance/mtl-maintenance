@@ -961,6 +961,52 @@ body, html {
     display: none !important;
   }
 }
+@media (min-width: 769px) {
+  .topbar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    height: 56px !important;
+    padding: 8px 16px !important;
+    gap: 10px !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .logo {
+    flex-shrink: 0;
+  }
+  #global-search {
+    max-width: 220px !important;
+  }
+  #main-nav {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding: 0 8px !important;
+    margin: 0 !important;
+  }
+  #main-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .topbar-right {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+    width: auto !important;
+    gap: 8px !important;
+    padding: 0 !important;
+  }
+  .topbar-right > * {
+    flex-shrink: 0;
+  }
+}
 </style>
 </head>
 <body>
@@ -4763,6 +4809,29 @@ function enforceChatMobileLayout(){
         if(mobileMenuBtn) mobileMenuBtn.style.display = 'none';
         if(mobileMenu) mobileMenu.style.display = 'none';
         if(headerTitle) headerTitle.style.display = '';
+        if(topbar){
+            topbar.style.overflowX = '';
+        }
+        if(topbarRight){
+            topbarRight.style.overflowX = '';
+            topbarRight.style.webkitOverflowScrolling = '';
+            topbarRight.style.touchAction = '';
+            topbarRight.style.justifyContent = '';
+            topbarRight.style.flexWrap = '';
+            topbarRight.style.gap = '';
+            topbarRight.style.width = '';
+            topbarRight.style.padding = '';
+        }
+        if(mainNav){
+            mainNav.style.overflowX = '';
+            mainNav.style.webkitOverflowScrolling = '';
+            mainNav.style.touchAction = '';
+            mainNav.style.whiteSpace = '';
+            mainNav.style.flexWrap = '';
+            mainNav.style.justifyContent = '';
+            mainNav.style.width = '';
+            mainNav.style.padding = '';
+        }
         applyDesktopChatHeight();
     }
 }
