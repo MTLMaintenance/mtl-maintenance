@@ -857,9 +857,30 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
-  .topbar-main-row { padding: 8px 12px; gap: 8px; }
+  .topbar-main-row {
+    padding: 8px 12px;
+    gap: 8px;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+  }
+  .topbar-main-row::-webkit-scrollbar { display: none; }
+  .topbar-main-row > * { flex-shrink: 0; }
   .logo { font-size: 14px !important; }
   #global-search { max-width: 140px !important; font-size: 12px !important; }
+  .topbar-right {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 8px !important;
+    justify-content: flex-start !important;
+  }
+  .topbar-right::-webkit-scrollbar { display: none; }
+  .topbar-right > * { flex-shrink: 0; }
   .panel.active { padding: 10px !important; }
   /* Force Chat window to fill the panel */
   #panel-chat > div { height: 100% !important; flex: 1; }
@@ -884,10 +905,10 @@ body, html {
   #chat-mobile-toggle {
     display: none !important;
   }
-  #chat-channel-select-mobile {
+  #chat-channel-menu-btn {
     display: block !important;
     margin-left: auto;
-    min-width: 160px;
+    min-width: 140px;
     max-width: 62vw;
     border: 1px solid var(--border);
     background: #fff;
@@ -896,6 +917,42 @@ body, html {
     padding: 6px 12px;
     font-size: 13px;
     font-weight: 600;
+    height: 34px;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+  }
+  #chat-channel-mobile-menu {
+    position: absolute;
+    top: 42px;
+    right: 12px;
+    z-index: 30;
+    min-width: 180px;
+    max-width: 78vw;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+    padding: 6px;
+    display: none;
+  }
+  #chat-channel-mobile-menu.open {
+    display: block;
+  }
+  #chat-channel-mobile-menu .chat-mobile-menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  #chat-channel-mobile-menu .chat-mobile-menu-item.active {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+    font-weight: 700;
   }
   #chat-header-title {
     display: none !important;
@@ -1143,11 +1200,11 @@ body, html {
   <button id="chat-mobile-toggle" onclick="toggleChatSidebar()" style="display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text2)">☰</button>
   
   <div style="font-weight:700; font-size:15px" id="chat-header-title"># general</div>
-  <select id="chat-channel-select-mobile" onchange="onMobileChatChannelChange(this)" style="display:none">
-    <option value="general"># general</option>
-    <option value="outside"># outside</option>
-    <option value="production"># production</option>
-  </select>
+  <button id="chat-channel-menu-btn" onclick="toggleMobileChatMenu(event)" style="display:none">
+    <span style="font-size:15px;line-height:1">☰</span>
+    <span id="chat-channel-menu-label"># general</span>
+  </button>
+  <div id="chat-channel-mobile-menu"></div>
 </div>
       
       <div id="chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px"></div>
@@ -4538,8 +4595,8 @@ function handleChatInput(el){
 function insertMention(name){const i=document.getElementById('chat-input');if(!i)return;const v=i.value;const a=v.lastIndexOf('@');i.value=v.slice(0,a)+'@'+name.replace(/ /g,'')+' ';const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';i.focus();}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
-    const select = document.getElementById('chat-channel-select-mobile');
-    if (!select) return;
+    const menu = document.getElementById('chat-channel-mobile-menu');
+    if (!menu) return;
     const baseOptions = [
         { value: 'general', label: '# general' },
         { value: 'outside', label: '# outside' },
@@ -4551,19 +4608,38 @@ function refreshMobileChatChannelOptions(){
         label: '@ ' + u.full_name
     }));
     const allOptions = [...baseOptions, ...dmOptions];
-    select.innerHTML = allOptions.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
-    if (allOptions.some(opt => opt.value === currentChannel)) {
-        select.value = currentChannel;
-    } else {
-        select.value = 'general';
-    }
+    menu.innerHTML = allOptions.map(opt => `<button type="button" class="chat-mobile-menu-item${opt.value===currentChannel?' active':''}" onclick="chooseMobileChatChannel('${opt.value}')">${opt.label}</button>`).join('');
+    updateMobileChatMenuLabel(currentChannel, allOptions);
+}
+function updateMobileChatMenuLabel(channel, options){
+    const label = document.getElementById('chat-channel-menu-label');
+    if(!label) return;
+    const knownOptions = options || [];
+    const match = knownOptions.find(opt => opt.value === channel);
+    if(match){ label.textContent = match.label; return; }
+    if(channel && channel.startsWith('dm-')) label.textContent = '@ direct message';
+    else label.textContent = '# general';
+}
+function toggleMobileChatMenu(event){
+    if(event) event.stopPropagation();
+    const menu = document.getElementById('chat-channel-mobile-menu');
+    if(!menu) return;
+    menu.classList.toggle('open');
+}
+function chooseMobileChatChannel(channel){
+    if(!channel) return;
+    const btn = document.querySelector(`#chat-sidebar .chat-channel-btn[data-channel="${channel}"]`) || document.getElementById(`btn-ch-${channel}`) || null;
+    switchChannel(channel, btn);
+    const menu = document.getElementById('chat-channel-mobile-menu');
+    if(menu) menu.classList.remove('open');
 }
 function enforceChatMobileLayout(){
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const layout = document.querySelector('#panel-chat .chat-layout');
     const sidebar = document.getElementById('chat-sidebar');
     const mainChat = document.querySelector('#panel-chat .main-chat-window');
-    const mobileSelect = document.getElementById('chat-channel-select-mobile');
+    const mobileMenuBtn = document.getElementById('chat-channel-menu-btn');
+    const mobileMenu = document.getElementById('chat-channel-mobile-menu');
     const headerTitle = document.getElementById('chat-header-title');
     const mobileToggle = document.getElementById('chat-mobile-toggle');
     if(!layout || !sidebar || !mainChat) return;
@@ -4578,7 +4654,7 @@ function enforceChatMobileLayout(){
         mainChat.style.maxWidth = '100%';
         mainChat.style.minWidth = '0';
         if(mobileToggle) mobileToggle.style.display = 'none';
-        if(mobileSelect) mobileSelect.style.display = 'block';
+        if(mobileMenuBtn) mobileMenuBtn.style.display = 'inline-flex';
         if(headerTitle) headerTitle.style.display = 'none';
     } else {
         layout.style.flexDirection = '';
@@ -4590,18 +4666,19 @@ function enforceChatMobileLayout(){
         mainChat.style.maxWidth = '';
         mainChat.style.minWidth = '';
         if(mobileToggle) mobileToggle.style.display = 'none';
-        if(mobileSelect) mobileSelect.style.display = 'none';
+        if(mobileMenuBtn) mobileMenuBtn.style.display = 'none';
+        if(mobileMenu) mobileMenu.classList.remove('open');
         if(headerTitle) headerTitle.style.display = '';
     }
 }
-function onMobileChatChannelChange(selectEl){
-    if(!selectEl) return;
-    const channel = selectEl.value;
-    if(!channel) return;
-    const btn = document.querySelector(`#chat-sidebar .chat-channel-btn[data-channel="${channel}"]`) || document.getElementById(`btn-ch-${channel}`) || null;
-    switchChannel(channel, btn);
-}
 window.addEventListener('resize', enforceChatMobileLayout);
+document.addEventListener('click', function(event){
+    const menu = document.getElementById('chat-channel-mobile-menu');
+    const btn = document.getElementById('chat-channel-menu-btn');
+    if(!menu || !btn) return;
+    if(menu.contains(event.target) || btn.contains(event.target)) return;
+    menu.classList.remove('open');
+});
 function switchChannel(channel, btn) {
     try {
         currentChannel = channel;
@@ -4617,19 +4694,16 @@ function switchChannel(channel, btn) {
                 let dmName = '';
                 if (btn) dmName = (btn.innerText || '').split('\n')[0].trim();
                 if (!dmName) {
-                    const mobileSelect = document.getElementById('chat-channel-select-mobile');
-                    const selectedOption = mobileSelect?.selectedOptions?.[0];
-                    dmName = selectedOption ? selectedOption.textContent.replace(/^@\s*/, '').trim() : '';
+                    const menuLabel = document.getElementById('chat-channel-menu-label')?.textContent || '';
+                    dmName = menuLabel.replace(/^@\s*/, '').trim();
                 }
                 header.textContent = '@ ' + (dmName || 'direct message');
             } else {
                 header.textContent = '# ' + channel;
             }
         }
-        const mobileSelect = document.getElementById('chat-channel-select-mobile');
-        if (mobileSelect) {
-            mobileSelect.value = channel;
-        }
+        refreshMobileChatChannelOptions();
+        updateMobileChatMenuLabel(channel);
 
         loadChatMessages(channel);
         markChannelRead(channel); // Clears the red dots
