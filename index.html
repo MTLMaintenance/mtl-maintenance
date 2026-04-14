@@ -867,6 +867,20 @@ body, html {
   }
   .topbar-main-row::-webkit-scrollbar { display: none; }
   .topbar-main-row > * { flex-shrink: 0; }
+  #main-nav {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  #main-nav::-webkit-scrollbar { display: none; }
+  #main-nav .nav-btn {
+    flex: 0 0 auto !important;
+  }
   .logo { font-size: 14px !important; }
   #global-search { max-width: 140px !important; font-size: 12px !important; }
   .topbar-right {
