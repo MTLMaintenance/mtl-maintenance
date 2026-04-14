@@ -4787,6 +4787,31 @@ function applyDesktopChatHeight(){
     layout.style.height = desired + 'px';
     layout.style.minHeight = desired + 'px';
 }
+function applyDesktopCalendarHeight(){
+    if (window.matchMedia('(max-width: 768px)').matches) return;
+    const panel = document.getElementById('panel-calendar');
+    if (!panel || !panel.classList.contains('active')) return;
+    const titleRow = panel.querySelector('.section-header');
+    const toggleRow = panel.querySelector('.view-toggle');
+    const gridContainer = document.getElementById('cal-grid-container');
+    const listContainer = document.getElementById('cal-list-container');
+    const panelRect = panel.getBoundingClientRect();
+    const titleH = titleRow ? titleRow.getBoundingClientRect().height : 0;
+    const toggleH = toggleRow ? toggleRow.getBoundingClientRect().height : 0;
+    const panelPad = 24;
+    const bottomGap = 14;
+    const desired = Math.max(460, Math.floor(window.innerHeight - panelRect.top - titleH - toggleH - panelPad - bottomGap));
+    if (gridContainer) {
+        gridContainer.style.height = desired + 'px';
+        gridContainer.style.minHeight = desired + 'px';
+        gridContainer.style.overflowY = 'auto';
+    }
+    if (listContainer) {
+        listContainer.style.height = desired + 'px';
+        listContainer.style.minHeight = desired + 'px';
+        listContainer.style.overflowY = 'auto';
+    }
+}
 function enforceChatMobileLayout(){
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const layout = document.querySelector('#panel-chat .chat-layout');
@@ -4903,6 +4928,7 @@ function enforceChatMobileLayout(){
             mainNav.style.padding = '';
         }
         applyDesktopChatHeight();
+        applyDesktopCalendarHeight();
     }
 }
 window.addEventListener('resize', enforceChatMobileLayout);
@@ -6547,6 +6573,11 @@ async function showPanel(id) {
             applyDesktopChatHeight();
         });
     }
+    if (id === 'calendar') {
+        requestAnimationFrame(() => {
+            applyDesktopCalendarHeight();
+        });
+    }
 }
 
 // Ensure the Mobile Chat Auto-Close logic is placed OUTSIDE of showPanel
@@ -7582,6 +7613,7 @@ function switchCalendarView(view) {
     
     // Refresh the data
     if(view === 'grid') renderCalendar(); else renderSchedule();
+    requestAnimationFrame(() => applyDesktopCalendarHeight());
 }
 
 // Ensure the old renderSchedule function points to the new IDs
