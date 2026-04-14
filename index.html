@@ -60,6 +60,29 @@
   font-weight: 700 !important;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
 }
+#panel-tools .tab-bar,
+#panel-admin .tab-bar,
+#panel-equipment .sub-toggle {
+  background: rgba(0,0,0,0.38) !important;
+  border-color: rgba(255,255,255,0.22) !important;
+}
+#panel-tools .tab,
+#panel-admin .tab,
+#panel-equipment .sub-toggle .btn {
+  color: rgba(255,255,255,0.85) !important;
+}
+#panel-tools .tab:hover,
+#panel-admin .tab:hover,
+#panel-equipment .sub-toggle .btn:hover {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.18) !important;
+}
+#panel-tools .tab.active,
+#panel-admin .tab.active,
+#panel-equipment .sub-toggle .btn.active {
+  background: #ffffff !important;
+  color: #1a1a18 !important;
+}
     /* Observation Severity Colors */
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
 .badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
@@ -1174,11 +1197,11 @@ body, html {
       
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
-    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+    <div class="sub-toggle" style="margin-bottom:10px;align-items:center">
       <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Filter:</span>
-      <button class="btn btn-sm" id="eq-grp-all" onclick="setEquipGroupFilter('all')" style="background:#fff;color:#1a1a18;font-weight:700;border:1px solid #fff">All</button>
-      <button class="btn btn-sm" id="eq-grp-outside" onclick="setEquipGroupFilter('outside')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Outside</button>
-      <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
+      <button class="btn btn-sm active" id="eq-grp-all" onclick="setEquipGroupFilter('all')">All</button>
+      <button class="btn btn-sm" id="eq-grp-outside" onclick="setEquipGroupFilter('outside')">Outside</button>
+      <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')">Production</button>
     </div>
     <div class="section-header"><span class="section-title">Equipment Registry</span>
       <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
@@ -4382,7 +4405,7 @@ async function deleteObservation(obsId, equipId) {
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
-function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderEquipmentTable();}
+function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});renderEquipmentTable();}
 function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all')return state.equipment;return state.equipment.filter(e=>e.group_tag===f||e.group_tag==='both');}
 function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group_tag;if(g&&g!=='all'){setGroupFilter(g);setEquipGroupFilter(g);}}
 
