@@ -4439,6 +4439,7 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
 async function renderChat() {
     console.log("Loading Chat...");
     await renderDmList();     // 1. Load the DM names
+    enforceChatMobileLayout();
     updateUnreadBadge();      // 2. Check for red dots
     loadChatMessages(currentChannel); // 3. Load the actual messages
 }
@@ -4557,6 +4558,42 @@ function refreshMobileChatChannelOptions(){
         select.value = 'general';
     }
 }
+function enforceChatMobileLayout(){
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const layout = document.querySelector('#panel-chat .chat-layout');
+    const sidebar = document.getElementById('chat-sidebar');
+    const mainChat = document.querySelector('#panel-chat .main-chat-window');
+    const mobileSelect = document.getElementById('chat-channel-select-mobile');
+    const headerTitle = document.getElementById('chat-header-title');
+    const mobileToggle = document.getElementById('chat-mobile-toggle');
+    if(!layout || !sidebar || !mainChat) return;
+
+    if(isMobile){
+        layout.style.flexDirection = 'column';
+        layout.style.height = 'calc(100vh - 210px)';
+        layout.style.minHeight = 'calc(100vh - 210px)';
+        layout.style.gap = '10px';
+        sidebar.style.display = 'none';
+        mainChat.style.width = '100%';
+        mainChat.style.maxWidth = '100%';
+        mainChat.style.minWidth = '0';
+        if(mobileToggle) mobileToggle.style.display = 'none';
+        if(mobileSelect) mobileSelect.style.display = 'block';
+        if(headerTitle) headerTitle.style.display = 'none';
+    } else {
+        layout.style.flexDirection = '';
+        layout.style.height = '';
+        layout.style.minHeight = '';
+        layout.style.gap = '';
+        sidebar.style.display = '';
+        mainChat.style.width = '';
+        mainChat.style.maxWidth = '';
+        mainChat.style.minWidth = '';
+        if(mobileToggle) mobileToggle.style.display = 'none';
+        if(mobileSelect) mobileSelect.style.display = 'none';
+        if(headerTitle) headerTitle.style.display = '';
+    }
+}
 function onMobileChatChannelChange(selectEl){
     if(!selectEl) return;
     const channel = selectEl.value;
@@ -4564,6 +4601,7 @@ function onMobileChatChannelChange(selectEl){
     const btn = document.querySelector(`#chat-sidebar .chat-channel-btn[data-channel="${channel}"]`) || document.getElementById(`btn-ch-${channel}`) || null;
     switchChannel(channel, btn);
 }
+window.addEventListener('resize', enforceChatMobileLayout);
 function switchChannel(channel, btn) {
     try {
         currentChannel = channel;
