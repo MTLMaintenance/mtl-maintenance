@@ -907,7 +907,7 @@ body, html {
   }
   #chat-channel-menu-btn {
     display: block !important;
-    margin-left: auto;
+    margin-left: 0;
     min-width: 140px;
     max-width: 62vw;
     border: 1px solid var(--border);
@@ -924,8 +924,9 @@ body, html {
   }
   #chat-channel-mobile-menu {
     position: absolute;
-    top: 42px;
-    right: 12px;
+    bottom: 46px;
+    left: 12px;
+    right: auto;
     z-index: 30;
     min-width: 180px;
     max-width: 78vw;
@@ -935,6 +936,7 @@ body, html {
     box-shadow: 0 10px 24px rgba(0,0,0,0.16);
     padding: 6px;
     display: none;
+    transform-origin: bottom left;
   }
   #chat-channel-mobile-menu.open {
     display: block;
@@ -1195,7 +1197,7 @@ body, html {
 
     <!-- MAIN CHAT WINDOW -->
     <div class="main-chat-window" style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.94); border-radius:var(--radius-lg); border:1px solid var(--border); overflow:hidden">
-     <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; gap:10px">
+     <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; gap:10px; position:relative">
   <!-- MOBILE MENU BUTTON (Hidden on desktop) -->
   <button id="chat-mobile-toggle" onclick="toggleChatSidebar()" style="display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text2)">☰</button>
   
@@ -4677,7 +4679,7 @@ function enforceChatMobileLayout(){
             mobileMenuBtn.style.display = 'inline-flex';
             mobileMenuBtn.style.alignItems = 'center';
             mobileMenuBtn.style.gap = '8px';
-            mobileMenuBtn.style.marginLeft = 'auto';
+            mobileMenuBtn.style.marginLeft = '0';
             mobileMenuBtn.style.height = '34px';
             mobileMenuBtn.style.padding = '6px 12px';
             mobileMenuBtn.style.borderRadius = '999px';
@@ -4689,8 +4691,9 @@ function enforceChatMobileLayout(){
         }
         if(mobileMenu){
             mobileMenu.style.position = 'absolute';
-            mobileMenu.style.top = '42px';
-            mobileMenu.style.right = '12px';
+            mobileMenu.style.bottom = '46px';
+            mobileMenu.style.left = '12px';
+            mobileMenu.style.right = 'auto';
             mobileMenu.style.zIndex = '30';
             mobileMenu.style.minWidth = '180px';
             mobileMenu.style.maxWidth = '78vw';
