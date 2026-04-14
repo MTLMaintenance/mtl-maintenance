@@ -1007,6 +1007,31 @@ body, html {
     flex-shrink: 0;
   }
 }
+/* Top nav tabs match topbar primary buttons */
+#main-nav .nav-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 4px 9px !important;
+  min-height: 30px !important;
+  border-radius: var(--radius) !important;
+  border: none !important;
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  line-height: 1.1 !important;
+}
+#main-nav .nav-btn:hover {
+  opacity: 0.88 !important;
+}
+#main-nav .nav-btn.active {
+  background: #2a2a28 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
 </style>
 </head>
 <body>
