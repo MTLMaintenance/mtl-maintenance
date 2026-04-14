@@ -239,7 +239,7 @@ body.dark-mode .modal {
     opacity: 1 !important;
 }
     #panel-chat {
-    max-width: 1400px;
+    max-width: 1700px;
     margin: 0 auto;
 }
 
@@ -4531,6 +4531,7 @@ function shouldStickChatToBottom(container){
 async function loadChatMessages(channel) {
   const container = document.getElementById('chat-messages');
   if (!container) return;
+  const shouldAutoScroll = !isMobileViewport() && shouldStickChatToBottom(container);
 
   container.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Loading...</div>';
 
@@ -4545,7 +4546,7 @@ async function loadChatMessages(channel) {
     renderChatMessages(data || [], container);
     markChannelRead(channel);
       setTimeout(() => {
-      if (!isMobileViewport()) {
+      if (shouldAutoScroll) {
         container.scrollTop = container.scrollHeight;
       }
     }, 100);
