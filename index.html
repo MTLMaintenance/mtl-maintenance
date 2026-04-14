@@ -1051,6 +1051,31 @@ body, html {
   .topbar-right > * {
     flex-shrink: 0;
   }
+  #panel-calendar.panel.active {
+    height: calc(100vh - 120px) !important;
+    min-height: 720px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #panel-calendar .view-toggle {
+    flex-shrink: 0 !important;
+  }
+  #panel-calendar #cal-grid-container,
+  #panel-calendar #cal-list-container {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #panel-calendar #cal-grid-container .card {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #panel-calendar #cal-days {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
 }
 /* Top nav tabs match topbar primary buttons */
 #main-nav .nav-btn {
@@ -4787,32 +4812,6 @@ function applyDesktopChatHeight(){
     layout.style.height = desired + 'px';
     layout.style.minHeight = desired + 'px';
 }
-function applyDesktopCalendarHeight(){
-    if (window.matchMedia('(max-width: 768px)').matches) return;
-    const panel = document.getElementById('panel-calendar');
-    if (!panel || !panel.classList.contains('active')) return;
-    const titleRow = panel.querySelector('.section-header');
-    const toggleRow = panel.querySelector('.view-toggle');
-    const gridContainer = document.getElementById('cal-grid-container');
-    const listContainer = document.getElementById('cal-list-container');
-    const panelRect = panel.getBoundingClientRect();
-    const titleH = titleRow ? titleRow.getBoundingClientRect().height : 0;
-    const toggleH = toggleRow ? toggleRow.getBoundingClientRect().height : 0;
-    const panelPad = 24;
-    const bottomGap = 14;
-    const desired = Math.max(460, Math.floor(window.innerHeight - panelRect.top - titleH - toggleH - panelPad - bottomGap));
-    panel.style.overflowY = 'hidden';
-    if (gridContainer) {
-        gridContainer.style.height = desired + 'px';
-        gridContainer.style.minHeight = desired + 'px';
-        gridContainer.style.overflowY = 'visible';
-    }
-    if (listContainer) {
-        listContainer.style.height = desired + 'px';
-        listContainer.style.minHeight = desired + 'px';
-        listContainer.style.overflowY = 'visible';
-    }
-}
 function enforceChatMobileLayout(){
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const layout = document.querySelector('#panel-chat .chat-layout');
@@ -4929,7 +4928,6 @@ function enforceChatMobileLayout(){
             mainNav.style.padding = '';
         }
         applyDesktopChatHeight();
-        applyDesktopCalendarHeight();
     }
 }
 window.addEventListener('resize', enforceChatMobileLayout);
@@ -6574,11 +6572,7 @@ async function showPanel(id) {
             applyDesktopChatHeight();
         });
     }
-    if (id === 'calendar') {
-        requestAnimationFrame(() => {
-            applyDesktopCalendarHeight();
-        });
-    } else {
+    if (id !== 'calendar') {
         const calPanel = document.getElementById('panel-calendar');
         if (calPanel) calPanel.style.overflowY = '';
     }
@@ -7617,7 +7611,6 @@ function switchCalendarView(view) {
     
     // Refresh the data
     if(view === 'grid') renderCalendar(); else renderSchedule();
-    requestAnimationFrame(() => applyDesktopCalendarHeight());
 }
 
 // Ensure the old renderSchedule function points to the new IDs
