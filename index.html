@@ -4801,15 +4801,16 @@ function applyDesktopCalendarHeight(){
     const panelPad = 24;
     const bottomGap = 14;
     const desired = Math.max(460, Math.floor(window.innerHeight - panelRect.top - titleH - toggleH - panelPad - bottomGap));
+    panel.style.overflowY = 'hidden';
     if (gridContainer) {
         gridContainer.style.height = desired + 'px';
         gridContainer.style.minHeight = desired + 'px';
-        gridContainer.style.overflowY = 'auto';
+        gridContainer.style.overflowY = 'visible';
     }
     if (listContainer) {
         listContainer.style.height = desired + 'px';
         listContainer.style.minHeight = desired + 'px';
-        listContainer.style.overflowY = 'auto';
+        listContainer.style.overflowY = 'visible';
     }
 }
 function enforceChatMobileLayout(){
@@ -6577,6 +6578,9 @@ async function showPanel(id) {
         requestAnimationFrame(() => {
             applyDesktopCalendarHeight();
         });
+    } else {
+        const calPanel = document.getElementById('panel-calendar');
+        if (calPanel) calPanel.style.overflowY = '';
     }
 }
 
