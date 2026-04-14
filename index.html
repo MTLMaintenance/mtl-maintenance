@@ -6,29 +6,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-.view-toggle {
+.view-toggle,
+.tab-bar,
+.sub-toggle {
   display: flex;
-  background: var(--bg3);
+  gap: 4px;
   padding: 4px;
   border-radius: var(--radius);
-  margin-bottom: 15px;
-  gap: 4px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.18);
   width: fit-content;
+  flex-wrap: wrap;
 }
 
-.view-toggle .btn {
-  padding: 5px 15px;
-  font-size: 12px;
-  border: none;
-  background: transparent;
-  color: var(--text2);
+.view-toggle {
+  margin-bottom: 15px;
 }
 
-.view-toggle .btn.active {
-  background: var(--bg);
-  color: var(--text);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  font-weight: 600;
+.view-toggle .btn,
+.tab,
+.sub-toggle .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 5px 12px !important;
+  min-height: 32px !important;
+  border: none !important;
+  border-radius: var(--radius) !important;
+  background: transparent !important;
+  color: rgba(26,26,24,0.72) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+}
+
+.view-toggle .btn:hover,
+.tab:hover,
+.sub-toggle .btn:hover {
+  background: rgba(255,255,255,0.55) !important;
+  color: #1a1a18 !important;
+}
+
+.view-toggle .btn.active,
+.tab.active,
+.sub-toggle .btn.active {
+  background: #ffffff !important;
+  color: var(--text) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
 }
     /* Observation Severity Colors */
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
@@ -45,35 +75,7 @@
 
 /* --- TAB CONTRAST FIX --- */
 
-/* 1. Inactive Tabs (The ones that were blending in) */
-.tab {
-  padding: 8px 16px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  font-family: inherit !important;
-  color: #1a1a18 !important; 
-  background: rgba(0, 0, 0, 0.04) !important; 
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-radius: var(--radius) var(--radius) 0 0 !important;
-  margin-right: 2px !important;
-  transition: all 0.15s ease;
-}
-
-/* 2. Hover State */
-.tab:hover {
-  background: rgba(0, 0, 0, 0.08) !important;
-  color: #000000 !important;
-}
-
-/* 3. Active Tab (The one you are currently looking at) */
-.tab.active {
-  background: #ffffff !important; /* Solid white background */
-  color: var(--accent) !important; /* Pro Blue text */
-  border: 1px solid var(--border) !important;
-  border-bottom: 2px solid var(--accent) !important; /* Blue indicator line */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
+/* Tab styling handled by shared segmented-control rules above. */
 
 
   /* 1. Main Cards */
@@ -570,9 +572,7 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text2);padding:2px 6px;border-radius:var(--radius)}
 .modal-close:hover{background:var(--bg2)}
 /* TABS */
-.tab-bar{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:2px}
-.tab{padding:6px 12px;font-size:13px;border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;color:var(--text2);background:none;border:none;font-family:inherit}
-.tab.active{background:var(--bg);color:var(--text);font-weight:500;border:1px solid var(--border);border-bottom:1px solid var(--bg)}
+.tab-bar{margin-bottom:14px}
 /* PARTS ROW */
 .parts-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
 .parts-row:last-child{border-bottom:none}
@@ -1417,12 +1417,12 @@ body, html {
 <div class="panel" id="panel-admin">
   <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
   
-  <div class="tab-bar" style="background:rgba(0,0,0,0.4);border-radius:var(--radius);padding:4px;border:none;gap:4px">
-    <button class="tab active" onclick="switchAdminTab('approvals',this)" style="color:#fff;background:rgba(255,255,255,0.25);font-weight:600;border:none">Pending Approvals</button>
-    <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
-    <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
-    <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
-    <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchAdminTab('approvals',this)">Pending Approvals</button>
+    <button class="tab" onclick="switchAdminTab('users',this)">Active Users</button>
+    <button class="tab" onclick="switchAdminTab('permissions',this)">Permissions</button>
+    <button class="tab" onclick="switchAdminTab('deleted-msgs',this)">Deleted Msgs</button>
+    <button class="tab" onclick="switchAdminTab('settings',this)">Settings</button>
   </div>
 
   <!-- 1. PENDING APPROVALS -->
@@ -3340,9 +3340,9 @@ function openEquipDetail(id){
     <div id="eq-zerks" class="tab-content" style="display:none">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
         <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
-        <div style="background:var(--bg3); padding:4px; border-radius:var(--radius); display:flex; gap:2px; border:1px solid var(--border)">
-            <button class="btn btn-sm" id="mode-dot" onclick="setZerkMode('dot')" style="background:var(--accent); color:#fff; font-size:10px">Point Only</button>
-            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')" style="background:transparent; color:var(--text2); font-size:10px">Pointer Line</button>
+        <div class="sub-toggle">
+            <button class="btn btn-sm active" id="mode-dot" onclick="setZerkMode('dot')">Point Only</button>
+            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')">Pointer Line</button>
         </div>
         <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
       </div>
@@ -5212,12 +5212,8 @@ function switchAdminTab(tab, btn) {
   // Highlight the tab button
   document.querySelectorAll('#panel-admin .tab').forEach(b => {
     b.classList.remove('active');
-    b.style.background = 'transparent';
-    b.style.color = 'rgba(255,255,255,0.8)';
   });
   btn.classList.add('active');
-  btn.style.background = 'rgba(255,255,255,0.25)';
-  btn.style.color = '#fff';
 
   // --- TRIGGER DATA RELOADS ---
   if(tab === 'settings') renderAuditLogs();
@@ -7000,11 +6996,20 @@ async function deleteQuickSpec(equipId, key) {
 function setZerkMode(mode) {
     zerkPinMode = mode;
     zerkDrawingStep = 1; // Reset steps
-    document.getElementById('mode-dot').style.background = mode === 'dot' ? 'var(--accent)' : 'transparent';
-    document.getElementById('mode-dot').style.color = mode === 'dot' ? '#fff' : 'var(--text2)';
-    document.getElementById('mode-line').style.background = mode === 'line' ? 'var(--accent)' : 'transparent';
-    document.getElementById('mode-line').style.color = mode === 'line' ? '#fff' : 'var(--text2)';
+    document.getElementById('mode-dot')?.classList.toggle('active', mode === 'dot');
+    document.getElementById('mode-line')?.classList.toggle('active', mode === 'line');
     renderZerkDots(); // Clear any temp dots
+}
+function updateCalEntryTypeButtons(type){
+    document.getElementById('cal-type-one')?.classList.toggle('active', type === 'one-time');
+    document.getElementById('cal-type-recur')?.classList.toggle('active', type === 'recurring');
+}
+const _baseSetCalEntryType = typeof setCalEntryType === 'function' ? setCalEntryType : null;
+if (_baseSetCalEntryType) {
+    setCalEntryType = function(type) {
+        _baseSetCalEntryType(type);
+        updateCalEntryTypeButtons(type);
+    };
 }
     async function saveZerkPoint(label, x_label, y_label, x_target, y_target) {
     const newZerk = {
@@ -7735,9 +7740,9 @@ function renderSchedule(){
     </div>
 
     <!-- Toggle Selector -->
-    <div style="background:var(--bg2); padding:4px; border-radius:var(--radius); display:flex; gap:2px; margin-bottom:15px; border:1px solid var(--border)">
-        <button class="btn btn-sm" id="cal-type-one" onclick="setCalEntryType('one-time')" style="flex:1; background:var(--accent); color:#fff">One-time Job</button>
-        <button class="btn btn-sm" id="cal-type-recur" onclick="setCalEntryType('recurring')" style="flex:1; background:transparent; color:var(--text2)">Recurring Rule</button>
+    <div class="sub-toggle" style="margin-bottom:15px">
+        <button class="btn btn-sm active" id="cal-type-one" onclick="setCalEntryType('one-time')" style="flex:1">One-time Job</button>
+        <button class="btn btn-sm" id="cal-type-recur" onclick="setCalEntryType('recurring')" style="flex:1">Recurring Rule</button>
     </div>
 
     <div class="form-grid">
