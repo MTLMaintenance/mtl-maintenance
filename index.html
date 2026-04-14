@@ -4609,6 +4609,21 @@ function refreshMobileChatChannelOptions(){
     }));
     const allOptions = [...baseOptions, ...dmOptions];
     menu.innerHTML = allOptions.map(opt => `<button type="button" class="chat-mobile-menu-item${opt.value===currentChannel?' active':''}" onclick="chooseMobileChatChannel('${opt.value}')">${opt.label}</button>`).join('');
+    menu.querySelectorAll('.chat-mobile-menu-item').forEach(btn => {
+        btn.style.width = '100%';
+        btn.style.border = 'none';
+        btn.style.background = 'transparent';
+        btn.style.textAlign = 'left';
+        btn.style.padding = '8px 10px';
+        btn.style.borderRadius = '8px';
+        btn.style.fontSize = '13px';
+        btn.style.color = 'var(--text)';
+        if (btn.classList.contains('active')) {
+            btn.style.background = 'var(--accent-bg)';
+            btn.style.color = 'var(--accent-text)';
+            btn.style.fontWeight = '700';
+        }
+    });
     updateMobileChatMenuLabel(currentChannel, allOptions);
 }
 function updateMobileChatMenuLabel(channel, options){
@@ -4624,14 +4639,15 @@ function toggleMobileChatMenu(event){
     if(event) event.stopPropagation();
     const menu = document.getElementById('chat-channel-mobile-menu');
     if(!menu) return;
-    menu.classList.toggle('open');
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
 }
 function chooseMobileChatChannel(channel){
     if(!channel) return;
     const btn = document.querySelector(`#chat-sidebar .chat-channel-btn[data-channel="${channel}"]`) || document.getElementById(`btn-ch-${channel}`) || null;
     switchChannel(channel, btn);
     const menu = document.getElementById('chat-channel-mobile-menu');
-    if(menu) menu.classList.remove('open');
+    if(menu) menu.style.display = 'none';
 }
 function enforceChatMobileLayout(){
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -4642,6 +4658,9 @@ function enforceChatMobileLayout(){
     const mobileMenu = document.getElementById('chat-channel-mobile-menu');
     const headerTitle = document.getElementById('chat-header-title');
     const mobileToggle = document.getElementById('chat-mobile-toggle');
+    const topbar = document.querySelector('.topbar');
+    const topbarRight = document.querySelector('.topbar-right');
+    const mainNav = document.getElementById('main-nav');
     if(!layout || !sidebar || !mainChat) return;
 
     if(isMobile){
@@ -4654,7 +4673,57 @@ function enforceChatMobileLayout(){
         mainChat.style.maxWidth = '100%';
         mainChat.style.minWidth = '0';
         if(mobileToggle) mobileToggle.style.display = 'none';
-        if(mobileMenuBtn) mobileMenuBtn.style.display = 'inline-flex';
+        if(mobileMenuBtn){
+            mobileMenuBtn.style.display = 'inline-flex';
+            mobileMenuBtn.style.alignItems = 'center';
+            mobileMenuBtn.style.gap = '8px';
+            mobileMenuBtn.style.marginLeft = 'auto';
+            mobileMenuBtn.style.height = '34px';
+            mobileMenuBtn.style.padding = '6px 12px';
+            mobileMenuBtn.style.borderRadius = '999px';
+            mobileMenuBtn.style.border = '1px solid rgba(255,255,255,0.3)';
+            mobileMenuBtn.style.background = 'rgba(0,0,0,0.55)';
+            mobileMenuBtn.style.color = '#fff';
+            mobileMenuBtn.style.fontSize = '13px';
+            mobileMenuBtn.style.fontWeight = '600';
+        }
+        if(mobileMenu){
+            mobileMenu.style.position = 'absolute';
+            mobileMenu.style.top = '42px';
+            mobileMenu.style.right = '12px';
+            mobileMenu.style.zIndex = '30';
+            mobileMenu.style.minWidth = '180px';
+            mobileMenu.style.maxWidth = '78vw';
+            mobileMenu.style.background = '#fff';
+            mobileMenu.style.border = '1px solid var(--border)';
+            mobileMenu.style.borderRadius = '12px';
+            mobileMenu.style.boxShadow = '0 10px 24px rgba(0,0,0,0.16)';
+            mobileMenu.style.padding = '6px';
+            mobileMenu.style.display = 'none';
+        }
+        if(topbar){
+            topbar.style.overflowX = 'hidden';
+        }
+        if(topbarRight){
+            topbarRight.style.overflowX = 'auto';
+            topbarRight.style.webkitOverflowScrolling = 'touch';
+            topbarRight.style.touchAction = 'pan-x';
+            topbarRight.style.justifyContent = 'flex-start';
+            topbarRight.style.flexWrap = 'nowrap';
+            topbarRight.style.gap = '8px';
+            topbarRight.style.width = '100%';
+            topbarRight.style.padding = '0 12px 8px';
+        }
+        if(mainNav){
+            mainNav.style.overflowX = 'auto';
+            mainNav.style.webkitOverflowScrolling = 'touch';
+            mainNav.style.touchAction = 'pan-x';
+            mainNav.style.whiteSpace = 'nowrap';
+            mainNav.style.flexWrap = 'nowrap';
+            mainNav.style.justifyContent = 'flex-start';
+            mainNav.style.width = '100%';
+            mainNav.style.padding = '0 12px 8px';
+        }
         if(headerTitle) headerTitle.style.display = 'none';
     } else {
         layout.style.flexDirection = '';
@@ -4667,7 +4736,7 @@ function enforceChatMobileLayout(){
         mainChat.style.minWidth = '';
         if(mobileToggle) mobileToggle.style.display = 'none';
         if(mobileMenuBtn) mobileMenuBtn.style.display = 'none';
-        if(mobileMenu) mobileMenu.classList.remove('open');
+        if(mobileMenu) mobileMenu.style.display = 'none';
         if(headerTitle) headerTitle.style.display = '';
     }
 }
@@ -4677,7 +4746,7 @@ document.addEventListener('click', function(event){
     const btn = document.getElementById('chat-channel-menu-btn');
     if(!menu || !btn) return;
     if(menu.contains(event.target) || btn.contains(event.target)) return;
-    menu.classList.remove('open');
+    menu.style.display = 'none';
 });
 function switchChannel(channel, btn) {
     try {
