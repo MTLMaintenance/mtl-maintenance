@@ -716,18 +716,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 }   
     
   }
- #panel-chat .main-chat-window {
- display: flex !important:
-  flex: 1 1 auto !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    border-radius: 0 !important;  
-
-    #panel-chat #chat-messages {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-  }
 .eq-dash-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2952,25 +2940,6 @@ async function deleteTask(id){
 // ============================================================
 // SCHEDULE
 // ============================================================
-function renderSchedule(){
-  const nw=new Date(TODAY); nw.setDate(nw.getDate()+7);
-  const n30=new Date(TODAY); n30.setDate(n30.getDate()+30);
-  const sorted=[...state.schedules].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const mk=s=>{
-    const d=new Date(s.date);
-    return `<div class="sched-item">
-      <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div></div>
-      <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'} · ${s.dur}h${s.notes?' · '+s.notes:''}</div></div>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        <button class="btn btn-secondary btn-sm" onclick="convertToTask('${s.id}')">→ WO</button>
-        <button class="btn btn-danger" onclick="deleteSched('${s.id}')">✕</button>
-      </div>
-    </div>`;
-  };
-  const none='<div style="color:var(--text2);font-size:13px;padding:8px 0">Nothing scheduled</div>';
-  document.getElementById('sched-week').innerHTML=sorted.filter(s=>{const [fy,fm,fd]=(s.date||'').split('-').map(Number);const fd2=fy?new Date(fy,fm-1,fd):new Date(s.date);return fd2>=TODAY&&fd2<=nw;}).map(mk).join('')||none;
-  document.getElementById('sched-next30').innerHTML=sorted.filter(s=>new Date(s.date)>=TODAY&&new Date(s.date)<=n30).map(mk).join('')||none;
-}
 async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!==id); await persist('schedules','delete',{id}); renderSchedule(); renderCalendar(); }
 
 // ============================================================
