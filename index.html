@@ -4665,6 +4665,33 @@ function chooseMobileChatChannel(channel){
     const menu = document.getElementById('chat-channel-mobile-menu');
     if(menu) menu.style.display = 'none';
 }
+function enableHorizontalDragScroll(el){
+    if(!el || el.dataset.dragScrollBound === '1') return;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let dragging = false;
+    el.addEventListener('touchstart', function(e){
+        if(!e.touches || !e.touches[0]) return;
+        dragging = true;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startScrollLeft = el.scrollLeft;
+    }, { passive: true });
+    el.addEventListener('touchmove', function(e){
+        if(!dragging || !e.touches || !e.touches[0]) return;
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        // Only intercept mostly-horizontal swipes.
+        if(Math.abs(dx) > Math.abs(dy)){
+            el.scrollLeft = startScrollLeft - dx;
+            e.preventDefault();
+        }
+    }, { passive: false });
+    el.addEventListener('touchend', function(){ dragging = false; }, { passive: true });
+    el.addEventListener('touchcancel', function(){ dragging = false; }, { passive: true });
+    el.dataset.dragScrollBound = '1';
+}
 function enforceChatMobileLayout(){
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const layout = document.querySelector('#panel-chat .chat-layout');
@@ -4730,6 +4757,7 @@ function enforceChatMobileLayout(){
             topbarRight.style.gap = '8px';
             topbarRight.style.width = '100%';
             topbarRight.style.padding = '0 12px 8px';
+            enableHorizontalDragScroll(topbarRight);
         }
         if(mainNav){
             mainNav.style.overflowX = 'auto';
@@ -4740,6 +4768,7 @@ function enforceChatMobileLayout(){
             mainNav.style.justifyContent = 'flex-start';
             mainNav.style.width = '100%';
             mainNav.style.padding = '0 12px 8px';
+            enableHorizontalDragScroll(mainNav);
         }
         if(headerTitle) headerTitle.style.display = 'none';
     } else {
