@@ -905,6 +905,10 @@ body, html {
     color: #fff !important;
     font-weight: 700 !important;
   }
+  #global-search ~ span, 
+  .topbar-main-row span {
+    display: none !important;
+  }
   .logo { display: none !important; }
   #global-search { display: none !important; }
   .topbar-right {
