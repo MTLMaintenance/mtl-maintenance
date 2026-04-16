@@ -502,7 +502,7 @@ button[onclick="saveInvoice()"] {
 .btn-sm{padding:4px 9px;font-size:12px}
 /* PANELS */
 .panel{display:none;padding:16px;max-width:1400px;margin:0 auto;width:100%}
-.panel.active{display:block}
+{display:block}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
 .section-title{font-size:16px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* METRICS */
@@ -863,6 +863,25 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
+  html, body {
+    overflow-y: auto !important; 
+    height: auto !important;
+  }
+  .panel.active {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: visible !important;
+    display: block !important;
+  }
+
+  /* 3. Prevent the topbar from scrolling away (optional) */
+  /* If you want the top menu to stay at the top while you scroll the dashboard */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+}
   .topbar-main-row {
     padding: 8px 12px;
     gap: 8px;
@@ -923,7 +942,7 @@ body, html {
   }
   .topbar-right::-webkit-scrollbar { display: none; }
   .topbar-right > * { flex-shrink: 0; }
-  .panel.active { padding: 10px !important; }
+   { padding: 10px !important; }
   /* Force Chat window to fill the panel */
   #panel-chat > div { height: 100% !important; flex: 1; }
   #panel-chat .chat-layout {
@@ -1047,7 +1066,7 @@ body, html {
   .topbar-right > * {
     flex-shrink: 0;
   }
-  #panel-calendar.panel.active {
+  #panel-calendar {
     height: calc(100vh - 120px) !important;
     min-height: 720px !important;
     overflow: hidden !important;
