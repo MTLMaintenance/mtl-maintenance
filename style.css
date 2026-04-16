@@ -905,8 +905,8 @@ body, html {
     color: #fff !important;
     font-weight: 700 !important;
   }
-  .logo { font-size: 14px !important; }
-  #global-search { max-width: 140px !important; font-size: 12px !important; }
+  .logo { display: none !important; }
+  #global-search { display: none !important; }
   .topbar-right {
     width: 100% !important;
     display: flex !important;
