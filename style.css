@@ -923,6 +923,16 @@ body, html {
 
 } /* <--- END OF MOBILE CODE */
 @media (min-width: 769px) {
+  html, body {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  .panel { display: none !important; }
+  .panel.active { display: block !important; }
+  #panel-chat.active { display: flex !important; }
+  .logo, #global-search { display: block !important; }
+}
+  
   .topbar {
     display: flex !important;
     flex-direction: row !important;
