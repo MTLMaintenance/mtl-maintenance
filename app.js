@@ -3110,12 +3110,23 @@ function switchChannel(channel, btn) {
                 header.textContent = '# ' + channel;
             }
         }
+
+        // --- NEW CODE ADDED HERE FOR MOBILE LABEL ---
+        const mobileMenuBtn = document.getElementById('chat-channel-menu-btn');
+        if (mobileMenuBtn) {
+            // This grabs the name we just set in the header above and puts it on the mobile button
+            const newLabel = header ? header.textContent : (channel.startsWith('dm-') ? '@ direct message' : '# ' + channel);
+            mobileMenuBtn.innerHTML = '☰ ' + newLabel;
+        }
+        // --- END OF NEW CODE ---
+
         refreshMobileChatChannelOptions();
         updateMobileChatMenuLabel(channel);
 
         loadChatMessages(channel);
         markChannelRead(channel); // Clears the red dots
     } catch (e) { console.error("Switch error:", e); }
+
 }
 
 function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-equip-name');const w=document.getElementById('chat-tag-equip');if(b)b.style.display='flex';if(n)n.textContent='🔧 '+equipName(id);if(w)w.style.display='inline-flex';document.getElementById('tag-equip-select').value='';}
