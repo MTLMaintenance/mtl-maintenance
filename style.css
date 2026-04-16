@@ -860,49 +860,57 @@ body, html {
   color: #1a1a18 !important;
   font-weight: 700;
 }
-
-@media (max-width: 768px) {
-  html, body {
-    height: 100vh !important;
-    overflow: hidden !important;
-    position: fixed;
-    width: 100%;
-  }
-
-  /* 1. HIDE ALL PANELS BY DEFAULT */
-  .panel {
+.panel { 
     display: none !important; 
-  }
+}
+.panel.active { 
+    display: block !important; 
+}
 
-  /* 2. ONLY SHOW THE ACTIVE PANEL */
-  .panel.active {
-    display: block !important;
-    height: calc(100vh - 110px) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
+/* Specific Fix for the "Stuck" panels */
+#panel-chat.active, 
+#panel-admin.active, 
+#panel-calendar.active { 
+    display: flex !important; 
+}
 
-  /* 3. SPECIAL HANDLING FOR ACTIVE CHAT, ADMIN, CALENDAR */
-  /* We only apply 'flex' if they are also '.active' */
-  #panel-chat.active, 
-  #panel-admin.active, 
-  #panel-calendar.active {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: hidden !important; /* Keep the 'app' feel */
-  }
+/* ============================================================
+   2. MOBILE ONLY (max-width: 768px)
+   ============================================================ */
+@media screen and (max-width: 768px) {
+    html, body {
+        height: 100vh !important;
+        overflow: hidden !important;
+        position: fixed;
+        width: 100%;
+    }
 
-  /* 4. CHAT INTERNAL SCROLL */
-  #panel-chat.active #chat-messages {
-    flex: 1;
-    overflow-y: auto !important;
-  }
+    /* Hide Logo and Search on Mobile */
+    .logo, #global-search, #global-search ~ span {
+        display: none !important;
+    }
 
-  /* 5. HIDE LOGO AND SEARCH ON MOBILE */
-  .logo, #global-search, #global-search ~ span {
-    display: none !important;
-  }
-} /
+    /* Make the active scrolling panel fit the screen */
+    .panel.active {
+        height: calc(100vh - 110px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Chat/Admin/Calendar need to stay 'Fixed' app-style */
+    #panel-chat.active, 
+    #panel-admin.active, 
+    #panel-calendar.active {
+        overflow-y: hidden !important;
+        height: calc(100vh - 110px) !important;
+    }
+
+    #panel-chat.active #chat-messages {
+        flex: 1;
+        overflow-y: auto !important;
+    }
+} /* <--- !!! THIS BRACKET ENDS MOBILE CODE !!! */
+
 
 
   .topbar-main-row {
@@ -1046,7 +1054,7 @@ body, html {
   }
   #chat-header-title {
     display: none !important;
-  }
+  } 
 
 @media (min-width: 769px) {
   .topbar {
