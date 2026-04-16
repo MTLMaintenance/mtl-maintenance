@@ -927,8 +927,8 @@ body, html {
   #panel-chat > div { height: 100% !important; flex: 1; }
   #panel-chat .chat-layout {
     flex-direction: column !important;
-    min-height: calc(100vh - 240px) !important;
-    height: calc(100vh - 240px) !important;
+    min-height: calc(100vh - 280px) !important;
+    height: calc(100vh - 280px) !important;
     gap: 5px !important;
   }
   #panel-chat #chat-sidebar {
