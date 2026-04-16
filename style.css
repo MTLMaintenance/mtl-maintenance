@@ -861,9 +861,7 @@ body, html {
   font-weight: 700;
 }
 
-/* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
-  /* 1. Keep the main app frame locked (prevents the 'chat at bottom' bug) */
   html, body {
     height: 100vh !important;
     overflow: hidden !important;
@@ -871,31 +869,40 @@ body, html {
     width: 100%;
   }
 
-  /* 2. ALL PANELS: Set them to scroll by default */
-  /* This covers Dashboard, Equipment, Parts, Work Orders, etc. */
+  /* 1. HIDE ALL PANELS BY DEFAULT */
   .panel {
-    height: calc(100vh - 110px) !important; /* Adjust 110px to fit your top menu */
+    display: none !important; 
+  }
+
+  /* 2. ONLY SHOW THE ACTIVE PANEL */
+  .panel.active {
+    display: block !important;
+    height: calc(100vh - 110px) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 40px; /* Gives extra space at the bottom */
   }
 
-  /* 3. EXCEPTIONS: Chat, Admin, and Calendar */
-  /* These panels stay locked so their internal components can handle the scroll */
-  #panel-chat, 
-  #panel-admin, 
-  #panel-calendar {
-    overflow-y: hidden !important; 
+  /* 3. SPECIAL HANDLING FOR ACTIVE CHAT, ADMIN, CALENDAR */
+  /* We only apply 'flex' if they are also '.active' */
+  #panel-chat.active, 
+  #panel-admin.active, 
+  #panel-calendar.active {
     display: flex !important;
     flex-direction: column !important;
+    overflow-y: hidden !important; /* Keep the 'app' feel */
   }
 
-  /* 4. Ensure Chat still works internally */
-  #panel-chat #chat-messages {
+  /* 4. CHAT INTERNAL SCROLL */
+  #panel-chat.active #chat-messages {
     flex: 1;
     overflow-y: auto !important;
   }
-}
+
+  /* 5. HIDE LOGO AND SEARCH ON MOBILE */
+  .logo, #global-search, #global-search ~ span {
+    display: none !important;
+  }
+} /
 
 
   .topbar-main-row {
