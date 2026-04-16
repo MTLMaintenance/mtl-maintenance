@@ -863,25 +863,41 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
+  /* 1. Keep the main app frame locked (prevents the 'chat at bottom' bug) */
   html, body {
-    overflow-y: auto !important; 
-    height: auto !important;
-  }
-  .panel.active {
-    height: auto !important;
-    min-height: 100vh;
-    overflow-y: visible !important;
-    display: block !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
   }
 
-  /* 3. Prevent the topbar from scrolling away (optional) */
-  /* If you want the top menu to stay at the top while you scroll the dashboard */
-  .topbar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  /* 2. ALL PANELS: Set them to scroll by default */
+  /* This covers Dashboard, Equipment, Parts, Work Orders, etc. */
+  .panel {
+    height: calc(100vh - 110px) !important; /* Adjust 110px to fit your top menu */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 40px; /* Gives extra space at the bottom */
+  }
+
+  /* 3. EXCEPTIONS: Chat, Admin, and Calendar */
+  /* These panels stay locked so their internal components can handle the scroll */
+  #panel-chat, 
+  #panel-admin, 
+  #panel-calendar {
+    overflow-y: hidden !important; 
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* 4. Ensure Chat still works internally */
+  #panel-chat #chat-messages {
+    flex: 1;
+    overflow-y: auto !important;
   }
 }
+
+
   .topbar-main-row {
     padding: 8px 12px;
     gap: 8px;
