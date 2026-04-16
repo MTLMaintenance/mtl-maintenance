@@ -863,6 +863,41 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
+  /* 1. APP FRAME: Lock the body so the top menu stays pinned */
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+  }
+
+  /* 2. PANEL VISIBILITY: Force only ONE panel to show at a time (Fixes Stacking) */
+  .panel { 
+    display: none !important; 
+  }
+  .panel.active { 
+    display: block !important; 
+    height: calc(100vh - 110px) !important;
+    overflow-y: auto !important; /* This allows Dashboard/Parts to scroll */
+    -webkit-overflow-scrolling: touch;
+    padding: 10px !important;
+  }
+
+  /* 3. SCROLL EXCEPTIONS: Chat, Admin, and Calendar should NOT scroll the whole panel */
+  #panel-chat.active, 
+  #panel-admin.active, 
+  #panel-calendar.active {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: hidden !important;
+  }
+
+  /* 4. HIDE LOGO AND SEARCH COMPLETELY */
+  .logo { display: none !important; }
+  #global-search { display: none !important; }
+  #global-search ~ span, .topbar-main-row span { display: none !important; }
+
+  /* 5. TOPBAR & NAVIGATION (Your Original Logic) */
   .topbar-main-row {
     padding: 8px 12px;
     gap: 8px;
@@ -873,6 +908,7 @@ body, html {
   }
   .topbar-main-row::-webkit-scrollbar { display: none; }
   .topbar-main-row > * { flex-shrink: 0; }
+
   #main-nav {
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -905,8 +941,7 @@ body, html {
     color: #fff !important;
     font-weight: 700 !important;
   }
-  .logo { font-size: 14px !important; }
-  #global-search { max-width: 140px !important; font-size: 12px !important; }
+
   .topbar-right {
     width: 100% !important;
     display: flex !important;
@@ -919,84 +954,43 @@ body, html {
   }
   .topbar-right::-webkit-scrollbar { display: none; }
   .topbar-right > * { flex-shrink: 0; }
-  .panel.active { padding: 10px !important; }
-  /* Force Chat window to fill the panel */
-  #panel-chat > div { height: 100% !important; flex: 1; }
-  #panel-chat .chat-layout {
+
+  /* 6. CHAT WINDOW LOGIC (Your Original Logic Updated) */
+  #panel-chat.active > div { height: 100% !important; flex: 1; }
+  #panel-chat.active .chat-layout {
     flex-direction: column !important;
-    min-height: calc(100vh - 210px) !important;
-    height: calc(100vh - 210px) !important;
+    height: calc(100vh - 120px) !important;
     gap: 10px !important;
   }
-  #panel-chat #chat-sidebar {
-    display: none !important;
-  }
-  #panel-chat .main-chat-window {
+  #panel-chat #chat-sidebar { display: none !important; }
+  #panel-chat.active .main-chat-window {
     width: 100% !important;
     max-width: 100% !important;
-    min-width: 0 !important;
-    flex: 1 1 auto !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
-  #panel-chat #chat-messages {
+  #panel-chat.active #chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
     padding: 14px !important;
   }
-  #chat-mobile-toggle {
-    display: none !important;
-  }
+  
+  /* Mobile Chat Menu buttons */
+  #chat-mobile-toggle { display: none !important; }
   #chat-channel-menu-btn {
-    display: block !important;
-    margin-left: 0;
+    display: inline-flex !important;
     min-width: 140px;
-    max-width: 62vw;
-    border: 1px solid var(--border);
     background: #fff;
-    color: var(--text);
     border-radius: 999px;
     padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 600;
     height: 34px;
-    display: inline-flex !important;
     align-items: center;
     gap: 8px;
   }
-  #chat-channel-mobile-menu {
-    position: absolute;
-    top: 42px;
-    left: 12px;
-    right: auto;
-    z-index: 30;
-    min-width: 180px;
-    max-width: 78vw;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-    padding: 6px;
-    display: none;
-    transform-origin: top left;
-  }
-  #chat-channel-mobile-menu.open {
-    display: block;
-  }
-  #chat-channel-mobile-menu .chat-mobile-menu-item {
-    width: 100%;
-    border: none;
-    background: transparent;
-    text-align: left;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--text);
-  }
-  #chat-channel-mobile-menu .chat-mobile-menu-item.active {
-    background: var(--accent-bg);
-    color: var(--accent-text);
-    font-weight: 700;
-  }
-  #chat-header-title {
-    display: none !important;
-  }
+  #chat-channel-mobile-menu.open { display: block; }
+  #chat-header-title { display: none !important; }
+
 }
 @media (min-width: 769px) {
   .topbar {
