@@ -914,19 +914,22 @@ body, html {
     gap: 8px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding: 0 12px 2px !important;
+    padding: 0 12px 4px !important;
     justify-content: flex-start !important;
   }
   .topbar-right::-webkit-scrollbar { display: none; }
   .topbar-right > * { flex-shrink: 0; }
-  .panel.active { padding: 0px !important; }
-  /* Force Chat window to fill the panel */
+  .panel.active { 
+    padding-top: 0 !important; 
+    margin-top: -25px !important; /* This physically moves the white box up */
+  }
+  
   #panel-chat > div { height: 100% !important; flex: 1; }
   #panel-chat .chat-layout {
     flex-direction: column !important;
-    min-height: calc(100vh - 140px) !important;
-    height: calc(100vh - 140px) !important;
-    gap: 10px !important;
+    min-height: calc(100vh - 240px) !important;
+    height: calc(100vh - 240px) !important;
+    gap: 5px !important;
   }
   #panel-chat #chat-sidebar {
     display: none !important;
