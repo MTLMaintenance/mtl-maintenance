@@ -863,141 +863,65 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
-  .topbar-main-row {
-    padding: 8px 12px;
-    gap: 8px;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    justify-content: flex-start !important;
-    flex-wrap: nowrap !important;
+  /* 1. UNLOCK THE WHOLE PAGE: This allows you to swipe up/down on the whole app */
+  html, body {
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative !important; /* Removes the "lock" we had before */
   }
-  .topbar-main-row::-webkit-scrollbar { display: none; }
-  .topbar-main-row > * { flex-shrink: 0; }
-  #main-nav {
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    white-space: nowrap !important;
-    flex-wrap: nowrap !important;
-    min-width: 0 !important;
-    width: 100% !important;
-    justify-content: flex-start !important;
+
+  /* 2. STICKY TOPBAR: This keeps your buttons at the top while you scroll the content */
+  .topbar {
+    position: sticky !important;
+    top: 0;
+    z-index: 1000;
+    background: #1a1a1a !important; /* Ensure it stays solid while scrolling */
   }
-  #main-nav::-webkit-scrollbar { display: none; }
-  #main-nav .nav-btn {
-    flex: 0 0 auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    padding: 4px 9px !important;
-    min-height: 30px !important;
-    border-radius: var(--radius) !important;
-    border: none !important;
-    background: var(--text) !important;
-    color: var(--bg) !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    line-height: 1.1 !important;
+
+  /* 3. FIX THE STACKING: Hide all panels except the one you clicked */
+  .panel { 
+    display: none !important; 
   }
-  #main-nav .nav-btn.active {
-    background: #2a2a28 !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-  }
-  .logo { font-size: 14px !important; }
-  #global-search { max-width: 140px !important; font-size: 12px !important; }
-  .topbar-right {
-    width: 100% !important;
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 12px 8px !important;
-    justify-content: flex-start !important;
-  }
-  .topbar-right::-webkit-scrollbar { display: none; }
-  .topbar-right > * { flex-shrink: 0; }
-  .panel.active { padding: 10px !important; }
-  /* Force Chat window to fill the panel */
-  #panel-chat > div { height: 100% !important; flex: 1; }
-  #panel-chat .chat-layout {
-    flex-direction: column !important;
-    min-height: calc(100vh - 210px) !important;
-    height: calc(100vh - 210px) !important;
-    gap: 10px !important;
-  }
-  #panel-chat #chat-sidebar {
-    display: none !important;
-  }
-  #panel-chat .main-chat-window {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    flex: 1 1 auto !important;
-  }
-  #panel-chat #chat-messages {
-    padding: 14px !important;
-  }
-  #chat-mobile-toggle {
-    display: none !important;
-  }
-  #chat-channel-menu-btn {
+  .panel.active { 
     display: block !important;
-    margin-left: 0;
-    min-width: 140px;
-    max-width: 62vw;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text);
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 600;
-    height: 34px;
-    display: inline-flex !important;
-    align-items: center;
-    gap: 8px;
+    height: auto !important; /* Let the panel grow as long as its content */
+    min-height: 100vh;
+    padding: 10px !important;
+    overflow: visible !important;
   }
-  #chat-channel-mobile-menu {
-    position: absolute;
-    top: 42px;
-    left: 12px;
-    right: auto;
-    z-index: 30;
-    min-width: 180px;
-    max-width: 78vw;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-    padding: 6px;
-    display: none;
-    transform-origin: top left;
+
+  /* 4. HIDE LOGO AND SEARCH: Frees up space at the top */
+  .logo, #global-search, #global-search ~ span { 
+    display: none !important; 
   }
-  #chat-channel-mobile-menu.open {
-    display: block;
+
+  /* 5. NAVIGATION (Your Original Working Logic) */
+  .topbar-main-row { padding: 4px 12px !important; display: flex !important; }
+  #main-nav { overflow-x: auto !important; width: 100% !important; }
+  #main-nav .nav-btn { flex: 0 0 auto !important; padding: 4px 9px !important; font-size: 12px !important; }
+  .topbar-right { width: 100% !important; display: flex !important; padding: 0 12px 4px !important; }
+
+  /* 6. CHAT PANEL: On mobile, it will now grow with the messages */
+  #panel-chat.active .chat-layout {
+    height: auto !important;
+    min-height: calc(100vh - 120px);
+    display: flex !important;
+    flex-direction: column !important;
   }
-  #chat-channel-mobile-menu .chat-mobile-menu-item {
-    width: 100%;
-    border: none;
-    background: transparent;
-    text-align: left;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--text);
+  
+  #panel-chat #chat-messages {
+    height: auto !important;
+    overflow-y: visible !important; /* Content will scroll with the main page */
   }
-  #chat-channel-mobile-menu .chat-mobile-menu-item.active {
-    background: var(--accent-bg);
-    color: var(--accent-text);
-    font-weight: 700;
+
+  /* 7. ADMIN & CALENDAR: These will also now stretch to fit their content */
+  #panel-admin.active, #panel-calendar.active {
+    height: auto !important;
+    display: block !important;
   }
-  #chat-header-title {
-    display: none !important;
-  }
-}
+
+} /* <--- END OF MOBILE CODE */
 @media (min-width: 769px) {
   .topbar {
     display: flex !important;
