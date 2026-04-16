@@ -6,84 +6,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-
+.view-toggle {
   display: flex;
-  gap: 4px;
+  background: var(--bg3);
   padding: 4px;
   border-radius: var(--radius);
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.18);
-  width: fit-content;
-  flex-wrap: wrap;
-}
-
-.view-toggle {
   margin-bottom: 15px;
+  gap: 4px;
+  width: fit-content;
 }
 
-.view-toggle .btn,
-.tab,
-.sub-toggle .btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  padding: 5px 12px !important;
-  min-height: 32px !important;
-  border: none !important;
-  border-radius: var(--radius) !important;
-  background: transparent !important;
-  color: rgba(26,26,24,0.72) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  font-family: inherit !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  transition: all 0.15s ease !important;
-  box-shadow: none !important;
+.view-toggle .btn {
+  padding: 5px 15px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
 }
 
-.view-toggle .btn:hover,
-.tab:hover,
-.sub-toggle .btn:hover {
-  background: rgba(255,255,255,0.55) !important;
-  color: #1a1a18 !important;
-}
-
-.view-toggle .btn.active,
-.tab.active,
-.sub-toggle .btn.active {
-  background: #ffffff !important;
-  color: var(--text) !important;
-  font-weight: 700 !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
-}
-#panel-tools .tab-bar,
-#panel-admin .tab-bar,
-#panel-equipment .sub-toggle,
-#panel-calendar .view-toggle {
-  background: rgba(0,0,0,0.38) !important;
-  border-color: rgba(255,255,255,0.22) !important;
-}
-#panel-tools .tab,
-#panel-admin .tab,
-#panel-equipment .sub-toggle .btn,
-#panel-calendar .view-toggle .btn {
-  color: rgba(255,255,255,0.85) !important;
-}
-#panel-tools .tab:hover,
-#panel-admin .tab:hover,
-#panel-equipment .sub-toggle .btn:hover,
-#panel-calendar .view-toggle .btn:hover {
-  color: #ffffff !important;
-  background: rgba(255,255,255,0.18) !important;
-}
-#panel-tools .tab.active,
-#panel-admin .tab.active,
-#panel-equipment .sub-toggle .btn.active,
-#panel-calendar .view-toggle .btn.active {
-  background: #ffffff !important;
-  color: #1a1a18 !important;
+.view-toggle .btn.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-weight: 600;
 }
     /* Observation Severity Colors */
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
@@ -100,7 +45,35 @@
 
 /* --- TAB CONTRAST FIX --- */
 
-/* Tab styling handled by shared segmented-control rules above. */
+/* 1. Inactive Tabs (The ones that were blending in) */
+.tab {
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  color: #1a1a18 !important; 
+  background: rgba(0, 0, 0, 0.04) !important; 
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--radius) var(--radius) 0 0 !important;
+  margin-right: 2px !important;
+  transition: all 0.15s ease;
+}
+
+/* 2. Hover State */
+.tab:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: #000000 !important;
+}
+
+/* 3. Active Tab (The one you are currently looking at) */
+.tab.active {
+  background: #ffffff !important; /* Solid white background */
+  color: var(--accent) !important; /* Pro Blue text */
+  border: 1px solid var(--border) !important;
+  border-bottom: 2px solid var(--accent) !important; /* Blue indicator line */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
 
 
   /* 1. Main Cards */
@@ -597,7 +570,9 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text2);padding:2px 6px;border-radius:var(--radius)}
 .modal-close:hover{background:var(--bg2)}
 /* TABS */
-.tab-bar{margin-bottom:14px}
+.tab-bar{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:2px}
+.tab{padding:6px 12px;font-size:13px;border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;color:var(--text2);background:none;border:none;font-family:inherit}
+.tab.active{background:var(--bg);color:var(--text);font-weight:500;border:1px solid var(--border);border-bottom:1px solid var(--bg)}
 /* PARTS ROW */
 .parts-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
 .parts-row:last-child{border-bottom:none}
@@ -664,8 +639,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   
 
   .nav::-webkit-scrollbar {
-    display: none;
-    
+    display: none; 
   }
 
   .nav-btn {
@@ -742,6 +716,18 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 }   
     
   }
+ #panel-chat .main-chat-window {
+ display: flex !important:
+  flex: 1 1 auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    border-radius: 0 !important;  
+
+    #panel-chat #chat-messages {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
 .eq-dash-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -807,7 +793,8 @@ body, html {
   width: 100vw !important;
   margin: 0 !important;
   padding: 0 !important;
-  /* Keep the original app background from the primary #app rule above. */
+  /* BACKGROUND IMAGE - LOCKS TO SCREEN */
+  background: url('data:image/png;base64,iVBOR...') center/cover fixed no-repeat !important;
 }
 
 /* --- THE HEADER: FIXED TO TOP --- */
@@ -844,6 +831,7 @@ body, html {
 /* --- THE CONTENT: FILLS THE GAP --- */
 .panel.active {
   flex: 1 !important; /* Fills every pixel under the header */
+  overflow-y: auto !important; /* Content scrolls, but the app stays pinned */
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important; /* PINS EVERYTHING TO TOP */
@@ -892,24 +880,6 @@ body, html {
   #main-nav::-webkit-scrollbar { display: none; }
   #main-nav .nav-btn {
     flex: 0 0 auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    padding: 4px 9px !important;
-    min-height: 30px !important;
-    border-radius: var(--radius) !important;
-    border: none !important;
-    background: var(--text) !important;
-    color: var(--bg) !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    line-height: 1.1 !important;
-  }
-  #main-nav .nav-btn.active {
-    background: #2a2a28 !important;
-    color: #fff !important;
-    font-weight: 700 !important;
   }
   .logo { font-size: 14px !important; }
   #global-search { max-width: 140px !important; font-size: 12px !important; }
@@ -1004,102 +974,6 @@ body, html {
     display: none !important;
   }
 }
-@media (min-width: 769px) {
-  .topbar {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    height: 56px !important;
-    padding: 8px 16px !important;
-    gap: 10px !important;
-    background: rgba(0, 0, 0, 0.45) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-  .logo {
-    flex-shrink: 0;
-  }
-  #global-search {
-    max-width: 220px !important;
-  }
-  #main-nav {
-    display: flex !important;
-    flex: 1 1 auto !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    white-space: nowrap !important;
-    flex-wrap: nowrap !important;
-    padding: 0 8px !important;
-    margin: 0 !important;
-  }
-  #main-nav::-webkit-scrollbar {
-    display: none;
-  }
-  .topbar-right {
-    display: flex !important;
-    flex: 0 0 auto !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    overflow: visible !important;
-    width: auto !important;
-    gap: 8px !important;
-    padding: 0 !important;
-  }
-  .topbar-right > * {
-    flex-shrink: 0;
-  }
-  #panel-calendar.panel.active {
-    height: calc(100vh - 120px) !important;
-    min-height: 720px !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  #panel-calendar .view-toggle {
-    flex-shrink: 0 !important;
-  }
-  #panel-calendar #cal-grid-container,
-  #panel-calendar #cal-list-container {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-  #panel-calendar #cal-grid-container .card {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  #panel-calendar #cal-days {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-  }
-}
-/* Top nav tabs match topbar primary buttons */
-#main-nav .nav-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  padding: 4px 9px !important;
-  min-height: 30px !important;
-  border-radius: var(--radius) !important;
-  border: none !important;
-  background: var(--text) !important;
-  color: var(--bg) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  white-space: nowrap !important;
-  line-height: 1.1 !important;
-}
-#main-nav .nav-btn:hover {
-  opacity: 0.88 !important;
-}
-#main-nav .nav-btn.active {
-  background: #2a2a28 !important;
-  color: #fff !important;
-  font-weight: 700 !important;
-}
 </style>
 </head>
 <body>
@@ -1156,7 +1030,7 @@ body, html {
     <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
       <input type="text" id="global-search" class="form-input" placeholder="Search..." style="width:100%; height:28px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:11px; padding-left:25px" oninput="handleGlobalSearch()"/>
       <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:10px; opacity:0.5">🔍</span>
-      <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overfl4ow-y:auto; color: var(--text)"></div>
+      <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
     </div>
 
     <nav class="nav" id="main-nav">
@@ -1176,13 +1050,13 @@ body, html {
     </nav>
       <div class="topbar-right">
       <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
-      <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
-      <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportPDF()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">PDF</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">CSV</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ Work Order</button>
-      <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode">🌙</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report">💬</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">💬</button>
       <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign out">↩ Sign Out</button>
-      <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷 Scan QR</button>
+      <button class="btn btn-secondary btn-sm" onclick="startQRScanner()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">📷 Scan QR</button>
     
     </div>
   </div>
@@ -1224,11 +1098,11 @@ body, html {
       
   <!-- EQUIPMENT -->
   <div class="panel" id="panel-equipment">
-    <div class="sub-toggle" style="margin-bottom:10px;align-items:center">
+    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
       <span style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500">Filter:</span>
-      <button class="btn btn-sm active" id="eq-grp-all" onclick="setEquipGroupFilter('all')">All</button>
-      <button class="btn btn-sm" id="eq-grp-outside" onclick="setEquipGroupFilter('outside')">Outside</button>
-      <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')">Production</button>
+      <button class="btn btn-sm" id="eq-grp-all" onclick="setEquipGroupFilter('all')" style="background:#fff;color:#1a1a18;font-weight:700;border:1px solid #fff">All</button>
+      <button class="btn btn-sm" id="eq-grp-outside" onclick="setEquipGroupFilter('outside')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Outside</button>
+      <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:500;border:1px solid rgba(255,255,255,0.6)">Production</button>
     </div>
     <div class="section-header"><span class="section-title">Equipment Registry</span>
       <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
@@ -1467,12 +1341,12 @@ body, html {
 <div class="panel" id="panel-admin">
   <div class="section-header"><span class="section-title">User Management & Permissions</span></div>
   
-  <div class="tab-bar">
-    <button class="tab active" onclick="switchAdminTab('approvals',this)">Pending Approvals</button>
-    <button class="tab" onclick="switchAdminTab('users',this)">Active Users</button>
-    <button class="tab" onclick="switchAdminTab('permissions',this)">Permissions</button>
-    <button class="tab" onclick="switchAdminTab('deleted-msgs',this)">Deleted Msgs</button>
-    <button class="tab" onclick="switchAdminTab('settings',this)">Settings</button>
+  <div class="tab-bar" style="background:rgba(0,0,0,0.4);border-radius:var(--radius);padding:4px;border:none;gap:4px">
+    <button class="tab active" onclick="switchAdminTab('approvals',this)" style="color:#fff;background:rgba(255,255,255,0.25);font-weight:600;border:none">Pending Approvals</button>
+    <button class="tab" onclick="switchAdminTab('users',this)" style="color:rgba(255,255,255,0.8);border:none">Active Users</button>
+    <button class="tab" onclick="switchAdminTab('permissions',this)" style="color:rgba(255,255,255,0.8);border:none">Permissions</button>
+    <button class="tab" onclick="switchAdminTab('deleted-msgs',this)" style="color:rgba(255,255,255,0.8);border:none">Deleted Msgs</button>
+    <button class="tab" onclick="switchAdminTab('settings',this)" style="color:rgba(255,255,255,0.8);border:none">Settings</button>
   </div>
 
   <!-- 1. PENDING APPROVALS -->
@@ -3078,6 +2952,25 @@ async function deleteTask(id){
 // ============================================================
 // SCHEDULE
 // ============================================================
+function renderSchedule(){
+  const nw=new Date(TODAY); nw.setDate(nw.getDate()+7);
+  const n30=new Date(TODAY); n30.setDate(n30.getDate()+30);
+  const sorted=[...state.schedules].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const mk=s=>{
+    const d=new Date(s.date);
+    return `<div class="sched-item">
+      <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div></div>
+      <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'} · ${s.dur}h${s.notes?' · '+s.notes:''}</div></div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="convertToTask('${s.id}')">→ WO</button>
+        <button class="btn btn-danger" onclick="deleteSched('${s.id}')">✕</button>
+      </div>
+    </div>`;
+  };
+  const none='<div style="color:var(--text2);font-size:13px;padding:8px 0">Nothing scheduled</div>';
+  document.getElementById('sched-week').innerHTML=sorted.filter(s=>{const [fy,fm,fd]=(s.date||'').split('-').map(Number);const fd2=fy?new Date(fy,fm-1,fd):new Date(s.date);return fd2>=TODAY&&fd2<=nw;}).map(mk).join('')||none;
+  document.getElementById('sched-next30').innerHTML=sorted.filter(s=>new Date(s.date)>=TODAY&&new Date(s.date)<=n30).map(mk).join('')||none;
+}
 async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!==id); await persist('schedules','delete',{id}); renderSchedule(); renderCalendar(); }
 
 // ============================================================
@@ -3390,9 +3283,9 @@ function openEquipDetail(id){
     <div id="eq-zerks" class="tab-content" style="display:none">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
         <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
-        <div class="sub-toggle">
-            <button class="btn btn-sm active" id="mode-dot" onclick="setZerkMode('dot')">Point Only</button>
-            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')">Pointer Line</button>
+        <div style="background:var(--bg3); padding:4px; border-radius:var(--radius); display:flex; gap:2px; border:1px solid var(--border)">
+            <button class="btn btn-sm" id="mode-dot" onclick="setZerkMode('dot')" style="background:var(--accent); color:#fff; font-size:10px">Point Only</button>
+            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')" style="background:transparent; color:var(--text2); font-size:10px">Pointer Line</button>
         </div>
         <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
       </div>
@@ -4432,7 +4325,7 @@ async function deleteObservation(obsId, equipId) {
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
-function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});renderEquipmentTable();}
+function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderEquipmentTable();}
 function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all')return state.equipment;return state.equipment.filter(e=>e.group_tag===f||e.group_tag==='both');}
 function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group_tag;if(g&&g!=='all'){setGroupFilter(g);setEquipGroupFilter(g);}}
 
@@ -4902,29 +4795,6 @@ function enforceChatMobileLayout(){
         if(mobileMenuBtn) mobileMenuBtn.style.display = 'none';
         if(mobileMenu) mobileMenu.style.display = 'none';
         if(headerTitle) headerTitle.style.display = '';
-        if(topbar){
-            topbar.style.overflowX = '';
-        }
-        if(topbarRight){
-            topbarRight.style.overflowX = '';
-            topbarRight.style.webkitOverflowScrolling = '';
-            topbarRight.style.touchAction = '';
-            topbarRight.style.justifyContent = '';
-            topbarRight.style.flexWrap = '';
-            topbarRight.style.gap = '';
-            topbarRight.style.width = '';
-            topbarRight.style.padding = '';
-        }
-        if(mainNav){
-            mainNav.style.overflowX = '';
-            mainNav.style.webkitOverflowScrolling = '';
-            mainNav.style.touchAction = '';
-            mainNav.style.whiteSpace = '';
-            mainNav.style.flexWrap = '';
-            mainNav.style.justifyContent = '';
-            mainNav.style.width = '';
-            mainNav.style.padding = '';
-        }
         applyDesktopChatHeight();
     }
 }
@@ -5262,8 +5132,12 @@ function switchAdminTab(tab, btn) {
   // Highlight the tab button
   document.querySelectorAll('#panel-admin .tab').forEach(b => {
     b.classList.remove('active');
+    b.style.background = 'transparent';
+    b.style.color = 'rgba(255,255,255,0.8)';
   });
   btn.classList.add('active');
+  btn.style.background = 'rgba(255,255,255,0.25)';
+  btn.style.color = '#fff';
 
   // --- TRIGGER DATA RELOADS ---
   if(tab === 'settings') renderAuditLogs();
@@ -6570,10 +6444,6 @@ async function showPanel(id) {
             applyDesktopChatHeight();
         });
     }
-    if (id !== 'calendar') {
-        const calPanel = document.getElementById('panel-calendar');
-        if (calPanel) calPanel.style.overflowY = '';
-    }
 }
 
 // Ensure the Mobile Chat Auto-Close logic is placed OUTSIDE of showPanel
@@ -7050,20 +6920,11 @@ async function deleteQuickSpec(equipId, key) {
 function setZerkMode(mode) {
     zerkPinMode = mode;
     zerkDrawingStep = 1; // Reset steps
-    document.getElementById('mode-dot')?.classList.toggle('active', mode === 'dot');
-    document.getElementById('mode-line')?.classList.toggle('active', mode === 'line');
+    document.getElementById('mode-dot').style.background = mode === 'dot' ? 'var(--accent)' : 'transparent';
+    document.getElementById('mode-dot').style.color = mode === 'dot' ? '#fff' : 'var(--text2)';
+    document.getElementById('mode-line').style.background = mode === 'line' ? 'var(--accent)' : 'transparent';
+    document.getElementById('mode-line').style.color = mode === 'line' ? '#fff' : 'var(--text2)';
     renderZerkDots(); // Clear any temp dots
-}
-function updateCalEntryTypeButtons(type){
-    document.getElementById('cal-type-one')?.classList.toggle('active', type === 'one-time');
-    document.getElementById('cal-type-recur')?.classList.toggle('active', type === 'recurring');
-}
-const _baseSetCalEntryType = typeof setCalEntryType === 'function' ? setCalEntryType : null;
-if (_baseSetCalEntryType) {
-    setCalEntryType = function(type) {
-        _baseSetCalEntryType(type);
-        updateCalEntryTypeButtons(type);
-    };
 }
     async function saveZerkPoint(label, x_label, y_label, x_target, y_target) {
     const newZerk = {
@@ -7625,35 +7486,7 @@ function renderSchedule(){
       <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
     </div>`;
   };
-async function sendMessage(messageText) {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .insert([
-      { 
-        body: messageText, 
-        author: 'UserID', // You'll need to pass the actual user ID
-        channel: 'general' // The channel name from your sidebar
-      },
-    ])
 
-  if (error) console.error('Error saving message:', error)
-}
-async function fetchMessages() {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .select('*')
-    .eq('channel', 'general') // Only get messages for this channel
-    .order('created_at', { ascending: true })
-
-  if (data) {
-    // Here, you would update your UI state with the 'data' array
-    console.log("Loaded messages:", data)
-  }
-}
-
-// Call this when your component/page mounts
-fetchMessages()
-  
   document.getElementById('sched-week').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= nw).map(mk).join('') || 'Nothing this week';
   document.getElementById('sched-next30').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= n30).map(mk).join('') || 'Nothing in 30 days';
 }   
@@ -7822,9 +7655,9 @@ fetchMessages()
     </div>
 
     <!-- Toggle Selector -->
-    <div class="sub-toggle" style="margin-bottom:15px">
-        <button class="btn btn-sm active" id="cal-type-one" onclick="setCalEntryType('one-time')" style="flex:1">One-time Job</button>
-        <button class="btn btn-sm" id="cal-type-recur" onclick="setCalEntryType('recurring')" style="flex:1">Recurring Rule</button>
+    <div style="background:var(--bg2); padding:4px; border-radius:var(--radius); display:flex; gap:2px; margin-bottom:15px; border:1px solid var(--border)">
+        <button class="btn btn-sm" id="cal-type-one" onclick="setCalEntryType('one-time')" style="flex:1; background:var(--accent); color:#fff">One-time Job</button>
+        <button class="btn btn-sm" id="cal-type-recur" onclick="setCalEntryType('recurring')" style="flex:1; background:transparent; color:var(--text2)">Recurring Rule</button>
     </div>
 
     <div class="form-grid">
