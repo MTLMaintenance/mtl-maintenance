@@ -2059,7 +2059,15 @@ async function startApp() {
   // Check saved session
   try {
     const sessionData = await validateSession();
-    if(sessionData) 
+    if(sessionData) {
+      const profile = sessionData.profiles || (await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single()).data;
+      if(profile && profile.status === 'approved') {
+        const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
+        currentUser = { id: profile.id, name: profile.full_name || sessionData.username, role: isAdmin ? 'admin' : profile.role, username: sessionData.username };
+        await enterApp(); return;
+      }
+    }
+
     // Fallback to old session for backwards compatibility
     const saved = localStorage.getItem('mp_session');
     if (saved) {
@@ -2071,11 +2079,17 @@ async function startApp() {
         // Upgrade to token-based session
         await createSession(u.username, profile.id);
         await enterApp(); return;
-      } else { localStorage.removeItem('mp_session'); }
+      } else { 
+        localStorage.removeItem('mp_session'); 
+      }
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error("Session error:", e);
+  }
+  
   showLogin();
 }
+
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }
 window.addEventListener('online',  () => { document.getElementById('offline-banner').style.display='none';  setSyncStatus('online'); });
 window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display='block'; setSyncStatus('offline'); });
