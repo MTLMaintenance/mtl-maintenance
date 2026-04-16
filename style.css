@@ -864,7 +864,7 @@ body, html {
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
   .topbar-main-row {
-    padding: 8px 12px;
+    padding: 2px 12px;
     gap: 8px;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
@@ -914,18 +914,18 @@ body, html {
     gap: 8px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding: 0 12px 8px !important;
+    padding: 0 12px 2px !important;
     justify-content: flex-start !important;
   }
   .topbar-right::-webkit-scrollbar { display: none; }
   .topbar-right > * { flex-shrink: 0; }
-  .panel.active { padding: 10px !important; }
+  .panel.active { padding: 0px !important; }
   /* Force Chat window to fill the panel */
   #panel-chat > div { height: 100% !important; flex: 1; }
   #panel-chat .chat-layout {
     flex-direction: column !important;
-    min-height: calc(100vh - 210px) !important;
-    height: calc(100vh - 210px) !important;
+    min-height: calc(100vh - 140px) !important;
+    height: calc(100vh - 140px) !important;
     gap: 10px !important;
   }
   #panel-chat #chat-sidebar {
