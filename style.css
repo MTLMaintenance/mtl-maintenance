@@ -1060,3 +1060,23 @@ body, html {
     margin-top: 10px;
   }
 }
+.topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    position: relative !important; /* This is the key: it pushes content down instead of floating over it */
+    overflow: visible !important;
+  }
+
+  /* 7. Ensure the Equipment/Chat panels never slide 'under' the header */
+  .panel.active, #panel-container, .panel-container {
+    position: relative !important;
+    top: 0 !important;
+    margin-top: 20px !important;
+    clear: both !important;
+  }
+
+  /* 8. Make sure the background isn't transparent so buttons don't look messy */
+  .topbar {
+    background: #202124 !important; /* Or your preferred dark color */
+  }
