@@ -860,174 +860,9 @@ body, html {
   color: #1a1a18 !important;
   font-weight: 700;
 }
-
-@media (max-width: 768px) {
-  /* 1. PAGE SCROLL: Allow the whole page to scroll like a normal website */
-  html, body {
-    height: auto !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    position: relative !important;
-  }
-
-  /* 2. THE TOPBAR: Force it to show both rows and stay at the top */
-  .topbar {
-    position: sticky !important;
-    top: 0;
-    z-index: 9999;
-    background: #111 !important; /* Solid background so content doesn't bleed through */
-    height: auto !important; /* Allows it to grow to fit both rows */
-    display: flex !important;
-    flex-direction: column !important; /* Stacks row 1 on top of row 2 */
-    padding: 4px 0 !important;
-  }
-
-  /* 3. ROW 1 (Navigation Buttons): Force them to show and scroll sideways */
-  .topbar-main-row, #main-nav {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important; /* Allows you to swipe left/right on buttons */
-    -webkit-overflow-scrolling: touch;
-    width: 100% !important;
-    padding: 4px 10px !important;
-    gap: 8px !important;
-  }
-  
-  /* Prevent buttons from shrinking so they stay clickable */
-  #main-nav .nav-btn {
-    flex: 0 0 auto !important; 
-    white-space: nowrap !important;
-  }
-
-  /* 4. ROW 2 (PDF/CSV/Sign Out): Also allow this to scroll sideways */
-  .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    width: 100% !important;
-    padding: 4px 10px !important;
-    gap: 8px !important;
-    justify-content: flex-start !important;
-  }
-
-  /* Hide scrollbars for a cleaner look */
-  .topbar-main-row::-webkit-scrollbar, 
-  .topbar-right::-webkit-scrollbar,
-  #main-nav::-webkit-scrollbar {
-    display: none !important;
-  }
-
-  /* 5. HIDE LOGO AND SEARCH: Frees up space */
-  .logo, #global-search, #global-search ~ span { 
-    display: none !important; 
-  }
-
-  /* 6. PANELS: Hide inactive ones and let active ones grow */
-  .panel { display: none !important; }
-  .panel.active { 
-    display: block !important;
-    height: auto !important;
-    min-height: 100vh;
-    padding: 15px !important;
-    overflow: visible !important;
-  }
-
-  /* 7. CHAT FIX: Prevent it from being hidden behind the sticky topbar */
-  #panel-chat.active {
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  #panel-chat.active .chat-layout {
-    height: calc(100vh - 120px) !important; /* Keeps chat fitting the screen */
-  }
-
-} /* <--- END OF MOBILE CODE */
-@media (min-width: 769px) {
-  html, body {
-    height: 100% !important;
-    overflow: hidden !important;
-  }
-  .panel { display: none !important; }
-  .panel.active { display: block !important; }
-  #panel-chat.active { display: flex !important; }
-  .logo, #global-search { display: block !important; }
-}
-  
-  .topbar {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    height: 56px !important;
-    padding: 8px 16px !important;
-    gap: 10px !important;
-    background: rgba(0, 0, 0, 0.45) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-  .logo {
-    flex-shrink: 0;
-  }
-  #global-search {
-    max-width: 220px !important;
-  }
-  #main-nav {
-    display: flex !important;
-    flex: 1 1 auto !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    white-space: nowrap !important;
-    flex-wrap: nowrap !important;
-    padding: 0 8px !important;
-    margin: 0 !important;
-  }
-  #main-nav::-webkit-scrollbar {
-    display: none;
-  }
-  .topbar-right {
-    display: flex !important;
-    flex: 0 0 auto !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    overflow: visible !important;
-    width: auto !important;
-    gap: 8px !important;
-    padding: 0 !important;
-  }
-  .topbar-right > * {
-    flex-shrink: 0;
-  }
-  #panel-calendar.panel.active {
-    height: calc(100vh - 120px) !important;
-    min-height: 720px !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  #panel-calendar .view-toggle {
-    flex-shrink: 0 !important;
-  }
-  #panel-calendar #cal-grid-container,
-  #panel-calendar #cal-list-container {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-  #panel-calendar #cal-grid-container .card {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  #panel-calendar #cal-days {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-  }
-}
-/* Top nav tabs match topbar primary buttons */
+/* ============================================================
+   1. GLOBAL STYLES (Applies to both PC and Mobile)
+   ============================================================ */
 #main-nav .nav-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -1044,11 +879,137 @@ body, html {
   white-space: nowrap !important;
   line-height: 1.1 !important;
 }
-#main-nav .nav-btn:hover {
-  opacity: 0.88 !important;
-}
+#main-nav .nav-btn:hover { opacity: 0.88 !important; }
 #main-nav .nav-btn.active {
   background: #2a2a28 !important;
   color: #fff !important;
   font-weight: 700 !important;
 }
+
+/* Ensure only active panels show (Fixes the stacking issue) */
+.panel { display: none !important; }
+.panel.active { display: block !important; }
+#panel-chat.active { display: flex !important; }
+
+/* ============================================================
+   2. MOBILE OVERRIDE (max-width: 768px)
+   ============================================================ */
+@media screen and (max-width: 768px) {
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+  }
+
+  /* TOPBAR: Stack rows so you can see navigation */
+  .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    padding: 4px 0 !important;
+    background: #111 !important;
+    position: sticky !important;
+    top: 0;
+    z-index: 9999;
+  }
+
+  /* HIDE LOGO AND SEARCH ON MOBILE */
+  .logo, #global-search, #global-search ~ span { 
+    display: none !important; 
+  }
+
+  /* ROW 1: Navigation Row */
+  .topbar-main-row, #main-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+    padding: 4px 10px !important;
+    gap: 8px !important;
+  }
+  .topbar-main-row::-webkit-scrollbar { display: none; }
+
+  /* ROW 2: Action Buttons (PDF, CSV, etc) */
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+    padding: 0 10px 4px !important;
+    justify-content: flex-start !important;
+  }
+
+  /* PANEL SCROLLING: Let Dashboard/Equipment scroll, keep Chat/Cal fixed */
+  .panel.active {
+    height: calc(100vh - 110px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px !important;
+  }
+
+  #panel-chat.active, #panel-calendar.active, #panel-admin.active {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: hidden !important;
+  }
+
+  /* CHAT LAYOUT ADJUSTMENTS */
+  #panel-chat .chat-layout {
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+  #panel-chat #chat-sidebar { display: none !important; }
+  #panel-chat #chat-messages { flex: 1; overflow-y: auto !important; padding: 14px !important; }
+
+  /* CHAT MENU BUTTONS */
+  #chat-channel-menu-btn { display: inline-flex !important; }
+  #chat-channel-mobile-menu.open { display: block; }
+} /* END MOBILE */
+
+/* ============================================================
+   3. DESKTOP OVERRIDE (min-width: 769px)
+   ============================================================ */
+@media screen and (min-width: 769px) {
+  .topbar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    height: 56px !important;
+    padding: 8px 16px !important;
+    gap: 10px !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .logo { display: block !important; flex-shrink: 0; }
+  #global-search { display: block !important; max-width: 220px !important; }
+
+  #main-nav {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    padding: 0 8px !important;
+  }
+
+  .topbar-right {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding: 0 !important;
+  }
+
+  /* CALENDAR DESKTOP FIX */
+  #panel-calendar.panel.active {
+    height: calc(100vh - 120px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  
+  #panel-calendar #cal-grid-container {
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+} /* END DESKTOP */
