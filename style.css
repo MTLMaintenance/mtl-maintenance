@@ -863,151 +863,122 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
-   #panel-chat h2, .chat-header-text {
-    margin-top: 5px !important;
-    margin-bottom: 5px !important;
-    padding: 0 !important;
-    font-size: 18px !important;
+  /* 1. LOCK THE FRAME: This prevents the bottom from being cut off by the phone's browser bar */
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
   }
 
+  /* 2. HIDE LOGO AND SEARCH: Clears the space at the very top */
+  .logo, #global-search, #global-search ~ span { 
+    display: none !important; 
+  }
+
+  /* 3. TIGHTEN TOPBAR: Shrinks the menu rows to the minimum height */
   .topbar-main-row {
-    padding: 2px 12px;
+    padding: 2px 12px !important;
     gap: 8px;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    justify-content: flex-start !important;
+    display: flex !important;
     flex-wrap: nowrap !important;
   }
   .topbar-main-row::-webkit-scrollbar { display: none; }
-  .topbar-main-row > * { flex-shrink: 0; }
+  
   #main-nav {
     overflow-x: auto !important;
     overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
     white-space: nowrap !important;
-    flex-wrap: nowrap !important;
-    min-width: 0 !important;
     width: 100% !important;
-    justify-content: flex-start !important;
   }
   #main-nav::-webkit-scrollbar { display: none; }
+  
   #main-nav .nav-btn {
     flex: 0 0 auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
     padding: 4px 9px !important;
     min-height: 30px !important;
-    border-radius: var(--radius) !important;
-    border: none !important;
-    background: var(--text) !important;
-    color: var(--bg) !important;
     font-size: 12px !important;
-    font-weight: 500 !important;
-    line-height: 1.1 !important;
   }
-  #main-nav .nav-btn.active {
-    background: #2a2a28 !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-  }
-  .logo { font-size: 14px !important; }
-  #global-search { max-width: 140px !important; font-size: 12px !important; }
+
   .topbar-right {
     width: 100% !important;
     display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
     padding: 0 12px 4px !important;
-    justify-content: flex-start !important;
+    gap: 8px !important;
   }
   .topbar-right::-webkit-scrollbar { display: none; }
-  .topbar-right > * { flex-shrink: 0; }
+
+  /* 4. MOVE BOX UP: This pulls the content area closer to the top buttons */
   .panel.active { 
-    padding-top: 0 !important; 
-    margin-top: -25px !important; /* This physically moves the white box up */
+    padding: 0 10px !important; 
+    margin-top: -35px !important; /* Moves the whole section UP */
   }
-  
+
+  /* 5. TEAM CHAT HEADER: Tightens the text to the edge of the box */
+  #panel-chat h2, .chat-header-title {
+    margin: 0 !important;
+    padding: 2px 0 !important;
+    font-size: 16px !important;
+  }
+
   #panel-chat > div { height: 100% !important; flex: 1; }
+
+  /* 6. THE WHITE BOX: Fixed height to prevent bottom cutoff */
   #panel-chat .chat-layout {
+    margin-top: -5px !important; /* Pulls box edge to the 'Team Chat' text */
     flex-direction: column !important;
-    min-height: calc(100vh - 260px) !important;
-    height: calc(100vh - 260px) !important;
+    /* 280px is the "Safe Zone" to see the bottom on most phones */
+    min-height: calc(100dvh - 280px) !important;
+    height: calc(100dvh - 280px) !important;
     gap: 5px !important;
   }
-  #panel-chat #chat-sidebar {
-    display: none !important;
-  }
+
+  #panel-chat #chat-sidebar { display: none !important; }
+  
   #panel-chat .main-chat-window {
     width: 100% !important;
     max-width: 100% !important;
-    min-width: 0 !important;
     flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
+
   #panel-chat #chat-messages {
-    padding: 14px !important;
+    padding: 10px !important;
+    flex: 1 !important;
   }
-  #chat-mobile-toggle {
-    display: none !important;
-  }
+
+  /* 7. CHAT MENU BUTTONS (Your original logic) */
+  #chat-mobile-toggle { display: none !important; }
   #chat-channel-menu-btn {
-    display: block !important;
-    margin-left: 0;
+    display: inline-flex !important;
     min-width: 140px;
-    max-width: 62vw;
-    border: 1px solid var(--border);
     background: #fff;
-    color: var(--text);
     border-radius: 999px;
     padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 600;
     height: 34px;
-    display: inline-flex !important;
     align-items: center;
     gap: 8px;
   }
+  
   #chat-channel-mobile-menu {
     position: absolute;
     top: 42px;
     left: 12px;
-    right: auto;
     z-index: 30;
-    min-width: 180px;
-    max-width: 78vw;
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 12px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
     padding: 6px;
     display: none;
-    transform-origin: top left;
   }
-  #chat-channel-mobile-menu.open {
-    display: block;
-  }
-  #chat-channel-mobile-menu .chat-mobile-menu-item {
-    width: 100%;
-    border: none;
-    background: transparent;
-    text-align: left;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--text);
-  }
-  #chat-channel-mobile-menu .chat-mobile-menu-item.active {
-    background: var(--accent-bg);
-    color: var(--accent-text);
-    font-weight: 700;
-  }
-  #chat-header-title {
-    display: none !important;
-  }
-}
+  #chat-channel-mobile-menu.open { display: block; }
+  #chat-header-title { display: none !important; }
+
+} /* <--- END OF MOBILE CODE */
+
 @media (min-width: 769px) {
   .topbar {
     display: flex !important;
