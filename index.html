@@ -4716,8 +4716,33 @@ async function sendChatMessage(){
   try{const{data:p}=await window._mpdb.from('profiles').select('blocked_from_chat').eq('username',currentUser.username).single();if(p?.blocked_from_chat){showToast('You have been blocked from sending messages. Contact your admin.');return;}}catch(e){}
   const mentions=[];const re=/@([\w]+)/g;let m;while((m=re.exec(body||''))!==null)mentions.push(m[1]);
   const msg={id:uid(),channel:currentChannel,author:currentUser.username,author_name:currentUser.name,body:body||null,photo:chatPhotoData||null,equip_id:chatTagEquipId||null,task_id:chatTagTaskId||null,mentions,created_at:new Date().toISOString()};
-  appendChatMessage(msg);if(input)input.value='';clearTag('equip');clearTag('task');chatPhotoData=null;try{document.getElementById('chat-photo-preview').textContent=''}catch(e){};
-}
+ appendChatMessage(msg);
+  if(input) input.value='';
+  clearTag('equip');
+  clearTag('task');
+  chatPhotoData=null;
+  
+  // 1. Safe way to clear the photo preview
+  try { 
+    if(document.getElementById('chat-photo-preview')) {
+      document.getElementById('chat-photo-preview').textContent=''; 
+    }
+  } catch(e) {}
+
+  // 2. THE PART THAT SAVES (This is what was likely missing)
+  try {
+    const { error } = await window._mpdb.from('chat_messages').insert([msg]);
+    if (error) {
+      console.error("Supabase Save Error:", error.message);
+      showToast('Message failed to save');
+    } else {
+      console.log("Message saved successfully!");
+    }
+  } catch(e) {
+    console.error("Critical Save Error:", e);
+    showToast('Connection error');
+  }
+} // This is the end of the function
 function handleChatInput(el){
   el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';
   const val=el.value,atIdx=val.lastIndexOf('@');
