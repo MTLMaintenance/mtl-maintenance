@@ -502,7 +502,7 @@ button[onclick="saveInvoice()"] {
 .btn-sm{padding:4px 9px;font-size:12px}
 /* PANELS */
 .panel{display:none;padding:16px;max-width:1400px;margin:0 auto;width:100%}
-{display:block}
+.panel.active{display:block}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
 .section-title{font-size:16px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* METRICS */
@@ -860,54 +860,9 @@ body, html {
   color: #1a1a18 !important;
   font-weight: 700;
 }
-.panel { 
-    display: none !important; 
-}
-.panel.active { 
-    display: block !important; 
-}
 
-/* Specific Fix for the "Stuck" panels */
-#panel-chat.active, 
-#panel-admin.active, 
-#panel-calendar.active { 
-    display: flex !important; 
-}
-
-/* ============================================================
-   2. MOBILE ONLY (max-width: 768px)
-   ============================================================ */
-@media screen and (max-width: 768px) {
-  html, body {
-    height: 100vh !important;
-    overflow: hidden !important;
-    position: fixed;
-    width: 100%;
-  }
-
-  /* 1. HIDE ALL PANELS BY DEFAULT */
-  .panel { display: none !important; }
-
-  /* 2. ONLY SHOW ACTIVE PANEL & MAKE IT SCROLL */
-  .panel.active {
-    display: block !important;
-    padding: 10px !important;
-    height: calc(100vh - 110px) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* 3. FIX STACKING: Only show Chat/Admin/Calendar if ACTIVE */
-  #panel-chat.active, 
-  #panel-admin.active, 
-  #panel-calendar.active {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: hidden !important;
-  }
-
-
-
+/* --- THE MOBILE OVERRIDE --- */
+@media (max-width: 768px) {
   .topbar-main-row {
     padding: 8px 12px;
     gap: 8px;
@@ -950,13 +905,8 @@ body, html {
     color: #fff !important;
     font-weight: 700 !important;
   }
-  #global-search ~ span, 
-  .topbar-main-row span {
-    display: none !important;
-  }
-  .logo, #global-search, #global-search ~ span {
-    display: none !important;
-  }
+  .logo { font-size: 14px !important; }
+  #global-search { max-width: 140px !important; font-size: 12px !important; }
   .topbar-right {
     width: 100% !important;
     display: flex !important;
@@ -969,7 +919,7 @@ body, html {
   }
   .topbar-right::-webkit-scrollbar { display: none; }
   .topbar-right > * { flex-shrink: 0; }
-   { padding: 10px !important; }
+  .panel.active { padding: 10px !important; }
   /* Force Chat window to fill the panel */
   #panel-chat > div { height: 100% !important; flex: 1; }
   #panel-chat .chat-layout {
@@ -981,11 +931,7 @@ body, html {
   #panel-chat #chat-sidebar {
     display: none !important;
   }
-#panel-chat .main-chat-window {
-    height: calc(100vh - 200px) !important;
-    overflow-y: auto !important;
-}  
-#panel-chat .main-chat-window {
+  #panel-chat .main-chat-window {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -1050,22 +996,9 @@ body, html {
   }
   #chat-header-title {
     display: none !important;
-  } 
-
-@media (min-width: 769px) {
-  html, body {
-    height: auto !important;
-    overflow: auto !important;
-    position: static !important;
   }
-  .logo { display: block !important; }
-  #global-search { display: block !important; }
-  
-  /* Reset Panels for PC */
-  .panel { display: none !important; }
-  .panel.active { display: block !important; }
-  #panel-chat.active { display: flex !important; }
 }
+@media (min-width: 769px) {
   .topbar {
     display: flex !important;
     flex-direction: row !important;
@@ -1110,7 +1043,7 @@ body, html {
   .topbar-right > * {
     flex-shrink: 0;
   }
-  #panel-calendar {
+  #panel-calendar.panel.active {
     height: calc(100vh - 120px) !important;
     min-height: 720px !important;
     overflow: hidden !important;
