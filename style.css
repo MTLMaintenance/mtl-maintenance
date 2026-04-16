@@ -860,10 +860,8 @@ body, html {
   color: #1a1a18 !important;
   font-weight: 700;
 }
-
-/* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
-  /* 1. LOCK THE FRAME: This prevents the bottom from being cut off by the phone's browser bar */
+  /* 1. APP FRAME: Lock the screen to prevent the bottom cutoff */
   html, body {
     height: 100vh !important;
     overflow: hidden !important;
@@ -871,113 +869,77 @@ body, html {
     width: 100%;
   }
 
-  /* 2. HIDE LOGO AND SEARCH: Clears the space at the very top */
+  /* 2. HIDE LOGO AND SEARCH: Keeps the top clean */
   .logo, #global-search, #global-search ~ span { 
     display: none !important; 
   }
 
-  /* 3. TIGHTEN TOPBAR: Shrinks the menu rows to the minimum height */
-  .topbar-main-row {
-    padding: 2px 12px !important;
-    gap: 8px;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    display: flex !important;
-    flex-wrap: nowrap !important;
-  }
-  .topbar-main-row::-webkit-scrollbar { display: none; }
-  
-  #main-nav {
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    white-space: nowrap !important;
-    width: 100% !important;
-  }
-  #main-nav::-webkit-scrollbar { display: none; }
-  
-  #main-nav .nav-btn {
-    flex: 0 0 auto !important;
-    padding: 4px 9px !important;
-    min-height: 30px !important;
-    font-size: 12px !important;
-  }
+  /* 3. NAVIGATION (Your Original Logic) */
+  .topbar-main-row { padding: 2px 12px !important; display: flex !important; }
+  #main-nav { overflow-x: auto !important; width: 100% !important; }
+  #main-nav .nav-btn { flex: 0 0 auto !important; padding: 4px 9px !important; font-size: 12px !important; }
+  .topbar-right { width: 100% !important; display: flex !important; padding: 0 12px 4px !important; }
 
-  .topbar-right {
-    width: 100% !important;
-    display: flex !important;
-    padding: 0 12px 4px !important;
-    gap: 8px !important;
-  }
-  .topbar-right::-webkit-scrollbar { display: none; }
-
-  /* 4. MOVE BOX UP: This pulls the content area closer to the top buttons */
+  /* 4. THE PANEL: This stays put at the top */
   .panel.active { 
-    padding: 0 10px !important; 
-    margin-top: -35px !important; /* Moves the whole section UP */
+    display: block !important;
+    padding: 0 10px !important;
+    margin-top: 0 !important; /* Reset this so headers don't fly off screen */
   }
 
-  /* 5. TEAM CHAT HEADER: Tightens the text to the edge of the box */
-  #panel-chat h2, .chat-header-title {
-    margin: 0 !important;
-    padding: 2px 0 !important;
-    font-size: 16px !important;
+  /* 5. TEAM CHAT HEADER: Position it at the very top */
+  #panel-chat h2, .chat-header-text {
+    margin: 5px 0 0 0 !important; /* Small top margin, zero bottom margin */
+    padding: 0 !important;
+    font-size: 18px !important;
+    color: #fff; /* Ensure it's visible against your background */
   }
 
-  #panel-chat > div { height: 100% !important; flex: 1; }
-
-  /* 6. THE WHITE BOX: Fixed height to prevent bottom cutoff */
+  /* 6. THE WHITE CHAT BOX (This is the box you want to move) */
   #panel-chat .chat-layout {
-    margin-top: -5px !important; /* Pulls box edge to the 'Team Chat' text */
+    margin-top: -10px !important; /* This pulls the BOX up closer to the 'Team Chat' text */
     flex-direction: column !important;
-    /* 280px is the "Safe Zone" to see the bottom on most phones */
-    min-height: calc(100dvh - 280px) !important;
+    display: flex !important;
+    
+    /* FIX THE BOTTOM: We subtract 280px to pull the input bar up above the phone's nav */
     height: calc(100dvh - 280px) !important;
-    gap: 5px !important;
+    min-height: calc(100dvh - 280px) !important;
+    
+    background: #fff;
+    border-radius: 12px;
+    gap: 0 !important;
   }
 
-  #panel-chat #chat-sidebar { display: none !important; }
-  
+  /* Ensure internal parts fill the box correctly */
   #panel-chat .main-chat-window {
     width: 100% !important;
-    max-width: 100% !important;
     flex: 1 1 auto !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
   #panel-chat #chat-messages {
-    padding: 10px !important;
     flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 10px !important;
   }
 
-  /* 7. CHAT MENU BUTTONS (Your original logic) */
-  #chat-mobile-toggle { display: none !important; }
+  #panel-chat #chat-sidebar { display: none !important; }
+
+  /* 7. CHAT MENU BUTTONS */
   #chat-channel-menu-btn {
     display: inline-flex !important;
     min-width: 140px;
     background: #fff;
     border-radius: 999px;
-    padding: 6px 12px;
     height: 34px;
     align-items: center;
-    gap: 8px;
-  }
-  
-  #chat-channel-mobile-menu {
-    position: absolute;
-    top: 42px;
-    left: 12px;
-    z-index: 30;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 6px;
-    display: none;
+    padding: 0 12px;
   }
   #chat-channel-mobile-menu.open { display: block; }
-  #chat-header-title { display: none !important; }
 
 } /* <--- END OF MOBILE CODE */
+
 
 @media (min-width: 769px) {
   .topbar {
