@@ -2037,11 +2037,18 @@ async function startApp() {
   // Load Gemini key from secure storage
   try { window._geminiKey = localStorage.getItem('mp_gemini_key') || ''; } catch(e) {}
   
-  try {
-    window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      window._mpdb = supabase;
-      global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
-    });
+ try {
+  // 1. We create the connection and save it to window._mpdb
+  window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
+  });
+
+  // 2. We make window.supabase point to the same thing so everything works
+  window.supabase = window._mpdb;
+
+} catch (e) {
+  console.error("Supabase Init Error:", e);
+}
     setSyncStatus('online');
   } catch(e) { console.warn('Supabase init failed:', e); }
   document.getElementById('setup-banner') && (document.getElementById('setup-banner').style.display='none');
