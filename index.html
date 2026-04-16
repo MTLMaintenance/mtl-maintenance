@@ -7625,7 +7625,35 @@ function renderSchedule(){
       <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
     </div>`;
   };
+async function sendMessage(messageText) {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert([
+      { 
+        body: messageText, 
+        author: 'UserID', // You'll need to pass the actual user ID
+        channel: 'general' // The channel name from your sidebar
+      },
+    ])
 
+  if (error) console.error('Error saving message:', error)
+}
+async function fetchMessages() {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('channel', 'general') // Only get messages for this channel
+    .order('created_at', { ascending: true })
+
+  if (data) {
+    // Here, you would update your UI state with the 'data' array
+    console.log("Loaded messages:", data)
+  }
+}
+
+// Call this when your component/page mounts
+fetchMessages()
+  
   document.getElementById('sched-week').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= nw).map(mk).join('') || 'Nothing this week';
   document.getElementById('sched-next30').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= n30).map(mk).join('') || 'Nothing in 30 days';
 }   
