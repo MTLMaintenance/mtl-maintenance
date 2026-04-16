@@ -878,38 +878,33 @@ body, html {
    2. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-    html, body {
-        height: 100vh !important;
-        overflow: hidden !important;
-        position: fixed;
-        width: 100%;
-    }
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+  }
 
-    /* Hide Logo and Search on Mobile */
-    .logo, #global-search, #global-search ~ span {
-        display: none !important;
-    }
+  /* 1. HIDE ALL PANELS BY DEFAULT */
+  .panel { display: none !important; }
 
-    /* Make the active scrolling panel fit the screen */
-    .panel.active {
-        height: calc(100vh - 110px) !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-    }
+  /* 2. ONLY SHOW ACTIVE PANEL & MAKE IT SCROLL */
+  .panel.active {
+    display: block !important;
+    padding: 10px !important;
+    height: calc(100vh - 110px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 
-    /* Chat/Admin/Calendar need to stay 'Fixed' app-style */
-    #panel-chat.active, 
-    #panel-admin.active, 
-    #panel-calendar.active {
-        overflow-y: hidden !important;
-        height: calc(100vh - 110px) !important;
-    }
-
-    #panel-chat.active #chat-messages {
-        flex: 1;
-        overflow-y: auto !important;
-    }
-} /* <--- !!! THIS BRACKET ENDS MOBILE CODE !!! */
+  /* 3. FIX STACKING: Only show Chat/Admin/Calendar if ACTIVE */
+  #panel-chat.active, 
+  #panel-admin.active, 
+  #panel-calendar.active {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: hidden !important;
+  }
 
 
 
@@ -959,8 +954,9 @@ body, html {
   .topbar-main-row span {
     display: none !important;
   }
-  .logo { display: none !important; }
-  #global-search { display: none !important; }
+  .logo, #global-search, #global-search ~ span {
+    display: none !important;
+  }
   .topbar-right {
     width: 100% !important;
     display: flex !important;
@@ -1057,6 +1053,19 @@ body, html {
   } 
 
 @media (min-width: 769px) {
+  html, body {
+    height: auto !important;
+    overflow: auto !important;
+    position: static !important;
+  }
+  .logo { display: block !important; }
+  #global-search { display: block !important; }
+  
+  /* Reset Panels for PC */
+  .panel { display: none !important; }
+  .panel.active { display: block !important; }
+  #panel-chat.active { display: flex !important; }
+}
   .topbar {
     display: flex !important;
     flex-direction: row !important;
