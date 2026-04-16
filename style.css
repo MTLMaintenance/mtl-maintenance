@@ -1019,43 +1019,44 @@ body, html {
    3. DESKTOP OVERRIDE (min-width: 769px)
    ============================================================ */
 @media screen and (min-width: 769px) {
+  /* 1. Prevent the top bar from overlapping content below it */
   .topbar {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    height: 56px !important;
-    padding: 8px 16px !important;
-    gap: 10px !important;
-    background: rgba(0, 0, 0, 0.45) !important;
-    backdrop-filter: blur(10px);
+    height: auto !important; /* Allows bar to grow if needed */
+    min-height: 60px;
+    z-index: 1000;
+    position: sticky; /* Keeps it at the top but makes it part of the layout */
+    top: 0;
   }
 
-  .logo { display: block !important; flex-shrink: 0; }
-  #global-search { display: block !important; max-width: 220px !important; }
-
-  #main-nav {
+  /* 2. Force navigation buttons to scroll sideways instead of wrapping/overlapping */
+  #main-nav, .topbar-main-row {
     display: flex !important;
-    flex: 1 1 auto !important;
-    padding: 0 8px !important;
+    flex-wrap: nowrap !important; /* Forces them to stay in one line */
+    overflow-x: auto !important; /* Allows sideways scrolling */
+    overflow-y: hidden !important;
+    gap: 10px;
+    padding-bottom: 5px; /* Space for the scrollbar */
   }
 
+  /* 3. Do the same for the PDF/CSV row */
   .topbar-right {
     display: flex !important;
-    flex: 0 0 auto !important;
-    width: auto !important;
-    padding: 0 !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
   }
 
-  /* CALENDAR DESKTOP FIX */
-  #panel-calendar.panel.active {
-    height: calc(100vh - 120px) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
+  /* 4. Optional: Add a subtle scrollbar so people know they can scroll sideways */
+  #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar {
+    height: 4px;
   }
-  
-  #panel-calendar #cal-grid-container {
-    flex: 1 1 auto !important;
-    overflow: hidden !important;
+  #main-nav::-webkit-scrollbar-thumb, .topbar-right::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
   }
-} /* END DESKTOP */
+
+  /* 5. Ensure the main content stays below the bar */
+  .panel-container, .main-content {
+    margin-top: 10px;
+  }
+}
