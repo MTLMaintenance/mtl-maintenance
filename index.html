@@ -2037,39 +2037,29 @@ async function startApp() {
   // Load Gemini key from secure storage
   try { window._geminiKey = localStorage.getItem('mp_gemini_key') || ''; } catch(e) {}
   
- try {
-  // 1. We create the connection and save it to window._mpdb
-  window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
-  });
+  try {
+    // 1. Create the connection
+    window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
+    });
 
-  // 2. We make window.supabase point to the same thing so everything works
-  window.supabase = window._mpdb;
-
-} catch (e) {
-  console.error("Supabase Init Error:", e);
-}
+    // 2. Link the names
+    window.supabase = window._mpdb;
+    
     setSyncStatus('online');
-  } catch(e) { console.warn('Supabase init failed:', e); 
-  document.getElementById('setup-banner') && (document.getElementById('setup-banner').style.display='none');
+  } catch(e) { 
+    console.warn('Supabase init failed:', e); 
+  }
+
+  // Hide banner
+  if(document.getElementById('setup-banner')) {
+    document.getElementById('setup-banner').style.display='none';
+  }
+
   // Check saved session
   try {
-    // First try session token validation
     const sessionData = await validateSession();
-    if(sessionData) {
-      const profile = sessionData.profiles || 
-        (await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single()).data;
-      if(profile && profile.status === 'approved') {
-        const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
-        currentUser = { 
-          id: profile.id, 
-          name: profile.full_name || sessionData.username, 
-          role: isAdmin ? 'admin' : profile.role, 
-          username: sessionData.username 
-        };
-        await enterApp(); return;
-      }
-    }
+    if(sessionData) 
     // Fallback to old session for backwards compatibility
     const saved = localStorage.getItem('mp_session');
     if (saved) {
