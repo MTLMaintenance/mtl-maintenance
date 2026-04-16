@@ -861,64 +861,88 @@ body, html {
   font-weight: 700;
 }
 
-/* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
-  /* 1. UNLOCK THE WHOLE PAGE: This allows you to swipe up/down on the whole app */
+  /* 1. PAGE SCROLL: Allow the whole page to scroll like a normal website */
   html, body {
     height: auto !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    position: relative !important; /* Removes the "lock" we had before */
+    position: relative !important;
   }
 
-  /* 2. STICKY TOPBAR: This keeps your buttons at the top while you scroll the content */
+  /* 2. THE TOPBAR: Force it to show both rows and stay at the top */
   .topbar {
     position: sticky !important;
     top: 0;
-    z-index: 1000;
-    background: #1a1a1a !important; /* Ensure it stays solid while scrolling */
+    z-index: 9999;
+    background: #111 !important; /* Solid background so content doesn't bleed through */
+    height: auto !important; /* Allows it to grow to fit both rows */
+    display: flex !important;
+    flex-direction: column !important; /* Stacks row 1 on top of row 2 */
+    padding: 4px 0 !important;
   }
 
-  /* 3. FIX THE STACKING: Hide all panels except the one you clicked */
-  .panel { 
-    display: none !important; 
+  /* 3. ROW 1 (Navigation Buttons): Force them to show and scroll sideways */
+  .topbar-main-row, #main-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important; /* Allows you to swipe left/right on buttons */
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    padding: 4px 10px !important;
+    gap: 8px !important;
   }
-  .panel.active { 
-    display: block !important;
-    height: auto !important; /* Let the panel grow as long as its content */
-    min-height: 100vh;
-    padding: 10px !important;
-    overflow: visible !important;
+  
+  /* Prevent buttons from shrinking so they stay clickable */
+  #main-nav .nav-btn {
+    flex: 0 0 auto !important; 
+    white-space: nowrap !important;
   }
 
-  /* 4. HIDE LOGO AND SEARCH: Frees up space at the top */
+  /* 4. ROW 2 (PDF/CSV/Sign Out): Also allow this to scroll sideways */
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    padding: 4px 10px !important;
+    gap: 8px !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Hide scrollbars for a cleaner look */
+  .topbar-main-row::-webkit-scrollbar, 
+  .topbar-right::-webkit-scrollbar,
+  #main-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* 5. HIDE LOGO AND SEARCH: Frees up space */
   .logo, #global-search, #global-search ~ span { 
     display: none !important; 
   }
 
-  /* 5. NAVIGATION (Your Original Working Logic) */
-  .topbar-main-row { padding: 4px 12px !important; display: flex !important; }
-  #main-nav { overflow-x: auto !important; width: 100% !important; }
-  #main-nav .nav-btn { flex: 0 0 auto !important; padding: 4px 9px !important; font-size: 12px !important; }
-  .topbar-right { width: 100% !important; display: flex !important; padding: 0 12px 4px !important; }
-
-  /* 6. CHAT PANEL: On mobile, it will now grow with the messages */
-  #panel-chat.active .chat-layout {
+  /* 6. PANELS: Hide inactive ones and let active ones grow */
+  .panel { display: none !important; }
+  .panel.active { 
+    display: block !important;
     height: auto !important;
-    min-height: calc(100vh - 120px);
+    min-height: 100vh;
+    padding: 15px !important;
+    overflow: visible !important;
+  }
+
+  /* 7. CHAT FIX: Prevent it from being hidden behind the sticky topbar */
+  #panel-chat.active {
     display: flex !important;
     flex-direction: column !important;
   }
   
-  #panel-chat #chat-messages {
-    height: auto !important;
-    overflow-y: visible !important; /* Content will scroll with the main page */
-  }
-
-  /* 7. ADMIN & CALENDAR: These will also now stretch to fit their content */
-  #panel-admin.active, #panel-calendar.active {
-    height: auto !important;
-    display: block !important;
+  #panel-chat.active .chat-layout {
+    height: calc(100vh - 120px) !important; /* Keeps chat fitting the screen */
   }
 
 } /* <--- END OF MOBILE CODE */
