@@ -954,7 +954,11 @@ body, html {
   #panel-chat #chat-sidebar {
     display: none !important;
   }
-  #panel-chat .main-chat-window {
+#panel-chat .main-chat-window {
+    height: calc(100vh - 200px) !important;
+    overflow-y: auto !important;
+}  
+#panel-chat .main-chat-window {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
