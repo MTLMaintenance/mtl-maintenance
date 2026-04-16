@@ -2039,6 +2039,7 @@ async function startApp() {
   
   try {
     window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      window._mpdb = supabase;
       global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
     });
     setSyncStatus('online');
