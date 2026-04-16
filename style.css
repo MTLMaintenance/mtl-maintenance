@@ -863,6 +863,13 @@ body, html {
 
 /* --- THE MOBILE OVERRIDE --- */
 @media (max-width: 768px) {
+   #panel-chat h2, .chat-header-text {
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+  }
+
   .topbar-main-row {
     padding: 2px 12px;
     gap: 8px;
@@ -927,8 +934,8 @@ body, html {
   #panel-chat > div { height: 100% !important; flex: 1; }
   #panel-chat .chat-layout {
     flex-direction: column !important;
-    min-height: calc(100vh - 350px) !important;
-    height: calc(100vh - 350px) !important;
+    min-height: calc(100vh - 260px) !important;
+    height: calc(100vh - 260px) !important;
     gap: 5px !important;
   }
   #panel-chat #chat-sidebar {
