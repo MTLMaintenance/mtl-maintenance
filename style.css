@@ -1080,3 +1080,45 @@ body, html {
   .topbar {
     background: #202124 !important; /* Or your preferred dark color */
   }
+.topbar {
+    width: 100% !important;
+    padding: 10px 20px !important; /* Adds room on the left/right */
+    display: block !important; /* Changes from 'flex' to 'block' to let rows breathe */
+  }
+
+  /* 10. Spread the Logo and Search Bar area */
+  /* Target the container that holds the Logo and Search */
+  .topbar > div:first-child {
+    display: flex !important;
+    justify-content: flex-start !important; /* Aligns Logo and Search to the left */
+    align-items: center !important;
+    gap: 20px !important;
+    width: 100% !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* 11. Spread the Navigation Buttons row */
+  .topbar-main-row, #main-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important; /* Aligns buttons horizontally */
+    flex-wrap: wrap !important; /* Allows them to go to a 2nd row if narrow */
+    width: 100% !important;
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* 12. Spread the PDF/CSV/Action buttons row */
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  /* 13. Ensure buttons don't get squished */
+  .nav-btn, .topbar button, .topbar a {
+    flex: 0 0 auto !important; /* Prevents the buttons from shrinking */
+  }
