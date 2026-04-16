@@ -1019,106 +1019,73 @@ body, html {
    3. DESKTOP OVERRIDE (min-width: 769px)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. Prevent the top bar from overlapping content below it */
+  /* 1. THE MAIN CONTAINER: Force one single row */
   .topbar {
-    height: auto !important; /* Allows bar to grow if needed */
-    min-height: 60px;
-    z-index: 1000;
-    position: sticky; /* Keeps it at the top but makes it part of the layout */
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important; /* Forces everything onto ONE line */
+    align-items: center !important;
+    justify-content: flex-start !important;
+    height: 60px !important;
+    width: 100% !important;
+    padding: 0 15px !important;
+    gap: 15px !important;
+    position: sticky !important; /* Keeps it at the top but respects space below */
     top: 0;
+    z-index: 1000;
+    overflow-x: auto !important; /* Allows you to scroll sideways if window is small */
+    overflow-y: hidden !important;
+    background: #1a1a1a !important;
   }
 
-  /* 2. Force navigation buttons to scroll sideways instead of wrapping/overlapping */
+  /* 2. LOGO & SEARCH: Keep them together on the left */
+  /* Target the first group (Logo and Search) */
+  .topbar > div:first-child, .logo-search-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    flex-shrink: 0 !important; /* Prevents logo from squishing */
+  }
+
+  /* 3. NAVIGATION BUTTONS: Put them in the middle */
   #main-nav, .topbar-main-row {
     display: flex !important;
-    flex-wrap: nowrap !important; /* Forces them to stay in one line */
-    overflow-x: auto !important; /* Allows sideways scrolling */
-    overflow-y: hidden !important;
-    gap: 10px;
-    padding-bottom: 5px; /* Space for the scrollbar */
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
   }
 
-  /* 3. Do the same for the PDF/CSV row */
+  /* 4. ACTION BUTTONS: Put them on the right */
   .topbar-right {
     display: flex !important;
+    flex-direction: row !important;
     flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important; /* This pushes them to the far right */
   }
 
-  /* 4. Optional: Add a subtle scrollbar so people know they can scroll sideways */
-  #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar {
-    height: 4px;
+  /* 5. BUTTON STYLING: Ensure they stay their full size */
+  .nav-btn, .topbar button, .topbar a {
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
   }
-  #main-nav::-webkit-scrollbar-thumb, .topbar-right::-webkit-scrollbar-thumb {
+
+  /* 6. CLEAN SCROLLBAR: A thin bar if the window is too small */
+  .topbar::-webkit-scrollbar {
+    height: 3px;
+  }
+  .topbar::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.2);
     border-radius: 10px;
   }
 
-  /* 5. Ensure the main content stays below the bar */
-  .panel-container, .main-content {
-    margin-top: 10px;
+  /* 7. CONTENT AREA: Make sure it starts exactly below the header */
+  .panel-container, .panel.active {
+    margin-top: 15px !important;
   }
 }
-.topbar {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    position: relative !important; /* This is the key: it pushes content down instead of floating over it */
-    overflow: visible !important;
-  }
-
-  /* 7. Ensure the Equipment/Chat panels never slide 'under' the header */
-  .panel.active, #panel-container, .panel-container {
-    position: relative !important;
-    top: 0 !important;
-    margin-top: 20px !important;
-    clear: both !important;
-  }
-
-  /* 8. Make sure the background isn't transparent so buttons don't look messy */
-  .topbar {
-    background: #202124 !important; /* Or your preferred dark color */
-  }
-.topbar {
-    width: 100% !important;
-    padding: 10px 20px !important; /* Adds room on the left/right */
-    display: block !important; /* Changes from 'flex' to 'block' to let rows breathe */
-  }
-
-  /* 10. Spread the Logo and Search Bar area */
-  /* Target the container that holds the Logo and Search */
-  .topbar > div:first-child {
-    display: flex !important;
-    justify-content: flex-start !important; /* Aligns Logo and Search to the left */
-    align-items: center !important;
-    gap: 20px !important;
-    width: 100% !important;
-    margin-bottom: 10px !important;
-  }
-
-  /* 11. Spread the Navigation Buttons row */
-  .topbar-main-row, #main-nav {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important; /* Aligns buttons horizontally */
-    flex-wrap: wrap !important; /* Allows them to go to a 2nd row if narrow */
-    width: 100% !important;
-    gap: 10px !important;
-    margin-bottom: 10px !important;
-  }
-
-  /* 12. Spread the PDF/CSV/Action buttons row */
-  .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    flex-wrap: wrap !important;
-    width: 100% !important;
-    gap: 10px !important;
-  }
-
-  /* 13. Ensure buttons don't get squished */
-  .nav-btn, .topbar button, .topbar a {
-    flex: 0 0 auto !important; /* Prevents the buttons from shrinking */
-  }
