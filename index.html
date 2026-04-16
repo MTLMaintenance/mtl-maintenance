@@ -6,14 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>MTL Maintenance</title>
 <style>
-html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden; /* This kills the outer scrollbar */
-}
-  .view-toggle,
-.tab-bar,
-.sub-toggle {
+
   display: flex;
   gap: 4px;
   padding: 4px;
@@ -851,7 +844,6 @@ body, html {
 /* --- THE CONTENT: FILLS THE GAP --- */
 .panel.active {
   flex: 1 !important; /* Fills every pixel under the header */
-  overflow-y: auto !important; /* Content scrolls, but the app stays pinned */
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important; /* PINS EVERYTHING TO TOP */
