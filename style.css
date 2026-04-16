@@ -960,7 +960,7 @@ body, html {
   #panel-chat .chat-layout {
     flex-direction: column !important;
      height: calc(100vh - 240px) !important; 
-  min-height: calc(100vh - 240px) !important;
+  min-height: calc(100vh - 270px) !important;
   }
   #panel-chat #chat-sidebar { display: none !important; }
   #panel-chat #chat-messages { flex: 1; overflow-y: auto !important; padding: 14px !important; }
