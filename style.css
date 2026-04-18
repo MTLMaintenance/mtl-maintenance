@@ -1,3 +1,18 @@
+.btn-absence {
+    background: #000 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-absence:hover {
+    opacity: 0.8;
+}
 .view-toggle,
 .tab-bar,
 .sub-toggle {
