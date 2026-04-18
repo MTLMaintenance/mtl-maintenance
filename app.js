@@ -67,27 +67,27 @@ async function fetchAbsences() {
         }
     }
 }
-function openAbsenceModal() 
- window.openAbsenceModal = function() {
+function openAbsenceModal() {
     console.log("Attempting to open modal...");
     const modal = document.getElementById('absence-modal');
     if (modal) {
         modal.style.display = 'block';
     } else {
-        alert("Error: The HTML for 'absence-modal' was not found at the bottom of the file.");
+        console.error("Error: Could not find the HTML element with ID 'absence-modal'");
     }
-};
-
-window.closeAbsenceModal = function() {
-    document.getElementById('absence-modal').style.display = 'none';
-};
+}
 
 function closeAbsenceModal() {
-    document.getElementById('absence-modal').style.display = 'none';
+    const modal = document.getElementById('absence-modal');
+    if (modal) modal.style.display = 'none';
 }
 
 function togglePrivateReason(show) {
-    document.getElementById('private-reason-container').style.display = show ? 'block' : 'none';
+    // Note: This matches the 'priv-box' ID in the HTML I provided earlier
+    const privBox = document.getElementById('priv-box');
+    if (privBox) {
+        privBox.style.display = show ? 'block' : 'none';
+    }
 }
 
 async function saveAbsence() {
