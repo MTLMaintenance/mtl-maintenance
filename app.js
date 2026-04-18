@@ -67,7 +67,7 @@ async function fetchAbsences() {
         }
     }
 }
-function openAbsenceModal() {
+function openAbsenceModal() 
  window.openAbsenceModal = function() {
     console.log("Attempting to open modal...");
     const modal = document.getElementById('absence-modal');
