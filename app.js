@@ -1,3 +1,4 @@
+let staffAbsences = [];
 let zerkPinMode = 'dot'; // 'dot' or 'line'
 let zerkDrawingStep = 1; 
 let currentWOTab = 'details'; 
@@ -10,6 +11,62 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+async function checkUpcomingAbsences() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastCheck = localStorage.getItem('last_absence_check');
+    if (lastCheck === today) return; // Don't spam, only check once a day
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    const upcoming = staffAbsences.filter(a => a.start_date.split('T')[0] === tomorrowStr);
+
+    for (let abs of upcoming) {
+        const detail = abs.is_private ? abs.reason_private : abs.reason_public;
+        
+        // Insert a message into the Admin channel
+        await window._mpdb.from('chat_messages').insert([{
+            channel: 'admin',
+            author: 'SYSTEM',
+            author_name: 'Reminder Bot 🤖',
+            body: `⚠️ REMINDER: ${abs.user_name} is scheduled to be out tomorrow. Reason: ${detail}`,
+            created_at: new Date().toISOString()
+        }]);
+    }
+    localStorage.setItem('last_absence_check', today);
+}
+
+function openAbsenceDetail(id) {
+    const abs = staffAbsences.find(a => a.id === id);
+    if (!abs) return;
+
+    let msg = `Staff Member: ${abs.user_name}\n`;
+    msg += `Public Reason: ${abs.reason_public}\n`;
+
+    if (abs.is_private) {
+        if (currentUser.role === 'admin') {
+            msg += `\n🔒 MANAGER ONLY NOTE: ${abs.reason_private}`;
+        } else {
+            msg += `\n🔒 Detailed reason is private.`;
+        }
+    }
+    alert(msg);
+}
+async function fetchAbsences() {
+    const { data, error } = await window._mpdb
+        .from('staff_absences')
+        .select('*');
+    
+    if (data) {
+        staffAbsences = data;
+        
+        // Option B: Run the automatic reminder check for managers
+        if (currentUser.role === 'admin') {
+            checkUpcomingAbsences();
+        }
+    }
+}
 function openAbsenceModal() {
     document.getElementById('absence-modal').style.display = 'block';
 }
@@ -51,6 +108,7 @@ async function saveAbsence() {
     } else {
         alert("Error: " + error.message);
     }
+ 
 }
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
@@ -219,7 +277,8 @@ async function startApp() {
       if(profile && profile.status === 'approved') {
         const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
         currentUser = { id: profile.id, name: profile.full_name || sessionData.username, role: isAdmin ? 'admin' : profile.role, username: sessionData.username };
-        await enterApp(); return;
+       await fetchAbsences();  
+       await enterApp(); return;
       }
     }
 
@@ -231,7 +290,8 @@ async function startApp() {
       if (profile && profile.status === 'approved') {
         const isAdmin = u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
         currentUser = { ...u, role: isAdmin ? 'admin' : profile.role };
-        // Upgrade to token-based session
+        await fetchAbsences();
+       // Upgrade to token-based session
         await createSession(u.username, profile.id);
         await enterApp(); return;
       } else { 
@@ -961,7 +1021,12 @@ async function renderCalendar() {
         const dayScheds = state.schedules.filter(s => s.date === dateStr);
         // Find Adaptive Forecasts
         const dayForecasts = state.equipment.filter(e => e._predictedDate === dateStr);
-        
+          // --- NEW: Find Staff Absences ---
+        const dayAbs = (staffAbsences || []).filter(a => {
+            const start = a.start_date.split('T')[0];
+            const end = a.end_date.split('T')[0];
+            return dateStr >= start && dateStr <= end;
+        });
         const eventsHtml = [
             ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
             ...dayScheds.map(s => `<div class="cal-event scheduled">${s.name}</div>`),
