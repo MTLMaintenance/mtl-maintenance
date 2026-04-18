@@ -68,8 +68,19 @@ async function fetchAbsences() {
     }
 }
 function openAbsenceModal() {
-    document.getElementById('absence-modal').style.display = 'block';
-}
+ window.openAbsenceModal = function() {
+    console.log("Attempting to open modal...");
+    const modal = document.getElementById('absence-modal');
+    if (modal) {
+        modal.style.display = 'block';
+    } else {
+        alert("Error: The HTML for 'absence-modal' was not found at the bottom of the file.");
+    }
+};
+
+window.closeAbsenceModal = function() {
+    document.getElementById('absence-modal').style.display = 'none';
+};
 
 function closeAbsenceModal() {
     document.getElementById('absence-modal').style.display = 'none';
