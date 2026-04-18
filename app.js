@@ -10,6 +10,48 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+function openAbsenceModal() {
+    document.getElementById('absence-modal').style.display = 'block';
+}
+
+function closeAbsenceModal() {
+    document.getElementById('absence-modal').style.display = 'none';
+}
+
+function togglePrivateReason(show) {
+    document.getElementById('private-reason-container').style.display = show ? 'block' : 'none';
+}
+
+async function saveAbsence() {
+    const start = document.getElementById('abs-start').value;
+    const end = document.getElementById('abs-end').value;
+    const pubReason = document.getElementById('abs-public').value;
+    const isPriv = document.getElementById('abs-is-private').checked;
+    const privReason = document.getElementById('abs-private').value;
+
+    if(!start || !end || !pubReason) {
+        alert("Please fill in the dates and public reason.");
+        return;
+    }
+
+    const { error } = await window._mpdb.from('staff_absences').insert([{
+        user_name: currentUser.name,
+        user_id: currentUser.id,
+        start_date: start,
+        end_date: end,
+        reason_public: pubReason,
+        is_private: isPriv,
+        reason_private: isPriv ? privReason : null
+    }]);
+
+    if (!error) {
+        alert("Request Submitted!");
+        closeAbsenceModal();
+        loadCalendar(); // Refresh your calendar to show the new item
+    } else {
+        alert("Error: " + error.message);
+    }
+}
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot'); 
