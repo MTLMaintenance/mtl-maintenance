@@ -1089,3 +1089,14 @@ body, html {
     margin-top: 15px !important;
   }
 }
+/* Maintenance Tasks (Default) */
+.cal-event-maintenance {
+    background-color: #007bff !important; /* Blue */
+    border-left: 4px solid #0056b3;
+}
+
+/* Staff Absences (New) */
+.cal-event-absence {
+    background-color: #ff9800 !important; /* Orange */
+    border-left: 4px solid #e65100;
+}
