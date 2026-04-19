@@ -71,9 +71,11 @@ function openAbsenceModal() {
     console.log("Attempting to open modal...");
     const modal = document.getElementById('absence-modal');
     if (modal) {
-        modal.style.display = 'block';
+        // This forces the display to 'block' even if CSS tries to hide it
+        modal.style.setProperty('display', 'block', 'important');
+        console.log("Modal is now set to display: block !important");
     } else {
-        console.error("Error: Could not find the HTML element with ID 'absence-modal'");
+        alert("HTML Error: Could not find id='absence-modal'");
     }
 }
 
