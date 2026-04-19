@@ -1004,7 +1004,7 @@ body, html {
     justify-content: flex-start !important;
   }
 
-  /* PANEL SCROLLING: Let Dashboard/Equipment scroll, keep Chat/Cal fixed */
+  /* PANEL SCROLLING: Let Dashboard/Equipment scroll */
   .panel.active {
     height: calc(100vh - 110px) !important;
     overflow-y: auto !important;
@@ -1012,7 +1012,15 @@ body, html {
     padding: 10px !important;
   }
 
-  #panel-chat.active, #panel-calendar.active, #panel-admin.active {
+  /* CALENDAR SPECIFIC: Allow vertical scrolling to see the whole month */
+  #panel-calendar.active {
+    display: block !important; 
+    overflow-y: auto !important;
+    padding-bottom: 60px !important; /* Adds room so the last week isn't cut off */
+  }
+
+  /* FIXED PANELS: Only Chat and Admin stay locked */
+  #panel-chat.active, #panel-admin.active {
     display: flex !important;
     flex-direction: column !important;
     overflow-y: hidden !important;
@@ -1039,11 +1047,11 @@ body, html {
     z-index: 1000;
     min-width: 220px;
     background: #ffffff !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important; /* Professional shadow */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important; 
     border: 1px solid rgba(0,0,0,0.1) !important;
     border-radius: 12px !important;
     padding: 8px !important;
-    animation: menuFadeIn 0.2s ease-out; /* Smooth entrance */
+    animation: menuFadeIn 0.2s ease-out; 
   }
 
   @keyframes menuFadeIn {
@@ -1065,12 +1073,8 @@ body, html {
     transition: background 0.2s !important;
   }
 
-  /* Hover/Touch feedback */
-  .chat-mobile-menu-item:active {
-    background: rgba(0,0,0,0.05) !important;
-  }
+  .chat-mobile-menu-item:active { background: rgba(0,0,0,0.05) !important; }
 
-  /* Active channel highlighting */
   .chat-mobile-menu-item.active {
     background: #f0f4f8 !important;
     color: #007bff !important;
