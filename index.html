@@ -447,23 +447,25 @@
  <!-- CALENDAR PANEL -->
 <div class="panel" id="panel-calendar">
   
-  <!-- NEW TOOLBAR ROW -->
-  <div class="calendar-toolbar">
+  <!-- THE TOOLBAR ROW: Forced to stay on one line -->
+  <div style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; width: 100% !important; margin-bottom: 20px !important; gap: 12px !important; flex-wrap: nowrap !important;">
     
-    <!-- LEFT SIDE: Views and Request Button -->
-    <div class="toolbar-left">
-      <div class="view-toggle">
-        <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')">📅 Grid View</button>
-        <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')">📝 List View</button>
-      </div>
-      
-      <!-- Request Button: Now formatted exactly like the View buttons -->
-      <button class="btn btn-absence-trigger" onclick="openAbsenceModal()">📅 Request Time Off</button>
+    <!-- LEFT SIDE: Toggles + Request Button -->
+    <div style="display: flex !important; align-items: center !important; gap: 10px !important; flex-shrink: 0 !important;">
+        
+        <!-- The Pill Toggle (Grid/List) -->
+        <div class="view-toggle" style="display: flex !important; background: rgba(0,0,0,0.2) !important; padding: 4px !important; border-radius: 12px !important; gap: 4px !important; flex-shrink: 0 !important;">
+            <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')" style="padding: 6px 12px !important; border-radius: 8px !important; border:none !important; cursor:pointer !important;">📅 Grid View</button>
+            <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')" style="padding: 6px 12px !important; border-radius: 8px !important; border:none !important; cursor:pointer !important;">📝 List View</button>
+        </div>
+        
+        <!-- Request Button (Formatted to match) -->
+        <button class="btn btn-absence-trigger" onclick="openAbsenceModal()" style="background: rgba(0,0,0,0.2) !important; color: #fff !important; border: none !important; padding: 8px 14px !important; border-radius: 10px !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer !important; white-space: nowrap !important;">📅 Request Time Off</button>
     </div>
 
     <!-- RIGHT SIDE: Add Entry -->
-    <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
-  </div> 
+    <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();" style="background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 16px !important; border-radius: 8px !important; border:none !important; cursor:pointer !important; white-space: nowrap !important;">+ Add Entry</button>
+  </div>
 
   <!-- GRID VIEW -->
   <div id="cal-grid-container">
