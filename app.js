@@ -1,3 +1,4 @@
+let currentDetailId = null;
 let selectedAbsenceType = 'all'; 
 let staffAbsences = [];
 let zerkPinMode = 'dot'; // 'dot' or 'line'
@@ -99,18 +100,59 @@ async function checkUpcomingAbsences() {
 function openAbsenceDetail(id) {
     const abs = staffAbsences.find(a => a.id === id);
     if (!abs) return;
+    
+    currentDetailId = id; 
 
-    let msg = `Staff Member: ${abs.user_name}\n`;
-    msg += `Public Reason: ${abs.reason_public}\n`;
+    // --- STEP 3 INTEGRATION START ---
+    // This defines who has "Manager Power" over absences
+    const canManage = currentUser.role === 'admin' || 
+                     (currentUser.permissions && currentUser.permissions.includes('manage_absences'));
+    // --- STEP 3 INTEGRATION END ---
+    
+    // 1. Set Basic Info
+    document.getElementById('det-user').textContent = `👤 ${abs.user_name}`;
+    document.getElementById('det-reason').textContent = abs.reason_public;
+    document.getElementById('det-time').textContent = abs.is_all_day ? "All Day" : `Leaving at ${formatTime(abs.partial_time)}`;
 
-    if (abs.is_private) {
-        if (currentUser.role === 'admin') {
-            msg += `\n🔒 MANAGER ONLY NOTE: ${abs.reason_private}`;
-        } else {
-            msg += `\n🔒 Detailed reason is private.`;
-        }
+    // 2. Permission Check: Private Reason
+    // Use 'canManage' instead of just checking for 'admin'
+    const privSection = document.getElementById('det-private-section');
+    if (abs.is_private && canManage) {
+        privSection.style.display = 'block';
+        document.getElementById('det-private-text').textContent = abs.reason_private || "No private note provided.";
+    } else {
+        privSection.style.display = 'none';
     }
-    alert(msg);
+
+    // 3. Permission Check: Deletion
+    // Show delete button if it's YOUR request OR you have 'canManage' power
+    const deleteBtn = document.getElementById('det-delete-btn');
+    if (abs.user_id === String(currentUser.id) || canManage) {
+        deleteBtn.style.display = 'block';
+    } else {
+        deleteBtn.style.display = 'none';
+    }
+
+    document.getElementById('absence-detail-modal').style.display = 'block';
+}
+
+async function deleteAbsence() {
+    if (!currentDetailId) return;
+    
+    if (!confirm("Are you sure you want to delete this time off request?")) return;
+
+    const { error } = await window._mpdb
+        .from('staff_absences')
+        .delete()
+        .eq('id', currentDetailId);
+
+    if (error) {
+        alert("Error deleting: " + error.message);
+    } else {
+        document.getElementById('absence-detail-modal').style.display = 'none';
+        await fetchAbsences();
+        renderCalendar();
+    }
 }
 async function fetchAbsences() {
     const { data, error } = await window._mpdb
