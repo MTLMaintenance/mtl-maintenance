@@ -1270,21 +1270,32 @@ function calDayClick(dateStr) {
     document.getElementById('cal-action-modal').style.display = 'block';
 }
 
-// Function 1: Open the Work Order Modal with the date filled
 function triggerAddEntryFromCal() {
     document.getElementById('cal-action-modal').style.display = 'none';
     
-    // Open your existing work order modal
-    populateSelects(); 
-    openModal('calendar-entry-modal'); 
-    resetCalModal();
+    // 1. Open the modal
+    if (typeof openModal === 'function') {
+        openModal('calendar-entry-modal'); 
+    } else {
+        const m = document.getElementById('calendar-entry-modal');
+        if (m) m.style.display = 'block';
+    }
 
-    // AUTO-FILL the date field in your Work Order form
-    // Check your HTML for the ID of the 'Due Date' input. It's likely 'cal-date' or 'task-due'
+    // 2. Try to reset, but wrap it in a 'try/catch' so if it fails, 
+    // the date still gets filled in anyway.
+    try {
+        if (typeof populateSelects === 'function') populateSelects(); 
+        if (typeof resetCalModal === 'function') resetCalModal();
+    } catch (e) {
+        console.warn("Reset/Populate failed, but continuing anyway:", e);
+    }
+
+    // 3. AUTO-FILL the date
     const dateInput = document.getElementById('cal-date') || document.getElementById('task-due');
-    if (dateInput) dateInput.value = lastClickedDate;
+    if (dateInput) {
+        dateInput.value = lastClickedDate;
+    }
 }
-
 // Function 2: Open the Absence Modal with the date filled
 function triggerAbsenceFromCal() {
     document.getElementById('cal-action-modal').style.display = 'none';
@@ -5502,16 +5513,27 @@ function setZerkMode(mode) {
     document.getElementById('mode-line')?.classList.toggle('active', mode === 'line');
     renderZerkDots(); // Clear any temp dots
 }
-function updateCalEntryTypeButtons(type){
-    document.getElementById('cal-type-one')?.classList.toggle('active', type === 'one-time');
-    document.getElementById('cal-type-recur')?.classList.toggle('active', type === 'recurring');
+// 1. Define the actual function so the app stops crashing
+function setCalEntryType(type) {
+    console.log("Setting Calendar Entry Type:", type);
+    
+    // 2. Update the UI buttons (One-time vs Recurring)
+    const btnOne = document.getElementById('cal-type-one');
+    const btnRecur = document.getElementById('cal-type-recur');
+    
+    if (btnOne) btnOne.classList.toggle('active', type === 'one-time');
+    if (btnRecur) btnRecur.classList.toggle('active', type === 'recurring');
+
+    // 3. Handle showing/hiding the recurrence fields in your modal
+    const recurFields = document.getElementById('cal-recur-fields');
+    if (recurFields) {
+        recurFields.style.display = (type === 'recurring') ? 'block' : 'none';
+    }
 }
-const _baseSetCalEntryType = typeof setCalEntryType === 'function' ? setCalEntryType : null;
-if (_baseSetCalEntryType) {
-    setCalEntryType = function(type) {
-        _baseSetCalEntryType(type);
-        updateCalEntryTypeButtons(type);
-    };
+
+// Keep this helper for backwards compatibility if other parts of your code use it
+function updateCalEntryTypeButtons(type) {
+    setCalEntryType(type);
 }
     async function saveZerkPoint(label, x_label, y_label, x_target, y_target) {
     const newZerk = {
