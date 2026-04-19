@@ -136,22 +136,39 @@ function togglePrivateReason(show) {
 
 
 async function saveAbsence() {
-    const start = document.getElementById('abs-start').value;
-    const end = document.getElementById('abs-end').value;
-    const pubReason = document.getElementById('abs-public').value;
-    const isPriv = document.getElementById('abs-is-private').checked;
-    const privReason = document.getElementById('abs-private').value;
+    // 1. Get the NEW IDs we created for the simplified menu
+    const dateInput = document.getElementById('abs-date');
+    const timeInput = document.getElementById('abs-time');
+    const pubReasonInput = document.getElementById('abs-public');
+    const isPrivInput = document.getElementById('abs-is-private');
+    const privReasonInput = document.getElementById('abs-private');
 
-    if(!start || !end || !pubReason) {
-        alert("Please fill in the dates and public reason.");
+    // 2. Safety check: Make sure the elements actually exist
+    if (!dateInput || !pubReasonInput) {
+        console.error("Could not find the form inputs in the HTML.");
         return;
     }
 
+    const date = dateInput.value;
+    const time = timeInput.value;
+    const pubReason = pubReasonInput.value;
+    const isPriv = isPrivInput.checked;
+    const privReason = privReasonInput.value;
+
+    // 3. Validation
+    if(!date || !pubReason) {
+        alert("Please select a date and provide a public reason.");
+        return;
+    }
+
+    // 4. Send to Supabase
+    // Note: 'selectedAbsenceType' is the variable changed by the All Day/Partial buttons
     const { error } = await window._mpdb.from('staff_absences').insert([{
-        user_name: currentUser.name,
+        user_name: currentUser.name || currentUser.username,
         user_id: currentUser.id,
-        start_date: start,
-        end_date: end,
+        start_date: date,
+        is_all_day: (selectedAbsenceType === 'all'),
+        partial_time: (selectedAbsenceType === 'partial') ? time : null,
         reason_public: pubReason,
         is_private: isPriv,
         reason_private: isPriv ? privReason : null
@@ -160,11 +177,13 @@ async function saveAbsence() {
     if (!error) {
         alert("Request Submitted!");
         closeAbsenceModal();
-        loadCalendar(); // Refresh your calendar to show the new item
+        
+        // Refresh the data and the screen
+        if (typeof fetchAbsences === 'function') await fetchAbsences();
+        if (typeof renderCalendar === 'function') renderCalendar();
     } else {
-        alert("Error: " + error.message);
+        alert("Error saving to database: " + error.message);
     }
- 
 }
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
