@@ -1119,6 +1119,28 @@
     </div>
   </div>
 </div>
+ <!-- CALENDAR DAY ACTION MODAL -->
+<div id="cal-action-modal" style="display:none; position:fixed; z-index:100002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter: blur(4px);">
+  <div style="background:#1a1a1a; margin:15% auto; padding:25px; border-radius:20px; width:90%; max-width:320px; color:#fff; text-align:center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+    
+    <h3 id="action-modal-date" style="margin-top:0; color:#aaa; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Date Selected</h3>
+    <h2 id="action-modal-readable" style="margin:5px 0 25px 0; font-size:20px;">April 23, 2026</h2>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <!-- Option 1: Add Work Order -->
+      <button onclick="triggerAddEntryFromCal()" style="padding:14px; background:#007bff; color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+        <span>➕</span> New Work Order
+      </button>
+
+      <!-- Option 2: Request Time Off -->
+      <button onclick="triggerAbsenceFromCal()" style="padding:14px; background:#ff9800; color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+        <span>📅</span> Request Time Off
+      </button>
+
+      <button onclick="document.getElementById('cal-action-modal').style.display='none'" style="margin-top:10px; background:none; border:none; color:#888; cursor:pointer; font-size:13px;">Cancel</button>
+    </div>
+  </div>
+</div>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
