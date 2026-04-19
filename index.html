@@ -1000,35 +1000,48 @@
   </div>
 </div>
   <!-- Absence Modal -->
-<div id="absence-modal" class="modal" style="display:none; position:fixed; z-index:100000 !important; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8);">
-  <div class="modal-content" style="background:#fff; margin:10% auto; padding:20px; border-radius:15px; width:90%; max-width:400px; color:#333;">
-    <h3 style="margin-top:0;">Request Time Off</h3>
+ <!-- MODERN ABSENCE MODAL -->
+<div id="absence-modal" style="display:none; position:fixed; z-index:100000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter: blur(5px);">
+  <div style="background:#1a1a1a; margin:8% auto; padding:30px; border-radius:20px; width:95%; max-width:420px; color:#fff; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
     
-    <label style="font-size:12px; color:#666;">Start Date & Time</label>
-    <input type="datetime-local" id="abs-start" style="width:100%; margin-bottom:15px; padding:8px; border:1px solid #ddd; border-radius:8px;">
-
-    <label style="font-size:12px; color:#666;">End Date & Time</label>
-    <input type="datetime-local" id="abs-end" style="width:100%; margin-bottom:15px; padding:8px; border:1px solid #ddd; border-radius:8px;">
-
-    <label style="font-size:12px; color:#666;">Reason (Public - Everyone sees this)</label>
-    <input type="text" id="abs-public" placeholder="e.g. Appointment" style="width:100%; margin-bottom:15px; padding:8px; border:1px solid #ddd; border-radius:8px;">
-
-    <div style="margin-bottom:15px;">
-      <input type="checkbox" id="abs-is-private" onchange="togglePrivateReason(this.checked)"> 
-      <label for="abs-is-private" style="font-size:13px; font-weight:bold;">Keep detailed reason private?</label>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0; font-size:22px; color:#fff;">Time Off Request</h2>
+      <button onclick="closeAbsenceModal()" style="background:none; border:none; color:#aaa; font-size:24px; cursor:pointer;">&times;</button>
+    </div>
+    
+    <div style="margin-bottom:18px;">
+        <label class="modal-label">Start Date & Time</label>
+        <input type="datetime-local" id="abs-start" class="modal-input">
     </div>
 
-    <div id="private-reason-container" style="display:none;">
-      <label style="font-size:12px; color:#d9534f;">Private Reason (Only Manager sees this)</label>
-      <textarea id="abs-private" placeholder="Provide details for manager..." style="width:100%; margin-bottom:15px; padding:8px; border:1px solid #ddd; border-radius:8px; height:60px;"></textarea>
+    <div style="margin-bottom:18px;">
+        <label class="modal-label">End Date & Time</label>
+        <input type="datetime-local" id="abs-end" class="modal-input">
     </div>
 
-    <div style="display:flex; gap:10px;">
-      <button onclick="saveAbsence()" style="flex:1; padding:12px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:bold;">Submit Request</button>
-      <button onclick="closeAbsenceModal()" style="flex:1; padding:12px; background:#ccc; color:#333; border:none; border-radius:8px;">Cancel</button>
+    <div style="margin-bottom:20px;">
+        <label class="modal-label">Public Reason (Visibility: Everyone)</label>
+        <input type="text" id="abs-public" placeholder="e.g. Appointment / Vacation" class="modal-input">
+    </div>
+
+    <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:25px;">
+      <label style="display:flex; align-items:center; cursor:pointer; font-size:14px; gap:10px;">
+        <input type="checkbox" id="abs-is-private" onchange="togglePrivateReason(this.checked)" style="width:18px; height:18px; accent-color:#28a745;"> 
+        <span>Make this request Private?</span>
+      </label>
+      
+      <div id="priv-box" style="display:none; margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
+          <label style="font-size:12px; display:block; margin-bottom:8px; color:#ff6b6b; font-weight:bold;">Private Detail (Managers Only)</label>
+          <textarea id="abs-private" placeholder="Explain the situation to your manager..." class="modal-input" style="height:80px; resize:none;"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button onclick="saveAbsence()" style="flex:2; padding:14px; background:#28a745; color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer; font-size:15px; transition: 0.2s;">Submit Request</button>
+      <button onclick="closeAbsenceModal()" style="flex:1; padding:14px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:10px; cursor:pointer; font-size:15px;">Cancel</button>
     </div>
   </div>
-</div>      
+</div>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
