@@ -1,3 +1,4 @@
+let selectedAbsenceType = 'all'; 
 let staffAbsences = [];
 let zerkPinMode = 'dot'; // 'dot' or 'line'
 let zerkDrawingStep = 1; 
@@ -11,6 +12,44 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+function checkDateSelection(val) {
+    if(val) document.getElementById('abs-options').style.display = 'block';
+}
+
+function setAbsenceType(type) {
+    selectedAbsenceType = type;
+    document.getElementById('btn-all-day').classList.toggle('active', type === 'all');
+    document.getElementById('btn-partial').classList.toggle('active', type === 'partial');
+    document.getElementById('abs-time-container').style.display = type === 'partial' ? 'block' : 'none';
+}
+
+async function saveAbsence() {
+    const date = document.getElementById('abs-date').value;
+    const time = document.getElementById('abs-time').value;
+    const pubReason = document.getElementById('abs-public').value;
+    const isPriv = document.getElementById('abs-is-private').checked;
+    const privReason = document.getElementById('abs-private').value;
+
+    if(!date || !pubReason) return alert("Fill in the date and reason.");
+
+    const { error } = await window._mpdb.from('staff_absences').insert([{
+        user_name: currentUser.name,
+        user_id: currentUser.id,
+        start_date: date, // The date picked
+        is_all_day: selectedAbsenceType === 'all',
+        partial_time: selectedAbsenceType === 'partial' ? time : null,
+        reason_public: pubReason,
+        is_private: isPriv,
+        reason_private: isPriv ? privReason : null
+    }]);
+
+    if (!error) {
+        alert("Success!");
+        closeAbsenceModal();
+        await fetchAbsences();
+        renderCalendar();
+    }
+}
 async function checkUpcomingAbsences() {
     const today = new Date().toISOString().split('T')[0];
     const lastCheck = localStorage.getItem('last_absence_check');
@@ -1031,7 +1070,31 @@ async function renderCalendar() {
     for(let d = 1; d <= daysInMonth; d++){
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
-        
+        // Find Staff Absences
+const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
+
+const eventsHtml = [
+    // ... your tasks and forecasts ...
+    ...dayAbs.map(a => {
+        // Logic for the text label
+        const statusText = a.is_all_day 
+            ? `👤 ${a.user_name} Out` 
+            : `👤 ${a.user_name} @ ${formatTime(a.partial_time)}`;
+            
+        return `<div class="cal-event" onclick="event.stopPropagation(); openAbsenceDetail('${a.id}')" 
+                style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px;">
+                ${statusText}</div>`;
+    })
+].join('');
+
+// Helper to make time look pretty (e.g. 13:00 -> 1:00 PM)
+function formatTime(timeStr) {
+    if(!timeStr) return '';
+    const [h, m] = timeStr.split(':');
+    const hrs = parseInt(h);
+    const suffix = hrs >= 12 ? 'PM' : 'AM';
+    return `${((hrs + 11) % 12 + 1)}:${m} ${suffix}`;
+}
         // Find Work Orders
         const dayTasks = state.tasks.filter(t => t.due === dateStr);
         // Find Scheduled Items
