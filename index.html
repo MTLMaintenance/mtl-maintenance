@@ -446,30 +446,32 @@
 <!-- CALENDAR PANEL -->
 <div class="panel" id="panel-calendar">
   
-  <!-- THE TOOLBAR ROW -->
-  <div style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; width: 100% !important; margin-bottom: 20px !important; gap: 12px !important; flex-wrap: nowrap !important;">
+  <!-- THE TOOLBAR ROW (Closed correctly now) -->
+  <div style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; width: 100% !important; margin-bottom: 20px !important; gap: 12px !important; flex-wrap: nowrap !important;">
     
     <!-- LEFT SIDE: The Unified Pill Container -->
     <div class="cal-view-pill" style="display: flex !important; background: rgba(0,0,0,0.4) !important; padding: 4px !important; border-radius: 12px !important; gap: 4px !important; flex-shrink: 0 !important; backdrop-filter: blur(10px) !important; border: 1px solid rgba(255,255,255,0.1) !important;">
         
         <!-- Button 1: Grid -->
-        <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')" 
-                class="pill-btn">
+        <button id="btn-view-grid" onclick="switchCalendarView('grid')" class="btn active">
             <span style="font-size:14px;">📅</span> Grid View
         </button>
         
         <!-- Button 2: List -->
-        <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')" 
-                class="pill-btn">
+        <button id="btn-view-list" onclick="switchCalendarView('list')" class="btn">
             <span style="font-size:14px;">📝</span> List View
         </button>
         
         <!-- Button 3: Request Time Off -->
-        <button class="btn" onclick="openAbsenceModal()" 
-                class="pill-btn">
+        <button onclick="openAbsenceModal()" class="btn">
             <span style="font-size:14px;">🗓️</span> Request Time Off
         </button>
     </div>
+  </div> 
+
+  <!-- GRID VIEW (Now it starts on a new line and fills the width) -->
+  <div id="cal-grid-container" style="width:100% !important;">
+     <!-- Rest of your calendar code follows... -->
 
   <!-- THE CSS FOR THE GLASSY BUTTONS -->
   <style>
@@ -1112,10 +1114,7 @@
     </div>
   </div>
 </div>
-  <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();" style="background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 18px !important; border-radius: 10px !important; border:none !important; cursor:pointer !important; white-space: nowrap !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;">
-+ Add Entry
-</button>
- </div>
+  
  <!-- CALENDAR DAY ACTION MODAL -->
 <div id="cal-action-modal" style="display:none; position:fixed; z-index:100002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter: blur(4px);">
   <div style="background:#1a1a1a; margin:15% auto; padding:25px; border-radius:20px; width:90%; max-width:320px; color:#fff; text-align:center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
