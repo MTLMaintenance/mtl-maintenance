@@ -444,19 +444,26 @@
 
 </div>
 
-  <!-- CALENDAR PANEL -->
+ <!-- CALENDAR PANEL -->
 <div class="panel" id="panel-calendar">
-  <div class="section-header">
-    <span class="section-title">Maintenance Calendar</span>
-    <button class="btn btn-primary btn-sm" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
- <button class="nav-btn btn-absence" onclick="openAbsenceModal()">📅 Request Time Off</button>
-  </div>
+  
+  <!-- NEW TOOLBAR ROW -->
+  <div class="calendar-toolbar">
+    
+    <!-- LEFT SIDE: Views and Request Button -->
+    <div class="toolbar-left">
+      <div class="view-toggle">
+        <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')">📅 Grid View</button>
+        <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')">📝 List View</button>
+      </div>
+      
+      <!-- Request Button: Now formatted exactly like the View buttons -->
+      <button class="btn btn-absence-trigger" onclick="openAbsenceModal()">📅 Request Time Off</button>
+    </div>
 
-  <!-- THE NEW TOGGLE -->
-  <div class="view-toggle">
-    <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')">📅 Grid View</button>
-    <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')">📝 List View</button>
-  </div>
+    <!-- RIGHT SIDE: Add Entry -->
+    <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();">+ Add Entry</button>
+  </div> 
 
   <!-- GRID VIEW -->
   <div id="cal-grid-container">
