@@ -24,30 +24,50 @@ function setAbsenceType(type) {
 }
 
 async function saveAbsence() {
-    const date = document.getElementById('abs-date').value;
-    const time = document.getElementById('abs-time').value;
-    const pubReason = document.getElementById('abs-public').value;
-    const isPriv = document.getElementById('abs-is-private').checked;
-    const privReason = document.getElementById('abs-private').value;
+    try {
+        const dateVal = document.getElementById('abs-date').value;
+        const timeVal = document.getElementById('abs-time').value;
+        const pubReason = document.getElementById('abs-public').value;
+        const isPriv = document.getElementById('abs-is-private').checked;
+        const privReason = document.getElementById('abs-private').value;
 
-    if(!date || !pubReason) return alert("Fill in the date and reason.");
+        if (!dateVal || !pubReason) {
+            alert("Please select a date and provide a reason.");
+            return;
+        }
 
-    const { error } = await window._mpdb.from('staff_absences').insert([{
-        user_name: currentUser.name,
-        user_id: currentUser.id,
-        start_date: date, // The date picked
-        is_all_day: selectedAbsenceType === 'all',
-        partial_time: selectedAbsenceType === 'partial' ? time : null,
-        reason_public: pubReason,
-        is_private: isPriv,
-        reason_private: isPriv ? privReason : null
-    }]);
+        // BUILDING THE DATA OBJECT
+        const newEntry = {
+            user_name: currentUser.name || currentUser.username || "Unknown",
+            user_id: String(currentUser.id || ""),
+            start_date: dateVal, 
+            // We use 'all' as the default if the variable isn't set yet
+            is_all_day: (window.selectedAbsenceType === 'all' || !window.selectedAbsenceType),
+            partial_time: (window.selectedAbsenceType === 'partial') ? timeVal : null,
+            reason_public: pubReason,
+            is_private: isPriv,
+            reason_private: isPriv ? privReason : null
+        };
 
-    if (!error) {
-        alert("Success!");
+        const { error } = await window._mpdb
+            .from('staff_absences')
+            .insert([newEntry]);
+
+        if (error) {
+            console.error("Supabase Error:", error);
+            alert("Error: " + error.message);
+            return;
+        }
+
+        alert("Request Submitted!");
         closeAbsenceModal();
-        await fetchAbsences();
-        renderCalendar();
+        
+        // Refresh the calendar
+        if (typeof fetchAbsences === 'function') await fetchAbsences();
+        if (typeof renderCalendar === 'function') renderCalendar();
+
+    } catch (err) {
+        console.error("JS Error:", err);
     }
 }
 async function checkUpcomingAbsences() {
