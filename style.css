@@ -1233,3 +1233,34 @@ body, html {
 .panel-container, .panel {
     z-index: 1 !important;
 }
+/* 1. Make the main calendar container full-width */
+#panel-calendar .card, #cal-grid-container .card {
+    max-width: 100% !important;
+    width: 98% !important; /* Leaves a tiny gap on the sides */
+    margin: 0 auto !important;
+    min-height: calc(100vh - 180px) !important; /* Stretches it towards the bottom */
+}
+
+/* 2. Make the calendar cells TALLER */
+#cal-days .cal-day {
+    min-height: 120px !important; /* Adjust this number to make cells taller or shorter */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* 3. Ensure the internal grid fills the available space */
+#cal-days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 1px !important; /* Thin clean lines between days */
+    background-color: #eee; /* This creates the grid lines */
+    border: 1px solid #ddd;
+}
+
+/* 4. Fix the event container so it can hold more items without overlapping */
+.cal-event-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2px;
+}
