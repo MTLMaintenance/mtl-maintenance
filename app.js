@@ -1044,11 +1044,9 @@ async function renderCalendar() {
         .map(d => `<div class="cal-header" style="font-weight:600; padding:5px">${d}</div>`).join('');
     
     // 2. Pre-Calculate Adaptive Forecasts
-    // We do this here so we can place the orange boxes in the loop below
     for (let e of state.equipment) {
         try {
             const pred = await getAdaptivePrediction(e.id);
-            // Only store if it's within the 40hr threshold we set
             e._predictedDate = (pred && pred.status === 'ACTIVE') ? 
                 pred.predictedDate.toISOString().split('T')[0] : null;
         } catch(err) { e._predictedDate = null; }
@@ -1070,47 +1068,27 @@ async function renderCalendar() {
     for(let d = 1; d <= daysInMonth; d++){
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
-        // Find Staff Absences
-const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
-
-const eventsHtml = [
-    // ... your tasks and forecasts ...
-    ...dayAbs.map(a => {
-        // Logic for the text label
-        const statusText = a.is_all_day 
-            ? `👤 ${a.user_name} Out` 
-            : `👤 ${a.user_name} @ ${formatTime(a.partial_time)}`;
-            
-        return `<div class="cal-event" onclick="event.stopPropagation(); openAbsenceDetail('${a.id}')" 
-                style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px;">
-                ${statusText}</div>`;
-    })
-].join('');
-
-// Helper to make time look pretty (e.g. 13:00 -> 1:00 PM)
-function formatTime(timeStr) {
-    if(!timeStr) return '';
-    const [h, m] = timeStr.split(':');
-    const hrs = parseInt(h);
-    const suffix = hrs >= 12 ? 'PM' : 'AM';
-    return `${((hrs + 11) % 12 + 1)}:${m} ${suffix}`;
-}
-        // Find Work Orders
+        
+        // --- FETCH ALL DATA FOR THIS DAY ---
         const dayTasks = state.tasks.filter(t => t.due === dateStr);
-        // Find Scheduled Items
         const dayScheds = state.schedules.filter(s => s.date === dateStr);
-        // Find Adaptive Forecasts
         const dayForecasts = state.equipment.filter(e => e._predictedDate === dateStr);
-          // --- NEW: Find Staff Absences ---
-        const dayAbs = (staffAbsences || []).filter(a => {
-            const start = a.start_date.split('T')[0];
-            const end = a.end_date.split('T')[0];
-            return dateStr >= start && dateStr <= end;
-        });
+        const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
+
+        // --- MERGE EVERYTHING INTO THE HTML ARRAY ---
         const eventsHtml = [
             ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
             ...dayScheds.map(s => `<div class="cal-event scheduled">${s.name}</div>`),
-            ...dayForecasts.map(e => `<div class="cal-event forecast">📈 Forecast: ${e.name}</div>`)
+            ...dayForecasts.map(e => `<div class="cal-event forecast">📈 Forecast: ${e.name}</div>`),
+            ...dayAbs.map(a => {
+                const statusText = a.is_all_day 
+                    ? `👤 ${a.user_name} Out` 
+                    : `👤 ${a.user_name} @ ${formatTime(a.partial_time)}`;
+                    
+                return `<div class="cal-event" onclick="event.stopPropagation(); openAbsenceDetail('${a.id}')" 
+                        style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px;">
+                        ${statusText}</div>`;
+            })
         ].join('');
 
         cells += `
@@ -1123,19 +1101,28 @@ function formatTime(timeStr) {
     daysEl.innerHTML = cells;
 
     // 6. Refresh Sidebars
-    renderMonthSchedList();
-    renderRecurList();
-if (typeof renderMonthSchedList === 'function') {
-      try { renderMonthSchedList(); } catch(e) { console.warn("Side list failed"); }
-  }
+    if (typeof renderMonthSchedList === 'function') {
+        try { renderMonthSchedList(); } catch(e) { console.warn("Side list failed"); }
+    }
+    if (typeof renderRecurList === 'function') {
+        try { renderRecurList(); } catch(e) { console.warn("Recur list failed"); }
+    }
   
-  // RUN ADAPTIVE MATH (BACKGROUND)
-  if (typeof fillAdaptiveCalendarMarkers === 'function') {
-      fillAdaptiveCalendarMarkers(year, month);
-  }
-  
-  console.log("Calendar Render: Success ✓");
+    // RUN ADAPTIVE MATH (BACKGROUND)
+    if (typeof fillAdaptiveCalendarMarkers === 'function') {
+        fillAdaptiveCalendarMarkers(year, month);
+    }
+    
+    console.log("Calendar Render: Success ✓");
 }
+function formatTime(timeStr) {
+    if(!timeStr) return '';
+    const [h, m] = timeStr.split(':');
+    const hrs = parseInt(h);
+    const suffix = hrs >= 12 ? 'PM' : 'AM';
+    return `${((hrs + 11) % 12 + 1)}:${m} ${suffix}`;
+}
+
 async function fillAdaptiveCalendarMarkers(year, month) {
     for (let e of state.equipment) {
         try {
