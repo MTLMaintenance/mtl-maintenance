@@ -449,27 +449,50 @@
   <!-- THE TOOLBAR ROW -->
   <div style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; width: 100% !important; margin-bottom: 20px !important; gap: 12px !important; flex-wrap: nowrap !important;">
     
-    <!-- LEFT SIDE: Unified Tool Container (The "Pill") -->
-    <div style="display: flex !important; background: rgba(0,0,0,0.2) !important; padding: 4px !important; border-radius: 12px !important; gap: 4px !important; flex-shrink: 0 !important; backdrop-filter: blur(5px) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+    <!-- LEFT SIDE: The Unified Pill Container -->
+    <div style="display: flex !important; background: rgba(0,0,0,0.3) !important; padding: 4px !important; border-radius: 12px !important; gap: 2px !important; flex-shrink: 0 !important; backdrop-filter: blur(8px) !important; border: 1px solid rgba(255,255,255,0.1) !important;">
         
-        <!-- Button 1: Grid -->
-        <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')" style="padding: 6px 14px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; color: inherit !important; display: flex !important; align-items: center !important; gap: 6px !important;">📅 Grid View</button>
+        <!-- Button 1: Grid (Active State) -->
+        <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')" 
+                style="padding: 6px 16px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; transition: all 0.2s !important;">
+            <span style="font-size:14px;">📅</span> Grid View
+        </button>
         
-        <!-- Button 2: List -->
-        <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')" style="padding: 6px 14px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; color: inherit !important; display: flex !important; align-items: center !important; gap: 6px !important;">📝 List View</button>
+        <!-- Button 2: List (Inactive State) -->
+        <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')" 
+                style="padding: 6px 16px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; transition: all 0.2s !important; background: transparent !important; color: #fff !important;">
+            <span style="font-size:14px;">📝</span> List View
+        </button>
         
-        <!-- A small vertical divider line to separate 'Views' from 'Actions' -->
-        <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 4px 2px;"></div>
-
-        <!-- Button 3: Request Time Off (Now part of the same box) -->
-        <button class="btn" onclick="openAbsenceModal()" style="padding: 6px 14px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; color: #fff !important; background: transparent !important; display: flex !important; align-items: center !important; gap: 6px !important; white-space: nowrap !important;">🗓️ Request Time Off</button>
+        <!-- Button 3: Request Time Off (Action State - looks like Inactive) -->
+        <button class="btn" onclick="openAbsenceModal()" 
+                style="padding: 6px 16px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; transition: all 0.2s !important; background: transparent !important; color: #fff !important; white-space: nowrap !important;">
+            <span style="font-size:14px;">🗓️</span> Request Time Off
+        </button>
     </div>
 
-    <!-- RIGHT SIDE: Add Entry (Stay Black/Primary) -->
-    <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();" style="background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 18px !important; border-radius: 10px !important; border:none !important; cursor:pointer !important; white-space: nowrap !important; box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;">+ Add Entry</button>
+    <!-- RIGHT SIDE: Add Entry -->
+    <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();" 
+            style="background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 18px !important; border-radius: 10px !important; border:none !important; cursor:pointer !important; white-space: nowrap !important; box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;">
+        + Add Entry
+    </button>
   </div>
 
-  <!-- GRID VIEW -->
+  <!-- THE CSS FOR ACTIVE STATE -->
+  <style>
+    /* This ensures that whichever button has the .active class turns white automatically */
+    #panel-calendar .view-toggle .btn.active, 
+    #panel-calendar div > button.active {
+        background: #fff !important;
+        color: #000 !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Hover effect for the transparent buttons */
+    #panel-calendar div > button:not(.active):hover {
+        background: rgba(255,255,255,0.1) !important;
+    }
+  </style>
 
 
   <!-- GRID VIEW -->
