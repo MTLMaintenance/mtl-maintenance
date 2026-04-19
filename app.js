@@ -1,3 +1,4 @@
+let lastClickedDate = "";
 let currentDetailId = null;
 let selectedAbsenceType = 'all'; 
 let staffAbsences = [];
@@ -1258,15 +1259,45 @@ function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar();
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
 function calDayClick(dateStr) {
-    // 1. Clear the modal and set to 'one-time' mode
+    lastClickedDate = dateStr; // Store '2026-04-23'
+    
+    // Format the date for the title (e.g. "Thu, Apr 23")
+    const dateObj = new Date(dateStr + "T00:00:00");
+    const options = { weekday: 'short', month: 'short', day: 'numeric' };
+    document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', options);
+    
+    // Show the modal
+    document.getElementById('cal-action-modal').style.display = 'block';
+}
+
+// Function 1: Open the Work Order Modal with the date filled
+function triggerAddEntryFromCal() {
+    document.getElementById('cal-action-modal').style.display = 'none';
+    
+    // Open your existing work order modal
+    populateSelects(); 
+    openModal('calendar-entry-modal'); 
     resetCalModal();
+
+    // AUTO-FILL the date field in your Work Order form
+    // Check your HTML for the ID of the 'Due Date' input. It's likely 'cal-date' or 'task-due'
+    const dateInput = document.getElementById('cal-date') || document.getElementById('task-due');
+    if (dateInput) dateInput.value = lastClickedDate;
+}
+
+// Function 2: Open the Absence Modal with the date filled
+function triggerAbsenceFromCal() {
+    document.getElementById('cal-action-modal').style.display = 'none';
     
-    // 2. Set the specific date the user clicked on
-    const dateInput = document.getElementById('ce-date');
-    if (dateInput) dateInput.value = dateStr;
-    
-    // 3. Open the NEW master modal
-    openModal('calendar-entry-modal');
+    openAbsenceModal();
+
+    // AUTO-FILL the 'Which Day?' input we made earlier
+    const absDateInput = document.getElementById('abs-date');
+    if (absDateInput) {
+        absDateInput.value = lastClickedDate;
+        // Trigger the check function so the 'All Day/Partial' options show up automatically
+        if (typeof checkDateSelection === 'function') checkDateSelection(lastClickedDate);
+    }
 }
 function toggleRecurType(){
   const t=document.getElementById('r-type').value;
