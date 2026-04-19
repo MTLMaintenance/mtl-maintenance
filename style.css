@@ -952,194 +952,69 @@ body, html {
 .panel { display: none !important; }
 .panel.active { display: block !important; }
 #panel-chat.active { display: flex !important; }
+/* ============================================================
+   1. GLOBAL STYLES (Applies to EVERYONE)
+   Keep only colors and small utility classes here.
+   ============================================================ */
+.cal-event-maintenance { background-color: #007bff !important; border-left: 4px solid #0056b3; }
+.cal-event-absence { background-color: #ff9800 !important; border-left: 4px solid #e65100; }
+
+.calendar-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; }
+.toolbar-left { display: flex; align-items: center; gap: 12px; }
+
+.btn-absence-trigger { 
+    background: rgba(0, 0, 0, 0.2) !important; color: #fff !important; border: none !important; 
+    padding: 8px 14px !important; border-radius: 10px !important; font-size: 13px !important; 
+    font-weight: 600 !important; cursor: pointer; 
+}
+
+.view-toggle { background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 12px; display: flex; gap: 4px; }
+.btn-primary { background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 16px !important; border-radius: 8px !important; }
 
 
-   3. DESKTOP OVERRIDE (min-width: 769px)
+/* ============================================================
+   2. DESKTOP ONLY (min-width: 769px)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. THE MAIN CONTAINER: Force one single row */
   .topbar {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: nowrap !important; /* Forces everything onto ONE line */
+    flex-wrap: nowrap !important;
     align-items: center !important;
     justify-content: flex-start !important;
     height: 60px !important;
     width: 100% !important;
     padding: 0 15px !important;
-    gap: 15px !important;
-    position: sticky !important; /* Keeps it at the top but respects space below */
+    position: sticky !important;
     top: 0;
-    z-index: 1000;
-    overflow-x: auto !important; /* Allows you to scroll sideways if window is small */
-    overflow-y: hidden !important;
+    z-index: 9999 !important; /* Layers it above dashboard */
+    overflow: visible !important;
     background: #1a1a1a !important;
   }
 
-  /* 2. LOGO & SEARCH: Keep them together on the left */
-  /* Target the first group (Logo and Search) */
-  .topbar > div:first-child, .logo-search-container {
-    display: flex !important;
-    align-items: center !important;
-    gap: 15px !important;
-    flex-shrink: 0 !important; /* Prevents logo from squishing */
-  }
-
-  /* 3. NAVIGATION BUTTONS: Put them in the middle */
-  #main-nav, .topbar-main-row {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    gap: 8px !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* 4. ACTION BUTTONS: Put them on the right */
-  .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    gap: 8px !important;
-    flex-shrink: 0 !important;
-    margin-left: auto !important; /* This pushes them to the far right */
-  }
-
-  /* 5. BUTTON STYLING: Ensure they stay their full size */
-  .nav-btn, .topbar button, .topbar a {
-    white-space: nowrap !important;
-    flex: 0 0 auto !important;
-  }
-
-  /* 6. CLEAN SCROLLBAR: A thin bar if the window is too small */
-  .topbar::-webkit-scrollbar {
-    height: 3px;
-  }
-  .topbar::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
-    border-radius: 10px;
-  }
-
-  /* 7. CONTENT AREA: Make sure it starts exactly below the header */
-  .panel-container, .panel.active {
-    margin-top: 15px !important;
-  }
-}
-/* Maintenance Tasks (Default) */
-.cal-event-maintenance {
-    background-color: #007bff !important; /* Blue */
-    border-left: 4px solid #0056b3;
-}
-
-/* Staff Absences (New) */
-.cal-event-absence {
-    background-color: #ff9800 !important; /* Orange */
-    border-left: 4px solid #e65100;
-}
-/* --- CALENDAR TOOLBAR LAYOUT --- */
-.calendar-toolbar {
-    display: flex;
-    justify-content: space-between; /* Pushes left to left, right to right */
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 15px;
-}
-
-.toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Format the Request button to match the View Toggles */
-.btn-absence-trigger {
-    background: rgba(0, 0, 0, 0.2) !important;
-    color: #fff !important;
-    border: none !important;
-    padding: 8px 14px !important;
-    border-radius: 10px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    cursor: pointer;
-}
-
-.btn-absence-trigger:hover {
-    background: rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Ensure the View Toggle looks like a 'Pill' container */
-.view-toggle {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 4px;
-    border-radius: 12px;
-    display: flex;
-    gap: 4px;
-}
-
-/* Reset the Add Entry button to stay black/primary on the right */
-.btn-primary {
-    background: #000 !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-    padding: 8px 16px !important;
-    border-radius: 8px !important;
-}
-/* 1. Force the Topbar to stay on the very top layer */
-.topbar {
-    position: sticky !important; /* or relative, depending on your setup */
-    z-index: 9999 !important;
-    overflow: visible !important; /* This ensures dropdowns don't get cut off */
-}
-
-/* 2. Ensure the search bar container is also prioritized */
-#global-search {
-    position: relative !important;
-    z-index: 10000 !important;
-}
-
-/* 3. If you have a search results dropdown, make sure it pops out on top */
-.search-results, #search-results-container {
-    z-index: 10001 !important;
-    position: absolute !important;
-}
-
-/* 4. Ensure the dashboard panels stay below the header */
-.panel-container, .panel {
-    z-index: 1 !important;
-}
-/* 1. Make the main calendar container full-width */
-#panel-calendar .card, #cal-grid-container .card {
+  /* Make PC Calendar Full Screen */
+  #panel-calendar .card, #cal-grid-container .card {
     max-width: 100% !important;
-    width: 98% !important; /* Leaves a tiny gap on the sides */
+    width: 98% !important;
     margin: 0 auto !important;
-    min-height: calc(100vh - 180px) !important; /* Stretches it towards the bottom */
-}
+    min-height: calc(100vh - 180px) !important; 
+  }
 
-/* 2. Make the calendar cells TALLER */
-#cal-days .cal-day {
-    min-height: 120px !important; /* Adjust this number to make cells taller or shorter */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
+  #cal-days .cal-day {
+    min-height: 120px !important; /* Tall cells for PC */
+  }
 
-/* 3. Ensure the internal grid fills the available space */
-#cal-days {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    gap: 1px !important; /* Thin clean lines between days */
-    background-color: #eee; /* This creates the grid lines */
-    border: 1px solid #ddd;
-}
+  #main-nav, .topbar-main-row { display: flex !important; gap: 8px !important; }
+  .topbar-right { margin-left: auto !important; display: flex !important; gap: 8px !important; }
+  .logo, #global-search { display: block !important; }
+  
+  .panel.active { margin-top: 15px !important; }
+} /* END PC BLOCK */
 
-/* 4. Fix the event container so it can hold more items without overlapping */
-.cal-event-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 2px;
-}
+
+/* ============================================================
+   3. MOBILE ONLY (max-width: 768px)
+   ============================================================ */
 @media screen and (max-width: 768px) {
   html, body {
     height: 100vh !important;
@@ -1148,7 +1023,22 @@ body, html {
     width: 100%;
   }
 
-  /* TOPBAR: Stack rows so you can see navigation */
+  /* Shrink Calendar for Mobile (The "Mini-Map" look) */
+  #panel-calendar .card, #cal-grid-container .card {
+    height: auto !important;
+    min-height: 0 !important; /* FIX: Removes the big empty white space */
+    width: 100% !important;
+  }
+
+  #panel-calendar .cal-day {
+    min-height: 65px !important; /* Shorter cells for mobile */
+    padding: 2px !important;
+  }
+
+  #panel-calendar .cal-day-num { font-size: 10px !important; }
+  #panel-calendar .cal-event { font-size: 8px !important; padding: 1px 2px !important; }
+
+  /* TOPBAR: Stack rows on phone */
   .topbar {
     display: flex !important;
     flex-direction: column !important;
@@ -1160,126 +1050,45 @@ body, html {
     z-index: 9999;
   }
 
-  /* HIDE LOGO AND SEARCH ON MOBILE */
-  .logo, #global-search, #global-search ~ span { 
-    display: none !important; 
-  }
+  .logo, #global-search, #global-search ~ span { display: none !important; }
 
-  /* ROW 1: Navigation Row */
   .topbar-main-row, #main-nav {
     display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
     overflow-x: auto !important;
     width: 100% !important;
     padding: 4px 10px !important;
-    gap: 8px !important;
   }
-  .topbar-main-row::-webkit-scrollbar { display: none; }
 
-  /* ROW 2: Action Buttons (PDF, CSV, etc) */
   .topbar-right {
     display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
     width: 100% !important;
     padding: 0 10px 4px !important;
     justify-content: flex-start !important;
   }
 
-  /* PANEL SCROLLING: Let Dashboard/Equipment scroll, keep Chat/Admin fixed */
   .panel.active {
     height: calc(100vh - 110px) !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
     padding: 10px !important;
   }
 
-  #panel-chat.active, #panel-admin.active {
-    display: flex !important;
-    flex-direction: column !important;
+  #panel-chat.active, #panel-admin.active, #panel-calendar.active {
     overflow-y: hidden !important;
   }
 
-  /* --- CALENDAR SHRINK FIX FOR MOBILE --- */
-  #panel-calendar.active {
-    overflow-y: hidden !important; /* Stops the whole panel from scrolling */
-  }
-
-  #panel-calendar .cal-day {
-    min-height: 65px !important; /* Shrunk from 120px to fit screen */
-    padding: 2px !important;
-  }
-
-  #panel-calendar .cal-day-num {
-    font-size: 10px !important; /* Smaller numbers */
-  }
- #panel-calendar .card, #cal-grid-container .card {
-    height: auto !important;
-    min-height: 0 !important; /* Overrides the desktop full-screen rule */
-  }
-  #panel-calendar .cal-event {
-    font-size: 8px !important; /* Tiny text for events */
-    padding: 1px 2px !important;
-    line-height: 1 !important;
-    margin-bottom: 1px !important;
-  }
-
-  #panel-calendar .cal-nav {
-    margin-bottom: 5px !important; /* Tighten up the Month title area */
-  }
-
-  /* CHAT LAYOUT ADJUSTMENTS */
-  #panel-chat .chat-layout {
-    flex-direction: column !important;
-    height: calc(100vh - 220px) !important; 
-    min-height: calc(100vh - 220px) !important;
-  }
-  #panel-chat #chat-sidebar { display: none !important; }
+  /* CHAT ADJUSTMENTS */
+  #panel-chat .chat-layout { height: calc(100vh - 220px) !important; }
   #panel-chat #chat-messages { flex: 1; overflow-y: auto !important; padding: 14px !important; }
 
-  /* CHAT MENU BUTTONS */
-  #chat-channel-menu-btn { display: inline-flex !important; }
-  #chat-channel-mobile-menu.open { display: block; }
-
-  /* --- PROFESSIONAL DROPDOWN ADDITIONS --- */
+  /* MOBILE DROPDOWN STYLE */
   #chat-channel-mobile-menu {
-    position: absolute;
-    top: 44px;
-    left: 12px;
-    z-index: 1000;
-    min-width: 220px;
-    background: #ffffff !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important; 
-    border: 1px solid rgba(0,0,0,0.1) !important;
-    border-radius: 12px !important;
-    padding: 8px !important;
-    animation: menuFadeIn 0.2s ease-out; 
+    position: absolute; top: 44px; left: 12px; z-index: 1000;
+    min-width: 220px; background: #fff !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+    border-radius: 12px !important; padding: 8px !important;
   }
 
-  @keyframes menuFadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  .chat-mobile-menu-item.active { background: #f0f4f8 !important; color: #007bff !important; font-weight: 700 !important; }
+} /* END MOBILE BLOCK */
 
-  .chat-mobile-menu-item {
-    width: 100% !important;
-    text-align: left !important;
-    padding: 10px 15px !important;
-    margin-bottom: 4px !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    color: #333 !important;
-    background: transparent !important;
-    border: none !important;
-    transition: background 0.2s !important;
-  }
-  .chat-mobile-menu-item:active { background: rgba(0,0,0,0.05) !important; }
-  .chat-mobile-menu-item.active {
-    background: #f0f4f8 !important;
-    color: #007bff !important;
-    font-weight: 700 !important;
-  }
-} /* END MOBILE */
+
