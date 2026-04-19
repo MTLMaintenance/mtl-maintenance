@@ -83,14 +83,18 @@ function closeAbsenceModal() {
     const modal = document.getElementById('absence-modal');
     if (modal) modal.style.display = 'none';
 }
-
 function togglePrivateReason(show) {
-    // Note: This matches the 'priv-box' ID in the HTML I provided earlier
     const privBox = document.getElementById('priv-box');
     if (privBox) {
-        privBox.style.display = show ? 'block' : 'none';
+        if (show) {
+            privBox.style.display = 'block';
+            // Optional: Scroll to bottom of modal so they see the new box
+        } else {
+            privBox.style.display = 'none';
+        }
     }
 }
+
 
 async function saveAbsence() {
     const start = document.getElementById('abs-start').value;
