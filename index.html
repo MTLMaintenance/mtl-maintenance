@@ -450,50 +450,65 @@
   <div style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; width: 100% !important; margin-bottom: 20px !important; gap: 12px !important; flex-wrap: nowrap !important;">
     
     <!-- LEFT SIDE: The Unified Pill Container -->
-    <div style="display: flex !important; background: rgba(0,0,0,0.3) !important; padding: 4px !important; border-radius: 12px !important; gap: 2px !important; flex-shrink: 0 !important; backdrop-filter: blur(8px) !important; border: 1px solid rgba(255,255,255,0.1) !important;">
+    <div class="cal-view-pill" style="display: flex !important; background: rgba(0,0,0,0.4) !important; padding: 4px !important; border-radius: 12px !important; gap: 4px !important; flex-shrink: 0 !important; backdrop-filter: blur(10px) !important; border: 1px solid rgba(255,255,255,0.1) !important;">
         
-        <!-- Button 1: Grid (Active State) -->
+        <!-- Button 1: Grid -->
         <button class="btn active" id="btn-view-grid" onclick="switchCalendarView('grid')" 
-                style="padding: 6px 16px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; transition: all 0.2s !important;">
+                class="pill-btn">
             <span style="font-size:14px;">📅</span> Grid View
         </button>
         
-        <!-- Button 2: List (Inactive State) -->
+        <!-- Button 2: List -->
         <button class="btn" id="btn-view-list" onclick="switchCalendarView('list')" 
-                style="padding: 6px 16px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; transition: all 0.2s !important; background: transparent !important; color: #fff !important;">
+                class="pill-btn">
             <span style="font-size:14px;">📝</span> List View
         </button>
         
-        <!-- Button 3: Request Time Off (Action State - looks like Inactive) -->
+        <!-- Button 3: Request Time Off -->
         <button class="btn" onclick="openAbsenceModal()" 
-                style="padding: 6px 16px !important; border-radius: 9px !important; border:none !important; cursor:pointer !important; font-size: 13px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; transition: all 0.2s !important; background: transparent !important; color: #fff !important; white-space: nowrap !important;">
+                class="pill-btn">
             <span style="font-size:14px;">🗓️</span> Request Time Off
         </button>
     </div>
 
     <!-- RIGHT SIDE: Add Entry -->
     <button class="btn btn-primary" onclick="populateSelects(); openModal('calendar-entry-modal'); resetCalModal();" 
-            style="background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 18px !important; border-radius: 10px !important; border:none !important; cursor:pointer !important; white-space: nowrap !important; box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;">
+            style="background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 18px !important; border-radius: 10px !important; border:none !important; cursor:pointer !important; white-space: nowrap !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;">
         + Add Entry
     </button>
   </div>
 
-  <!-- THE CSS FOR ACTIVE STATE -->
+  <!-- THE CSS FOR THE GLASSY BUTTONS -->
   <style>
-    /* This ensures that whichever button has the .active class turns white automatically */
-    #panel-calendar .view-toggle .btn.active, 
-    #panel-calendar div > button.active {
+    /* Default style for all buttons in the pill (The "Faded" look) */
+    #panel-calendar .cal-view-pill .btn {
+        padding: 6px 16px !important;
+        border-radius: 9px !important;
+        border: none !important;
+        cursor: pointer !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        transition: all 0.2s ease !important;
+        background: rgba(255, 255, 255, 0.1) !important; /* This is the "Fade" */
+        color: #fff !important;
+        white-space: nowrap !important;
+    }
+
+    /* Hover effect to make the fade slightly brighter */
+    #panel-calendar .cal-view-pill .btn:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    /* The Active state (Solid White) */
+    #panel-calendar .cal-view-pill .btn.active {
         background: #fff !important;
         color: #000 !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
-    }
-    
-    /* Hover effect for the transparent buttons */
-    #panel-calendar div > button:not(.active):hover {
-        background: rgba(255,255,255,0.1) !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
     }
   </style>
-
 
   <!-- GRID VIEW -->
   <div id="cal-grid-container">
