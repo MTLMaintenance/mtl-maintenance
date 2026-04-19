@@ -1162,3 +1162,51 @@ body, html {
     background-color: #ff9800 !important; /* Orange */
     border-left: 4px solid #e65100;
 }
+/* --- CALENDAR TOOLBAR LAYOUT --- */
+.calendar-toolbar {
+    display: flex;
+    justify-content: space-between; /* Pushes left to left, right to right */
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Format the Request button to match the View Toggles */
+.btn-absence-trigger {
+    background: rgba(0, 0, 0, 0.2) !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 8px 14px !important;
+    border-radius: 10px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+}
+
+.btn-absence-trigger:hover {
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Ensure the View Toggle looks like a 'Pill' container */
+.view-toggle {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 12px;
+    display: flex;
+    gap: 4px;
+}
+
+/* Reset the Add Entry button to stay black/primary on the right */
+.btn-primary {
+    background: #000 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    padding: 8px 16px !important;
+    border-radius: 8px !important;
+}
