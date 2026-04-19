@@ -1215,7 +1215,10 @@ body, html {
   #panel-calendar .cal-day-num {
     font-size: 10px !important; /* Smaller numbers */
   }
-
+ #panel-calendar .card, #cal-grid-container .card {
+    height: auto !important;
+    min-height: 0 !important; /* Overrides the desktop full-screen rule */
+  }
   #panel-calendar .cal-event {
     font-size: 8px !important; /* Tiny text for events */
     padding: 1px 2px !important;
