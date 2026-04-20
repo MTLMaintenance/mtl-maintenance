@@ -16,6 +16,42 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+async function deleteGeneralItem(id, tableType) {
+    // 1. Map the internal name to the Supabase table name
+    const tableMap = {
+        'tasks': 'tasks',          // Work Orders
+        'schedules': 'schedules',  // Calendar entries
+        'absences': 'staff_absences'
+    };
+    
+    const tableName = tableMap[tableType];
+    if (!tableName) return;
+
+    if (!confirm("Are you sure you want to permanently delete this item?")) return;
+
+    try {
+        const { error } = await window._mpdb
+            .from(tableName)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 2. Success - Refresh everything
+        showToast("Item deleted ✓");
+        
+        // Refresh the database data in your app's memory
+        if (typeof fetchAbsences === 'function') await fetchAbsences();
+        // If you have a fetchTasks function, run it here too
+        
+        renderCalendar();
+        closeModal('cal-action-modal');
+
+    } catch (e) {
+        console.error("Delete error:", e);
+        alert("Delete failed: " + e.message);
+    }
+}
 async function promptResetPin(userId) {
     if (!state.users_list_cache) return;
     
@@ -1382,6 +1418,10 @@ function calDayClick(dateStr) {
     // Loop through Work Orders (Blue)
     dayTasks.forEach(t => {
         listHtml += `
+             <div style="display:flex; gap:5px;">
+        <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
+        <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${t.id}', 'tasks')">🗑️</button>
+    </div>
             <div class="cal-list-item work-order-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
                 <span style="font-size:12px; color:white;">🛠️ ${t.name}</span>
                 <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
@@ -1391,6 +1431,10 @@ function calDayClick(dateStr) {
     // --- ADDED THIS SECTION: Loop through Schedules (Grey/Calendar items) ---
     dayScheds.forEach(s => {
         listHtml += `
+             <div style="display:flex; gap:5px;">
+        <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
+        <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${t.id}', 'tasks')">🗑️</button>
+    </div>
             <div class="cal-list-item" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #6c757d; margin-bottom:8px;">
                 <span style="font-size:12px; color:white;">📋 ${s.name}</span>
                 <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${s.id}')">Edit</button>
@@ -1401,6 +1445,10 @@ function calDayClick(dateStr) {
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : (typeof formatTime === 'function' ? formatTime(a.partial_time) : a.partial_time);
         listHtml += `
+             <div style="display:flex; gap:5px;">
+        <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
+        <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${a.id}', 'absences')">🗑️</button>
+    </div>
             <div class="cal-list-item absence-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:8px;">
                 <span style="font-size:12px; color:white;">👤 ${a.user_name} (${timeText})</span>
                 <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 150)">Edit</button>
@@ -6396,31 +6444,22 @@ function teleportModals() {
     });
 }
 async function jumpToTaskEdit(taskId) {
-    console.log("🚀 Jumping to Edit for:", taskId);
+    console.log("🚀 Opening Edit Window for:", taskId);
     
-    // 1. Kill the popup immediately
-    const actionModal = document.getElementById('cal-action-modal');
-    if (actionModal) {
-        actionModal.classList.remove('active');
-        actionModal.style.display = 'none';
+    // 1. Close the current day list popup
+    closeModal('cal-action-modal');
+
+    // 2. Open the edit window directly (without switching tabs)
+    // We assume the modal was 'teleported' to the body so it can be seen here
+    if (typeof openTaskDetail === 'function') {
+        openTaskDetail(taskId);
     }
 
-    // 2. Switch tabs (Change 'tasks' to 'work-orders' if needed)
-    if (typeof showPanel === 'function') {
-        showPanel('tasks'); 
+    // 3. Safety: Force the edit modal to the absolute front
+    // Change 'calendar-entry-modal' to your actual task modal ID if it's different
+    const editModal = document.getElementById('calendar-entry-modal') || document.getElementById('task-modal');
+    if (editModal) {
+        editModal.style.setProperty('display', 'block', 'important');
+        editModal.style.zIndex = "2000005";
     }
-
-    // 3. Force the Edit window to open after a tiny delay
-    setTimeout(() => {
-        if (typeof openTaskDetail === 'function') {
-            openTaskDetail(taskId);
-        }
-        
-        // Final Safety: If the edit modal is a popup, force it to the front
-        const editModal = document.getElementById('calendar-entry-modal') || document.getElementById('task-modal');
-        if (editModal) {
-            editModal.style.display = 'block';
-            editModal.style.zIndex = "2000005";
-        }
-    }, 200);
 }
