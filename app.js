@@ -17,19 +17,89 @@ const MONTHS = ['January','February','March','April','May','June','July','August
     // CONFIG
 // ============================================================
 async function deleteGeneralItem(id, tableType) {
-    // 1. Map the internal name to the Supabase table name
+    console.log("🗑️ Delete attempt initiated...");
+    console.log("ID:", id, "Type:", tableType);
+
+    // 1. Table Map - Make sure these match your Supabase table names!
     const tableMap = {
-        'tasks': 'tasks',          // Work Orders
-        'schedules': 'schedules',  // Calendar entries
+        'tasks': 'tasks',          // Is your work order table named 'tasks'?
+        'schedules': 'schedules',  // Is your calendar table named 'schedules'?
         'absences': 'staff_absences'
     };
     
     const tableName = tableMap[tableType];
-    if (!tableName) return;
+    
+    if (!tableName) {
+        console.error("❌ Error: Could not find a table for type:", tableType);
+        return;
+    }
 
-    if (!confirm("Are you sure you want to permanently delete this item?")) return;
+    // 2. Confirmation
+    if (!confirm("Are you sure you want to permanently delete this item?")) {
+        console.log("Delete cancelled by user.");
+        return;
+    }
 
     try {
+        // 3. Talk to Supabase
+        const { error } = await window._mpdb
+            .from(tableName)
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error("❌ Supabase Error:", error.message);
+            alert("Delete failed: " + error.message);
+            return;
+        }
+
+        console.log("✅ Successfully deleted from Database.");
+
+        // 4. Update local memory so it disappears from the screen instantly
+        // This removes the item from the lists your app is currently looking at
+        if (tableType === 'tasks' && typeof state !== 'undefined' && state.tasks) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+        }
+        if (tableType === 'schedules' && typeof state !== 'undefined' && state.schedules) {
+            state.schedules = state.schedules.filter(s => s.id !== id);
+        }
+        if (tableType === 'absences' && typeof staffAbsences !== 'undefined') {
+            staffAbsences = staffAbsences.filter(a => a.id !== id);
+        }
+
+        // 5. Refresh UI
+        alert("Item deleted successfully.");
+        closeModal('cal-action-modal'); // Close the popup
+        
+        if (typeof renderCalendar === 'function') {
+            renderCalendar(); // Redraw the calendar background
+        }
+
+    } catch (e) {
+        console.error("❌ Critical JS Error during delete:", e);
+        alert("An unexpected error occurred. Check the console.");
+    }
+}
+async function deleteGeneralItem(id, tableType) {
+    // 1. Map the labels to your actual Supabase tables
+    const tableMap = {
+        'tasks': 'tasks',          // Work Orders
+        'schedules': 'schedules',  // Calendar items
+        'absences': 'staff_absences'
+    };
+    
+    const tableName = tableMap[tableType];
+    if (!tableName) {
+        console.error("Unknown table type:", tableType);
+        return;
+    }
+
+    // 2. Safety Confirmation
+    if (!confirm("Are you sure you want to permanently delete this entry?")) return;
+
+    try {
+        console.log(`Deleting ${id} from ${tableName}...`);
+        
         const { error } = await window._mpdb
             .from(tableName)
             .delete()
@@ -37,21 +107,34 @@ async function deleteGeneralItem(id, tableType) {
 
         if (error) throw error;
 
-        // 2. Success - Refresh everything
-        showToast("Item deleted ✓");
-        
-        // Refresh the database data in your app's memory
-        if (typeof fetchAbsences === 'function') await fetchAbsences();
-        // If you have a fetchTasks function, run it here too
-        
-        renderCalendar();
-        closeModal('cal-action-modal');
+        // 3. Success UI Feedback
+        if (typeof showToast === 'function') {
+            showToast("Entry deleted ✓");
+        } else {
+            alert("Deleted successfully!");
+        }
+
+        // 4. REFRESH MEMORY: Remove the item from your app's local memory immediately
+        if (tableType === 'tasks' && window.state?.tasks) {
+            window.state.tasks = window.state.tasks.filter(t => t.id !== id);
+        }
+        if (tableType === 'schedules' && window.state?.schedules) {
+            window.state.schedules = window.state.schedules.filter(s => s.id !== id);
+        }
+        if (tableType === 'absences') {
+            if (typeof fetchAbsences === 'function') await fetchAbsences();
+        }
+
+        // 5. REFRESH SCREEN
+        closeModal('cal-action-modal'); // Close the popup
+        if (typeof renderCalendar === 'function') renderCalendar(); // Redraw calendar
 
     } catch (e) {
-        console.error("Delete error:", e);
-        alert("Delete failed: " + e.message);
+        console.error("Delete failed:", e);
+        alert("Could not delete: " + e.message);
     }
 }
+
 async function promptResetPin(userId) {
     if (!state.users_list_cache) return;
     
