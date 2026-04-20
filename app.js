@@ -190,10 +190,19 @@ async function showPinLogin() {
 function selectUserForLogin(user) {
     selectedLoginUser = user;
     enteredPin = "";
-    document.getElementById('selected-user-display').textContent = user.full_name || user.username;
+    
+    // Update the greeting text
+    const display = document.getElementById('selected-user-display');
+    if (display) {
+        display.textContent = "Hello, " + (user.full_name || user.username);
+    }
+
+    // Switch views
     document.getElementById('login-stage-names').style.display = 'none';
     document.getElementById('login-stage-pin').style.display = 'block';
-    updatePinDots();
+    
+    // Clear display if it exists
+    updatePinDisplay();
 }
 function pressPin(num) {
     if (num === 'clear') {
