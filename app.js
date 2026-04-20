@@ -1573,23 +1573,29 @@ function triggerAddEntryFromCal() {
 function triggerAbsenceFromCal() {
     console.log("Switching from Day Card to Absence Form...");
 
-    // 1. Close the day card popup so it's not sitting behind the form
-    closeModal('cal-action-modal');
+    // 1. Close the day card popup first
+    if (typeof closeModal === 'function') {
+        closeModal('cal-action-modal');
+    } else {
+        const actionModal = document.getElementById('cal-action-modal');
+        if (actionModal) actionModal.style.display = 'none';
+    }
 
     // 2. Open the time off request modal
     if (typeof openAbsenceModal === 'function') {
         openAbsenceModal();
     }
 
-    // 3. AUTO-FILL the date from the cell you clicked
+    // 3. AUTO-FILL the date
     const absDateInput = document.getElementById('abs-date');
     if (absDateInput) {
         absDateInput.value = lastClickedDate;
-        // Trigger the logic that shows the 'All Day / Partial' buttons
-        if (typeof checkDateSelection === 'function') checkDateSelection(lastClickedDate);
+        // This makes the 'All Day / Partial' buttons appear automatically
+        if (typeof checkDateSelection === 'function') {
+            checkDateSelection(lastClickedDate);
+        }
     }
 }
-
     // AUTO-FILL the 'Which Day?' input we made earlier
     const absDateInput = document.getElementById('abs-date');
     if (absDateInput) {
