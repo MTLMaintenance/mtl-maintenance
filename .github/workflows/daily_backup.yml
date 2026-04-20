@@ -1,0 +1,46 @@
+name: Nightly Database Backup
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs every night at Midnight UTC
+  workflow_dispatch:      # Allows you to click a button to test it now
+
+permissions:
+  contents: write        # Gives the robot permission to save files to your repo
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Backup Folder
+        run: mkdir -p backups
+
+      - name: Fetch Data from Supabase
+        run: |
+          # The list of tables you want to backup
+          TABLES="chat_messages profiles equipment parts suppliers work_orders staff_absences tasks schedules tool_crib_items"
+          DATE_STR=$(date +%Y-%m-%d)
+          
+          for table in $TABLES; do
+            echo "Fetching $table..."
+            # Use curl to pull data using the secrets you just saved
+            curl -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/$table?select=*" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" > "backups/${table}-${DATE_STR}.json"
+          done
+
+      - name: Cleanup old backups (Older than 7 days)
+        run: |
+          # This finds files in the backups folder older than 7 days and deletes them
+          find backups/ -name "*.json" -mtime +7 -delete
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "Backup Bot"
+          git config --global user.email "bot@github.com"
+          git add backups/
+          git commit -m "Automated Nightly Backup [skip ci]" || echo "No changes to commit"
+          git push
