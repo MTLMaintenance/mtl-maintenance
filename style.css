@@ -1132,34 +1132,3 @@ body, html {
 }
 .user-select-btn:hover { background: rgba(255,255,255,0.15); }
 /* This forces the backdrop to actually fill the screen */
-#user-perms-modal {
-    display: none; /* Will be toggled by JS */
-}
-
-#user-perms-modal.active, 
-#user-perms-modal.open {
-    display: flex !important; /* Forces out of 'inline-flex' */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 200000 !important;
-    background: rgba(0, 0, 0, 0.85) !important;
-    justify-content: center !important;
-    align-items: center !important;
-    visibility: visible !important;
-}
-
-#user-perms-modal .modal {
-    width: 95% !important;
-    max-width: 500px !important;
-    background: #1a1a1a !important;
-    border: 1px solid #444 !important;
-    border-radius: 15px !important;
-    padding: 20px !important;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
-    color: white !important;
-}
