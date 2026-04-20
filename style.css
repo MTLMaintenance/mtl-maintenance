@@ -1264,3 +1264,18 @@ body, html {
     cursor: pointer;
 }
 .cal-edit-btn:hover { background: #555; }
+#absence-detail-modal {
+    display: none;
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000001 !important; /* One layer higher than the action card */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Ensure it shows as flex when opened */
+#absence-detail-modal[style*="display: block"],
+#absence-detail-modal[style*="display: flex"] {
+    display: flex !important;
+}
