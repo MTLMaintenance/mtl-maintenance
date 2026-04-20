@@ -1013,20 +1013,11 @@ function openModal(id) {
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) {
-        // 1. Hide it
         el.style.display = 'none';
-        
-        // 2. Remove the 'active' classes so the CSS hides it
-        el.classList.remove('active');
+        el.classList.remove('active'); // THE FIX: Removes the class so it's unclickable
         el.classList.remove('open');
-        
-        // 3. Make it 'Intangible' again
-        el.style.pointerEvents = 'none';
-        
-        console.log("Modal " + id + " successfully closed and blocked.");
     }
 }
-
 // --- THE DROPDOWN PAINTER ---
 
 function populateSelects() {
