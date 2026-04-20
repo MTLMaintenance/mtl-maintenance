@@ -1187,3 +1187,18 @@ body, html {
     visibility: visible !important;
     pointer-events: all !important;
 }
+/* 1. By default, modals should not block clicks and should be hidden */
+#user-perms-modal, 
+#cal-action-modal {
+    display: none !important;
+    pointer-events: none !important; /* This allows clicks to 'pass through' the ghost */
+}
+
+/* 2. When the 'active' class is added, they become a solid wall you can click on */
+#user-perms-modal.active, 
+#cal-action-modal.active {
+    display: flex !important;
+    pointer-events: auto !important; /* Now you can click the buttons inside */
+    position: fixed !important;
+    z-index: 1000000 !important;
+}
