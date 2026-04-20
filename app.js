@@ -68,11 +68,27 @@ async function verifyUserPin() {
         .single();
 
     if (data) {
-        // SUCCESS: Use your existing login logic
+        // 1. Success! Set the current user
         currentUser = data;
+
+        // 2. SAVE THE SESSION so startApp() finds it on refresh
+        // This matches the 'mp_session' check inside your startApp function
+        localStorage.setItem('mp_session', JSON.stringify({
+            id: data.id,
+            username: data.username,
+            name: data.full_name || data.username
+        }));
+
+        // 3. Create the official session token in Supabase
+        if (typeof createSession === 'function') {
+            await createSession(data.username, data.id);
+        }
+
+        // 4. Enter the app
+        await fetchAbsences();
         await enterApp(); 
+
     } else {
-        // FAIL
         alert("Incorrect PIN");
         enteredPin = "";
         updatePinDots();
@@ -515,8 +531,7 @@ async function startApp() {
     console.error("Session error:", e);
   }
   
-  showPinLogin();
-}
+showPinLogin();}
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }
 window.addEventListener('online',  () => { document.getElementById('offline-banner').style.display='none';  setSyncStatus('online'); });
