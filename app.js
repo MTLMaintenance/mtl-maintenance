@@ -149,53 +149,6 @@ function setAbsenceType(type) {
     document.getElementById('abs-time-container').style.display = type === 'partial' ? 'block' : 'none';
 }
 
-async function saveAbsence() {
-    try {
-        const dateVal = document.getElementById('abs-date').value;
-        const timeVal = document.getElementById('abs-time').value;
-        const pubReason = document.getElementById('abs-public').value;
-        const isPriv = document.getElementById('abs-is-private').checked;
-        const privReason = document.getElementById('abs-private').value;
-
-        if (!dateVal || !pubReason) {
-            alert("Please select a date and provide a reason.");
-            return;
-        }
-
-        const newEntry = {
-            user_name: currentUser.name || currentUser.username || "Unknown",
-            user_id: String(currentUser.id || ""),
-            start_date: dateVal, 
-            is_all_day: (window.selectedAbsenceType === 'all' || !window.selectedAbsenceType),
-            partial_time: (window.selectedAbsenceType === 'partial') ? timeVal : null,
-            reason_public: pubReason,
-            is_private: isPriv,
-            reason_private: isPriv ? privReason : null
-        };
-
-        const { error } = await window._mpdb
-            .from('staff_absences')
-            .insert([newEntry]);
-
-        if (error) {
-            alert("Error: " + error.message);
-            return;
-        }
-
-        alert("Request Submitted!");
-        closeAbsenceModal();
-        
-        // --- THE REFRESH SEQUENCE ---
-        if (typeof fetchAbsences === 'function') await fetchAbsences(); 
-        if (typeof renderCalendar === 'function') await renderCalendar(); 
-        
-        // This re-runs the day click to update the 'Scheduled for this day' list
-        calDayClick(dateVal); 
-
-    } catch (err) {
-        console.error("JS Error:", err);
-    }
-}
 async function checkUpcomingAbsences() {
     const today = new Date().toISOString().split('T')[0];
     const lastCheck = localStorage.getItem('last_absence_check');
@@ -321,57 +274,40 @@ function togglePrivateReason(show) {
     }
 }
 
-
 async function saveAbsence() {
-    // 1. Get the NEW IDs we created for the simplified menu
-    const dateInput = document.getElementById('abs-date');
-    const timeInput = document.getElementById('abs-time');
-    const pubReasonInput = document.getElementById('abs-public');
-    const isPrivInput = document.getElementById('abs-is-private');
-    const privReasonInput = document.getElementById('abs-private');
+    try {
+        const dateVal = document.getElementById('abs-date').value;
+        const pubReason = document.getElementById('abs-public').value;
+        // ... get other values same as before ...
 
-    // 2. Safety check: Make sure the elements actually exist
-    if (!dateInput || !pubReasonInput) {
-        console.error("Could not find the form inputs in the HTML.");
-        return;
-    }
+        if (!dateVal || !pubReason) return alert("Select a date and reason.");
 
-    const date = dateInput.value;
-    const time = timeInput.value;
-    const pubReason = pubReasonInput.value;
-    const isPriv = isPrivInput.checked;
-    const privReason = privReasonInput.value;
+        const { error } = await window._mpdb.from('staff_absences').insert([{
+            user_name: currentUser.name,
+            user_id: String(currentUser.id),
+            start_date: dateVal,
+            is_all_day: (window.selectedAbsenceType === 'all'),
+            partial_time: document.getElementById('abs-time').value || null,
+            reason_public: pubReason,
+            is_private: document.getElementById('abs-is-private').checked,
+            reason_private: document.getElementById('abs-private').value || null
+        }]);
 
-    // 3. Validation
-    if(!date || !pubReason) {
-        alert("Please select a date and provide a public reason.");
-        return;
-    }
+        if (error) throw error;
 
-    // 4. Send to Supabase
-    // Note: 'selectedAbsenceType' is the variable changed by the All Day/Partial buttons
-    const { error } = await window._mpdb.from('staff_absences').insert([{
-        user_name: currentUser.name || currentUser.username,
-        user_id: currentUser.id,
-        start_date: date,
-        is_all_day: (selectedAbsenceType === 'all'),
-        partial_time: (selectedAbsenceType === 'partial') ? time : null,
-        reason_public: pubReason,
-        is_private: isPriv,
-        reason_private: isPriv ? privReason : null
-    }]);
-
-    if (!error) {
-        alert("Request Submitted!");
+        // SUCCESS REFRESH
         closeAbsenceModal();
-        
-        // Refresh the data and the screen
         if (typeof fetchAbsences === 'function') await fetchAbsences();
-        if (typeof renderCalendar === 'function') renderCalendar();
-    } else {
-        alert("Error saving to database: " + error.message);
+        if (typeof renderCalendar === 'function') await renderCalendar();
+        
+        // This makes the item pop up in the list IMMEDIATELY
+        calDayClick(dateVal); 
+
+    } catch (e) {
+        alert("Error saving: " + e.message);
     }
 }
+
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot'); 
@@ -1423,40 +1359,49 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 function calDayClick(dateStr) {
+    console.log("Day clicked:", dateStr);
     lastClickedDate = dateStr;
+    
     const dateObj = new Date(dateStr + "T00:00:00");
     document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // 1. Find existing items (ensure data exists)
-    const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
-    const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
+    // 1. Fetch data from wherever your app stores it
+    // Note: We use a '|| []' to prevent crashes if the list is empty
+    const tasksToFilter = (typeof state !== 'undefined' && state.tasks) ? state.tasks : [];
+    const absencesToFilter = (typeof staffAbsences !== 'undefined') ? staffAbsences : [];
 
+    // 2. Filter data for the selected day
+    const dayTasks = tasksToFilter.filter(t => t.due && t.due.startsWith(dateStr));
+    const dayAbs = absencesToFilter.filter(a => a.start_date && a.start_date.startsWith(dateStr));
+
+    console.log("Items found for this day:", { tasks: dayTasks.length, absences: dayAbs.length });
+
+    // 3. Build the List HTML
     const listContainer = document.getElementById('day-items-list');
+    if (!listContainer) return console.error("Could not find 'day-items-list' div!");
+
     let listHtml = "";
 
-    // 2. Build Work Orders List
     dayTasks.forEach(t => {
         listHtml += `
-            <div class="cal-list-item work-order-border">
-                <span>🛠️ ${t.name}</span>
-                <button class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); openTaskDetail('${t.id}')">Edit</button>
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
+                <span style="font-size:13px; color:white;">🛠️ ${t.name}</span>
+                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openTaskDetail('${t.id}')">Edit</button>
             </div>`;
     });
 
-    // 3. Build Absences List
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
         listHtml += `
-            <div class="cal-list-item absence-border">
-                <span>👤 ${a.user_name} (${timeText})</span>
-                <button class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:8px;">
+                <span style="font-size:13px; color:white;">👤 ${a.user_name} (${timeText})</span>
+                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
             </div>`;
     });
 
-    if (listHtml === "") listHtml = `<div style="color:#666; font-size:13px; font-style:italic; padding:10px; text-align:center;">Nothing scheduled yet.</div>`;
-    
-    listContainer.innerHTML = listHtml;
+    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled for this day.</div>`;
 
+    // 4. Show the Modal
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.classList.add('active');
