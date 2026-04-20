@@ -1300,58 +1300,39 @@ body, html {
     justify-content: center !important;
     align-items: center !important;
 }
-/* --- DASHBOARD SCHEDULE STYLING --- */
-.sched-item {
-    display: flex;
-    align-items: center;
-    background: #ffffff;
-    padding: 10px 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    gap: 15px;
-    border: 1px solid #f0f0f0;
-}
-
-/* The Blue Date Badge */
+/* --- HIGH CONTRAST DATE BADGE --- */
 .sched-date {
-    background: #007bff;
-    color: #fff;
-    min-width: 50px;
-    height: 50px;
+    background: #0061f2 !important; /* Solid vibrant blue */
+    color: #ffffff !important;      /* Pure white text */
+    min-width: 55px;
+    height: 55px;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    line-height: 1.1;
+    line-height: 1;
     flex-shrink: 0;
+    box-shadow: 0 4px 6px rgba(0, 97, 242, 0.2); /* Subtle blue glow */
 }
 
-.sched-day { font-size: 18px; font-weight: 800; }
-.sched-month { font-size: 10px; text-transform: uppercase; font-weight: 600; opacity: 0.9; }
-
-.sched-body { flex: 1; min-width: 0; }
-
-.sched-title { 
-    font-size: 14px; 
-    font-weight: 700; 
-    color: #333; 
-    margin-bottom: 2px; 
+.sched-day {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
 }
 
-.sched-detail { 
-    font-size: 12px; 
-    color: #777; 
+.sched-month {
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    opacity: 1 !important; /* Remove transparency */
+    margin-top: 2px !important;
 }
 
-/* Clean Delete Button */
-.btn-delete-sched {
-    background: none !important;
-    border: none !important;
-    color: #ddd !important;
-    cursor: pointer;
-    font-size: 18px;
-    transition: color 0.2s;
+/* Ensure the task text next to it is also sharp */
+.sched-title {
+    color: #1a1a1a !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
 }
-.btn-delete-sched:hover { color: #dc3545 !important; }
