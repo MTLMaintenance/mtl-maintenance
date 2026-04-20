@@ -3137,7 +3137,7 @@ async function renderUsersTable() {
                     <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
                     
                     <!-- 2. PERMISSIONS BUTTON (Change 'openPermissions' to your actual function name if different) -->
-                    <button class="btn btn-secondary btn-sm" onclick="openPermissions('${p.id}')">🛡️ Perms</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showTab('admin-permissions')">🛡️ Matrix</button>
                     
                     <!-- 3. DELETE BUTTON -->
                     <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
