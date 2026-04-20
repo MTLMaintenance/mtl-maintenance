@@ -3055,8 +3055,31 @@ const PERM_LABELS = {
 let editingUserId=null,editingUserRole=null,editingPerms={};
 function openUserPerms(userId,userName,userRole,customPerms){editingUserId=userId;editingUserRole=userRole;editingPerms={...PERMISSIONS[userRole]||PERMISSIONS.tech,...(customPerms||{})};document.getElementById('user-perms-title').textContent=userName+' — Permissions';document.getElementById('user-perms-role').textContent=userRole;renderUserPermsList();openModal('user-perms-modal');}
 function renderUserPermsList(){const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;document.getElementById('user-perms-list').innerHTML=Object.entries(PERM_LABELS).map(([key,label])=>{const def=!!(rd[key]),cur=!!(editingPerms[key]),ov=cur!==def;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">${label}</div><div style="font-size:11px;color:var(--text3)">Default: ${def?'✅':'❌'}${ov?' <span style="color:var(--warning)">● Override</span>':''}</div></div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;margin-left:12px"><span style="font-size:12px;color:${cur?'var(--success)':'var(--danger)'};font-weight:600;min-width:60px;text-align:right">${cur?'Allowed':'Denied'}</span><div style="position:relative;width:40px;height:22px;flex-shrink:0"><input type="checkbox" ${cur?'checked':''} onchange="editingPerms['${key}']=this.checked;renderUserPermsList()" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0;z-index:2"/><div style="width:40px;height:22px;border-radius:11px;background:${cur?'#3B6D11':'#E24B4A'};position:absolute;top:0;left:0"></div><div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${cur?'21px':'3px'};transition:left .2s;pointer-events:none"></div></div></label></div>`;}).join('');}
-function resetUserPerms(){editingPerms={...PERMISSIONS[editingUserRole]||PERMISSIONS.tech};renderUserPermsList();showToast('Reset to defaults');}
-async function saveUserPerms(){try{const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;const ho=Object.entries(editingPerms).some(([k,v])=>v!==rd[k]);await window._mpdb.from('profiles').update({custom_permissions:ho?editingPerms:null}).eq('id',editingUserId);showToast('Permissions saved ✓');closeModal('user-perms-modal');renderUsersTable();}catch(e){showToast('Failed');}}
+async function saveUserPerms() {
+    if (!editingUserId) return;
+
+    try {
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ permissions: editingPerms })
+            .eq('id', editingUserId);
+
+        if (error) {
+            alert("Error saving: " + error.message);
+        } else {
+            showToast("Permissions updated");
+            closeModal('user-perms-modal');
+            renderUsersTable(); // Refresh the main table
+        }
+    } catch (e) { console.error(e); }
+}
+
+function resetUserPerms() {
+    if (confirm("Reset this user to the default permissions for their role?")) {
+        editingPerms = {}; // Clearing the object removes all overrides
+        renderUserPermsList();
+    }
+}
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
 function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
 async function openPermissionsCard(userId) {
