@@ -80,61 +80,59 @@ async function deleteGeneralItem(id, tableType) {
         alert("An unexpected error occurred. Check the console.");
     }
 }
+
 async function deleteGeneralItem(id, tableType) {
-    // 1. Map the labels to your actual Supabase tables
     const tableMap = {
-        'tasks': 'tasks',          // Work Orders
-        'schedules': 'schedules',  // Calendar items
+        'tasks': 'tasks',
+        'schedules': 'schedules',
         'absences': 'staff_absences'
     };
     
     const tableName = tableMap[tableType];
-    if (!tableName) {
-        console.error("Unknown table type:", tableType);
-        return;
-    }
+    if (!tableName) return;
 
-    // 2. Safety Confirmation
-    if (!confirm("Are you sure you want to permanently delete this entry?")) return;
+    if (!confirm("Are you sure you want to delete this?")) return;
 
     try {
-        console.log(`Deleting ${id} from ${tableName}...`);
+        console.log(`Sending delete request to Supabase for ${tableName} (ID: ${id})`);
         
         const { error } = await window._mpdb
             .from(tableName)
             .delete()
             .eq('id', id);
 
-        if (error) throw error;
-
-        // 3. Success UI Feedback
-        if (typeof showToast === 'function') {
-            showToast("Entry deleted ✓");
-        } else {
-            alert("Deleted successfully!");
+        if (error) {
+            console.error("Supabase Delete Error:", error.message);
+            alert("Database Error: " + error.message);
+            return;
         }
 
-        // 4. REFRESH MEMORY: Remove the item from your app's local memory immediately
-        if (tableType === 'tasks' && window.state?.tasks) {
-            window.state.tasks = window.state.tasks.filter(t => t.id !== id);
+        console.log("✅ Database delete successful. Now clearing local memory...");
+
+        // --- CRITICAL: CLEAR LOCAL MEMORY ---
+        // We search through 'state' and 'staffAbsences' to remove the item manually
+        if (typeof state !== 'undefined') {
+            if (state.tasks) state.tasks = state.tasks.filter(item => item.id !== id);
+            if (state.schedules) state.schedules = state.schedules.filter(item => item.id !== id);
         }
-        if (tableType === 'schedules' && window.state?.schedules) {
-            window.state.schedules = window.state.schedules.filter(s => s.id !== id);
-        }
-        if (tableType === 'absences') {
-            if (typeof fetchAbsences === 'function') await fetchAbsences();
+        
+        if (typeof staffAbsences !== 'undefined') {
+            staffAbsences = staffAbsences.filter(item => item.id !== id);
         }
 
-        // 5. REFRESH SCREEN
-        closeModal('cal-action-modal'); // Close the popup
-        if (typeof renderCalendar === 'function') renderCalendar(); // Redraw calendar
+        // --- REFRESH UI ---
+        closeModal('cal-action-modal'); 
+        
+        // Force the background calendar to update immediately
+        if (typeof renderCalendar === 'function') {
+            await renderCalendar(); 
+            console.log("✅ UI Refreshed.");
+        }
 
     } catch (e) {
-        console.error("Delete failed:", e);
-        alert("Could not delete: " + e.message);
+        console.error("Delete function crashed:", e);
     }
 }
-
 async function promptResetPin(userId) {
     if (!state.users_list_cache) return;
     
