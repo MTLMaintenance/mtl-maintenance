@@ -1131,3 +1131,26 @@ body, html {
     transition: background 0.2s;
 }
 .user-select-btn:hover { background: rgba(255,255,255,0.15); }
+/* FORCE PERMISSIONS MODAL TO THE FRONT */
+#user-perms-modal {
+    display: none; /* JavaScript will turn this to 'flex' */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.8) !important; /* Darken background */
+    z-index: 200000 !important; /* Higher than everything else */
+    justify-content: center !important;
+    align-items: center !important;
+    pointer-events: all !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+#user-perms-modal .modal {
+    position: relative !important;
+    z-index: 200001 !important;
+    background: #1a1a1a !important; /* Match your dark theme */
+    box-shadow: 0 20px 60px rgba(0,0,0,1) !important;
+}
