@@ -1380,7 +1380,7 @@ function calDayClick(dateStr) {
             <div class="cal-list-item work-order-border">
                 <span>🛠️ ${t.name}</span>
                 <!-- THE FIX: We switch to the 'tasks' panel first, then open the detail -->
-                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); showPanel('tasks'); openTaskDetail('${t.id}')">Edit</button>
+                <button class="cal-edit-btn" onclick="jumpToTaskEdit('${t.id}')">Edit</button>
             </div>`;
     });
 
@@ -1394,15 +1394,14 @@ function calDayClick(dateStr) {
     });
 
     // 4. Build Absences
-     dayAbs.forEach(a => {
-        const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
-        listHtml += `
-            <div class="cal-list-item absence-border">
-                <span>👤 ${a.user_name} (${timeText})</span>
-                <!-- Absence modal is global, so no panel switch needed -->
-                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
-            </div>`;
-    });
+    dayAbs.forEach(a => {
+    const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
+    listHtml += `
+        <div class="cal-list-item absence-border">
+            <span>👤 ${a.user_name} (${timeText})</span>
+            <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)">Edit</button>
+        </div>`;
+});
     listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled for this day.</div>`;
 
     const modal = document.getElementById('cal-action-modal');
@@ -6387,4 +6386,26 @@ function teleportModals() {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
+}
+async function jumpToTaskEdit(taskId) {
+    console.log("🚀 Jumping to Task Edit for ID:", taskId);
+
+    // 1. Close the current calendar popup
+    closeModal('cal-action-modal');
+
+    // 2. Switch to the Tasks/Work Orders tab
+    // Note: Change 'tasks' to 'workorders' if your tab ID is different
+    if (typeof showPanel === 'function') {
+        await showPanel('tasks'); 
+    }
+
+    // 3. Wait 100 milliseconds for the UI to finish rendering
+    setTimeout(() => {
+        if (typeof openTaskDetail === 'function') {
+            openTaskDetail(taskId);
+            console.log("✅ Edit window triggered.");
+        } else {
+            console.error("Error: openTaskDetail function not found!");
+        }
+    }, 150);
 }
