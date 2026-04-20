@@ -3137,12 +3137,9 @@ async function renderUsersTable() {
     const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
     if (!profiles) return;
 
-    // Store this in a temporary cache so the Sync function can use it
     state.users_list_cache = profiles;
-
     const active = profiles.filter(p => p.status === 'approved');
     
-    // 1. Fill the main table (the list at the top)
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) {
         const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
@@ -3152,11 +3149,17 @@ async function renderUsersTable() {
                 <td>${p.username}</td>
                 <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
                 <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button></td>
+                <td>
+                  <div style="display:flex; gap:5px;">
+                    <!-- NEW RESET PIN BUTTON -->
+                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}','${p.full_name}')">🔑 PIN</button>
+                    
+                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+                  </div>
+                </td>
             </tr>`).join('');
     }
 
-    // 2. Fill the dropdown (The box in your screenshot)
     const userSelect = document.getElementById('role-user-select');
     if (userSelect) {
       userSelect.innerHTML = '<option value="">— Select User —</option>' + 
@@ -3164,6 +3167,28 @@ async function renderUsersTable() {
     }
 
   } catch(e) { console.error(e); }
+}
+
+// --- ADD THIS HELPER FUNCTION BELOW THE TABLE RENDERER ---
+async function promptResetPin(userId, userName) {
+    const newPin = prompt(`Enter a new PIN for ${userName}:`);
+    if (newPin === null || newPin.trim() === "") return;
+
+    try {
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ pin_code: newPin.trim() })
+            .eq('id', userId);
+
+        if (error) {
+            alert("Failed: " + error.message);
+        } else {
+            alert(`Success! ${userName}'s PIN has been updated.`);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error updating PIN.");
+    }
 }
 
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
