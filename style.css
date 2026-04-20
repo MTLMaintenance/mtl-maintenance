@@ -1237,3 +1237,30 @@ body, html {
     position: relative !important;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
+/* BACKGROUND CALENDAR BOX COLORS */
+.cal-event.work-order { background: #007bff !important; color: white !important; border-radius: 4px; }
+.cal-event.staff-absence { background: #ffc107 !important; color: #856404 !important; font-weight: 700; border-radius: 4px; }
+
+/* POPUP LIST STYLING */
+.cal-list-item {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.work-order-border { border-left: 4px solid #007bff; }
+.absence-border { border-left: 4px solid #ffc107; }
+
+.cal-edit-btn {
+    background: #333;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+}
+.cal-edit-btn:hover { background: #555; }
