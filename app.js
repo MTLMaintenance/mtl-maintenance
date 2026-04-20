@@ -3083,41 +3083,49 @@ function resetUserPerms() {
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
 function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
 async function openPermissionsCard(userId) {
-    console.log("Attempting to open modal for:", userId);
+    console.log("--- PERMS DEBUG START ---");
     
-    // 1. Find user in the cache
-    if (!state.users_list_cache) {
-        console.error("User cache is empty!");
+    // 1. Find user
+    const user = state.users_list_cache ? state.users_list_cache.find(u => u.id === userId) : null;
+    if (!user) {
+        console.error("User not found in cache!");
         return;
     }
-    const user = state.users_list_cache.find(u => u.id === userId);
-    if (!user) return;
 
-    // 2. Setup the global variables for 'renderUserPermsList'
+    // 2. Setup variables
     editingUserId = userId;
     editingUserRole = user.role || 'tech';
     editingPerms = user.permissions || {}; 
 
-    // 3. Update the Modal Header
-    if (document.getElementById('user-perms-title')) 
-        document.getElementById('user-perms-title').textContent = "Perms: " + (user.full_name || user.username);
-    if (document.getElementById('user-perms-role')) 
-        document.getElementById('user-perms-role').textContent = editingUserRole.toUpperCase();
+    // 3. Update Header (with safety checks)
+    const title = document.getElementById('user-perms-title');
+    const badge = document.getElementById('user-perms-role');
+    if (title) title.textContent = "Perms: " + (user.full_name || user.username);
+    if (badge) badge.textContent = editingUserRole.toUpperCase();
 
-    // 4. Draw the toggles
-    renderUserPermsList();
+    // 4. THE SAFETY WRAPPER: Run the 'Brain' inside a protector
+    try {
+        console.log("Running renderUserPermsList...");
+        renderUserPermsList();
+        console.log("Render successful.");
+    } catch (renderError) {
+        console.error("The 'Brain' function (renderUserPermsList) CRASHED:", renderError);
+        // We put a message in the list so you know why it's empty
+        const list = document.getElementById('user-perms-list');
+        if (list) list.innerHTML = "<div style='color:red; padding:20px;'>Error loading toggles. Check Console.</div>";
+    }
 
-    // 5. THE FORCE FIX: Show the modal
+    // 5. THE SHOW COMMAND: This now happens NO MATTER WHAT
     const modal = document.getElementById('user-perms-modal');
     if (modal) {
-        // Force display and add the 'active' class which most modals need
         modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
         modal.classList.add('active');
         modal.classList.add('open');
-        
-        console.log("Modal display forced to flex and classes added.");
+        console.log("Modal display commands sent.");
     } else {
-        console.error("Could not find element 'user-perms-modal'");
+        console.error("Could not find the element #user-perms-modal in your HTML!");
     }
 }
 async function quickRoleChange(userId, newRole) {
