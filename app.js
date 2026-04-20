@@ -261,8 +261,11 @@ function updatePinDots() {
 }
 
 function backToNames() {
+    enteredPin = "";
+    updatePinDisplay();
     document.getElementById('login-stage-names').style.display = 'block';
     document.getElementById('login-stage-pin').style.display = 'none';
+    document.getElementById('auth-sub').textContent = 'Sign in to your workspace';
 }
 function checkDateSelection(val) {
     if(val) document.getElementById('abs-options').style.display = 'block';
@@ -644,21 +647,28 @@ function togglePassVis(inputId, btnId) {
   document.getElementById(btnId).style.opacity = input.type==='password' ? '1' : '0.6';
   input.type = input.type==='password' ? 'text' : 'password';
 }
+
 function showLogin() {
-    // 1. Reset the UI to show the Login stage
+    // This is the main function that resets the auth screen
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('login-view').style.display = 'block';
     document.getElementById('register-view').style.display = 'none';
     document.getElementById('pending-view').style.display = 'none';
     
-    // 2. Start the new PIN system flow
-    showPinLogin(); 
+    // Go back to the Name List by default
+    backToNames();
+    showPinLogin();
 }
 function showRegister() {
-  document.getElementById('login-view').style.display='none';
-  document.getElementById('register-view').style.display='block';
-  document.getElementById('auth-err').style.display='none';
-  document.getElementById('auth-sub').textContent='Request access to MTL Maintenance';
+    // Hide everything else
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('login-stage-names').style.display = 'none';
+    document.getElementById('login-stage-pin').style.display = 'none';
+    document.getElementById('pending-view').style.display = 'none';
+
+    // Show registration
+    document.getElementById('register-view').style.display = 'block';
+    document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 }
 function showPending() {
   document.getElementById('login-view').style.display='none';
