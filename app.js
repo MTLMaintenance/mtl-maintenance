@@ -3108,7 +3108,8 @@ async function openPermissionsCard(userId) {
     // Show the modal
     const modal = document.getElementById('user-perms-modal');
     if (modal) {
-        modal.style.setProperty('display', 'flex', 'important');
+        modal.classList.add('active');   
+     modal.style.setProperty('display', 'flex', 'important');
     }
 }
 async function quickRoleChange(userId, newRole) {
