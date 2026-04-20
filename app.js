@@ -509,29 +509,27 @@ let currentUser = null;
 // ============================================================
 async function startApp() {
   try { localStorage.removeItem('mp_users'); } catch(e) {}
-  // Load Gemini key from secure storage
   try { window._geminiKey = localStorage.getItem('mp_gemini_key') || ''; } catch(e) {}
   
   try {
-    // 1. Create the connection
     window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
     });
-
-    // 2. Link the names
     window.supabase = window._mpdb;
-    
     setSyncStatus('online');
+
+    // --- RUN TELEPORT HERE ---
+    // We do this immediately after Supabase connects
+    teleportModals(); 
+
   } catch(e) { 
     console.warn('Supabase init failed:', e); 
   }
 
-  // Hide banner
   if(document.getElementById('setup-banner')) {
     document.getElementById('setup-banner').style.display='none';
   }
 
-  // Check saved session
   try {
     const sessionData = await validateSession();
     if(sessionData) {
@@ -539,12 +537,11 @@ async function startApp() {
       if(profile && profile.status === 'approved') {
         const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
         currentUser = { id: profile.id, name: profile.full_name || sessionData.username, role: isAdmin ? 'admin' : profile.role, username: sessionData.username };
-       await fetchAbsences();  
-       await enterApp(); return;
+        await fetchAbsences();  
+        await enterApp(); return;
       }
     }
 
-    // Fallback to old session for backwards compatibility
     const saved = localStorage.getItem('mp_session');
     if (saved) {
       const u = JSON.parse(saved);
@@ -553,7 +550,6 @@ async function startApp() {
         const isAdmin = u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
         currentUser = { ...u, role: isAdmin ? 'admin' : profile.role };
         await fetchAbsences();
-       // Upgrade to token-based session
         await createSession(u.username, profile.id);
         await enterApp(); return;
       } else { 
@@ -564,12 +560,25 @@ async function startApp() {
     console.error("Session error:", e);
   }
   
-showPinLogin();}
+  showPinLogin();
+}
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }
-window.addEventListener('online',  () => { document.getElementById('offline-banner').style.display='none';  setSyncStatus('online'); });
-window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display='block'; setSyncStatus('offline'); });
+// Keep your standard loading listeners below
+if (document.readyState === 'loading') { 
+    document.addEventListener('DOMContentLoaded', startApp); 
+} else { 
+    startApp(); 
+}
 
+window.addEventListener('online',  () => { 
+    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='none';  
+    setSyncStatus('online'); 
+});
+
+window.addEventListener('offline', () => { 
+    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='block'; 
+    setSyncStatus('offline'); 
+});
 // ============================================================
 // AUTH
 // ============================================================
