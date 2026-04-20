@@ -3141,9 +3141,7 @@ async function renderUsersTable() {
                     <td>
                       <div style="display:flex; gap:5px;">
                         <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${uId}')">🔑 PIN</button>
-                        
-                        <button class="btn btn-secondary btn-sm" onclick="renderUserPermsList('${uId}'); showTab('admin-permissions');">🛡️ Perms</button>
-                        
+                      <button class="btn btn-secondary btn-sm" onclick="openUserPermissions('${uId}')">🛡️ Perms</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteUser('${uId}')">Delete</button>
                       </div>
                     </td>
@@ -6302,3 +6300,31 @@ function renderSchedule(){
   document.getElementById('sched-week').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= nw).map(mk).join('') || 'Nothing this week';
   document.getElementById('sched-next30').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= n30).map(mk).join('') || 'Nothing in 30 days';
 }   
+function openUserPermissions(userId) {
+    console.log("Opening permissions for User ID:", userId);
+
+    // 1. Find the Permissions Panel and Show it
+    // Note: We search for the panel and manually force it to show
+    const permPanel = document.getElementById('admin-permissions');
+    if (permPanel) {
+        // First, hide all other panels so they don't overlap
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        
+        // Show the permissions panel
+        permPanel.style.display = 'block';
+        permPanel.classList.add('active');
+    } else {
+        console.error("Could not find element 'admin-permissions'");
+        return;
+    }
+
+    // 2. Select the user in the dropdown
+    const userDropdown = document.getElementById('role-user-select');
+    if (userDropdown) {
+        userDropdown.value = userId;
+        // Trigger the sync function so the role/group boxes update to match the user
+        if (typeof syncAdminRoleSelects === 'function') {
+            syncAdminRoleSelects();
+        }
+    }
+}
