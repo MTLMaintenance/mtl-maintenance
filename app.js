@@ -1393,7 +1393,6 @@ function calDayClick(dateStr) {
     if (window.event) window.event.stopPropagation(); 
     lastClickedDate = dateStr;
     console.log("--- Day Click System ---");
-    console.log("Looking for date:", dateStr);
 
     const dateObj = new Date(dateStr + "T00:00:00");
     const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -1409,8 +1408,6 @@ function calDayClick(dateStr) {
     const dayAbs = allAbsences.filter(a => a.start_date && String(a.start_date).startsWith(dateStr));
     const dayScheds = allSchedules.filter(s => s.date && String(s.date).startsWith(dateStr));
 
-    console.log("Results Found:", { tasks: dayTasks.length, absences: dayAbs.length, scheds: dayScheds.length });
-
     // 3. BUILD THE HTML
     const listContainer = document.getElementById('day-items-list');
     let listHtml = "";
@@ -1418,26 +1415,24 @@ function calDayClick(dateStr) {
     // Loop through Work Orders (Blue)
     dayTasks.forEach(t => {
         listHtml += `
-             <div style="display:flex; gap:5px;">
-        <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
-        <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${t.id}', 'tasks')">🗑️</button>
-    </div>
             <div class="cal-list-item work-order-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
                 <span style="font-size:12px; color:white;">🛠️ ${t.name}</span>
-                <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
+                <div style="display:flex; gap:5px;">
+                    <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
+                    <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${t.id}', 'tasks')">🗑️</button>
+                </div>
             </div>`;
     });
 
-    // --- ADDED THIS SECTION: Loop through Schedules (Grey/Calendar items) ---
+    // Loop through Schedules (Grey/Calendar items)
     dayScheds.forEach(s => {
         listHtml += `
-             <div style="display:flex; gap:5px;">
-        <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
-        <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${t.id}', 'tasks')">🗑️</button>
-    </div>
             <div class="cal-list-item" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #6c757d; margin-bottom:8px;">
                 <span style="font-size:12px; color:white;">📋 ${s.name}</span>
-                <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${s.id}')">Edit</button>
+                <div style="display:flex; gap:5px;">
+                    <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${s.id}')">Edit</button>
+                    <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${s.id}', 'schedules')">🗑️</button>
+                </div>
             </div>`;
     });
 
@@ -1445,26 +1440,23 @@ function calDayClick(dateStr) {
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : (typeof formatTime === 'function' ? formatTime(a.partial_time) : a.partial_time);
         listHtml += `
-             <div style="display:flex; gap:5px;">
-        <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
-        <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${a.id}', 'absences')">🗑️</button>
-    </div>
             <div class="cal-list-item absence-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:8px;">
                 <span style="font-size:12px; color:white;">👤 ${a.user_name} (${timeText})</span>
-                <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 150)">Edit</button>
+                <div style="display:flex; gap:5px;">
+                    <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 150)">Edit</button>
+                    <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${a.id}', 'absences')">🗑️</button>
+                </div>
             </div>`;
     });
 
     listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled.</div>`;
 
-    // 4. SHOW MODAL
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.classList.add('active');
         modal.style.display = 'flex';
     }
 }
-
     
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
@@ -6450,13 +6442,11 @@ async function jumpToTaskEdit(taskId) {
     closeModal('cal-action-modal');
 
     // 2. Open the edit window directly (without switching tabs)
-    // We assume the modal was 'teleported' to the body so it can be seen here
     if (typeof openTaskDetail === 'function') {
         openTaskDetail(taskId);
     }
 
-    // 3. Safety: Force the edit modal to the absolute front
-    // Change 'calendar-entry-modal' to your actual task modal ID if it's different
+    // 3. Force the edit modal to the absolute front
     const editModal = document.getElementById('calendar-entry-modal') || document.getElementById('task-modal');
     if (editModal) {
         editModal.style.setProperty('display', 'block', 'important');
