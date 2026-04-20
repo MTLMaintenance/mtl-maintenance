@@ -179,39 +179,34 @@ function openAbsenceDetail(id) {
     const abs = staffAbsences.find(a => a.id === id);
     if (!abs) return;
     
-    currentDetailId = id; 
-
-    // --- STEP 3 INTEGRATION START ---
-    // This defines who has "Manager Power" over absences
-    const canManage = currentUser.role === 'admin' || 
-                     (currentUser.permissions && currentUser.permissions.includes('manage_absences'));
-    // --- STEP 3 INTEGRATION END ---
+    currentDetailId = id; // Needed for deletion
     
-    // 1. Set Basic Info
     document.getElementById('det-user').textContent = `👤 ${abs.user_name}`;
     document.getElementById('det-reason').textContent = abs.reason_public;
-    document.getElementById('det-time').textContent = abs.is_all_day ? "All Day" : `Leaving at ${formatTime(abs.partial_time)}`;
+    
+    // Safely handle time formatting
+    const timeDisplay = abs.is_all_day ? "All Day" : (typeof formatTime === 'function' ? formatTime(abs.partial_time) : abs.partial_time);
+    document.getElementById('det-time').textContent = timeDisplay;
 
-    // 2. Permission Check: Private Reason
-    // Use 'canManage' instead of just checking for 'admin'
-    const privSection = document.getElementById('det-private-section');
-    if (abs.is_private && canManage) {
-        privSection.style.display = 'block';
-        document.getElementById('det-private-text').textContent = abs.reason_private || "No private note provided.";
+    // Show private info only for admin
+    const privBox = document.getElementById('det-private-section');
+    if (abs.is_private && currentUser.role === 'admin') {
+        privBox.style.display = 'block';
+        document.getElementById('det-private-text').textContent = abs.reason_private || "";
     } else {
-        privSection.style.display = 'none';
+        privBox.style.display = 'none';
     }
 
-    // 3. Permission Check: Deletion
-    // Show delete button if it's YOUR request OR you have 'canManage' power
-    const deleteBtn = document.getElementById('det-delete-btn');
-    if (abs.user_id === String(currentUser.id) || canManage) {
-        deleteBtn.style.display = 'block';
+    // Show delete button for owner/admin
+    const delBtn = document.getElementById('det-delete-btn');
+    if (abs.user_id === String(currentUser.id) || currentUser.role === 'admin') {
+        delBtn.style.display = 'block';
     } else {
-        deleteBtn.style.display = 'none';
+        delBtn.style.display = 'none';
     }
 
-    document.getElementById('absence-detail-modal').style.display = 'block';
+    const modal = document.getElementById('absence-detail-modal');
+    if(modal) modal.style.display = 'block';
 }
 
 async function deleteAbsence() {
