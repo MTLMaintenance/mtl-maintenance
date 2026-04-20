@@ -1288,7 +1288,12 @@ body, html {
 #cal-action-modal {
     z-index: 2000000 !important;
 }
-
+#calendar-entry-modal {
+    z-index: 2000006 !important; 
+}
+#absence-modal {
+    z-index: 2000005 !important;
+}
 /* Safety: If both are open, this keeps them centered correctly */
 .modal-backdrop.active {
     display: flex !important;
