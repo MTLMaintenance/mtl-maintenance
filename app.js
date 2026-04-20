@@ -17,33 +17,24 @@ const MONTHS = ['January','February','March','April','May','June','July','August
     // CONFIG
 // ============================================================
 async function promptResetPin(userId, userName) {
-    // 1. Ask for the new PIN
-    const newPin = prompt(`Enter a new PIN for ${userName}:`);
-    
-    // If they hit cancel or leave it blank, stop.
-    if (newPin === null || newPin.trim() === "") return;
+    var newPin = prompt('Enter a new PIN for ' + userName + ':');
+    if (newPin === null || newPin.trim() === '') return;
 
-    // 2. Confirmation
-    if (!confirm(`Are you sure you want to change ${userName}'s PIN to: ${newPin}?`)) return;
+    if (!confirm('Are you sure you want to change ' + userName + '\'s PIN to: ' + newPin + '?')) return;
 
     try {
-        // 3. Update the database
-        const { error } = await window._mpdb
+        var result = await window._mpdb
             .from('profiles')
             .update({ pin_code: newPin.trim() })
             .eq('id', userId);
 
-        if (error) {
-            alert("Failed to reset PIN: " + error.message);
+        if (result.error) {
+            alert('Failed to reset PIN: ' + result.error.message);
         } else {
-            alert(`Success! ${userName} can now log in with PIN: ${newPin}`);
-            
-            // Optional: If you have a log system, record this action
-            console.log(`Admin reset PIN for ${userName} to ${newPin}`);
+            alert('Success! ' + userName + ' can now log in with the new PIN.');
         }
     } catch (err) {
-        console.error("Reset error:", err);
-        alert("An unexpected error occurred.");
+        console.error('Reset error:', err);
     }
 }
 async function showPinLogin() {
