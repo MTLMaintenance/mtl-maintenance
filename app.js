@@ -3118,9 +3118,7 @@ async function renderUsersTable() {
     const { data: profiles, error } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
     if (error || !profiles) return;
 
-    // We store the users here so the reset function can find the names later
     state.users_list_cache = profiles;
-
     const active = profiles.filter(p => p.status === 'approved');
     
     const tableBody = document.getElementById('users-table-body');
@@ -3135,8 +3133,13 @@ async function renderUsersTable() {
                 <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
                 <td>
                   <div style="display:flex; gap:5px;">
-                    <!-- We ONLY pass the ID here. This prevents the quote crash! -->
+                    <!-- 1. RESET PIN BUTTON -->
                     <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
+                    
+                    <!-- 2. PERMISSIONS BUTTON (Change 'openPermissions' to your actual function name if different) -->
+                    <button class="btn btn-secondary btn-sm" onclick="openPermissions('${p.id}')">🛡️ Perms</button>
+                    
+                    <!-- 3. DELETE BUTTON -->
                     <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
                   </div>
                 </td>
