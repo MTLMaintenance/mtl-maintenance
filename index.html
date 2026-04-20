@@ -28,33 +28,23 @@
   </div>
 
   <!-- STAGE 2: PIN PAD -->
-  <div id="login-stage-pin" style="display:none; text-align:center;">
-    <button onclick="backToNames()" style="background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px; margin-bottom:10px;">← Back to names</button>
-    <div class="auth-sub" id="selected-user-display" style="font-weight:bold; color:#fff; font-size:18px; margin-bottom:15px;">Enter PIN</div>
-    
-    <!-- PIN Dots -->
-    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:20px;">
-        <div class="pin-dot" id="dot-1"></div>
-        <div class="pin-dot" id="dot-2"></div>
-        <div class="pin-dot" id="dot-3"></div>
-        <div class="pin-dot" id="dot-4"></div>
-    </div>
+  <div id="pin-display" style="height:30px; font-size:24px; color:#28a745; letter-spacing:8px; margin-bottom:20px;"></div>
 
-    <!-- The Grid -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 0 auto;">
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('1')">1</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('2')">2</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('3')">3</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('4')">4</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('5')">5</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('6')">6</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('7')">7</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('8')">8</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('9')">9</button>
-        <button class="btn btn-secondary pin-btn" style="visibility:hidden"></button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('0')">0</button>
-        <button class="btn btn-secondary pin-btn" onclick="pressPin('delete')">⌫</button>
-    </div>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 0 auto;">
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('1')">1</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('2')">2</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('3')">3</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('4')">4</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('5')">5</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('6')">6</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('7')">7</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('8')">8</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('9')">9</button>
+      
+      <!-- Added a Clear and a Submit button -->
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('clear')" style="font-size:12px; color:#ff6b6b;">CLEAR</button>
+      <button class="btn btn-secondary pin-btn" onclick="pressPin('0')">0</button>
+      <button class="btn btn-secondary pin-btn" onclick="verifyUserPin()" style="background:#28a745 !important; border-color:#28a745 !important;">✓</button>
   </div>
 </div>
       <button class="btn btn-primary" id="auth-btn" onclick="doLogin()" style="width:100%;margin-top:14px;justify-content:center">Sign In</button>
@@ -72,10 +62,11 @@
   </div>
 
   <div class="form-group" style="margin-bottom:12px">
-    <label class="form-label">Choose 4-Digit PIN</label>
-    <input class="form-input" id="reg-pin" type="tel" maxlength="4" placeholder="e.g. 1234" 
-           style="letter-spacing: 10px; font-size: 20px; text-align: center;"/>
-  </div>
+  <label class="form-label">Choose PIN</label>
+  <p style="font-size:10px; color:rgba(255,255,255,0.5); margin-bottom:5px;">Recommendation: Use your work clock-in number.</p>
+  <input class="form-input" id="reg-pin" type="tel" placeholder="Enter any length" 
+         style="letter-spacing: 5px; font-size: 18px; text-align: center;"/>
+</div>
 
   <button class="btn btn-primary" onclick="doRegister()" style="width:100%; margin-top:14px; justify-content:center">
     Request Access
