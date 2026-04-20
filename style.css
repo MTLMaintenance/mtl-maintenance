@@ -1300,3 +1300,68 @@ body, html {
     justify-content: center !important;
     align-items: center !important;
 }
+/* --- UPCOMING MAINTENANCE LIST STYLING --- */
+.maintenance-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.maintenance-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateX(5px);
+}
+
+/* The Date Badge on the left */
+.date-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #007bff; /* Professional Blue */
+    color: white;
+    min-width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    text-align: center;
+    line-height: 1.1;
+}
+
+.date-badge .day { font-size: 18px; font-weight: 800; }
+.date-badge .month { font-size: 10px; text-transform: uppercase; font-weight: 600; opacity: 0.9; }
+
+/* The Info column on the right */
+.maint-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.maint-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+}
+
+.maint-subtext {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.maint-subtext span {
+    display: inline-block;
+    padding: 1px 6px;
+    background: #eee;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+}
