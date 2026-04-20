@@ -1356,3 +1356,45 @@ body, html {
     font-size: 12px !important;
     color: #666 !important;
 }
+/* Ensure the grid is perfectly balanced */
+.pin-pad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+/* Force all buttons to be identical squares */
+.pin-btn {
+    aspect-ratio: 1 / 1 !important; /* Makes them perfect squares */
+    width: 100% !important;
+    max-height: 70px !important; /* Limits size on large screens */
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+}
+
+/* The Clear button needs smaller text to fit */
+.btn-clear {
+    font-size: 12px !important;
+    color: #ff6b6b !important;
+}
+
+/* The Green Submit button */
+.btn-submit {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+}
+
+.pin-btn:active {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
