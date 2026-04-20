@@ -1204,3 +1204,27 @@ body, html {
     color: white !important;
     border: none !important;
 }
+/* Ensure the darkening backdrop fills the screen */
+.modal-backdrop {
+    display: none; 
+    position: fixed !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0,0,0,0.85) !important;
+    z-index: 1000000 !important; /* Top layer */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Force the Modal Backdrop to show when active */
+.modal-backdrop.active {
+    display: flex !important;
+    pointer-events: auto !important;
+}
+
+/* The actual Card styling */
+.modal-card {
+    position: relative !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
