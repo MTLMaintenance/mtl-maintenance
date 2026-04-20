@@ -4886,13 +4886,16 @@ async function addToolObservation() {
     } catch(e) { showToast("Failed to save note"); }
 }
 function resetToolForm() {
-    document.getElementById('tool-edit-id').value = '';
-    document.getElementById('tool-name').value = '';
-    document.getElementById('tool-loc').value = '';
-    document.getElementById('tool-health').value = 100;
-    document.getElementById('health-val-display').textContent = '100%';
-    document.getElementById('tool-lost').checked = false;
-    document.getElementById('tool-delete-btn').style.display = 'none';
+    console.log("Resetting Tool Form Safely...");
+    // List all possible IDs in your tool form
+    const fieldIds = ['tool-id', 'tool-name', 'tool-category', 'tool-location', 'tool-status'];
+    
+    fieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = ''; // Only try to set it if the element is found
+        }
+    });
 }
     // 1. OPEN THE TOOL POPUP
 function editTool(id) {
