@@ -5,11 +5,14 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch: 
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   backup:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Explicitly allows the robot to write to the repo
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,7 +27,6 @@ jobs:
           
           for table in $TABLES; do
             echo "Fetching $table..."
-            # Try to fetch, if it fails, create an empty error file so the script continues
             curl -f -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/$table?select=*" \
             -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
@@ -36,4 +38,7 @@ jobs:
         with:
           commit_message: "Automated Nightly Backup [skip ci]"
           file_pattern: 'backups/*.json'
-          status_options: '--untracked-files=all'
+          # THIS IS THE KEY FIX: Push to a branch that isn't protected
+          branch: backups
+          create_branch: true
+          push_options: '--force'
