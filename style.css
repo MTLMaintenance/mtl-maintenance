@@ -1132,3 +1132,17 @@ body, html {
 }
 .user-select-btn:hover { background: rgba(255,255,255,0.15); }
 /* This forces the backdrop to actually fill the screen */
+#user-perms-modal {
+    display: none; /* Controlled by JS */
+}
+
+/* When the JS adds .active or .open, we force it to show */
+#user-perms-modal.active, #user-perms-modal.open {
+    display: flex !important;
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    z-index: 999999 !important; /* Top of the world */
+    justify-content: center;
+    align-items: center;
+}
