@@ -1172,3 +1172,18 @@ body, html {
     background: #555555 !important;
     color: white !important;
 }
+/* 1. Force both modals to be physically GONE when not in use */
+#user-perms-modal, 
+#cal-action-modal {
+    display: none !important;
+}
+
+/* 2. ONLY show them when the 'active' or 'open' class is added by JS */
+#user-perms-modal.active, 
+#user-perms-modal.open,
+#cal-action-modal.active, 
+#cal-action-modal.open {
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: all !important;
+}
