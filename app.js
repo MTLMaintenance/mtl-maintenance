@@ -3083,26 +3083,42 @@ function resetUserPerms() {
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
 function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
 async function openPermissionsCard(userId) {
-    console.log("Opening permissions card for:", userId);
+    console.log("Attempting to open modal for:", userId);
     
-    // 1. Find the user in the cache we saved earlier
+    // 1. Find user in the cache we saved earlier
     const user = state.users_list_cache.find(u => u.id === userId);
-    if (!user) return;
+    if (!user) {
+        console.error("User not found in cache");
+        return;
+    }
 
-    // 2. Set the global variables your 'renderUserPermsList' function needs
+    // 2. Setup the global variables that 'renderUserPermsList' needs
     editingUserId = userId;
     editingUserRole = user.role || 'tech';
-    editingPerms = user.permissions || {}; // Assuming permissions are stored in a 'permissions' column
+    editingPerms = user.permissions || {}; 
 
-    // 3. Draw the toggles inside the card
+    // 3. Update the Modal Header text
+    const titleEl = document.getElementById('user-perms-title');
+    const roleBadge = document.getElementById('user-perms-role');
+    
+    if (titleEl) titleEl.textContent = "Perms: " + (user.full_name || user.username);
+    if (roleBadge) roleBadge.textContent = editingUserRole.toUpperCase();
+
+    // 4. Draw the toggles
     renderUserPermsList();
 
-    // 4. Show the Modal (Update 'user-permissions-modal' if your ID is different)
-    const modal = document.getElementById('user-permissions-modal');
+    // 5. THE FIX: Look for the correct ID 'user-perms-modal'
+    const modal = document.getElementById('user-perms-modal');
     if (modal) {
-        modal.style.display = 'block';
+        // Use your existing openModal function if it exists
+        if (typeof openModal === 'function') {
+            openModal('user-perms-modal');
+        } else {
+            // Otherwise force it to show
+            modal.style.display = 'flex';
+        }
     } else {
-        alert("Could not find the 'user-permissions-modal' element in HTML.");
+        alert("CRITICAL ERROR: Could not find HTML element with ID 'user-perms-modal'. Please check your HTML for this ID.");
     }
 }
 async function quickRoleChange(userId, newRole) {
