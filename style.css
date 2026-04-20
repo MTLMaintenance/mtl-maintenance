@@ -1202,3 +1202,24 @@ body, html {
     position: fixed !important;
     z-index: 1000000 !important;
 }
+/* 1. Default State: Hidden and 'Intangible' */
+#user-perms-modal, 
+#cal-action-modal {
+    display: none !important; /* Physically hide it */
+    pointer-events: none !important; /* Clicks pass through to buttons behind it */
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* 2. Open State: Visible and 'Solid' */
+#user-perms-modal.active, 
+#cal-action-modal.active {
+    display: flex !important;
+    pointer-events: auto !important; /* Now you can click the buttons inside */
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 999999 !important;
+    background: rgba(0,0,0,0.8);
+}
