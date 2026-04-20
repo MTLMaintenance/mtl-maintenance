@@ -3133,19 +3133,20 @@ async function renderUsersTable() {
                 <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
                 <td>
                   <div style="display:flex; gap:5px;">
-                    <!-- 1. RESET PIN BUTTON -->
+                    <!-- 1. PIN RESET -->
                     <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
                     
-                    <!-- 2. PERMISSIONS BUTTON (Change 'openPermissions' to your actual function name if different) -->
-                    <button class="btn btn-secondary btn-sm" onclick="showTab('admin-permissions')">🛡️ Matrix</button>
+                    <!-- 2. PERMISSIONS (Calls your render function AND switches tabs) -->
+                    <button class="btn btn-secondary btn-sm" onclick="renderUserPermsList('${p.id}'); showTab('admin-permissions');">🛡️ Perms</button>
                     
-                    <!-- 3. DELETE BUTTON -->
+                    <!-- 3. DELETE -->
                     <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
                   </div>
                 </td>
             </tr>`).join('');
     }
 
+    // This fills the dropdown in your permissions tab
     const userSelect = document.getElementById('role-user-select');
     if (userSelect) {
       userSelect.innerHTML = '<option value="">— Select User —</option>' + 
@@ -3156,9 +3157,30 @@ async function renderUsersTable() {
     console.error("User Table Render Error:", e); 
   }
 }
+
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
-async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await window._mpdb.from('profiles').delete().eq('id',id);showToast(name+' removed');renderAdminPanel();}
+async function deleteUser(id) {
+    // Look up the name from the cache we saved in renderUsersTable
+    const user = state.users_list_cache ? state.users_list_cache.find(u => u.id === id) : null;
+    const name = user ? (user.full_name || user.username) : "User";
+
+    if (!confirm('Delete ' + name + '?')) return;
+
+    try {
+        await window._mpdb.from('profiles').delete().eq('id', id);
+        
+        if (typeof showToast === 'function') showToast(name + ' removed');
+        
+        // Refresh the UI
+        if (typeof renderUsersTable === 'function') renderUsersTable();
+        if (typeof renderAdminPanel === 'function') renderAdminPanel();
+        
+    } catch (e) {
+        console.error("Delete error:", e);
+        alert("Failed to delete user.");
+    }
+}
 
 // ── CHAT ─────────────────────────────────────────────────────
 let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoData=null,lastReadAt={};
