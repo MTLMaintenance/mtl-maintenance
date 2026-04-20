@@ -6482,16 +6482,34 @@ function renderSchedule(){
   
   const mk = s => {
     const d = new Date(s.date);
-    return `<div class="sched-item">
-      <div class="sched-date"><div class="sched-day">${d.getDate()}</div><div class="sched-month">${MONTHS[d.getMonth()].slice(0,3)}</div></div>
-      <div class="sched-body"><div class="sched-title">${s.name}</div><div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'}</div></div>
-      <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
+    return `
+    <div class="sched-item">
+      <!-- Left: Blue Date Badge -->
+      <div class="sched-date">
+        <div class="sched-day">${d.getDate()}</div>
+        <div class="sched-month">${MONTHS[d.getMonth()].slice(0,3)}</div>
+      </div>
+      
+      <!-- Middle: Task Info -->
+      <div class="sched-body">
+        <div class="sched-title">${s.name}</div>
+        <div class="sched-detail">
+            ${equipName(s.equipId)} · <span style="font-weight:600; color:#555;">${s.tech||'Unassigned'}</span>
+        </div>
+      </div>
+      
+      <!-- Right: Subtle Delete Icon -->
+      <button class="btn-delete-sched" title="Delete" onclick="deleteSched('${s.id}')">×</button>
     </div>`;
   };
 
-  document.getElementById('sched-week').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= nw).map(mk).join('') || 'Nothing this week';
-  document.getElementById('sched-next30').innerHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= n30).map(mk).join('') || 'Nothing in 30 days';
-}   
+  // Render lists or show 'empty' message
+  const weekHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= nw).map(mk).join('');
+  const monthHTML = sorted.filter(s => new Date(s.date) >= TODAY && new Date(s.date) <= n30).map(mk).join('');
+
+  document.getElementById('sched-week').innerHTML = weekHTML || '<div style="color:#aaa; padding:10px; font-style:italic;">Nothing this week</div>';
+  document.getElementById('sched-next30').innerHTML = monthHTML || '<div style="color:#aaa; padding:10px; font-style:italic;">Nothing in 30 days</div>';
+}
 function openUserPermissions(userId) {
     console.log("Opening permissions for User ID:", userId);
 
