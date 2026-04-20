@@ -1545,12 +1545,16 @@ function calToday() { calDate = new Date(); renderCalendar(); }
 
 // Function 1: Open the Work Order Modal with the date filled
 function triggerAddEntryFromCal() {
-    console.log("Jumping to Add Entry...");
-    // Close the day card popup
+    console.log("Switching from Day Card to Work Order Form...");
+
+    // 1. Physically REMOVE the day card and its dark background
     const actionModal = document.getElementById('cal-action-modal');
-    if (actionModal) actionModal.style.display = 'none';
+    if (actionModal) {
+        actionModal.classList.remove('active'); // This is the key fix
+        actionModal.style.display = 'none';
+    }
     
-    // Open the existing work order modal
+    // 2. Open the work order modal
     if (typeof openModal === 'function') {
         openModal('calendar-entry-modal'); 
     } else {
@@ -1558,15 +1562,12 @@ function triggerAddEntryFromCal() {
         if (m) m.style.display = 'block';
     }
 
-    // Try to reset the form safely
+    // 3. Reset form and AUTO-FILL date
     try {
         if (typeof populateSelects === 'function') populateSelects(); 
         if (typeof resetCalModal === 'function') resetCalModal();
-    } catch (e) {
-        console.warn("Reset/Populate failed:", e);
-    }
+    } catch (e) { console.warn(e); }
 
-    // AUTO-FILL the date field
     const dateInput = document.getElementById('cal-date') || document.getElementById('task-due');
     if (dateInput) {
         dateInput.value = lastClickedDate;
