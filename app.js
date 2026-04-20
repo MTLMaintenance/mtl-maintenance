@@ -569,11 +569,14 @@ function togglePassVis(inputId, btnId) {
   input.type = input.type==='password' ? 'text' : 'password';
 }
 function showLogin() {
-  document.getElementById('login-view').style.display='block';
-  document.getElementById('register-view').style.display='none';
-  document.getElementById('pending-view').style.display='none';
-  document.getElementById('auth-err').style.display='none';
-  document.getElementById('auth-sub').textContent='Sign in to your workspace';
+    // 1. Reset the UI to show the Login stage
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('register-view').style.display = 'none';
+    document.getElementById('pending-view').style.display = 'none';
+    
+    // 2. Start the new PIN system flow
+    showPinLogin(); 
 }
 function showRegister() {
   document.getElementById('login-view').style.display='none';
