@@ -1427,17 +1427,19 @@ function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar();
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
 function calDayClick(dateStr) {
-    lastClickedDate = dateStr; // Store '2026-04-23'
+    lastClickedDate = dateStr; 
     
-    // Format the date for the title (e.g. "Thu, Apr 23")
     const dateObj = new Date(dateStr + "T00:00:00");
     const options = { weekday: 'short', month: 'short', day: 'numeric' };
     document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', options);
     
-    // Show the modal
-    document.getElementById('cal-action-modal').style.display = 'block';
+    // THE FIX:
+    const modal = document.getElementById('cal-action-modal');
+    if (modal) {
+        modal.classList.add('active'); // Adds the class for CSS
+        modal.style.display = 'flex';
+    }
 }
-
 function triggerAddEntryFromCal() {
     document.getElementById('cal-action-modal').style.display = 'none';
     
@@ -3097,28 +3099,17 @@ async function openPermissionsCard(userId) {
 
     editingUserId = userId;
     editingUserRole = user.role || 'tech';
-    
-    // THE FIX: If the user has NO permissions saved, use the Role defaults
-    // This stops everything from showing up as 'Denied' initially
-    if (user.permissions && Object.keys(user.permissions).length > 0) {
-        editingPerms = { ...user.permissions };
-    } else {
-        // Copy the defaults for their role into the editing window
-        const defaults = (typeof PERMISSIONS !== 'undefined') ? (PERMISSIONS[editingUserRole] || PERMISSIONS.tech) : {};
-        editingPerms = { ...defaults };
-    }
+    editingPerms = user.permissions || {}; 
 
-    // Update Header
     document.getElementById('user-perms-title').textContent = "Perms: " + (user.full_name || user.username);
     document.getElementById('user-perms-role').textContent = editingUserRole.toUpperCase();
 
     renderUserPermsList();
 
-    // Show the modal
     const modal = document.getElementById('user-perms-modal');
     if (modal) {
-        modal.classList.add('active');   
-     modal.style.setProperty('display', 'flex', 'important');
+        modal.classList.add('active'); // THE FIX: Adds the class for CSS
+        modal.style.display = 'flex';
     }
 }
 async function quickRoleChange(userId, newRole) {
