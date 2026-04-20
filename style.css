@@ -1172,4 +1172,36 @@ body, html {
     background: #555555 !important;
     color: white !important;
 }
+/* 1. COMPLETELY REMOVE modals from the screen by default */
+#user-perms-modal, 
+#cal-action-modal {
+    display: none !important;
+    pointer-events: none !important; /* Clicks pass through to the app */
+    opacity: 0 !important;
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+}
 
+/* 2. ONLY act like a solid wall when the '.active' class is added */
+#user-perms-modal.active, 
+#cal-action-modal.active {
+    display: flex !important;
+    pointer-events: auto !important; /* Now you can click the modal */
+    opacity: 1 !important;
+    z-index: 1000000 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* 3. Force the card inside to be visible and have a background */
+#user-perms-modal .modal, 
+#cal-action-modal .modal {
+    background: white !important;
+    color: black !important;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    min-width: 300px;
+    min-height: 100px;
+}
