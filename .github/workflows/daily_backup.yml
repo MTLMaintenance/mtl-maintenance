@@ -1,7 +1,9 @@
 name: Nightly Database Backup
 
 on:
-  workflow_dispatch: # Allows us to test manually
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows you to click the button to run it now
 
 jobs:
   backup:
@@ -10,32 +12,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify Secrets
-        run: |
-          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then echo "URL Secret is MISSING"; exit 1; fi
-          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then echo "KEY Secret is MISSING"; exit 1; fi
-          echo "Secrets are present."
-
       - name: Create Backup Folder
-        run: mkdir -p daily_backups
+        run: mkdir -p database_backups
 
-      - name: Fetch Data
+      - name: Fetch Data from Supabase
         run: |
-          # We'll just try to fetch ONE table first to see if it works
-          echo "Testing connection to profiles table..."
+          TABLES="chat_messages profiles equipment parts suppliers work_orders staff_absences tasks schedules tool_crib_items"
+          DATE_STR=$(date +%Y-%m-%d)
           
-          # This command removes any trailing slashes from your URL automatically
-          CLEAN_URL=$(echo "${{ secrets.SUPABASE_URL }}" | sed 's:/*$::')
-          
-          curl -v -f "$CLEAN_URL/rest/v1/profiles?select=*" \
-          -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-          -o "daily_backups/profiles.json"
-          
-          echo "Fetch successful!"
+          for table in $TABLES; do
+            echo "Fetching $table..."
+            curl -f -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/$table?select=*" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -o "database_backups/${table}-${DATE_STR}.json" || echo "{\"error\": \"failed\"}" > "database_backups/${table}-${DATE_STR}.json"
+          done
 
-      - name: Save Artifact
+      - name: Save Backup to GitHub Vault
         uses: actions/upload-artifact@v4
         with:
-          name: debug-test-backup
-          path: daily_backups/
+          name: MTL-Full-Backup-${{ github.run_id }}
+          path: database_backups/
+          retention-days: 7 # Keeps 7 days of history automatically!
