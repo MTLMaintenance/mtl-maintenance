@@ -3143,21 +3143,24 @@ async function renderUsersTable() {
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) {
         const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
-        tableBody.innerHTML = active.map(p => `
+        
+        // We use .replace(/'/g, "\\'") to make sure names like O'Neil don't crash the script
+        tableBody.innerHTML = active.map(p => {
+            const safeName = (p.full_name || p.username).replace(/'/g, "\\'");
+            return `
             <tr>
-                <td><b>${p.full_name}</b></td>
+                <td><b>${p.full_name || p.username}</b></td>
                 <td>${p.username}</td>
                 <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
                 <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
                 <td>
                   <div style="display:flex; gap:5px;">
-                    <!-- NEW RESET PIN BUTTON -->
-                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}','${p.full_name}')">🔑 PIN</button>
-                    
-                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
+                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}', '${safeName}')">🔑 PIN</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}', '${safeName}')">Delete</button>
                   </div>
                 </td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
     }
 
     const userSelect = document.getElementById('role-user-select');
@@ -3166,12 +3169,14 @@ async function renderUsersTable() {
         active.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
     }
 
-  } catch(e) { console.error(e); }
+  } catch(e) { 
+    console.error("User Table Render Error:", e); 
+  }
 }
 
-// --- ADD THIS HELPER FUNCTION BELOW THE TABLE RENDERER ---
+// --- THIS MUST BE OUTSIDE OF THE renderUsersTable FUNCTION ---
 async function promptResetPin(userId, userName) {
-    const newPin = prompt(`Enter a new PIN for ${userName}:`);
+    const newPin = prompt("Enter new PIN for " + userName + ":");
     if (newPin === null || newPin.trim() === "") return;
 
     try {
@@ -3183,7 +3188,7 @@ async function promptResetPin(userId, userName) {
         if (error) {
             alert("Failed: " + error.message);
         } else {
-            alert(`Success! ${userName}'s PIN has been updated.`);
+            alert("Success! " + userName + "'s PIN is now: " + newPin);
         }
     } catch (err) {
         console.error(err);
