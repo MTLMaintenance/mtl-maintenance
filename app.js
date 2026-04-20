@@ -3059,6 +3059,29 @@ function resetUserPerms(){editingPerms={...PERMISSIONS[editingUserRole]||PERMISS
 async function saveUserPerms(){try{const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;const ho=Object.entries(editingPerms).some(([k,v])=>v!==rd[k]);await window._mpdb.from('profiles').update({custom_permissions:ho?editingPerms:null}).eq('id',editingUserId);showToast('Permissions saved ✓');closeModal('user-perms-modal');renderUsersTable();}catch(e){showToast('Failed');}}
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
 function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
+async function openPermissionsCard(userId) {
+    console.log("Opening permissions card for:", userId);
+    
+    // 1. Find the user in the cache we saved earlier
+    const user = state.users_list_cache.find(u => u.id === userId);
+    if (!user) return;
+
+    // 2. Set the global variables your 'renderUserPermsList' function needs
+    editingUserId = userId;
+    editingUserRole = user.role || 'tech';
+    editingPerms = user.permissions || {}; // Assuming permissions are stored in a 'permissions' column
+
+    // 3. Draw the toggles inside the card
+    renderUserPermsList();
+
+    // 4. Show the Modal (Update 'user-permissions-modal' if your ID is different)
+    const modal = document.getElementById('user-permissions-modal');
+    if (modal) {
+        modal.style.display = 'block';
+    } else {
+        alert("Could not find the 'user-permissions-modal' element in HTML.");
+    }
+}
 async function quickRoleChange(userId, newRole) {
     showToast("Updating role...");
     try {
@@ -3141,7 +3164,7 @@ async function renderUsersTable() {
                     <td>
                       <div style="display:flex; gap:5px;">
                         <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${uId}')">🔑 PIN</button>
-                      <button class="btn btn-secondary btn-sm" onclick="openUserPermissions('${uId}')">🛡️ Perms</button>
+                     <button class="btn btn-secondary btn-sm" onclick="openPermissionsCard('${uId}')">🛡️ Perms</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteUser('${uId}')">Delete</button>
                       </div>
                     </td>
@@ -3180,7 +3203,26 @@ async function deleteUser(id) {
         alert("Failed to delete user.");
     }
 }
+async function saveUserPermissions() {
+    if (!editingUserId) return;
 
+    try {
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ permissions: editingPerms }) // Saves the toggles you switched
+            .eq('id', editingUserId);
+
+        if (error) {
+            alert("Save failed: " + error.message);
+        } else {
+            alert("Permissions updated successfully!");
+            document.getElementById('user-permissions-modal').style.display = 'none';
+            renderUsersTable(); // Refresh the table
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
 // ── CHAT ─────────────────────────────────────────────────────
 let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoData=null,lastReadAt={};
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
