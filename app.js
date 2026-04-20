@@ -6378,11 +6378,12 @@ function openUserPermissions(userId) {
     }
 }
 function teleportModals() {
-    console.log("Teleporting modals to safety...");
-    const perms = document.getElementById('user-perms-modal');
-    const cal = document.getElementById('cal-action-modal');
+    console.log("🚀 Teleporting all modals to safety...");
+    // Added 'absence-detail-modal' to the list
+    const ids = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'calendar-entry-modal'];
     
-    // This moves them out of any hidden panels and into the main body
-    if (perms) document.body.appendChild(perms);
-    if (cal) document.body.appendChild(cal);
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) document.body.appendChild(el);
+    });
 }
