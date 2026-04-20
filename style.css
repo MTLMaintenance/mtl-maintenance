@@ -289,12 +289,21 @@ body.dark-mode .modal {
     font-weight: 500;
 }
 
-/* Event Colors */
-.cal-event.work-order { background: var(--accent-bg); color: var(--accent-text); border: 1px solid rgba(24, 95, 165, 0.2); }
-.cal-event.completed { background: var(--success-bg); color: var(--success-text); opacity: 0.8; }
-.cal-event.overdue { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger); }
-.cal-event.forecast { background: #FAEEDA; color: #854F0B; border: 1px dashed #BA7517; font-style: italic; }
-.cal-event.scheduled { background: #eee; color: #666; border: 1px solid #ddd; }
+/* Color Coding for Calendar Badges */
+.cal-event.work-order { background: #e7f3ff !important; color: #007bff !important; border-left: 3px solid #007bff !important; }
+.cal-event.work-order.completed { background: #e6ffed !important; color: #28a745 !important; border-left: 3px solid #28a745 !important; }
+.cal-event.work-order.pending { background: #fff4e6 !important; color: #fd7e14 !important; border-left: 3px solid #fd7e14 !important; }
+
+/* Staff Absence Color (Yellow) */
+.cal-event.staff-absence { 
+    background: #fff3cd !important; 
+    color: #856404 !important; 
+    border-left: 3px solid #ffc107 !important;
+    font-weight: 600;
+}
+
+/* Forecast/Adaptive Color */
+.cal-event.forecast { background: #f3f0ff !important; color: #6f42c1 !important; border-left: 3px solid #6f42c1 !important; border-style: dashed !important; }
 
 .cal-day:hover {
     background: rgba(255, 255, 255, 1) !important;
