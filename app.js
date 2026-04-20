@@ -652,26 +652,59 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const name=document.getElementById('reg-name').value.trim();
-  const username=document.getElementById('reg-user').value.trim();
-  const pass=document.getElementById('reg-pass').value;
-  document.getElementById('auth-err').style.display='none';
-  if (!name||!username||!pass) { showErr('Please fill in all fields.'); return; }
-  if (pass.length<6) { showErr('Password must be at least 6 characters.'); return; }
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) { showErr('Username: letters, numbers and underscores only.'); return; }
-  try {
-    const { data: existing } = await window._mpdb.from('profiles').select('id').eq('username', username).single();
-    if (existing) { showErr('That username is already taken.'); return; }
-    const { error } = await window._mpdb.from('profiles').insert({
-      id: crypto.randomUUID(), username, full_name: name, role:'tech', status:'pending',
-      password_hash: btoa(unescape(encodeURIComponent(pass)))
-    });
-    if (error) { showErr('Could not submit: '+error.message); return; }
-    showPending();
-  } catch(e) { showErr('Registration failed. Try again.'); }
-}
+  const name = document.getElementById('reg-name').value.trim();
+  const username = document.getElementById('reg-user').value.trim();
+  const pin = document.getElementById('reg-pin').value.trim(); // Changed from reg-pass to reg-pin
+  
+  // Clear any old errors
+  document.getElementById('auth-err').style.display = 'none';
 
-document.getElementById('auth-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  // 1. Validation
+  if (!name || !username || !pin) { 
+      showErr('Please fill in all fields.'); 
+      return; 
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) { 
+      showErr('Username: letters, numbers and underscores only.'); 
+      return; 
+  }
+
+  try {
+    // 2. Check if username is already taken
+    const { data: existing } = await window._mpdb
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .single();
+    
+    if (existing) { 
+        showErr('That username is already taken.'); 
+        return; 
+    }
+
+    // 3. Insert the new user into the database
+    const { error } = await window._mpdb.from('profiles').insert({
+      id: crypto.randomUUID(), 
+      username: username, 
+      full_name: name, 
+      role: 'tech', 
+      status: 'pending',
+      pin_code: pin // Saves directly to the new PIN column
+    });
+
+    if (error) { 
+        showErr('Could not submit: ' + error.message); 
+        return; 
+    }
+
+    // 4. Success - show the pending screen
+    showPending();
+
+  } catch(e) { 
+    console.error(e);
+    showErr('Registration failed. Try again.'); 
+  }
+}
 
 
 async function signOut() {
