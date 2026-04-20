@@ -3134,8 +3134,8 @@ async function changeUserRole() {
 }
 async function renderUsersTable() {
   try {
-    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
-    if (!profiles) return;
+    const { data: profiles, error } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error || !profiles) return;
 
     state.users_list_cache = profiles;
     const active = profiles.filter(p => p.status === 'approved');
@@ -3144,9 +3144,11 @@ async function renderUsersTable() {
     if (tableBody) {
         const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
         
-        // We use .replace(/'/g, "\\'") to make sure names like O'Neil don't crash the script
         tableBody.innerHTML = active.map(p => {
-            const safeName = (p.full_name || p.username).replace(/'/g, "\\'");
+            // This is the safest way to pass strings to an onclick function
+            const uId = p.id;
+            const uName = (p.full_name || p.username).replace(/'/g, "\\'");
+
             return `
             <tr>
                 <td><b>${p.full_name || p.username}</b></td>
@@ -3155,8 +3157,8 @@ async function renderUsersTable() {
                 <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
                 <td>
                   <div style="display:flex; gap:5px;">
-                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}', '${safeName}')">🔑 PIN</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}', '${safeName}')">Delete</button>
+                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${uId}', '${uName}')">🔑 PIN</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${uId}', '${uName}')">Delete</button>
                   </div>
                 </td>
             </tr>`;
@@ -3174,7 +3176,7 @@ async function renderUsersTable() {
   }
 }
 
-// --- THIS MUST BE OUTSIDE OF THE renderUsersTable FUNCTION ---
+// Ensure this function is NOT inside renderUsersTable. It must be on its own.
 async function promptResetPin(userId, userName) {
     const newPin = prompt("Enter new PIN for " + userName + ":");
     if (newPin === null || newPin.trim() === "") return;
@@ -3186,13 +3188,13 @@ async function promptResetPin(userId, userName) {
             .eq('id', userId);
 
         if (error) {
-            alert("Failed: " + error.message);
+            alert("Failed to update PIN: " + error.message);
         } else {
-            alert("Success! " + userName + "'s PIN is now: " + newPin);
+            alert("Success! " + userName + "'s PIN has been updated.");
         }
     } catch (err) {
-        console.error(err);
-        alert("Error updating PIN.");
+        console.error("Reset PIN Error:", err);
+        alert("An error occurred. Check the console.");
     }
 }
 
