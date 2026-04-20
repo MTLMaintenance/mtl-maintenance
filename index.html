@@ -10,92 +10,77 @@
 <body>
 <div id="offline-banner">⚠ You're offline — changes will sync when reconnected</div>
 
-<!-- AUTH -->
+<!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">⚙ MTL Maintenance</div>
     <div class="auth-sub" id="auth-sub">Sign in to your workspace</div>
     <div class="auth-err" id="auth-err"></div>
-    <!-- THE NEW PIN-BASED LOGIN VIEW -->
-<div id="login-view">
-  <!-- STAGE 1: NAME SELECTION -->
-  <div id="login-stage-names">
-    <div class="auth-sub" style="margin-bottom:15px">Who is logging in?</div>
-    <div id="user-name-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; max-height:300px; -webkit-overflow-scrolling: touch; overflow-y:auto; padding:5px;">
-        <!-- Names generate here -->
+
+    <!-- 1. LOGIN VIEW (Name list and PIN pad) -->
+    <div id="login-view">
+      <!-- STAGE 1: NAME SELECTION -->
+      <div id="login-stage-names">
+        <div class="auth-sub" style="margin-bottom:15px">Who is logging in?</div>
+        <div id="user-name-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; max-height:300px; -webkit-overflow-scrolling: touch; overflow-y:auto; padding:5px;">
+            <!-- Names generate here -->
+        </div>
+        <div class="auth-switch" style="margin-top:20px">No account? <a onclick="showRegister()">Request access</a></div>
+      </div>
+
+      <!-- STAGE 2: PIN PAD -->
+      <div id="login-stage-pin" style="display:none; text-align:center;">
+        <button onclick="backToNames()" style="background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:13px; margin-bottom:15px;">
+            ← Back to list of names
+        </button>
+
+        <div id="selected-user-display" style="font-weight:bold; color:#fff; font-size:22px; margin-bottom:5px;">Hello, User</div>
+        <div class="auth-sub" style="margin-bottom:20px; color:rgba(255,255,255,0.6);">Please enter your PIN</div>
+        
+        <div id="pin-display" style="height:30px; font-size:28px; color:#28a745; letter-spacing:10px; margin-bottom:20px;"></div>
+
+        <div class="pin-pad-grid">
+            <button class="pin-btn" onclick="pressPin('1')">1</button>
+            <button class="pin-btn" onclick="pressPin('2')">2</button>
+            <button class="pin-btn" onclick="pressPin('3')">3</button>
+            <button class="pin-btn" onclick="pressPin('4')">4</button>
+            <button class="pin-btn" onclick="pressPin('5')">5</button>
+            <button class="pin-btn" onclick="pressPin('6')">6</button>
+            <button class="pin-btn" onclick="pressPin('7')">7</button>
+            <button class="pin-btn" onclick="pressPin('8')">8</button>
+            <button class="pin-btn" onclick="pressPin('9')">9</button>
+            <button class="pin-btn btn-clear" onclick="pressPin('clear')">CLEAR</button>
+            <button class="pin-btn" onclick="pressPin('0')">0</button>
+            <button class="pin-btn btn-submit" onclick="verifyUserPin()">✓</button>
+        </div>
+      </div>
     </div>
-    <div class="auth-switch" style="margin-top:20px">No account? <a onclick="showRegister()">Request access</a></div>
-  </div>
 
- <!-- STAGE 2: PIN PAD -->
-<div id="login-stage-pin" style="display:none; text-align:center;">
-    <!-- Back Button -->
-    <button onclick="backToNames()" style="background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:13px; margin-bottom:15px; display:inline-flex; align-items:center; gap:5px;">
-        ← Back to list of names
-    </button>
-
-    <!-- Personalized Greeting -->
-    <div id="selected-user-display" style="font-weight:bold; color:#fff; font-size:22px; margin-bottom:5px;">Hello, User</div>
-    <div class="auth-sub" style="margin-bottom:20px; color:rgba(255,255,255,0.6);">Please enter your PIN</div>
-    
-    <!-- PIN Input Feedback (Asterisks) -->
-    <div id="pin-display" style="height:30px; font-size:28px; color:#28a745; letter-spacing:10px; margin-bottom:20px;"></div>
-
-    <!-- The Keypad Grid -->
-    <div class="pin-pad-grid">
-        <button class="pin-btn" onclick="pressPin('1')">1</button>
-        <button class="pin-btn" onclick="pressPin('2')">2</button>
-        <button class="pin-btn" onclick="pressPin('3')">3</button>
-        
-        <button class="pin-btn" onclick="pressPin('4')">4</button>
-        <button class="pin-btn" onclick="pressPin('5')">5</button>
-        <button class="pin-btn" onclick="pressPin('6')">6</button>
-        
-        <button class="pin-btn" onclick="pressPin('7')">7</button>
-        <button class="pin-btn" onclick="pressPin('8')">8</button>
-        <button class="pin-btn" onclick="pressPin('9')">9</button>
-        
-        <button class="pin-btn btn-clear" onclick="pressPin('clear')">CLEAR</button>
-        <button class="pin-btn" onclick="pressPin('0')">0</button>
-        <button class="pin-btn btn-submit" onclick="verifyUserPin()">✓</button>
-    </div>
-</div>
-      <button class="btn btn-primary" id="auth-btn" onclick="doLogin()" style="width:100%;margin-top:14px;justify-content:center">Sign In</button>
+    <!-- 2. REGISTER VIEW -->
     <div id="register-view" style="display:none">
-  <div class="auth-sub" style="margin-bottom:15px">Create your account</div>
-  
-  <div class="form-group" style="margin-bottom:12px">
-    <label class="form-label">Full Name</label>
-    <input class="form-input" id="reg-name" placeholder="John Doe"/>
-  </div>
-
-  <div class="form-group" style="margin-bottom:12px">
-    <label class="form-label">Username</label>
-    <input class="form-input" id="reg-user" placeholder="Choose a username"/>
-  </div>
-
-  <div class="form-group" style="margin-bottom:12px">
-  <label class="form-label">Choose PIN</label>
-  <p style="font-size:10px; color:rgba(255,255,255,0.5); margin-bottom:5px;">Recommendation: Use your work clock-in number.</p>
-  <input class="form-input" id="reg-pin" type="tel" placeholder="Enter any length" 
-         style="letter-spacing: 5px; font-size: 18px; text-align: center;"/>
-</div>
-
-  <button class="btn btn-primary" onclick="doRegister()" style="width:100%; margin-top:14px; justify-content:center">
-    Request Access
-  </button>
-  
-  <div class="auth-switch" style="margin-top:20px">
-    <a onclick="showLogin()">Back to name list</a>
-  </div>
-</div>
-     
+      <div class="auth-sub" style="margin-bottom:15px">Create your account</div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="reg-name" placeholder="John Doe"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="reg-user" placeholder="Choose a username"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Choose PIN</label>
+        <input class="form-input" id="reg-pin" type="tel" placeholder="Enter any length" style="text-align:center; font-size:18px;"/>
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()" style="width:100%; margin-top:14px; justify-content:center">Request Access</button>
+      <div class="auth-switch" style="margin-top:20px"><a onclick="showLogin()">Back to name list</a></div>
     </div>
-    <div id="pending-view" style="display:none;text-align:center;padding:8px 0">
-      <div style="font-size:32px;margin-bottom:12px">⏳</div>
-      <div style="color:#fff;font-weight:500;margin-bottom:8px">Request submitted!</div>
-      <div style="color:rgba(255,255,255,0.65);font-size:13px">Your account is pending approval. You'll be able to log in once an admin approves your request.</div>
-      <button class="btn btn-secondary" onclick="showLogin()" style="margin-top:16px;width:100%">Back to name list</button>
+
+    <!-- 3. PENDING VIEW -->
+    <div id="pending-view" style="display:none; text-align:center; padding:8px 0">
+      <div style="font-size:32px; margin-bottom:12px">⏳</div>
+      <div style="color:#fff; font-weight:500; margin-bottom:8px">Request submitted!</div>
+      <div style="color:rgba(255,255,255,0.65); font-size:13px">Your account is pending approval.</div>
+      <button class="btn btn-secondary" onclick="showLogin()" style="margin-top:16px; width:100%">Back to name list</button>
     </div>
   </div>
 </div>
