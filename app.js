@@ -20,7 +20,7 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 async function showPinLogin() {
     console.log("Switching to PIN Login UI...");
 
-    // 1. HIDE THE OLD UI (Replace 'old-login-id' with your actual old login ID)
+    // 1. HIDE THE OLD UI
     const oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
     if (oldLogin) oldLogin.style.display = 'none';
 
@@ -33,11 +33,12 @@ async function showPinLogin() {
         return;
     }
 
-    // 3. Fetch approved users
+    // 3. Fetch approved users AND SORT THEM A-Z
     const { data: users, error } = await window._mpdb
         .from('profiles')
         .select('id, username, full_name')
-        .eq('status', 'approved');
+        .eq('status', 'approved')
+        .order('full_name', { ascending: true }); // <--- THIS LINE ADDED
 
     if (error) {
         console.error("User fetch error:", error);
@@ -51,13 +52,13 @@ async function showPinLogin() {
         users.forEach(user => {
             const btn = document.createElement('button');
             btn.className = 'user-select-btn';
+            // Show full name if they have one, otherwise show username
             btn.textContent = user.full_name || user.username;
             btn.onclick = () => selectUserForLogin(user);
             list.appendChild(btn);
         });
     }
 }
-
 function selectUserForLogin(user) {
     selectedLoginUser = user;
     enteredPin = "";
