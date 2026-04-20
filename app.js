@@ -1010,14 +1010,17 @@ function openModal(id) {
     }
 }
 
+
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) {
         el.style.display = 'none';
+        el.classList.remove('active');
         el.classList.remove('open');
+        // This is the extra safety step:
+        el.style.pointerEvents = 'none';
     }
 }
-
 // --- THE DROPDOWN PAINTER ---
 
 function populateSelects() {
