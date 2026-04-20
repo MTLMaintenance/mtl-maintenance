@@ -1359,49 +1359,56 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 function calDayClick(dateStr) {
-    console.log("--- Day Click Debug ---");
-    console.log("Clicked Date:", dateStr);
-    
+    console.log("--- Starting Fuzzy Search for Date:", dateStr, "---");
     lastClickedDate = dateStr;
+    
     const dateObj = new Date(dateStr + "T00:00:00");
     document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // 1. USE THE EXACT SAME FILTER LOGIC AS YOUR RENDER FUNCTION
-    // We use .split('T')[0] to make sure we only compare the Date, not the Time
-    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.split('T')[0] === dateStr);
-    const dayAbs = (staffAbsences || []).filter(a => a.start_date && a.start_date.split('T')[0] === dateStr);
+    // 1. FUZZY FILTER: We look for the date anywhere in the string to be safe
+    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.includes(dateStr));
+    const dayScheds = (state.schedules || []).filter(s => s.date && s.date.includes(dateStr));
+    const dayAbs = (staffAbsences || []).filter(a => a.start_date && a.start_date.includes(dateStr));
 
-    console.log("Database Data Check:", { 
-        total_tasks_in_memory: state.tasks.length, 
-        total_absences_in_memory: staffAbsences.length,
-        found_on_this_day: { tasks: dayTasks.length, absences: dayAbs.length } 
+    console.log("Fuzzy Search Results:", { 
+        tasks: dayTasks.length, 
+        schedules: dayScheds.length, 
+        absences: dayAbs.length 
     });
 
     const listContainer = document.getElementById('day-items-list');
     let listHtml = "";
 
-    // 2. Build Work Orders List
+    // 2. Build Work Orders (Tasks)
     dayTasks.forEach(t => {
         listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
-                <span style="font-size:13px; color:white;">🛠️ ${t.name}</span>
+            <div class="cal-list-item work-order-border">
+                <span>🛠️ ${t.name}</span>
                 <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openTaskDetail('${t.id}')">Edit</button>
             </div>`;
     });
 
-    // 3. Build Absences List
+    // 3. Build Schedules (Other entries)
+    dayScheds.forEach(s => {
+        listHtml += `
+            <div class="cal-list-item work-order-border" style="border-left-color: #6c757d;">
+                <span>📋 ${s.name}</span>
+                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openTaskDetail('${s.id}')">Edit</button>
+            </div>`;
+    });
+
+    // 4. Build Absences
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
         listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:8px;">
-                <span style="font-size:13px; color:white;">👤 ${a.user_name} (${timeText})</span>
+            <div class="cal-list-item absence-border">
+                <span>👤 ${a.user_name} (${timeText})</span>
                 <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
             </div>`;
     });
 
     listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled for this day.</div>`;
 
-    // 4. Show the Modal
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.classList.add('active');
