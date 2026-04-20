@@ -5,12 +5,11 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch: 
 
-permissions:
-  contents: write
-
 jobs:
   backup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Explicitly allows the robot to write to the repo
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,24 +19,21 @@ jobs:
 
       - name: Fetch Data from Supabase
         run: |
-          # List of tables
           TABLES="chat_messages profiles equipment parts suppliers work_orders staff_absences tasks schedules tool_crib_items"
           DATE_STR=$(date +%Y-%m-%d)
           
           for table in $TABLES; do
             echo "Fetching $table..."
-            # Added -f to curl so it fails properly if the URL is wrong
-            # Added -o to ensure the file is created even if empty
+            # Try to fetch, if it fails, create an empty error file so the script continues
             curl -f -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/$table?select=*" \
             -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -o "backups/${table}-${DATE_STR}.json" || echo "Warning: Could not fetch $table"
+            -o "backups/${table}-${DATE_STR}.json" || echo "{\"error\": \"failed\"}" > "backups/${table}-${DATE_STR}.json"
           done
 
       - name: Commit and Push changes
-        run: |
-          git config --global user.name "Backup Bot"
-          git config --global user.email "bot@github.com"
-          git add backups/
-          # This version won't crash if there's nothing new to save
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Nightly Backup [skip ci]" && git push)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated Nightly Backup [skip ci]"
+          file_pattern: 'backups/*.json'
+          status_options: '--untracked-files=all'
