@@ -1,54 +1,44 @@
 name: Nightly Database Backup
 
 on:
-  workflow_dispatch: # Manual button
+  workflow_dispatch: 
   schedule:
     - cron: '0 0 * * *'
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Verify Secrets
-        run: |
-          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then echo "❌ URL Secret is MISSING"; exit 1; fi
-          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then echo "❌ KEY Secret is MISSING"; exit 1; fi
-          echo "✅ Secrets are present."
+        with:
+          ref: main # The robot starts by looking at your code
 
       - name: Create Backup Folder
-        run: mkdir -p database_backups
+        run: mkdir -p backups
 
       - name: Fetch Data from Supabase
         run: |
-          # We check the URL for a trailing slash which causes 404s
           CLEAN_URL=$(echo "${{ secrets.SUPABASE_URL }}" | sed 's:/*$::')
-          
           TABLES="chat_messages profiles equipment parts suppliers work_orders staff_absences tasks schedules tool_crib_items"
+          DATE_STR=$(date +%Y-%m-%d)
           
           for table in $TABLES; do
-            echo "Attempting to fetch table: $table"
-            
-            # We remove the '-f' so the script doesn't crash on a single error
-            STATUS=$(curl -s -o "database_backups/${table}.json" -w "%{http_code}" \
-              "$CLEAN_URL/rest/v1/$table?select=*" \
-              -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-              -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}")
-            
-            if [ "$STATUS" -eq 200 ]; then
-              echo "✅ Success: $table (HTTP $STATUS)"
-            else
-              echo "❌ FAILED: $table (HTTP $STATUS)"
-              # Create an error file so we know why it failed
-              echo "{\"error\": \"HTTP $STATUS\"}" > "database_backups/${table}_ERROR.json"
-            fi
+            echo "Fetching $table..."
+            curl -f -s -X GET "$CLEAN_URL/rest/v1/$table?select=*" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -o "backups/${table}-${DATE_STR}.json" || echo "{}" > "backups/${table}.json"
           done
 
-      - name: Save Backup to GitHub Vault
-        uses: actions/upload-artifact@v4
+      - name: Commit to Backups Branch
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: MTL-Full-Backup
-          path: database_backups/
-          retention-days: 7
+          commit_message: "Automated Nightly Backup [skip ci]"
+          file_pattern: 'backups/*.json'
+          # THIS IS THE MAGIC: Push to a different branch
+          branch: backups
+          create_branch: true 
+          push_options: '--force'
