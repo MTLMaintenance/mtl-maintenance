@@ -1155,3 +1155,26 @@ body, html {
     justify-content: center;
     align-items: center;
 }
+/* Force the text in the perms list to be dark/readable */
+#user-perms-modal .modal {
+    background: #ffffff !important; /* Force white background for the card */
+    color: #333333 !important;      /* Force dark text */
+}
+
+#user-perms-title {
+    color: #333333 !important;
+}
+
+#user-perms-list div {
+    color: #333333 !important;
+}
+
+/* Fix for the 'Default' text labels */
+#user-perms-list span, #user-perms-list div {
+    color: #333333 !important;
+}
+
+/* Ensure the background of the list is clear */
+#user-perms-list {
+    background: #fdfdfd !important;
+}
