@@ -925,32 +925,7 @@
   </div>
 </div>
 
-<!-- CLEAN PERMISSIONS MODAL -->
-<div class="modal-backdrop" id="user-perms-modal" style="display:none;">
-  <div class="modal" style="max-width:500px; background:#1a1a1a; color:white; padding:20px; border-radius:12px; border:1px solid #444; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-    
-    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-      <span class="modal-title" id="user-perms-title" style="font-size:18px; font-weight:700;">Custom Permissions</span>
-      <button class="modal-close" onclick="closeModal('user-perms-modal')" style="background:none; border:none; color:#888; font-size:20px; cursor:pointer;">✕</button>
-    </div>
 
-    <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
-      <span style="font-size:12px; color:#aaa;">Base role:</span>
-      <span class="badge bi" id="user-perms-role" style="background:#007bff; padding:2px 8px; border-radius:4px; font-size:11px;"></span>
-    </div>
-
-    <!-- This is where the toggles go -->
-    <div id="user-perms-list" style="max-height:400px; overflow-y:auto; padding-right:5px;"></div>
-
-    <div style="margin-top:20px; display:flex; gap:10px; justify-content:space-between; flex-wrap:wrap;">
-      <button class="btn btn-secondary btn-sm" onclick="resetUserPerms()" style="background:#444; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer;">Reset to Defaults</button>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-secondary" onclick="closeModal('user-perms-modal')" style="background:transparent; border:1px solid #444; color:white; padding:8px 15px; border-radius:6px; cursor:pointer;">Cancel</button>
-        <button class="btn btn-primary" onclick="saveUserPerms()" style="background:#28a745; border:none; color:white; padding:8px 20px; border-radius:6px; font-weight:700; cursor:pointer;">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
 <!-- Bug / Suggestion Modal -->
 <div class="modal-backdrop" id="bug-modal">
   <div class="modal" style="max-width:460px">
@@ -1230,7 +1205,32 @@
     </div>
   </div>
 </div>
+<!-- CLEAN PERMISSIONS MODAL -->
+<div class="modal-backdrop" id="user-perms-modal" style="display:none;">
+  <div class="modal" style="max-width:500px; background:#1a1a1a; color:white; padding:20px; border-radius:12px; border:1px solid #444; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <span class="modal-title" id="user-perms-title" style="font-size:18px; font-weight:700;">Custom Permissions</span>
+      <button class="modal-close" onclick="closeModal('user-perms-modal')" style="background:none; border:none; color:#888; font-size:20px; cursor:pointer;">✕</button>
+    </div>
 
+    <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
+      <span style="font-size:12px; color:#aaa;">Base role:</span>
+      <span class="badge bi" id="user-perms-role" style="background:#007bff; padding:2px 8px; border-radius:4px; font-size:11px;"></span>
+    </div>
+
+    <!-- This is where the toggles go -->
+    <div id="user-perms-list" style="max-height:400px; overflow-y:auto; padding-right:5px;"></div>
+
+    <div style="margin-top:20px; display:flex; gap:10px; justify-content:space-between; flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" onclick="resetUserPerms()" style="background:#444; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer;">Reset to Defaults</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary" onclick="closeModal('user-perms-modal')" style="background:transparent; border:1px solid #444; color:white; padding:8px 15px; border-radius:6px; cursor:pointer;">Cancel</button>
+        <button class="btn btn-primary" onclick="saveUserPerms()" style="background:#28a745; border:none; color:white; padding:8px 20px; border-radius:6px; font-weight:700; cursor:pointer;">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
