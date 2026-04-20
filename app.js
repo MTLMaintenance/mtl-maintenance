@@ -1354,55 +1354,46 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 function calDayClick(dateStr) {
-    console.log("--- Starting Fuzzy Search for Date:", dateStr, "---");
+    // Prevent the click from 'leaking' if this function was triggered by a child
+    if (window.event) window.event.stopPropagation(); 
+
+    console.log("Day clicked:", dateStr);
     lastClickedDate = dateStr;
-    
     const dateObj = new Date(dateStr + "T00:00:00");
     document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // 1. FUZZY FILTER: We look for the date anywhere in the string to be safe
     const dayTasks = (state.tasks || []).filter(t => t.due && t.due.includes(dateStr));
-    const dayScheds = (state.schedules || []).filter(s => s.date && s.date.includes(dateStr));
     const dayAbs = (staffAbsences || []).filter(a => a.start_date && a.start_date.includes(dateStr));
-
-    console.log("Fuzzy Search Results:", { 
-        tasks: dayTasks.length, 
-        schedules: dayScheds.length, 
-        absences: dayAbs.length 
-    });
 
     const listContainer = document.getElementById('day-items-list');
     let listHtml = "";
 
-    // 2. Build Work Orders (Tasks)
+    // 1. Work Orders with StopPropagation
     dayTasks.forEach(t => {
         listHtml += `
             <div class="cal-list-item work-order-border">
                 <span>🛠️ ${t.name}</span>
-                <!-- THE FIX: We switch to the 'tasks' panel first, then open the detail -->
-                <button class="cal-edit-btn" onclick="jumpToTaskEdit('${t.id}')">Edit</button>
+                <button type="button" class="cal-edit-btn" 
+                    onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">
+                    Edit
+                </button>
             </div>`;
     });
 
-    // 3. Build Schedules (Other entries)
-    dayScheds.forEach(s => {
-        listHtml += `
-            <div class="cal-list-item work-order-border" style="border-left-color: #6c757d;">
-                <span>📋 ${s.name}</span>
-                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openTaskDetail('${s.id}')">Edit</button>
-            </div>`;
-    });
-
-    // 4. Build Absences
+    // 2. Absences with StopPropagation
     dayAbs.forEach(a => {
-    const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
-    listHtml += `
-        <div class="cal-list-item absence-border">
-            <span>👤 ${a.user_name} (${timeText})</span>
-            <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)">Edit</button>
-        </div>`;
-});
-    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled for this day.</div>`;
+        const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
+        listHtml += `
+            <div class="cal-list-item absence-border">
+                <span>👤 ${a.user_name} (${timeText})</span>
+                <button type="button" class="cal-edit-btn" 
+                    onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)">
+                    Edit
+                </button>
+            </div>`;
+    });
+
+    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled.</div>`;
 
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
@@ -6388,24 +6379,31 @@ function teleportModals() {
     });
 }
 async function jumpToTaskEdit(taskId) {
-    console.log("🚀 Jumping to Task Edit for ID:", taskId);
-
-    // 1. Close the current calendar popup
-    closeModal('cal-action-modal');
-
-    // 2. Switch to the Tasks/Work Orders tab
-    // Note: Change 'tasks' to 'workorders' if your tab ID is different
-    if (typeof showPanel === 'function') {
-        await showPanel('tasks'); 
+    console.log("🚀 Jumping to Edit for:", taskId);
+    
+    // 1. Kill the popup immediately
+    const actionModal = document.getElementById('cal-action-modal');
+    if (actionModal) {
+        actionModal.classList.remove('active');
+        actionModal.style.display = 'none';
     }
 
-    // 3. Wait 100 milliseconds for the UI to finish rendering
+    // 2. Switch tabs (Change 'tasks' to 'work-orders' if needed)
+    if (typeof showPanel === 'function') {
+        showPanel('tasks'); 
+    }
+
+    // 3. Force the Edit window to open after a tiny delay
     setTimeout(() => {
         if (typeof openTaskDetail === 'function') {
             openTaskDetail(taskId);
-            console.log("✅ Edit window triggered.");
-        } else {
-            console.error("Error: openTaskDetail function not found!");
         }
-    }, 150);
+        
+        // Final Safety: If the edit modal is a popup, force it to the front
+        const editModal = document.getElementById('calendar-entry-modal') || document.getElementById('task-modal');
+        if (editModal) {
+            editModal.style.display = 'block';
+            editModal.style.zIndex = "2000005";
+        }
+    }, 200);
 }
