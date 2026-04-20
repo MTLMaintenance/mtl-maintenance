@@ -67,22 +67,20 @@ function selectUserForLogin(user) {
     document.getElementById('login-stage-pin').style.display = 'block';
     updatePinDots();
 }
-
 function pressPin(num) {
-    if (num === 'delete') {
-        enteredPin = enteredPin.slice(0, -1);
-    } else if (enteredPin.length < 4) {
+    if (num === 'clear') {
+        enteredPin = "";
+    } else if (enteredPin.length < 12) { // Set a max safety limit of 12
         enteredPin += num;
     }
     
-    updatePinDots();
-
-    // AUTO-SUBMIT when 4 digits are reached
-    if (enteredPin.length === 4) {
-        verifyUserPin();
-    }
+    updatePinDisplay();
 }
-
+function updatePinDisplay() {
+    const display = document.getElementById('pin-display');
+    // Shows one asterisk for every digit typed
+    display.textContent = "•".repeat(enteredPin.length);
+}
 async function verifyUserPin() {
     const { data, error } = await window._mpdb
         .from('profiles')
