@@ -6391,3 +6391,12 @@ function openUserPermissions(userId) {
         }
     }
 }
+function teleportModals() {
+    console.log("Teleporting modals to safety...");
+    const perms = document.getElementById('user-perms-modal');
+    const cal = document.getElementById('cal-action-modal');
+    
+    // This moves them out of any hidden panels and into the main body
+    if (perms) document.body.appendChild(perms);
+    if (cal) document.body.appendChild(cal);
+}
