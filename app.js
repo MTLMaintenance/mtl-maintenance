@@ -1379,7 +1379,8 @@ function calDayClick(dateStr) {
         listHtml += `
             <div class="cal-list-item work-order-border">
                 <span>🛠️ ${t.name}</span>
-                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openTaskDetail('${t.id}')">Edit</button>
+                <!-- THE FIX: We switch to the 'tasks' panel first, then open the detail -->
+                <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); showPanel('tasks'); openTaskDetail('${t.id}')">Edit</button>
             </div>`;
     });
 
@@ -1393,15 +1394,15 @@ function calDayClick(dateStr) {
     });
 
     // 4. Build Absences
-    dayAbs.forEach(a => {
+     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
         listHtml += `
             <div class="cal-list-item absence-border">
                 <span>👤 ${a.user_name} (${timeText})</span>
+                <!-- Absence modal is global, so no panel switch needed -->
                 <button class="cal-edit-btn" onclick="closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
             </div>`;
     });
-
     listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled for this day.</div>`;
 
     const modal = document.getElementById('cal-action-modal');
