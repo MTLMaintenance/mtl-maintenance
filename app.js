@@ -1,3 +1,5 @@
+let selectedLoginUser = null;
+let enteredPin = "";
 let lastClickedDate = "";
 let currentDetailId = null;
 let selectedAbsenceType = 'all'; 
@@ -14,6 +16,79 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+// 1. Fetch users and show the list
+async function showPinLogin() {
+    const { data: users, error } = await window._mpdb
+        .from('profiles')
+        .select('id, username, full_name')
+        .eq('status', 'approved');
+
+    const list = document.getElementById('user-name-list');
+    list.innerHTML = "";
+
+    users.forEach(user => {
+        const btn = document.createElement('button');
+        btn.className = 'user-select-btn';
+        btn.textContent = user.full_name || user.username;
+        btn.onclick = () => selectUserForLogin(user);
+        list.appendChild(btn);
+    });
+}
+
+function selectUserForLogin(user) {
+    selectedLoginUser = user;
+    enteredPin = "";
+    document.getElementById('selected-user-display').textContent = user.full_name || user.username;
+    document.getElementById('login-stage-names').style.display = 'none';
+    document.getElementById('login-stage-pin').style.display = 'block';
+    updatePinDots();
+}
+
+function pressPin(num) {
+    if (num === 'delete') {
+        enteredPin = enteredPin.slice(0, -1);
+    } else if (enteredPin.length < 4) {
+        enteredPin += num;
+    }
+    
+    updatePinDots();
+
+    // AUTO-SUBMIT when 4 digits are reached
+    if (enteredPin.length === 4) {
+        verifyUserPin();
+    }
+}
+
+async function verifyUserPin() {
+    const { data, error } = await window._mpdb
+        .from('profiles')
+        .select('*')
+        .eq('id', selectedLoginUser.id)
+        .eq('pin_code', enteredPin)
+        .single();
+
+    if (data) {
+        // SUCCESS: Use your existing login logic
+        currentUser = data;
+        await enterApp(); 
+    } else {
+        // FAIL
+        alert("Incorrect PIN");
+        enteredPin = "";
+        updatePinDots();
+    }
+}
+
+function updatePinDots() {
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById(`dot-${i}`).classList.toggle('filled', i <= enteredPin.length);
+    }
+}
+
+function backToNames() {
+    document.getElementById('login-stage-names').style.display = 'block';
+    document.getElementById('login-stage-pin').style.display = 'none';
+}
 function checkDateSelection(val) {
     if(val) document.getElementById('abs-options').style.display = 'block';
 }
@@ -440,7 +515,7 @@ async function startApp() {
     console.error("Session error:", e);
   }
   
-  showLogin();
+  showPinLogin();
 }
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }
