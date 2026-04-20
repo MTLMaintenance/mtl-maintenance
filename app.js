@@ -16,26 +16,24 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
-async function promptResetPin(userId, userName) {
-    var newPin = prompt('Enter a new PIN for ' + userName + ':');
-    if (newPin === null || newPin.trim() === '') return;
+async function promptResetPin(userId) {
+    if (!state.users_list_cache) return;
+    
+    const user = state.users_list_cache.find(u => u.id === userId);
+    const uName = user ? (user.full_name || user.username) : "User";
 
-    if (!confirm('Are you sure you want to change ' + userName + '\'s PIN to: ' + newPin + '?')) return;
+    const newPin = prompt("Enter new PIN for " + uName + ":");
+    if (newPin === null || newPin.trim() === "") return;
 
     try {
-        var result = await window._mpdb
+        const { error } = await window._mpdb
             .from('profiles')
             .update({ pin_code: newPin.trim() })
             .eq('id', userId);
 
-        if (result.error) {
-            alert('Failed to reset PIN: ' + result.error.message);
-        } else {
-            alert('Success! ' + userName + ' can now log in with the new PIN.');
-        }
-    } catch (err) {
-        console.error('Reset error:', err);
-    }
+        if (error) { alert("Error: " + error.message); } 
+        else { alert("Success! PIN updated for " + uName); }
+    } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
     try {
@@ -3155,31 +3153,6 @@ async function renderUsersTable() {
     console.error("User Table Render Error:", e); 
   }
 }
-
-// THIS FUNCTION NOW LOOKS UP THE NAME ITSELF
-async function promptResetPin(userId) {
-    // Find the user name from the cache we saved earlier
-    const user = state.users_list_cache.find(u => u.id === userId);
-    const userName = user ? (user.full_name || user.username) : "User";
-
-    const newPin = prompt("Enter new PIN for " + userName + ":");
-    if (newPin === null || newPin.trim() === "") return;
-
-    try {
-        const { error } = await window._mpdb
-            .from('profiles')
-            .update({ pin_code: newPin.trim() })
-            .eq('id', userId);
-
-        if (error) {
-            alert("Failed: " + error.message);
-        } else {
-            alert("Success! " + userName + "'s PIN is now updated.");
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
 async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await window._mpdb.from('profiles').delete().eq('id',id);showToast(name+' removed');renderAdminPanel();}
@@ -5031,54 +5004,41 @@ async function approveUser(id){
 }
 
 async function renderUsersTable() {
-  const tableBody = document.getElementById('users-table-body');
-  const userSelect = document.getElementById('role-user-select');
-
-  if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px">Fetching users...</td></tr>';
-
   try {
-    // 1. Fetch all approved users from the database
-    const { data: profiles, error } = await window._mpdb
-      .from('profiles')
-      .select('*')
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
+    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
     if (!profiles) return;
 
-    // Cache the list so other functions (like Role Sync) can use it
+    // Save users to a cache so we can find names by ID later
     state.users_list_cache = profiles;
 
-    const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
-
-    // 2. Build the Table Rows
+    const active = profiles.filter(p => p.status === 'approved');
+    const tableBody = document.getElementById('users-table-body');
+    
     if (tableBody) {
-      tableBody.innerHTML = profiles.map(p => `
-        <tr>
-          <td style="font-weight:600; padding-left:16px">${p.full_name}</td>
-          <td style="color:var(--text2)">${p.username}</td>
-          <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-          <td><span class="badge bs">Active</span></td>
-          <td>
-            <div style="display:flex; gap:6px">
-              <button class="btn btn-secondary btn-sm" onclick="openUserPerms('${p.id}','${p.full_name}','${p.role||'tech'}',${JSON.stringify(p.custom_permissions||null)})">Perms</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}','${p.full_name}')">Delete</button>
-            </div>
-          </td>
-        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px">No active users found.</td></tr>';
+        const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+        
+        // FIX: We ONLY pass the ID string. No names. No quotes. No crashes.
+        tableBody.innerHTML = active.map(p => `
+            <tr>
+                <td><b>${p.full_name || p.username}</b></td>
+                <td>${p.username}</td>
+                <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+                <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
+                <td>
+                  <div style="display:flex; gap:5px;">
+                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
+                  </div>
+                </td>
+            </tr>`).join('');
     }
 
-    // 3. Fill the "Change Role" dropdown at the bottom of the page
+    const userSelect = document.getElementById('role-user-select');
     if (userSelect) {
       userSelect.innerHTML = '<option value="">— Select User —</option>' + 
-        profiles.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
+        active.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
     }
-
-  } catch (e) {
-    console.error("Error loading users table:", e);
-    if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:20px">Error loading users. Check connection.</td></tr>';
-  }
+  } catch(e) { console.error("Table Render Crash:", e); }
 }
 function handleChatInput(el) {
     // 1. Auto-resize textarea
