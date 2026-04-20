@@ -1279,3 +1279,19 @@ body, html {
 #absence-detail-modal[style*="display: flex"] {
     display: flex !important;
 }
+/* Ensure the Absence Request form is at the absolute top layer */
+#absence-modal {
+    z-index: 2000005 !important; 
+}
+
+/* Ensure the Day Action card is slightly lower */
+#cal-action-modal {
+    z-index: 2000000 !important;
+}
+
+/* Safety: If both are open, this keeps them centered correctly */
+.modal-backdrop.active {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
