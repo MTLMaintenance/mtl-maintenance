@@ -11,14 +11,12 @@ env:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Create Backup Folder
-        run: mkdir -p backups
+        run: mkdir -p daily_backups
 
       - name: Fetch Data from Supabase
         run: |
@@ -30,15 +28,12 @@ jobs:
             curl -f -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/$table?select=*" \
             -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -o "backups/${table}-${DATE_STR}.json" || echo "{\"error\": \"failed\"}" > "backups/${table}-${DATE_STR}.json"
+            -o "daily_backups/${table}-${DATE_STR}.json" || echo "{\"error\": \"failed\"}" > "daily_backups/${table}-${DATE_STR}.json"
           done
 
-      - name: Commit and Push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Save Backup as Artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "Automated Nightly Backup [skip ci]"
-          file_pattern: 'backups/*.json'
-          # THIS IS THE KEY FIX: Push to a branch that isn't protected
-          branch: backups
-          create_branch: true
-          push_options: '--force'
+          name: mtl-database-backup-${{ github.run_id }}
+          path: daily_backups/
+          retention-days: 7  # This deletes them after a week automatically!
