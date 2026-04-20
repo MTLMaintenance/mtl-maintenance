@@ -3106,15 +3106,15 @@ async function openPermissionsCard(userId) {
     // 4. THE SAFETY WRAPPER: Run the 'Brain' inside a protector
     try {
         console.log("Running renderUserPermsList...");
+        // Check if the target div exists before rendering
+        if (!document.getElementById('user-perms-list')) {
+            console.error("CRITICAL: The div 'user-perms-list' is missing from your HTML!");
+        }
         renderUserPermsList();
         console.log("Render successful.");
     } catch (renderError) {
         console.error("The 'Brain' function (renderUserPermsList) CRASHED:", renderError);
-        // We put a message in the list so you know why it's empty
-        const list = document.getElementById('user-perms-list');
-        if (list) list.innerHTML = "<div style='color:red; padding:20px;'>Error loading toggles. Check Console.</div>";
     }
-
     // 5. THE SHOW COMMAND: This now happens NO MATTER WHAT
     const modal = document.getElementById('user-perms-modal');
     if (modal) {
