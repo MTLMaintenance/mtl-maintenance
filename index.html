@@ -27,25 +27,38 @@
     <div class="auth-switch" style="margin-top:20px">No account? <a onclick="showRegister()">Request access</a></div>
   </div>
 
-  <!-- STAGE 2: PIN PAD -->
-  <div id="pin-display" style="height:30px; font-size:24px; color:#28a745; letter-spacing:8px; margin-bottom:20px;"></div>
+ <!-- STAGE 2: PIN PAD -->
+<div id="login-stage-pin" style="display:none; text-align:center;">
+    <!-- Back Button -->
+    <button onclick="backToNames()" style="background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:13px; margin-bottom:15px; display:inline-flex; align-items:center; gap:5px;">
+        ← Back to list of names
+    </button>
 
-  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 0 auto;">
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('1')">1</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('2')">2</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('3')">3</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('4')">4</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('5')">5</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('6')">6</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('7')">7</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('8')">8</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('9')">9</button>
-      
-      <!-- Added a Clear and a Submit button -->
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('clear')" style="font-size:12px; color:#ff6b6b;">CLEAR</button>
-      <button class="btn btn-secondary pin-btn" onclick="pressPin('0')">0</button>
-      <button class="btn btn-secondary pin-btn" onclick="verifyUserPin()" style="background:#28a745 !important; border-color:#28a745 !important;">✓</button>
-  </div>
+    <!-- Personalized Greeting -->
+    <div id="selected-user-display" style="font-weight:bold; color:#fff; font-size:22px; margin-bottom:5px;">Hello, User</div>
+    <div class="auth-sub" style="margin-bottom:20px; color:rgba(255,255,255,0.6);">Please enter your PIN</div>
+    
+    <!-- PIN Input Feedback (Asterisks) -->
+    <div id="pin-display" style="height:30px; font-size:28px; color:#28a745; letter-spacing:10px; margin-bottom:20px;"></div>
+
+    <!-- The Keypad Grid -->
+    <div class="pin-pad-grid">
+        <button class="pin-btn" onclick="pressPin('1')">1</button>
+        <button class="pin-btn" onclick="pressPin('2')">2</button>
+        <button class="pin-btn" onclick="pressPin('3')">3</button>
+        
+        <button class="pin-btn" onclick="pressPin('4')">4</button>
+        <button class="pin-btn" onclick="pressPin('5')">5</button>
+        <button class="pin-btn" onclick="pressPin('6')">6</button>
+        
+        <button class="pin-btn" onclick="pressPin('7')">7</button>
+        <button class="pin-btn" onclick="pressPin('8')">8</button>
+        <button class="pin-btn" onclick="pressPin('9')">9</button>
+        
+        <button class="pin-btn btn-clear" onclick="pressPin('clear')">CLEAR</button>
+        <button class="pin-btn" onclick="pressPin('0')">0</button>
+        <button class="pin-btn btn-submit" onclick="verifyUserPin()">✓</button>
+    </div>
 </div>
       <button class="btn btn-primary" id="auth-btn" onclick="doLogin()" style="width:100%;margin-top:14px;justify-content:center">Sign In</button>
     <div id="register-view" style="display:none">
