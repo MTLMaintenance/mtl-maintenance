@@ -1091,4 +1091,45 @@ body, html {
   .chat-mobile-menu-item.active { background: #f0f4f8 !important; color: #007bff !important; font-weight: 700 !important; }
 } /* END MOBILE BLOCK */
 
+.pin-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    transition: background 0.1s;
+}
+.pin-dot.filled {
+    background: #28a745;
+    border-color: #28a745;
+}
 
+.pin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    justify-content: center;
+    gap: 15px;
+}
+.pin-grid button {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.pin-grid button:active {
+    background: #444;
+}
+
+.user-select-btn {
+    padding: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+}
