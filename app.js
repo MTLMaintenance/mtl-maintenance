@@ -6080,7 +6080,68 @@ function switchCalendarView(view) {
     // Refresh the data
     if(view === 'grid') renderCalendar(); else renderSchedule();
 }
+async function exportFullDatabase() {
+    // 1. UPDATED TABLE LIST (Added Calendar & Tool Crib)
+    const tables = [
+        'chat_messages', 
+        'profiles', 
+        'equipment', 
+        'parts', 
+        'suppliers', 
+        'work_orders', 
+        'staff_absences',
+        'tasks',
+        'schedules',        // This is your Calendar data
+        'tool_crib_items'   // This is your Tool Crib data
+    ];
 
+    if (!confirm("Download a full snapshot of all data (including Calendar and Tool Crib)?")) return;
+
+    let fullBackup = {
+        metadata: {
+            app: "MTL Maintenance",
+            date: new Date().toLocaleString(),
+            timestamp: new Date().toISOString()
+        },
+        database_tables: {}
+    };
+
+    console.log("Starting Master Backup...");
+    if (typeof showToast === 'function') showToast("Generating system backup...");
+
+    try {
+        // 2. Fetch every table
+        for (const tableName of tables) {
+            console.log(`Backing up: ${tableName}...`);
+            const { data, error } = await window._mpdb.from(tableName).select('*');
+            
+            if (error) {
+                console.error(`Error on table ${tableName}:`, error.message);
+                fullBackup.database_tables[tableName] = { status: "FAILED", error: error.message };
+            } else {
+                fullBackup.database_tables[tableName] = data;
+            }
+        }
+
+        // 3. Create and download the file
+        const dataStr = JSON.stringify(fullBackup, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `MTL_FULL_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        alert("System backup downloaded successfully! Please upload this file to your Google Drive.");
+
+    } catch (err) {
+        console.error("Backup failed:", err);
+        alert("Critical Backup Error: " + err.message);
+    }
+}
 // Ensure the old renderSchedule function points to the new IDs
 function renderSchedule(){
   const nw = new Date(TODAY); nw.setDate(nw.getDate() + 7);
