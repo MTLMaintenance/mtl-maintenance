@@ -1359,29 +1359,28 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 function calDayClick(dateStr) {
-    console.log("Day clicked:", dateStr);
-    lastClickedDate = dateStr;
+    console.log("--- Day Click Debug ---");
+    console.log("Clicked Date:", dateStr);
     
+    lastClickedDate = dateStr;
     const dateObj = new Date(dateStr + "T00:00:00");
     document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // 1. Fetch data from wherever your app stores it
-    // Note: We use a '|| []' to prevent crashes if the list is empty
-    const tasksToFilter = (typeof state !== 'undefined' && state.tasks) ? state.tasks : [];
-    const absencesToFilter = (typeof staffAbsences !== 'undefined') ? staffAbsences : [];
+    // 1. USE THE EXACT SAME FILTER LOGIC AS YOUR RENDER FUNCTION
+    // We use .split('T')[0] to make sure we only compare the Date, not the Time
+    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.split('T')[0] === dateStr);
+    const dayAbs = (staffAbsences || []).filter(a => a.start_date && a.start_date.split('T')[0] === dateStr);
 
-    // 2. Filter data for the selected day
-    const dayTasks = tasksToFilter.filter(t => t.due && t.due.startsWith(dateStr));
-    const dayAbs = absencesToFilter.filter(a => a.start_date && a.start_date.startsWith(dateStr));
+    console.log("Database Data Check:", { 
+        total_tasks_in_memory: state.tasks.length, 
+        total_absences_in_memory: staffAbsences.length,
+        found_on_this_day: { tasks: dayTasks.length, absences: dayAbs.length } 
+    });
 
-    console.log("Items found for this day:", { tasks: dayTasks.length, absences: dayAbs.length });
-
-    // 3. Build the List HTML
     const listContainer = document.getElementById('day-items-list');
-    if (!listContainer) return console.error("Could not find 'day-items-list' div!");
-
     let listHtml = "";
 
+    // 2. Build Work Orders List
     dayTasks.forEach(t => {
         listHtml += `
             <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
@@ -1390,6 +1389,7 @@ function calDayClick(dateStr) {
             </div>`;
     });
 
+    // 3. Build Absences List
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
         listHtml += `
