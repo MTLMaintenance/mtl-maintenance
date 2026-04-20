@@ -1133,22 +1133,54 @@ body, html {
 .user-select-btn:hover { background: rgba(255,255,255,0.15); }
 /* This forces the backdrop to actually fill the screen */
 /* 1. Make the Card White and the Main Text Black */
+/* ==========================================
+   1. GLOBAL MODAL LOGIC (Visibility & Layers)
+   ========================================== */
+#user-perms-modal, 
+#cal-action-modal {
+    display: none !important;
+    pointer-events: none !important; /* Clicks pass through to the app when hidden */
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    opacity: 0;
+    z-index: 999999 !important; /* Always stays on top of everything */
+}
+
+/* When '.active' is added via JavaScript */
+#user-perms-modal.active, 
+#cal-action-modal.active {
+    display: flex !important;
+    pointer-events: auto !important; /* Becomes solid and clickable */
+    opacity: 1 !important;
+    background: rgba(0,0,0,0.8) !important;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ==========================================
+   2. PERMISSIONS MODAL STYLING (The White Card)
+   ========================================== */
 #user-perms-modal .modal {
     background: #ffffff !important;
     color: #222222 !important;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6) !important;
+    width: 95%;
+    max-width: 500px;
 }
 
 #user-perms-title {
     color: #000000 !important;
 }
 
-/* 2. Make the list labels readable (black) */
+/* Labels inside the toggle list */
 #user-perms-list div, 
 #user-perms-list span {
     color: #333333 !important;
 }
 
-/* 3. Button Styling: Make both Save and Cancel Black */
+/* Standard Buttons: Make both Save and Cancel solid Black */
 #user-perms-modal .btn-primary, 
 #user-perms-modal .btn-secondary {
     background: #000000 !important;
@@ -1158,38 +1190,17 @@ body, html {
     border-radius: 8px !important;
     font-weight: 700 !important;
     cursor: pointer !important;
-    opacity: 1 !important;
+    transition: opacity 0.2s;
 }
 
-/* Hover effect for buttons */
 #user-perms-modal .btn-primary:hover, 
 #user-perms-modal .btn-secondary:hover {
-    background: #333333 !important;
+    opacity: 0.8;
 }
 
-/* Make 'Reset to Defaults' slightly different (Dark Gray) so it's not confused with Save/Cancel */
+/* Reset Button: Dark Gray so it stands out from Save/Cancel */
 #user-perms-modal button[onclick="resetUserPerms()"] {
     background: #555555 !important;
     color: white !important;
-}
-/* 1. Hide both modals and make them UNCLICKABLE by default */
-#user-perms-modal, 
-#cal-action-modal {
-    display: none !important;
-    pointer-events: none !important; /* This is the secret. It stops the blocking. */
-    opacity: 0 !important;
-    position: fixed !important;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-}
-
-/* 2. ONLY when they have the 'active' class, they become solid and visible */
-#user-perms-modal.active, 
-#cal-action-modal.active {
-    display: flex !important;
-    pointer-events: auto !important; /* Now you can click the buttons inside */
-    opacity: 1 !important;
-    z-index: 1000000 !important;
-    background: rgba(0,0,0,0.8) !important;
-    justify-content: center !important;
-    align-items: center !important;
+    border: none !important;
 }
