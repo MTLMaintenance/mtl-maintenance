@@ -1132,49 +1132,43 @@ body, html {
 }
 .user-select-btn:hover { background: rgba(255,255,255,0.15); }
 /* This forces the backdrop to actually fill the screen */
-#user-perms-modal {
-    display: none; /* Controlled by JS */
-}
-
-/* When the JS adds .active or .open, we force it to show */
-#user-perms-modal.active, #user-perms-modal.open {
-    display: flex !important;
-    position: fixed !important;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.85);
-    z-index: 999999 !important; /* Top of the world */
-    justify-content: center;
-    align-items: center;
-}
-.modal-backdrop#user-perms-modal {
-    display: none; 
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85);
-    z-index: 999999;
-    justify-content: center;
-    align-items: center;
-}
-/* Force the text in the perms list to be dark/readable */
+/* 1. Make the Card White and the Main Text Black */
 #user-perms-modal .modal {
-    background: #ffffff !important; /* Force white background for the card */
-    color: #333333 !important;      /* Force dark text */
+    background: #ffffff !important;
+    color: #222222 !important;
 }
 
 #user-perms-title {
+    color: #000000 !important;
+}
+
+/* 2. Make the list labels readable (black) */
+#user-perms-list div, 
+#user-perms-list span {
     color: #333333 !important;
 }
 
-#user-perms-list div {
-    color: #333333 !important;
+/* 3. Button Styling: Make both Save and Cancel Black */
+#user-perms-modal .btn-primary, 
+#user-perms-modal .btn-secondary {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 1px solid #000000 !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
 }
 
-/* Fix for the 'Default' text labels */
-#user-perms-list span, #user-perms-list div {
-    color: #333333 !important;
+/* Hover effect for buttons */
+#user-perms-modal .btn-primary:hover, 
+#user-perms-modal .btn-secondary:hover {
+    background: #333333 !important;
 }
 
-/* Ensure the background of the list is clear */
-#user-perms-list {
-    background: #fdfdfd !important;
+/* Make 'Reset to Defaults' slightly different (Dark Gray) so it's not confused with Save/Cancel */
+#user-perms-modal button[onclick="resetUserPerms()"] {
+    background: #555555 !important;
+    color: white !important;
 }
