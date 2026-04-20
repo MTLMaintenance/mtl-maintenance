@@ -1354,47 +1354,55 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 function calDayClick(dateStr) {
-    // Prevent the click from 'leaking' if this function was triggered by a child
+    // 1. Basic Setup
     if (window.event) window.event.stopPropagation(); 
-
-    console.log("Day clicked:", dateStr);
     lastClickedDate = dateStr;
+    console.log("--- Day Click System ---");
+    console.log("Looking for date:", dateStr);
+
     const dateObj = new Date(dateStr + "T00:00:00");
-    document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('action-modal-readable').textContent = readable;
 
-    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.includes(dateStr));
-    const dayAbs = (staffAbsences || []).filter(a => a.start_date && a.start_date.includes(dateStr));
+    // 2. DEEP SEARCH DATA: Check all possible storage names
+    // This handles both 'state.tasks' and 'window.state.tasks'
+    const allTasks = (window.state && window.state.tasks) ? window.state.tasks : (typeof state !== 'undefined' ? state.tasks : []);
+    const allAbsences = (window.staffAbsences) ? window.staffAbsences : (typeof staffAbsences !== 'undefined' ? staffAbsences : []);
+    const allSchedules = (window.state && window.state.schedules) ? window.state.schedules : (typeof state !== 'undefined' ? state.schedules : []);
 
+    // 3. FUZZY FILTER: Find items where the date string merely 'starts with' our clicked date
+    const dayTasks = allTasks.filter(t => t.due && String(t.due).startsWith(dateStr));
+    const dayAbs = allAbsences.filter(a => a.start_date && String(a.start_date).startsWith(dateStr));
+    const dayScheds = allSchedules.filter(s => s.date && String(s.date).startsWith(dateStr));
+
+    console.log("Results Found:", { tasks: dayTasks.length, absences: dayAbs.length, scheds: dayScheds.length });
+
+    // 4. BUILD THE UI
     const listContainer = document.getElementById('day-items-list');
     let listHtml = "";
 
-    // 1. Work Orders with StopPropagation
+    // Add Work Orders / Tasks
     dayTasks.forEach(t => {
         listHtml += `
-            <div class="cal-list-item work-order-border">
-                <span>🛠️ ${t.name}</span>
-                <button type="button" class="cal-edit-btn" 
-                    onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">
-                    Edit
-                </button>
+            <div class="cal-list-item work-order-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
+                <span style="font-size:13px; color:white;">🛠️ ${t.name}</span>
+                <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
             </div>`;
     });
 
-    // 2. Absences with StopPropagation
+    // Add Staff Absences
     dayAbs.forEach(a => {
-        const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
+        const timeText = a.is_all_day ? "All Day" : (typeof formatTime === 'function' ? formatTime(a.partial_time) : a.partial_time);
         listHtml += `
-            <div class="cal-list-item absence-border">
-                <span>👤 ${a.user_name} (${timeText})</span>
-                <button type="button" class="cal-edit-btn" 
-                    onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)">
-                    Edit
-                </button>
+            <div class="cal-list-item absence-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:8px;">
+                <span style="font-size:13px; color:white;">👤 ${a.user_name} (${timeText})</span>
+                <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 150)">Edit</button>
             </div>`;
     });
 
     listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled.</div>`;
 
+    // 5. SHOW MODAL
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.classList.add('active');
