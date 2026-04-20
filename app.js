@@ -1543,10 +1543,14 @@ function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar();
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
 
+// Function 1: Open the Work Order Modal with the date filled
 function triggerAddEntryFromCal() {
-    document.getElementById('cal-action-modal').style.display = 'none';
+    console.log("Jumping to Add Entry...");
+    // Close the day card popup
+    const actionModal = document.getElementById('cal-action-modal');
+    if (actionModal) actionModal.style.display = 'none';
     
-    // 1. Open the modal
+    // Open the existing work order modal
     if (typeof openModal === 'function') {
         openModal('calendar-entry-modal'); 
     } else {
@@ -1554,32 +1558,28 @@ function triggerAddEntryFromCal() {
         if (m) m.style.display = 'block';
     }
 
-    // 2. Try to reset, but wrap it in a 'try/catch' so if it fails, 
-    // the date still gets filled in anyway.
+    // Try to reset the form safely
     try {
         if (typeof populateSelects === 'function') populateSelects(); 
         if (typeof resetCalModal === 'function') resetCalModal();
     } catch (e) {
-        console.warn("Reset/Populate failed, but continuing anyway:", e);
+        console.warn("Reset/Populate failed:", e);
     }
 
-    // 3. AUTO-FILL the date
+    // AUTO-FILL the date field
     const dateInput = document.getElementById('cal-date') || document.getElementById('task-due');
     if (dateInput) {
         dateInput.value = lastClickedDate;
     }
 }
+
 // Function 2: Open the Absence Modal with the date filled
 function triggerAbsenceFromCal() {
     console.log("Switching from Day Card to Absence Form...");
 
-    // 1. Close the day card popup first
-    if (typeof closeModal === 'function') {
-        closeModal('cal-action-modal');
-    } else {
-        const actionModal = document.getElementById('cal-action-modal');
-        if (actionModal) actionModal.style.display = 'none';
-    }
+    // 1. Close the day card popup
+    const actionModal = document.getElementById('cal-action-modal');
+    if (actionModal) actionModal.style.display = 'none';
 
     // 2. Open the time off request modal
     if (typeof openAbsenceModal === 'function') {
@@ -1590,18 +1590,10 @@ function triggerAbsenceFromCal() {
     const absDateInput = document.getElementById('abs-date');
     if (absDateInput) {
         absDateInput.value = lastClickedDate;
-        // This makes the 'All Day / Partial' buttons appear automatically
+        // Trigger the logic that shows the 'All Day / Partial' buttons
         if (typeof checkDateSelection === 'function') {
             checkDateSelection(lastClickedDate);
         }
-    }
-}
-    // AUTO-FILL the 'Which Day?' input we made earlier
-    const absDateInput = document.getElementById('abs-date');
-    if (absDateInput) {
-        absDateInput.value = lastClickedDate;
-        // Trigger the check function so the 'All Day/Partial' options show up automatically
-        if (typeof checkDateSelection === 'function') checkDateSelection(lastClickedDate);
     }
 }
 function toggleRecurType(){
