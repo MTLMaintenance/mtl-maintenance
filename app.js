@@ -3137,19 +3137,16 @@ async function renderUsersTable() {
     const { data: profiles, error } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
     if (error || !profiles) return;
 
+    // We store the users here so the reset function can find the names later
     state.users_list_cache = profiles;
+
     const active = profiles.filter(p => p.status === 'approved');
     
     const tableBody = document.getElementById('users-table-body');
     if (tableBody) {
         const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
         
-        tableBody.innerHTML = active.map(p => {
-            // This is the safest way to pass strings to an onclick function
-            const uId = p.id;
-            const uName = (p.full_name || p.username).replace(/'/g, "\\'");
-
-            return `
+        tableBody.innerHTML = active.map(p => `
             <tr>
                 <td><b>${p.full_name || p.username}</b></td>
                 <td>${p.username}</td>
@@ -3157,12 +3154,12 @@ async function renderUsersTable() {
                 <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
                 <td>
                   <div style="display:flex; gap:5px;">
-                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${uId}', '${uName}')">🔑 PIN</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${uId}', '${uName}')">Delete</button>
+                    <!-- We ONLY pass the ID here. This prevents the quote crash! -->
+                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
                   </div>
                 </td>
-            </tr>`;
-        }).join('');
+            </tr>`).join('');
     }
 
     const userSelect = document.getElementById('role-user-select');
@@ -3176,8 +3173,12 @@ async function renderUsersTable() {
   }
 }
 
-// Ensure this function is NOT inside renderUsersTable. It must be on its own.
-async function promptResetPin(userId, userName) {
+// THIS FUNCTION NOW LOOKS UP THE NAME ITSELF
+async function promptResetPin(userId) {
+    // Find the user name from the cache we saved earlier
+    const user = state.users_list_cache.find(u => u.id === userId);
+    const userName = user ? (user.full_name || user.username) : "User";
+
     const newPin = prompt("Enter new PIN for " + userName + ":");
     if (newPin === null || newPin.trim() === "") return;
 
@@ -3188,16 +3189,14 @@ async function promptResetPin(userId, userName) {
             .eq('id', userId);
 
         if (error) {
-            alert("Failed to update PIN: " + error.message);
+            alert("Failed: " + error.message);
         } else {
-            alert("Success! " + userName + "'s PIN has been updated.");
+            alert("Success! " + userName + "'s PIN is now updated.");
         }
     } catch (err) {
-        console.error("Reset PIN Error:", err);
-        alert("An error occurred. Check the console.");
+        console.error(err);
     }
 }
-
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
 async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;await window._mpdb.from('profiles').delete().eq('id',id);showToast(name+' removed');renderAdminPanel();}
