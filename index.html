@@ -16,15 +16,47 @@
     <div class="auth-logo">⚙ MTL Maintenance</div>
     <div class="auth-sub" id="auth-sub">Sign in to your workspace</div>
     <div class="auth-err" id="auth-err"></div>
-    <div id="login-view">
-      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Username</label>
-        <input class="form-input" id="auth-user" placeholder="Your username" autocomplete="username"/></div>
-      <div class="form-group"><label class="form-label">Password</label>
-        <div style="position:relative">
-          <input class="form-input" id="auth-pass" type="password" placeholder="Password" style="width:100%;padding-right:44px"/>
-          <button onclick="togglePassVis('auth-pass','eye1')" type="button" id="eye1" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.6);font-size:16px">👁</button>
-        </div>
-      </div>
+    <!-- THE NEW PIN-BASED LOGIN VIEW -->
+<div id="login-view">
+  <!-- STAGE 1: NAME SELECTION -->
+  <div id="login-stage-names">
+    <div class="auth-sub" style="margin-bottom:15px">Who is logging in?</div>
+    <div id="user-name-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; max-height:300px; overflow-y:auto; padding:5px;">
+        <!-- Names generate here -->
+    </div>
+    <div class="auth-switch" style="margin-top:20px">No account? <a onclick="showRegister()">Request access</a></div>
+  </div>
+
+  <!-- STAGE 2: PIN PAD -->
+  <div id="login-stage-pin" style="display:none; text-align:center;">
+    <button onclick="backToNames()" style="background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px; margin-bottom:10px;">← Back to names</button>
+    <div class="auth-sub" id="selected-user-display" style="font-weight:bold; color:#fff; font-size:18px; margin-bottom:15px;">Enter PIN</div>
+    
+    <!-- PIN Dots -->
+    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:20px;">
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+        <div class="pin-dot" id="dot-4"></div>
+    </div>
+
+    <!-- The Grid -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 0 auto;">
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('1')">1</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('2')">2</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('3')">3</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('4')">4</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('5')">5</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('6')">6</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('7')">7</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('8')">8</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('9')">9</button>
+        <button class="btn btn-secondary pin-btn" style="visibility:hidden"></button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('0')">0</button>
+        <button class="btn btn-secondary pin-btn" onclick="pressPin('delete')">⌫</button>
+    </div>
+  </div>
+</div>
       <button class="btn btn-primary" id="auth-btn" onclick="doLogin()" style="width:100%;margin-top:14px;justify-content:center">Sign In</button>
       <div class="auth-switch">No account? <a onclick="showRegister()">Request access</a></div>
     </div>
