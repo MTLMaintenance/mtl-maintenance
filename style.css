@@ -1300,39 +1300,59 @@ body, html {
     justify-content: center !important;
     align-items: center !important;
 }
-/* --- HIGH CONTRAST DATE BADGE --- */
-.sched-date {
-    background: #0061f2 !important; /* Solid vibrant blue */
-    color: #ffffff !important;      /* Pure white text */
-    min-width: 55px;
-    height: 55px;
+/* --- SMALL HIGH-CONTRAST SCHEDULE ITEM --- */
+.sched-item {
+    display: flex !important; /* Forces items side-by-side */
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 15px !important;
+    background: #fff;
+    padding: 10px;
     border-radius: 10px;
-    display: flex;
-    flex-direction: column;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+}
+
+/* The Blue Box - Fixed Small Size */
+.sched-date {
+    background: #007bff !important; /* Solid Blue */
+    color: #ffffff !important;      /* White Text */
+    width: 45px !important;         /* Fixed small width */
+    height: 45px !important;        /* Fixed small height */
+    min-width: 45px !important;
+    border-radius: 8px;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center;
     justify-content: center;
     line-height: 1;
-    flex-shrink: 0;
-    box-shadow: 0 4px 6px rgba(0, 97, 242, 0.2); /* Subtle blue glow */
+    flex-shrink: 0; /* Prevents it from squishing */
 }
 
 .sched-day {
-    font-size: 20px !important;
+    font-size: 16px !important;
     font-weight: 800 !important;
-    margin: 0 !important;
 }
 
 .sched-month {
-    font-size: 10px !important;
-    text-transform: uppercase !important;
-    font-weight: 700 !important;
-    opacity: 1 !important; /* Remove transparency */
-    margin-top: 2px !important;
+    font-size: 9px !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 1px;
 }
 
-/* Ensure the task text next to it is also sharp */
+/* Text on the right */
+.sched-body {
+    flex: 1;
+}
+
 .sched-title {
-    color: #1a1a1a !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
-    font-size: 15px !important;
+    color: #222 !important;
+}
+
+.sched-detail {
+    font-size: 12px !important;
+    color: #666 !important;
 }
