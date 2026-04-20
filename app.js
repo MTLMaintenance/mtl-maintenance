@@ -46,47 +46,53 @@ async function promptResetPin(userId, userName) {
         alert("An unexpected error occurred.");
     }
 }
-// 1. Fetch users and show the list
 async function showPinLogin() {
-    console.log("Switching to PIN Login UI...");
+    try {
+        console.log("Switching to PIN Login UI...");
 
-    // 1. HIDE THE OLD UI
-    const oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
-    if (oldLogin) oldLogin.style.display = 'none';
+        // 1. Hide the old login if it exists
+        const oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
+        if (oldLogin) { 
+            oldLogin.style.display = 'none'; 
+        }
 
-    // 2. SHOW THE NEW UI
-    const pinUI = document.getElementById('pin-login-container');
-    if (pinUI) {
-        pinUI.style.display = 'block';
-    } else {
-        console.error("Could not find 'pin-login-container'. Check your HTML IDs.");
-        return;
-    }
+        // 2. Show the new PIN container
+        const pinUI = document.getElementById('pin-login-container');
+        if (pinUI) {
+            pinUI.style.display = 'block';
+        } else {
+            console.warn("Could not find 'pin-login-container'.");
+            return;
+        }
 
-    // 3. Fetch approved users AND SORT THEM A-Z
-    const { data: users, error } = await window._mpdb
-        .from('profiles')
-        .select('id, username, full_name')
-        .eq('status', 'approved')
-        .order('full_name', { ascending: true }); // <--- THIS LINE ADDED
+        // 3. Fetch users and sort A-Z
+        const { data: users, error } = await window._mpdb
+            .from('profiles')
+            .select('id, username, full_name')
+            .eq('status', 'approved')
+            .order('full_name', { ascending: true });
 
-    if (error) {
-        console.error("User fetch error:", error);
-        return;
-    }
+        if (error) {
+            console.error("User fetch error:", error);
+            return;
+        }
 
-    // 4. Fill the list
-    const list = document.getElementById('user-name-list');
-    if (list) {
-        list.innerHTML = "";
-        users.forEach(user => {
-            const btn = document.createElement('button');
-            btn.className = 'user-select-btn';
-            // Show full name if they have one, otherwise show username
-            btn.textContent = user.full_name || user.username;
-            btn.onclick = () => selectUserForLogin(user);
-            list.appendChild(btn);
-        });
+        // 4. Fill the name list
+        const list = document.getElementById('user-name-list');
+        if (list) {
+            list.innerHTML = "";
+            if (users) {
+                users.forEach(user => {
+                    const btn = document.createElement('button');
+                    btn.className = 'user-select-btn';
+                    btn.textContent = user.full_name || user.username;
+                    btn.onclick = () => selectUserForLogin(user);
+                    list.appendChild(btn);
+                });
+            }
+        }
+    } catch (err) {
+        console.error("Critical error in showPinLogin:", err);
     }
 }
 function selectUserForLogin(user) {
