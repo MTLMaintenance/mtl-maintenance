@@ -1,9 +1,9 @@
 name: Nightly Database Backup
 
 on:
+  workflow_dispatch: # Manual button
   schedule:
     - cron: '0 0 * * *'
-  workflow_dispatch: # Allows you to click the button to run it now
 
 jobs:
   backup:
@@ -12,25 +12,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then echo "❌ URL Secret is MISSING"; exit 1; fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then echo "❌ KEY Secret is MISSING"; exit 1; fi
+          echo "✅ Secrets are present."
+
       - name: Create Backup Folder
         run: mkdir -p database_backups
 
       - name: Fetch Data from Supabase
         run: |
+          # We check the URL for a trailing slash which causes 404s
+          CLEAN_URL=$(echo "${{ secrets.SUPABASE_URL }}" | sed 's:/*$::')
+          
           TABLES="chat_messages profiles equipment parts suppliers work_orders staff_absences tasks schedules tool_crib_items"
-          DATE_STR=$(date +%Y-%m-%d)
           
           for table in $TABLES; do
-            echo "Fetching $table..."
-            curl -f -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/$table?select=*" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -o "database_backups/${table}-${DATE_STR}.json" || echo "{\"error\": \"failed\"}" > "database_backups/${table}-${DATE_STR}.json"
+            echo "Attempting to fetch table: $table"
+            
+            # We remove the '-f' so the script doesn't crash on a single error
+            STATUS=$(curl -s -o "database_backups/${table}.json" -w "%{http_code}" \
+              "$CLEAN_URL/rest/v1/$table?select=*" \
+              -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}")
+            
+            if [ "$STATUS" -eq 200 ]; then
+              echo "✅ Success: $table (HTTP $STATUS)"
+            else
+              echo "❌ FAILED: $table (HTTP $STATUS)"
+              # Create an error file so we know why it failed
+              echo "{\"error\": \"HTTP $STATUS\"}" > "database_backups/${table}_ERROR.json"
+            fi
           done
 
       - name: Save Backup to GitHub Vault
         uses: actions/upload-artifact@v4
         with:
-          name: MTL-Full-Backup-${{ github.run_id }}
+          name: MTL-Full-Backup
           path: database_backups/
-          retention-days: 7 # Keeps 7 days of history automatically!
+          retention-days: 7
