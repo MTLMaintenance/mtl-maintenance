@@ -1098,38 +1098,36 @@ body, html {
     border: 2px solid #555;
     transition: background 0.1s;
 }
+
+.pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+}
 .pin-dot.filled {
     background: #28a745;
     border-color: #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
 }
-
-.pin-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 80px);
-    justify-content: center;
-    gap: 15px;
+.pin-btn {
+    height: 60px !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    justify-content: center !important;
 }
-.pin-grid button {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.05);
-    color: #fff;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-}
-.pin-grid button:active {
-    background: #444;
-}
-
 .user-select-btn {
-    padding: 20px;
+    padding: 12px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     color: #fff;
-    border-radius: 12px;
-    font-size: 16px;
+    border-radius: 8px;
+    font-size: 13px;
     cursor: pointer;
+    text-align: center;
+    transition: background 0.2s;
 }
+.user-select-btn:hover { background: rgba(255,255,255,0.15); }
