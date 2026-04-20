@@ -3085,40 +3085,39 @@ function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const
 async function openPermissionsCard(userId) {
     console.log("Attempting to open modal for:", userId);
     
-    // 1. Find user in the cache we saved earlier
-    const user = state.users_list_cache.find(u => u.id === userId);
-    if (!user) {
-        console.error("User not found in cache");
+    // 1. Find user in the cache
+    if (!state.users_list_cache) {
+        console.error("User cache is empty!");
         return;
     }
+    const user = state.users_list_cache.find(u => u.id === userId);
+    if (!user) return;
 
-    // 2. Setup the global variables that 'renderUserPermsList' needs
+    // 2. Setup the global variables for 'renderUserPermsList'
     editingUserId = userId;
     editingUserRole = user.role || 'tech';
     editingPerms = user.permissions || {}; 
 
-    // 3. Update the Modal Header text
-    const titleEl = document.getElementById('user-perms-title');
-    const roleBadge = document.getElementById('user-perms-role');
-    
-    if (titleEl) titleEl.textContent = "Perms: " + (user.full_name || user.username);
-    if (roleBadge) roleBadge.textContent = editingUserRole.toUpperCase();
+    // 3. Update the Modal Header
+    if (document.getElementById('user-perms-title')) 
+        document.getElementById('user-perms-title').textContent = "Perms: " + (user.full_name || user.username);
+    if (document.getElementById('user-perms-role')) 
+        document.getElementById('user-perms-role').textContent = editingUserRole.toUpperCase();
 
     // 4. Draw the toggles
     renderUserPermsList();
 
-    // 5. THE FIX: Look for the correct ID 'user-perms-modal'
+    // 5. THE FORCE FIX: Show the modal
     const modal = document.getElementById('user-perms-modal');
     if (modal) {
-        // Use your existing openModal function if it exists
-        if (typeof openModal === 'function') {
-            openModal('user-perms-modal');
-        } else {
-            // Otherwise force it to show
-            modal.style.display = 'flex';
-        }
+        // Force display and add the 'active' class which most modals need
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.classList.add('active');
+        modal.classList.add('open');
+        
+        console.log("Modal display forced to flex and classes added.");
     } else {
-        alert("CRITICAL ERROR: Could not find HTML element with ID 'user-perms-modal'. Please check your HTML for this ID.");
+        console.error("Could not find element 'user-perms-modal'");
     }
 }
 async function quickRoleChange(userId, newRole) {
