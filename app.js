@@ -162,12 +162,10 @@ async function saveAbsence() {
             return;
         }
 
-        // BUILDING THE DATA OBJECT
         const newEntry = {
             user_name: currentUser.name || currentUser.username || "Unknown",
             user_id: String(currentUser.id || ""),
             start_date: dateVal, 
-            // We use 'all' as the default if the variable isn't set yet
             is_all_day: (window.selectedAbsenceType === 'all' || !window.selectedAbsenceType),
             partial_time: (window.selectedAbsenceType === 'partial') ? timeVal : null,
             reason_public: pubReason,
@@ -180,7 +178,6 @@ async function saveAbsence() {
             .insert([newEntry]);
 
         if (error) {
-            console.error("Supabase Error:", error);
             alert("Error: " + error.message);
             return;
         }
@@ -188,9 +185,12 @@ async function saveAbsence() {
         alert("Request Submitted!");
         closeAbsenceModal();
         
-        // Refresh the calendar
-        if (typeof fetchAbsences === 'function') await fetchAbsences();
-        if (typeof renderCalendar === 'function') renderCalendar();
+        // --- THE REFRESH SEQUENCE ---
+        if (typeof fetchAbsences === 'function') await fetchAbsences(); 
+        if (typeof renderCalendar === 'function') await renderCalendar(); 
+        
+        // This re-runs the day click to update the 'Scheduled for this day' list
+        calDayClick(dateVal); 
 
     } catch (err) {
         console.error("JS Error:", err);
@@ -1427,38 +1427,36 @@ function calDayClick(dateStr) {
     const dateObj = new Date(dateStr + "T00:00:00");
     document.getElementById('action-modal-readable').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // 1. Find existing items for this day
-    const dayTasks = state.tasks.filter(t => t.due === dateStr);
+    // 1. Find existing items (ensure data exists)
+    const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
     const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
 
-    // 2. Build the HTML list
     const listContainer = document.getElementById('day-items-list');
     let listHtml = "";
 
-    // Add Tasks to the list
+    // 2. Build Work Orders List
     dayTasks.forEach(t => {
         listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border-left:3px solid #007bff;">
-                <span style="font-size:13px;">🛠️ ${t.name}</span>
-                <button onclick="event.stopPropagation(); closeModal('cal-action-modal'); openTaskDetail('${t.id}')" style="background:#444; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">Edit</button>
+            <div class="cal-list-item work-order-border">
+                <span>🛠️ ${t.name}</span>
+                <button class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); openTaskDetail('${t.id}')">Edit</button>
             </div>`;
     });
 
-    // Add Absences to the list
+    // 3. Build Absences List
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : formatTime(a.partial_time);
         listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border-left:3px solid #ff9800;">
-                <span style="font-size:13px;">👤 ${a.user_name} (${timeText})</span>
-                <button onclick="event.stopPropagation(); closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')" style="background:#444; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">Edit</button>
+            <div class="cal-list-item absence-border">
+                <span>👤 ${a.user_name} (${timeText})</span>
+                <button class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); openAbsenceDetail('${a.id}')">Edit</button>
             </div>`;
     });
 
-    if (listHtml === "") listHtml = `<div style="color:#666; font-size:13px; font-style:italic; padding:10px;">Nothing scheduled yet.</div>`;
+    if (listHtml === "") listHtml = `<div style="color:#666; font-size:13px; font-style:italic; padding:10px; text-align:center;">Nothing scheduled yet.</div>`;
     
     listContainer.innerHTML = listHtml;
 
-    // 3. Show the modal
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.classList.add('active');
