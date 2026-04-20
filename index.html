@@ -1120,18 +1120,30 @@
         </div>
     </div>
 </div> 
-<!-- THE MODALS (PLACE THESE AT THE VERY BOTTOM BEFORE </body>) -->
+<!-- UPDATED CALENDAR DAY ACTION MODAL -->
 <div id="cal-action-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal-card" style="background:#1a1a1a; padding:30px; border-radius:20px; width:320px; text-align:center; border:1px solid #444;">
-        <h2 id="action-modal-readable" style="color:white; margin-bottom:20px;">Date</h2>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            <button class="btn btn-primary" onclick="triggerAddEntryFromCal()">➕ New Work Order</button>
-            <button class="btn btn-secondary" onclick="triggerAbsenceFromCal()" style="background:#ff9800; color:white;">📅 Request Time Off</button>
-            <button onclick="closeModal('cal-action-modal')" style="color:#888; background:none; border:none; margin-top:10px; cursor:pointer;">Cancel</button>
+  <div class="modal-card" style="background:#1a1a1a; padding:25px; border-radius:20px; width:90%; max-width:380px; color:#fff; border: 1px solid #444;">
+    
+    <h2 id="action-modal-readable" style="margin:0 0 5px 0; font-size:18px;">Date</h2>
+    <hr style="border:0; border-top:1px solid #333; margin-bottom:15px;">
+
+    <!-- THE LIST OF TODAY'S ITEMS -->
+    <div style="text-align:left; margin-bottom:20px;">
+        <label style="font-size:11px; color:#888; text-transform:uppercase; font-weight:bold;">Scheduled for this day:</label>
+        <div id="day-items-list" style="margin-top:10px; max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+            <!-- Items like 'John Out' or 'Replace Pump' will appear here -->
         </div>
     </div>
-</div>
 
+    <!-- ADD NEW BUTTONS -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+      <button class="btn btn-primary" onclick="triggerAddEntryFromCal()" style="background:#007bff !important; padding:12px !important; font-size:13px !important;">➕ Work Order</button>
+      <button class="btn btn-secondary" onclick="triggerAbsenceFromCal()" style="background:#ff9800 !important; color:white !important; padding:12px !important; font-size:13px !important;">📅 Time Off</button>
+    </div>
+
+    <button onclick="closeModal('cal-action-modal')" style="background:none; border:none; color:#888; margin-top:15px; cursor:pointer; font-size:13px;">Close</button>
+  </div>
+</div>
 <div id="user-perms-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-card" style="background:white; padding:25px; border-radius:15px; width:95%; max-width:500px; color:black; border:1px solid #ccc;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
