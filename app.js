@@ -3114,48 +3114,49 @@ async function changeUserRole() {
   }
 }
 async function renderUsersTable() {
-  try {
-    const { data: profiles, error } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error || !profiles) return;
+    console.log("--- RENDER USER TABLE START ---");
+    try {
+        const { data: profiles, error } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
+        if (error || !profiles) {
+            console.error("Supabase Fetch Error:", error);
+            return;
+        }
 
-    state.users_list_cache = profiles;
-    const active = profiles.filter(p => p.status === 'approved');
-    
-    const tableBody = document.getElementById('users-table-body');
-    if (tableBody) {
-        const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+        state.users_list_cache = profiles;
+        const active = profiles.filter(p => p.status === 'approved');
         
-        tableBody.innerHTML = active.map(p => `
-            <tr>
-                <td><b>${p.full_name || p.username}</b></td>
-                <td>${p.username}</td>
-                <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-                <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
-                <td>
-                  <div style="display:flex; gap:5px;">
-                    <!-- 1. PIN RESET -->
-                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
-                    
-                    <!-- 2. PERMISSIONS (Calls your render function AND switches tabs) -->
-                    <button class="btn btn-secondary btn-sm" onclick="renderUserPermsList('${p.id}'); showTab('admin-permissions');">🛡️ Perms</button>
-                    
-                    <!-- 3. DELETE -->
-                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
-                  </div>
-                </td>
-            </tr>`).join('');
-    }
+        const tableBody = document.getElementById('users-table-body');
+        if (tableBody) {
+            const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+            
+            tableBody.innerHTML = active.map(p => {
+                const uId = p.id;
+                // Note: We only use the ID in the onclicks to prevent quote crashes
+                return `
+                <tr>
+                    <td><b>${p.full_name || p.username}</b></td>
+                    <td>${p.username}</td>
+                    <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+                    <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
+                    <td>
+                      <div style="display:flex; gap:5px;">
+                        <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${uId}')">🔑 PIN</button>
+                        
+                        <button class="btn btn-secondary btn-sm" onclick="renderUserPermsList('${uId}'); showTab('admin-permissions');">🛡️ Perms</button>
+                        
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${uId}')">Delete</button>
+                      </div>
+                    </td>
+                </tr>`;
+            }).join('');
+            console.log("Table successfully rendered with 3 buttons.");
+        } else {
+            console.warn("Could not find element 'users-table-body'");
+        }
 
-    // This fills the dropdown in your permissions tab
-    const userSelect = document.getElementById('role-user-select');
-    if (userSelect) {
-      userSelect.innerHTML = '<option value="">— Select User —</option>' + 
-        active.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
+    } catch(e) { 
+        console.error("User Table Render Error:", e); 
     }
-
-  } catch(e) { 
-    console.error("User Table Render Error:", e); 
-  }
 }
 
 async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
@@ -5028,43 +5029,7 @@ async function approveUser(id){
   renderAdminPanel();
 }
 
-async function renderUsersTable() {
-  try {
-    const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
-    if (!profiles) return;
 
-    // Save users to a cache so we can find names by ID later
-    state.users_list_cache = profiles;
-
-    const active = profiles.filter(p => p.status === 'approved');
-    const tableBody = document.getElementById('users-table-body');
-    
-    if (tableBody) {
-        const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
-        
-        // FIX: We ONLY pass the ID string. No names. No quotes. No crashes.
-        tableBody.innerHTML = active.map(p => `
-            <tr>
-                <td><b>${p.full_name || p.username}</b></td>
-                <td>${p.username}</td>
-                <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-                <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
-                <td>
-                  <div style="display:flex; gap:5px;">
-                    <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${p.id}')">🔑 PIN</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${p.id}')">Delete</button>
-                  </div>
-                </td>
-            </tr>`).join('');
-    }
-
-    const userSelect = document.getElementById('role-user-select');
-    if (userSelect) {
-      userSelect.innerHTML = '<option value="">— Select User —</option>' + 
-        active.map(p => `<option value="${p.id}">${p.full_name} (${p.username})</option>`).join('');
-    }
-  } catch(e) { console.error("Table Render Crash:", e); }
-}
 function handleChatInput(el) {
     // 1. Auto-resize textarea
     el.style.height = 'auto';
