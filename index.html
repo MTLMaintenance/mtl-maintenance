@@ -414,6 +414,9 @@
     <button class="tab" onclick="switchAdminTab('permissions',this)">Permissions</button>
     <button class="tab" onclick="switchAdminTab('deleted-msgs',this)">Deleted Msgs</button>
     <button class="tab" onclick="switchAdminTab('settings',this)">Settings</button>
+  `<button class="btn btn-secondary btn-sm" onclick="promptResetPin('${user.id}', '${user.full_name || user.username}')">
+    🔑 Reset PIN
+</button>`
   </div>
 
   <!-- 1. PENDING APPROVALS -->
@@ -439,6 +442,7 @@
     <div class="card">
       <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
       <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
+    
     </div>
     <div class="card" style="margin-top:12px">
       <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
