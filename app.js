@@ -16,39 +16,32 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
-async function populateSupplierDropdown() 
+async function populateSupplierDropdown() {
+    console.log("Loading suppliers into dropdown...");
+    try {
+        // 1. Fetch from Supabase
+        const { data: suppliers, error } = await window._mpdb
+            .from('suppliers')
+            .select('id, name')
+            .order('name', { ascending: true });
 
-{
-    console.log("Fetching suppliers for dropdown...");
-    
-    // 1. Get the data from your Supabase table
-    const { data: suppliers, error } = await window._mpdb
-        .from('suppliers')
-        .select('id, name')
-        .order('name', { ascending: true });
+        if (error) throw error;
 
-    if (error) {
-        console.error("Error loading suppliers:", error.message);
-        return;
-    }
+        // 2. THE FIX: Look for 'p-supplier-select' instead of 'part-supplier'
+        const dropdown = document.getElementById('p-supplier-select');
 
-    // 2. Find the dropdown by its ID
-    // (Check your HTML, it's likely 'part-supplier' or 'new-part-supplier')
-    const dropdown = document.getElementById('part-supplier'); 
-    
-    if (dropdown) {
-        // 3. Create the HTML for the options
-        let html = '<option value="">— Select Supplier —</option>';
-        
-        suppliers.forEach(sup => {
-            html += `<option value="${sup.id}">${sup.name}</option>`;
-        });
-
-        // 4. Inject it into the box
-        dropdown.innerHTML = html;
-        console.log(`Successfully loaded ${suppliers.length} suppliers.`);
-    } else {
-        console.warn("Could not find the supplier dropdown element in HTML.");
+        if (dropdown && suppliers) {
+            let html = '<option value="">— Select Supplier —</option>';
+            suppliers.forEach(sup => {
+                html += `<option value="${sup.id}">${sup.name}</option>`;
+            });
+            dropdown.innerHTML = html;
+            console.log(`✅ Loaded ${suppliers.length} suppliers into the dropdown.`);
+        } else {
+            console.warn("⚠️ Loader failed: Could not find element #p-supplier-select in the HTML.");
+        }
+    } catch (e) {
+        console.error("❌ Supplier Load Error:", e.message);
     }
 }
 async function deleteGeneralItem(id, tableType) {
