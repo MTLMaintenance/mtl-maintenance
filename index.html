@@ -212,21 +212,58 @@
     </table></div>
   </div>
 
+   <!-- ADD PART MODAL -->
+<div class="modal-backdrop" id="add-part-modal" style="display:none;">
+  <div class="modal" style="max-width:500px; background:white; color:black; padding:25px; border-radius:15px; border:1px solid #ccc; position:relative;">
     
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="margin:0;">Add Part</h3>
+      <button onclick="closeModal('add-part-modal')" style="font-size:20px; cursor:pointer; background:none; border:none; color:#000;">✕</button>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Name *</label>
+        <input class="form-input" id="part-name" placeholder="e.g. Hydraulic Filter" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Number</label>
+            <input class="form-input" id="part-number" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Unit Cost ($)</label>
+            <input class="form-input" id="part-cost" type="number" step="0.01" value="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Supplier</label>
+        <select class="form-select" id="part-supplier" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            <option value="">— Select Supplier —</option>
+        </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Qty In Stock</label>
+            <input class="form-input" id="part-qty" type="number" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Reorder Point</label>
+            <input class="form-input" id="part-reorder" type="number" value="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onclick="closeModal('add-part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Cancel</button>
+        <button onclick="savePart()" style="background:black; color:white; border:none; padding:10px 25px; border-radius:8px; font-weight:bold; cursor:pointer;">Add Part</button>
+    </div>
+  </div>
+</div> 
   
 
-  <!-- PARTS -->
-  <div class="panel" id="panel-parts">
-    <div class="section-header"><span class="section-title">Parts & Inventory</span><button class="btn btn-primary" onclick="populateSupplierDropdown();openModal('add-part-modal');">
-    + Add Part
-</button></div>
-    <div id="reorder-alerts"></div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Part Name</th><th>Part #</th><th>Supplier</th><th>In Stock</th><th>Reorder At</th><th>Unit Cost</th><th>Total Value</th><th>Auto-Reorder</th><th>Status</th><th></th></tr></thead>
-      <tbody id="parts-table-body"></tbody>
-    </table></div>
-  </div>
-
+  
   <!-- SUPPLIERS -->
   <div class="panel" id="panel-suppliers">
     <div class="section-header"><span class="section-title">Supplier Management</span><button class="btn btn-primary" onclick="openModal('supplier-modal')">+ Add Supplier</button></div>
