@@ -6642,27 +6642,32 @@ function openUserPermissions(userId) {
     }
 }
 function teleportModals() {
-    console.log("🚀 Teleporting all modals and panels to safety...");
+    console.log("🚀 Teleporting modals and panels to the correct home...");
     
-    // We added 'part-modal' (the popup) and 'panel-parts' (the main screen)
+    // 1. Find your main app wrapper (Check if your ID is 'app' or 'main')
+    const mainWrapper = document.getElementById('app') || document.body;
+
     const ids = [
         'user-perms-modal', 
         'cal-action-modal', 
         'absence-detail-modal', 
         'calendar-entry-modal',
-        'part-modal',
-        'panel-parts'
+        'part-modal'
     ];
     
+    // Modals go to the BODY (top level)
     ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-            document.body.appendChild(el);
-            console.log(`✅ Teleported: ${id}`);
-        } else {
-            console.warn(`⚠️ Teleport failed: Element #${id} not found in HTML.`);
-        }
+        if (el) document.body.appendChild(el);
     });
+
+    // --- THE FIX FOR PARTS ---
+    const partsPanel = document.getElementById('panel-parts');
+    if (partsPanel) {
+        // Move it into the MAIN WRAPPER, not the body
+        mainWrapper.appendChild(partsPanel);
+        console.log("✅ Parts Panel moved to Main Wrapper.");
+    }
 }
 async function jumpToTaskEdit(taskId) {
     console.log("🚀 Opening Edit Window for:", taskId);
