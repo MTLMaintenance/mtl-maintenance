@@ -16,7 +16,9 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
-async function populateSupplierDropdown() {
+async function populateSupplierDropdown() 
+
+{
     console.log("Fetching suppliers for dropdown...");
     
     // 1. Get the data from your Supabase table
@@ -112,6 +114,17 @@ async function deleteGeneralItem(id, tableType) {
         console.error("❌ Critical JS Error during delete:", e);
         alert("An unexpected error occurred. Check the console.");
     }
+  try {
+        const { data: suppliers } = await window._mpdb
+            .from('suppliers').select('id, name').order('name');
+
+        const dropdown = document.getElementById('p-supplier-select');
+        if (dropdown && suppliers) {
+            let html = '<option value="">— Select Supplier —</option>';
+            suppliers.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
+            dropdown.innerHTML = html;
+        }
+    } catch (e) { console.error(e); }
 }
 
 async function deleteGeneralItem(id, tableType) {
