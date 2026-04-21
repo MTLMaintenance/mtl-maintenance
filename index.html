@@ -1235,7 +1235,99 @@
         <div class="form-group full"><label style="cursor:pointer; display:flex; align-items:center; gap:8px"><input type="checkbox" id="tool-lost"/> This tool is lost</label></div>
       </div>
     </div>
+<!-- PARTS PANEL -->
+<div class="panel" id="panel-parts">
+  <div class="section-header">
+    <span class="section-title">Parts & Inventory</span>
+    <button class="btn btn-primary" onclick="populateSupplierDropdown(); openModal('part-modal');">
+      + Add Part
+    </button>
+  </div>
 
+  <!-- Container for Low Stock Alerts -->
+  <div id="reorder-alerts"></div>
+
+  <!-- The actual table that was causing the error -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Part Name</th>
+          <th>Part #</th>
+          <th>Supplier</th>
+          <th>In Stock</th>
+          <th>Reorder At</th>
+          <th>Unit Cost</th>
+          <th>Total Value</th>
+          <th>Auto-Reorder</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="parts-table-body">
+        <!-- JavaScript (renderParts) puts data here -->
+      </tbody>
+    </table>
+  </div>
+</div>
+   <!-- ADD PART MODAL (The Popup) -->
+<div class="modal-backdrop" id="part-modal" style="display:none;">
+  <div class="modal" style="max-width:500px; background:white; color:black; padding:25px; border-radius:15px; border:1px solid #ccc; position:relative; overflow:visible !important;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="margin:0; color: black;">Add New Part</h3>
+      <button onclick="closeModal('part-modal')" style="font-size:20px; cursor:pointer; background:none; border:none; color:#000;">✕</button>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Name *</label>
+        <input class="form-input" id="p-name" placeholder="e.g. Hydraulic Filter" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Number</label>
+            <input class="form-input" id="p-num" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Unit Cost ($)</label>
+            <input class="form-input" id="p-cost" type="number" step="0.01" value="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Supplier</label>
+        <select class="form-select" id="p-supplier-select" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background: white; color: black;">
+            <option value="">— Select Supplier —</option>
+        </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Qty In Stock</label>
+            <input class="form-input" id="p-qty" type="number" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+        <div>
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Reorder At (qty)</label>
+            <input class="form-input" id="p-reorder" type="number" value="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:20px;">
+        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Auto-Reorder Qty</label>
+        <input class="form-input" id="p-reorder-qty" type="number" value="10" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="p-auto-reorder">
+            <label for="p-auto-reorder" style="font-size:12px; color: black;">Enable Auto-Reorder Alert</label>
+        </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onclick="closeModal('part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Cancel</button>
+        <button onclick="savePart()" style="background:black; color:white; border:none; padding:10px 25px; border-radius:8px; font-weight:bold; cursor:pointer;">Add Part</button>
+    </div>
+  </div>
+</div>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
