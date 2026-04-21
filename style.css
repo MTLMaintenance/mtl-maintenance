@@ -1408,39 +1408,14 @@ body, html {
 select.form-select:focus {
     position: relative;
     z-index: 10001;
-#panel-parts {
-    display: none; /* Default to hidden */
-}
-#panel-parts.active {
-    display: block !important;
-    width: 100% !important;
-    min-height: 500px;
-}
-/* FORCE THE PARTS PANEL TO THE FRONT */
 #panel-parts.active {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     position: relative !important;
-    z-index: 5000 !important; /* High enough to be over the background */
-    background: white !important; /* Force white background so you can see it */
-    width: 95% !important;
-    margin: 20px auto !important;
-    padding: 20px !important;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    min-height: 500px;
-}
-
-/* Ensure the table inside is visible */
-#panel-parts table {
+    top: 0 !important;
+    margin-top: 0 !important;
     width: 100% !important;
-    border-collapse: collapse;
-    color: black !important;
-}
-
-#panel-parts td, #panel-parts th {
-    color: black !important;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
+    height: auto !important;
+    min-height: 500px;
 }
