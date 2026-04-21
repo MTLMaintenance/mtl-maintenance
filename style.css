@@ -1398,3 +1398,18 @@ body, html {
 .pin-btn:active {
     background: rgba(255, 255, 255, 0.2) !important;
 }
+/* 1. Allow dropdowns to pop out of the modal boundaries */
+.modal, #add-part-modal .modal, .auth-card {
+    overflow: visible !important;
+}
+
+/* 2. Ensure the form containers don't trap the dropdowns */
+.form-group {
+    position: relative;
+    overflow: visible !important;
+}
+
+/* 3. Give the select boxes a high layer priority when they are clicked */
+select.form-select:focus {
+    position: relative;
+    z-index: 10001;
