@@ -117,8 +117,7 @@ async function deleteGeneralItem(id, tableType) {
 
         console.log("✅ Database delete successful. Now clearing local memory...");
 
-        // --- CRITICAL: CLEAR LOCAL MEMORY ---
-        // We search through 'state' and 'staffAbsences' to remove the item manually
+       
         if (typeof state !== 'undefined') {
             if (state.tasks) state.tasks = state.tasks.filter(item => item.id !== id);
             if (state.schedules) state.schedules = state.schedules.filter(item => item.id !== id);
