@@ -1859,27 +1859,65 @@ async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!=
 // ============================================================
 // PARTS
 // ============================================================
-function renderParts(){
-  const reorderAlerts=state.parts.filter(p=>p.qty<=p.reorder&&p.auto_reorder);
-  document.getElementById('reorder-alerts').innerHTML=reorderAlerts.map(p=>
-    `<div class="alert alert-w">🔄 <b>Auto-reorder triggered:</b> ${p.name} — stock at ${p.qty}, reorder qty: ${p.reorder_qty||10}</div>`
-  ).join('');
-  document.getElementById('parts-table-body').innerHTML=state.parts.map(p=>{
-    const out=p.qty===0, low=p.qty<=p.reorder;
-    const sup=supplierName(p.supplier_id);
+function renderParts() {
+  console.log("Rendering parts list...");
+  
+  // 1. Safety check for the data
+  if (!state.parts || !Array.isArray(state.parts)) {
+    console.error("State.parts is not an array or is missing.");
+    return;
+  }
+
+  // 2. Safely handle Reorder Alerts
+  const alertEl = document.getElementById('reorder-alerts');
+  if (alertEl) {
+    const reorderAlerts = state.parts.filter(p => p.qty <= (p.reorder || 0) && p.auto_reorder);
+    alertEl.innerHTML = reorderAlerts.map(p =>
+      `<div class="alert alert-w" style="background:#fff3cd; color:#856404; padding:10px; border-radius:8px; margin-bottom:10px; font-size:13px;">
+        🔄 <b>Auto-reorder:</b> ${p.name} (Stock: ${p.qty})
+      </div>`
+    ).join('');
+  }
+
+  // 3. Safely handle the Table Body
+  const tableBody = document.getElementById('parts-table-body');
+  if (!tableBody) {
+    console.error("Could not find 'parts-table-body' in the HTML.");
+    return;
+  }
+
+  tableBody.innerHTML = state.parts.map(p => {
+    const qty = parseInt(p.qty) || 0;
+    const reorder = parseInt(p.reorder) || 0;
+    const cost = parseFloat(p.cost) || 0;
+    const out = qty === 0;
+    const low = qty <= reorder;
+
+    // Safety check for supplier name
+    let sup = "Unknown";
+    try {
+      if (typeof supplierName === 'function') {
+        sup = supplierName(p.supplier_id);
+      }
+    } catch(e) { sup = "—"; }
+
     return `<tr>
-      <td style="font-weight:500">${p.name}</td>
-      <td style="font-size:12px;color:var(--text2)">${p.num}</td>
-      <td style="font-size:12px;color:var(--text2)">${sup}</td>
-      <td style="font-weight:600;color:${out?'var(--danger)':low?'var(--warning)':'inherit'}">${p.qty}</td>
-      <td style="color:var(--text2)">${p.reorder}</td>
-      <td>$${p.cost}</td>
-      <td style="font-weight:600">$${(p.qty*p.cost).toLocaleString()}</td>
-      <td><span class="badge ${p.auto_reorder?'bs':'bg'}">${p.auto_reorder?'On':'Off'}</span></td>
-      <td><span class="badge ${out?'bd':low?'bw':'bs'}">${out?'Out':low?'Low':'OK'}</span></td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-danger" onclick="deletePart('${p.id}')">Del</button></td>
+      <td style="font-weight:600">${p.name || 'Unnamed Part'}</td>
+      <td style="font-size:12px; color:#666">${p.num || '—'}</td>
+      <td style="font-size:12px; color:#666">${sup}</td>
+      <td style="font-weight:700; color:${out ? '#d9534f' : low ? '#f0ad4e' : 'inherit'}">${qty}</td>
+      <td style="color:#666">${reorder}</td>
+      <td>$${cost.toFixed(2)}</td>
+      <td style="font-weight:700">$${(qty * cost).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+      <td><span class="badge ${p.auto_reorder ? 'bs' : 'bg'}" style="padding:2px 6px; border-radius:4px; background:${p.auto_reorder ? '#28a745':'#6c757d'}; color:white; font-size:10px;">${p.auto_reorder ? 'On' : 'Off'}</span></td>
+      <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}" style="padding:2px 6px; border-radius:4px; background:${out ? '#d9534f' : low ? '#f0ad4e':'#28a745'}; color:white; font-size:10px;">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-danger btn-sm" onclick="deletePart('${p.id}')" style="padding:2px 8px; font-size:11px;">Del</button>
+      </td>
     </tr>`;
   }).join('');
+  
+  console.log("Parts rendered successfully.");
 }
 async function deletePart(id){ if(!confirm('Delete this part?'))return; state.parts=state.parts.filter(p=>p.id!==id); await persist('parts','delete',{id}); renderParts(); updateMetrics(); }
 
