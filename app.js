@@ -6642,13 +6642,26 @@ function openUserPermissions(userId) {
     }
 }
 function teleportModals() {
-    console.log("🚀 Teleporting all modals to safety...");
-    // Added 'absence-detail-modal' to the list
-    const ids = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'calendar-entry-modal'];
+    console.log("🚀 Teleporting all modals and panels to safety...");
+    
+    // We added 'part-modal' (the popup) and 'panel-parts' (the main screen)
+    const ids = [
+        'user-perms-modal', 
+        'cal-action-modal', 
+        'absence-detail-modal', 
+        'calendar-entry-modal',
+        'part-modal',
+        'panel-parts'
+    ];
     
     ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el) document.body.appendChild(el);
+        if (el) {
+            document.body.appendChild(el);
+            console.log(`✅ Teleported: ${id}`);
+        } else {
+            console.warn(`⚠️ Teleport failed: Element #${id} not found in HTML.`);
+        }
     });
 }
 async function jumpToTaskEdit(taskId) {
