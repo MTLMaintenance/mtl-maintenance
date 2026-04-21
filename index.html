@@ -217,7 +217,9 @@
 
   <!-- PARTS -->
   <div class="panel" id="panel-parts">
-    <div class="section-header"><span class="section-title">Parts & Inventory</span><button class="btn btn-primary" onclick="openModal('part-modal')">+ Add Part</button></div>
+    <div class="section-header"><span class="section-title">Parts & Inventory</span><button class="btn btn-primary" onclick="populateSupplierDropdown(); openModal('add-part-modal');">
+    + Add Part
+</button></div>
     <div id="reorder-alerts"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Part Name</th><th>Part #</th><th>Supplier</th><th>In Stock</th><th>Reorder At</th><th>Unit Cost</th><th>Total Value</th><th>Auto-Reorder</th><th>Status</th><th></th></tr></thead>
