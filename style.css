@@ -1431,3 +1431,11 @@ select.form-select:focus {
     color: #000000 !important;
     background: #ffffff !important;
 }
+/* Prevent dropdowns from collapsing when empty */
+select.form-select, .modal select {
+    min-height: 40px !important; 
+    background-color: #2a2a2a !important; /* Matches your dark theme */
+    color: white !important;
+    display: block;
+    width: 100%;
+}
