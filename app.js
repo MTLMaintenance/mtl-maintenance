@@ -935,11 +935,14 @@ if(templates && templates.length > 0) {
 }
     // 3. Calculate metrics
     state.monthlyCosts = computeMonthlyCosts();
-    setSyncStatus('online');
+     lastStateSyncAt = Date.now();
+   setSyncStatus('online');
 
   } catch(e) { 
     console.error('Load error:', e); 
     setSyncStatus('offline'); 
+  } finally {
+    isLoadingState = false;
   }
 
   // 4. Load observations (kept separate for better performance)
@@ -947,6 +950,22 @@ if(templates && templates.length > 0) {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
   } catch(e) {}
+}
+async function syncStateIfNeeded(force = false) {
+  if (!currentUser || !window._mpdb || !navigator.onLine) return;
+  if (!force && (Date.now() - lastStateSyncAt) < AUTO_SYNC_MS) return;
+  await loadState();
+  applyUserGroupFilter();
+  if (typeof renderChat === 'function' && document.getElementById('panel-chat')?.classList.contains('active')) {
+    renderChat();
+  }
+}
+
+function startAutoSync() {
+  if (autoSyncTimer) clearInterval(autoSyncTimer);
+  autoSyncTimer = setInterval(() => {
+    syncStateIfNeeded(false).catch(err => console.warn('Auto sync failed:', err));
+  }, AUTO_SYNC_MS);
 }
 function computeMonthlyCosts() {
   const now=new Date();
@@ -4041,6 +4060,14 @@ async function enterApp(){
   await initChat();
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
+startAutoSync();
+  if (!syncListenersBound) {
+    window.addEventListener('focus', () => syncStateIfNeeded(true).catch(()=>{}));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') syncStateIfNeeded(true).catch(()=>{});
+    });
+    syncListenersBound = true;
+  }
 }
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
