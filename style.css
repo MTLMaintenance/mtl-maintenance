@@ -1413,3 +1413,9 @@ body, html {
 select.form-select:focus {
     position: relative;
     z-index: 10001;
+
+    #panel-parts {
+    border: 5px solid red !important;
+    background: white !important; /* Force background to be visible */
+    min-height: 200px;
+}
