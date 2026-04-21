@@ -28,15 +28,18 @@ async function refreshAllDropdowns() {
         ]);
 
         // 2. Map the data into HTML strings
-        const supHTML = '<option value="">— Select Supplier —</option>' + 
-            supRes.data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+ const suppliers = supRes.data || [];
+        const equipment = equipRes.data || [];
+        const users = userRes.data || [];
+     
+     const supHTML = '<option value="">— Select Supplier —</option>' + 
+         suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');  
             
         const equipHTML = '<option value="">— Select Equipment —</option>' + 
-            equipRes.data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+         equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join('');   
 
         const userHTML = '<option value="">— Select User —</option>' + 
-            userRes.data.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
-
+       users.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
         // 3. Find EVERY dropdown in the app and fill them NOW
         // (Use the IDs from your 8,000 lines here)
         const selectors = {
@@ -84,81 +87,6 @@ async function populateSupplierDropdown() {
     } catch (e) {
         console.error("❌ Supplier Load Error:", e.message);
     }
-}
-async function deleteGeneralItem(id, tableType) {
-    console.log("🗑️ Delete attempt initiated...");
-    console.log("ID:", id, "Type:", tableType);
-
-    // 1. Table Map - Make sure these match your Supabase table names!
-    const tableMap = {
-        'tasks': 'tasks',          // Is your work order table named 'tasks'?
-        'schedules': 'schedules',  // Is your calendar table named 'schedules'?
-        'absences': 'staff_absences'
-    };
-    
-    const tableName = tableMap[tableType];
-    
-    if (!tableName) {
-        console.error("❌ Error: Could not find a table for type:", tableType);
-        return;
-    }
-
-    // 2. Confirmation
-    if (!confirm("Are you sure you want to permanently delete this item?")) {
-        console.log("Delete cancelled by user.");
-        return;
-    }
-
-    try {
-        // 3. Talk to Supabase
-        const { error } = await window._mpdb
-            .from(tableName)
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error("❌ Supabase Error:", error.message);
-            alert("Delete failed: " + error.message);
-            return;
-        }
-
-        console.log("✅ Successfully deleted from Database.");
-
-        // 4. Update local memory so it disappears from the screen instantly
-        // This removes the item from the lists your app is currently looking at
-        if (tableType === 'tasks' && typeof state !== 'undefined' && state.tasks) {
-            state.tasks = state.tasks.filter(t => t.id !== id);
-        }
-        if (tableType === 'schedules' && typeof state !== 'undefined' && state.schedules) {
-            state.schedules = state.schedules.filter(s => s.id !== id);
-        }
-        if (tableType === 'absences' && typeof staffAbsences !== 'undefined') {
-            staffAbsences = staffAbsences.filter(a => a.id !== id);
-        }
-
-        // 5. Refresh UI
-        alert("Item deleted successfully.");
-        closeModal('cal-action-modal'); // Close the popup
-        
-        if (typeof renderCalendar === 'function') {
-            renderCalendar(); // Redraw the calendar background
-        }
-
-    } catch (e) {
-        console.error("❌ Critical JS Error during delete:", e);
-        alert("An unexpected error occurred. Check the console.");
-    }
-  try {
-        const { data: suppliers } = await window._mpdb
-            .from('suppliers').select('id, name').order('name');
-
-        const dropdown = document.getElementById('p-supplier-select');
-        if (dropdown && suppliers) {
-            let html = '<option value="">— Select Supplier —</option>';
-            suppliers.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
-            dropdown.innerHTML = html;
-        }
-    } catch (e) { console.error(e); }
 }
 
 async function deleteGeneralItem(id, tableType) {
