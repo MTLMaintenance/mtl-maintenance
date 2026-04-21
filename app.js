@@ -16,6 +16,47 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+async function refreshAllDropdowns() {
+    console.log("🚀 Pre-loading all dropdown data...");
+    
+    try {
+        // 1. Fetch everything at once
+        const [supRes, equipRes, userRes] = await Promise.all([
+            window._mpdb.from('suppliers').select('id, name').order('name'),
+            window._mpdb.from('equipment').select('id, name').order('name'),
+            window._mpdb.from('profiles').select('id, full_name, username').eq('status', 'approved').order('full_name')
+        ]);
+
+        // 2. Map the data into HTML strings
+        const supHTML = '<option value="">— Select Supplier —</option>' + 
+            supRes.data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            
+        const equipHTML = '<option value="">— Select Equipment —</option>' + 
+            equipRes.data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+
+        const userHTML = '<option value="">— Select User —</option>' + 
+            userRes.data.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
+
+        // 3. Find EVERY dropdown in the app and fill them NOW
+        // (Use the IDs from your 8,000 lines here)
+        const selectors = {
+            'p-supplier-select': supHTML,
+            'task-equip-select': equipHTML,
+            'task-assign-select': userHTML,
+            'role-user-select': userHTML
+        };
+
+        for (const [id, html] of Object.entries(selectors)) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+
+        console.log("✅ All dropdowns are ready. No more flickering!");
+        
+    } catch (e) {
+        console.error("Global Load Error:", e);
+    }
+}
 async function populateSupplierDropdown() {
     console.log("Loading suppliers into dropdown...");
     try {
@@ -637,7 +678,8 @@ async function startApp() {
         const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
         currentUser = { id: profile.id, name: profile.full_name || sessionData.username, role: isAdmin ? 'admin' : profile.role, username: sessionData.username };
         await fetchAbsences();  
-        await enterApp(); return;
+        refreshAllDropdowns(); 
+       await enterApp(); return;
       }
     }
 
