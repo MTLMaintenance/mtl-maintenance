@@ -1419,3 +1419,15 @@ select.form-select:focus {
     height: auto !important;
     min-height: 500px;
 }
+/* Ensure the supplier dropdown text is black and visible in the modal */
+#p-supplier-select {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #ddd !important;
+    appearance: auto !important; /* Shows the native dropdown arrow */
+}
+
+#p-supplier-select option {
+    color: #000000 !important;
+    background: #ffffff !important;
+}
