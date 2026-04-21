@@ -804,7 +804,12 @@ async function doRegister() {
 
 async function signOut() {
   await destroySession();
-  localStorage.removeItem('mp_session');
+ if (autoSyncTimer) {
+    clearInterval(autoSyncTimer);
+    autoSyncTimer = null;
+  }
+  stopRealtimeSync(); 
+ localStorage.removeItem('mp_session');
   currentUser=null;
   document.getElementById('app').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
@@ -881,11 +886,19 @@ function quickLogHours(equipId) {
 // STATE
 // ============================================================
 let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
-
+let isLoadingState = false;
+let lastStateSyncAt = 0;
+let autoSyncTimer = null;
+let syncListenersBound = false;
+let realtimeSyncChannel = null;
+let realtimeSyncDebounceTimer = null;
+const AUTO_SYNC_MS = 30000;
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 async function loadState() {
-  setSyncStatus('syncing');
+  if (isLoadingState) return;
+  isLoadingState = true; 
+ setSyncStatus('syncing');
   try {
     // 1. Fetch all 10 main tables (Matches the order in state)
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
