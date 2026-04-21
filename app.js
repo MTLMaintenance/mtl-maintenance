@@ -1031,7 +1031,7 @@ async function runRecurrenceEngine() {
       const exists=state.tasks.find(t=>t.name===rule.name && t.due===wo.due && t.equipId===rule.equip_id);
       if (!exists) {
         state.tasks.push(wo);
-        await window._mpdb.from('tasks').upsert(wo);
+        await safeUpsert('tasks', wo);
         // Update rule next_due
         let next=new Date(nextDue);
         if (rule.interval_unit==='day')   next.setDate(next.getDate()+rule.interval_value);
@@ -2605,6 +2605,37 @@ function saveOfflineQueue() {
 
 // Override persist to queue when offline
 const _origPersist = persist;
+async function safeUpsert(table, record) {
+  const payload = (record && typeof record === 'object') ? { ...record } : record;
+
+  if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'updated_at')) {
+    const rowId = payload.id || null;
+    const baseUpdatedAt = payload.updated_at || null;
+
+    if (rowId && baseUpdatedAt) {
+      const { data: currentRow, error: currentErr } = await window._mpdb
+        .from(table)
+        .select('id, updated_at')
+        .eq('id', rowId)
+        .maybeSingle();
+      if (currentErr) throw currentErr;
+      if (currentRow?.updated_at && currentRow.updated_at !== baseUpdatedAt) {
+        const conflictError = new Error('Record was modified by another user.');
+        conflictError.code = 'CONFLICT';
+        throw conflictError;
+      }
+    }
+
+    payload.updated_at = new Date().toISOString();
+  }
+
+  const { error } = await window._mpdb.from(table).upsert(payload);
+  if (error) throw error;
+
+  if (record && typeof record === 'object' && Object.prototype.hasOwnProperty.call(record, 'updated_at')) {
+    record.updated_at = payload.updated_at;
+  }
+}
 async function persist(table, action, record) {
   if(!navigator.onLine) {
     offlineQueue.push({ table, action, record, ts: Date.now() });
@@ -2613,11 +2644,16 @@ async function persist(table, action, record) {
     return;
   }
   try {
-    if(action==='upsert') await window._mpdb.from(table).upsert(record);
+    if(action==='upsert') await safeUpsert(table, record);
     if(action==='delete') await window._mpdb.from(table).delete().eq('id', record.id);
     setSyncStatus('online'); showToast('Saved & synced ✓');
   } catch(e) {
-    offlineQueue.push({ table, action, record, ts: Date.now() });
+     if (e && e.code === 'CONFLICT') {
+      showToast('Someone else updated this item first. Loading latest data...');
+      await syncStateIfNeeded(true);
+      return;
+    }
+   offlineQueue.push({ table, action, record, ts: Date.now() });
     saveOfflineQueue();
     setSyncStatus('offline'); showToast('Saved locally — will sync when online');
   }
@@ -2629,9 +2665,16 @@ async function syncOfflineQueue() {
   const failed = [];
   for(const item of offlineQueue) {
     try {
-      if(item.action==='upsert') await window._mpdb.from(item.table).upsert(item.record);
+      if(item.action==='upsert') await safeUpsert(item.table, item.record);
       if(item.action==='delete') await window._mpdb.from(item.table).delete().eq('id', item.record.id);
-    } catch(e) { failed.push(item); }
+    } catch(e) {
+      if (e && e.code === 'CONFLICT') {
+        showToast('A queued change conflicted with a newer edit. Latest data loaded.');
+        await syncStateIfNeeded(true);
+        continue;
+      }
+      failed.push(item);
+    }
   }
   offlineQueue = failed;
   saveOfflineQueue();
@@ -2857,7 +2900,7 @@ async function createBulkWO() {
   for(const equipId of checked) {
     const record = { id:uid(), name, equipId, assign:'', priority, due, cost:0, meter:'', status:'Open', notes, photos:[], checklist:[] };
     state.tasks.push(record);
-    await window._mpdb.from('tasks').upsert(record);
+     await safeUpsert('tasks', record);
     created++;
   }
   document.getElementById('bulk-wo-card').style.display='none';
@@ -4860,27 +4903,7 @@ function renderTools() {
     }).join('');
 }
 
-async function saveTool() {
-    const id = document.getElementById('tool-edit-id').value;
-    const tool = {
-        id: id || uid(),
-        name: document.getElementById('tool-name').value.trim(),
-        category: document.getElementById('tool-cat').value,
-        location: document.getElementById('tool-loc').value.trim(),
-        health: parseInt(document.getElementById('tool-health').value),
-        is_lost: document.getElementById('tool-lost').checked,
-        last_updated: new Date().toISOString()
-    };
-    if(!tool.name) return;
-    await window._mpdb.from('shop_tools').upsert(tool);
-    const idx = state.tools.findIndex(x => x.id === tool.id);
-    if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
-        logAuditAction("Tool Update", `${name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
-    if(tool.health <= 40 || tool.is_lost) {
-        await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
-    }
-    closeModal('tool-modal'); renderTools();
-}
+
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
@@ -5163,7 +5186,7 @@ async function saveTool() {
     };
 
     try {
-        await window._mpdb.from('shop_tools').upsert(tool);
+       await safeUpsert('shop_tools', tool);
         
         // Update local memory
         const idx = state.tools.findIndex(x => x.id === tool.id);
@@ -6171,8 +6194,8 @@ async function saveTpl() {
 
   try {
     // Save to Supabase
-    await window._mpdb.from('checklist_templates').upsert(record);
 
+await safeUpsert('checklist_templates', record);
     // Update local memory
     const idx = state.checklistTemplates.findIndex(t => t.id === record.id);
     if(idx > -1) state.checklistTemplates[idx] = record;
