@@ -16,6 +16,39 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
     // CONFIG
 // ============================================================
+async function populateSupplierDropdown() {
+    console.log("Fetching suppliers for dropdown...");
+    
+    // 1. Get the data from your Supabase table
+    const { data: suppliers, error } = await window._mpdb
+        .from('suppliers')
+        .select('id, name')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error("Error loading suppliers:", error.message);
+        return;
+    }
+
+    // 2. Find the dropdown by its ID
+    // (Check your HTML, it's likely 'part-supplier' or 'new-part-supplier')
+    const dropdown = document.getElementById('part-supplier'); 
+    
+    if (dropdown) {
+        // 3. Create the HTML for the options
+        let html = '<option value="">— Select Supplier —</option>';
+        
+        suppliers.forEach(sup => {
+            html += `<option value="${sup.id}">${sup.name}</option>`;
+        });
+
+        // 4. Inject it into the box
+        dropdown.innerHTML = html;
+        console.log(`Successfully loaded ${suppliers.length} suppliers.`);
+    } else {
+        console.warn("Could not find the supplier dropdown element in HTML.");
+    }
+}
 async function deleteGeneralItem(id, tableType) {
     console.log("🗑️ Delete attempt initiated...");
     console.log("ID:", id, "Type:", tableType);
