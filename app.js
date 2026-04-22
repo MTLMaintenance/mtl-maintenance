@@ -5666,20 +5666,21 @@ function renderZerkDots() {
     const svg = document.getElementById('zerk-svg-layer');
     if(!overlay || !svg) return;
 
-    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
-    console.log("Zerk Map: Drawing " + visibleDots.length + " lines/dots.");
+    // We use the window variable to ensure we have the correct side (e.g. side_1)
+    const activeView = window.currentZerkView || 'side_1';
+    const visibleDots = allMachineZerks.filter(z => z.view_name === activeView);
     
-    // 1. CLEAR AND DRAW THE LINES
-    let svgContent = '';
-    visibleDots.forEach(z => {
-        // Only draw a line if the target and label are in different spots
-        if (Number(z.x_target) !== Number(z.x_pos) || Number(z.y_target) !== Number(z.y_pos)) {
-            svgContent += `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" class="zerk-line" style="stroke:yellow; stroke-width:0.8;" />`;
-        }
-    });
-    svg.innerHTML = svgContent;
+    console.log(`Rendering ${visibleDots.length} dots for view: ${activeView}`);
 
-    // 2. DRAW THE LABELS AND TARGET DOTS
+    // 1. Draw Lines
+    svg.innerHTML = visibleDots.map(z => {
+        if (Number(z.x_target) !== Number(z.x_pos) || Number(z.y_target) !== Number(z.y_pos)) {
+            return `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" style="stroke:#ffec00; stroke-width:1.5;" />`;
+        }
+        return '';
+    }).join('');
+
+    // 2. Draw Labels and Target Dots
     let html = visibleDots.map((z, index) => {
         const isSingleDot = (Number(z.x_target) === Number(z.x_pos));
         return `
@@ -5690,9 +5691,9 @@ function renderZerkDots() {
         `;
     }).join('');
 
-    // 3. SHOW PREVIEW DOT (If currently drawing a line)
-    if (zerkDrawingStep === 2) {
-        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; border: 2px solid white; transform: translate(-50%, -50%) scale(2);"></div>`;
+    // 3. Show drawing preview
+    if (typeof zerkDrawingStep !== 'undefined' && zerkDrawingStep === 2) {
+        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; transform: translate(-50%, -50%) scale(2); border: 1px solid #000;"></div>`;
     }
 
     overlay.innerHTML = html;
@@ -5755,43 +5756,25 @@ async function handleMapClick(event) {
     }
 }
 // DELETE AN ENTIRE PHOTO VIEW
-async function deleteZerkView() {
-    const equipId = window._currentDetailEquipId;
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e || !e.zerk_photos) return;
-
-    if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
-
-    // 1. Identify index (e.g., 'side_1' -> index 0)
-    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
-
-    try {
-        // 2. Remove photo from array
-        e.zerk_photos.splice(viewIndex, 1);
-
-        // 3. Remove associated dots from DB
-        await window._mpdb.from('grease_points').delete()
-            .eq('equip_id', equipId)
-            .eq('view_name', currentZerkView);
-
-        // 4. Update machine record
-        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
-        
-        showToast("View deleted ✓");
-        refreshZerkMap(equipId); // Full refresh of the zerk tab
-    } catch(err) { showToast("Delete failed"); }
-}
-
 async function deleteZerk(id) {
-    if(!confirm("Delete this grease point?")) return;
+    if(!id || !confirm("Delete this grease point?")) return;
     try {
         await window._mpdb.from('grease_points').delete().eq('id', id);
+        
+        // 1. Remove from local memory instantly
         allMachineZerks = allMachineZerks.filter(z => z.id !== id);
-        renderZerkDots();
+        
+        // 2. Hide the info card
         document.getElementById('zerk-detail-box').style.display = 'none';
-        showToast("Point removed");
+        
+        // 3. FORCE REDRAW NOW
+        renderZerkDots(); 
+        
+        showToast("Point removed ✓");
     } catch(e) { console.error(e); }
 }
+
+
   
 // UPDATE: refreshZerkMap to use the new zerk_photos field
 async function refreshZerkMap(equipId) {
