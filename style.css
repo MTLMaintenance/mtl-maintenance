@@ -1462,6 +1462,12 @@ select.form-select, .modal select {
 #zerk-dots-overlay {
     position: absolute !important;
     inset: 0 !important;
-    z-index: 400 !important;
+    z-index: 500 !important; /* Make sure this is high! */
     pointer-events: auto !important;
+}
+
+.zerk-dot {
+    z-index: 600 !important;
+    background: #ffec00 !important;
+    color: black !important;
 }
