@@ -337,37 +337,37 @@ body.dark-mode .modal {
 
 #zerk-map-container {
   position: relative !important;
-  width: 100%;
+  width: fit-content !important; /* Changed from 100% so it wraps the image */
+  max-height: 65vh !important;   /* THE FIX: Limits height to 65% of screen */
+  margin: 0 auto !important;      /* Centers the machine photo */
   background: #000;
   border-radius: 8px;
   overflow: hidden;
-}
-
-#zerk-dots-overlay {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 100 !important;
-cursor: crosshair !important;
-  pointer-events: auto !important;
-}
-
-.zerk-dot {
-  pointer-events: auto !important;
-    position: absolute !important;
-  width: 24px;
-  height: 24px;
-  background: #ffec00 !important; /* Safety Yellow */
-  color: #000 !important;
-  border: 2px solid #000 !important;
-  border-radius: 50% !important;
   display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  transform: translate(-50%, -50%) !important;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+}
+#zerk-map-img {
+    max-height: 65vh !important;
+    width: auto !important; 
+    max-width: 100% !important;
+    display: block;
+}
+
+/* THE FLOATING CARD STYLE */
+#zerk-detail-box {
+    position: absolute !important;
+    bottom: 15px !important;
+    left: 15px !important;
+    z-index: 200 !important;
+    width: 240px !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5) !important;
 }
     #chat-sidebar {
     width: 240px !important;
