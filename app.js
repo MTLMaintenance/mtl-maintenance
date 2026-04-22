@@ -4482,7 +4482,7 @@ async function handleInvoicePhoto(input) {
   input.value='';
 }
 
-function handleInvoiceDrop(event) {
+async function handleInvoiceDrop(event) {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
   if(!file || !file.type.startsWith('image/')) return;
