@@ -5686,7 +5686,7 @@ function renderZerkDots() {
 }
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
-    
+     window.activeZerkId = zerkId; 
     // Find the specific dot data
     const z = allMachineZerks.find(x => x.id === zerkId);
     if(!z) return;
@@ -5802,7 +5802,8 @@ async function deleteZerkView() {
     }
 }
   async function deleteZerk(id) {
-    if(!id || !confirm("Delete this grease point?")) return;
+    const targetId = id || window.activeZerkId; 
+   if(!id || !confirm("Delete this grease point?")) return;
     
     try {
         await window._mpdb.from('grease_points').delete().eq('id', id);
