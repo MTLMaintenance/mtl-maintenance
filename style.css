@@ -1439,3 +1439,19 @@ select.form-select, .modal select {
     display: block;
     width: 100%;
 }
+/* --- ZERK MAP IMAGE FIX --- */
+.zerk-map-img, [id*="zerk-image"], [id*="map-photo"] {
+    max-width: 100% !important;
+    /* This limits the height to 60% of the screen so it doesn't bleed out */
+    max-height: 60vh !important; 
+    object-fit: contain !important; /* Keeps the picture from looking squished */
+    display: block !important;
+    margin: 10px auto !important;
+    border-radius: 12px;
+}
+
+/* Ensure the modal itself can scroll if the content is still long */
+.modal, #equipment-detail-modal .modal {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+}
