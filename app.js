@@ -2194,29 +2194,34 @@ function openEquipDetail(id){
       </div>
     </div>
 
-    <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
-    <div id="eq-zerks" class="tab-content" style="display:none">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
-        <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
-        <div class="sub-toggle">
-            <button id="btn-delete-view" class="btn btn-danger btn-sm" style="background:#dc3545 !important; display:none;" onclick="deleteZerkView()">🗑️ Delete View</button>
-            <button class="btn btn-sm active" id="mode-dot" onclick="setZerkMode('dot')">Point Only</button>
-            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')">Pointer Line</button>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
-      </div>
-      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
-          <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
-          <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
-          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
-      </div>
-      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center"><div id="zerk-label" style="font-weight:700"></div><button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px" onclick="deleteZerk()">Delete</button></div>
-        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
-      </div>
-      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
-    </div>
+<div id="eq-zerks" class="tab-content" style="display:none">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
+    <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
+    
+    <!-- 1. ADD THIS BUTTON: Matches your 'deleteZerkView' function -->
+    <button id="btn-delete-view" class="btn btn-danger btn-sm" style="background:#dc3545 !important; display:none;" onclick="deleteZerkView()">🗑️ Delete View</button>
+    
+    <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+  </div>
 
+  <div id="zerk-map-container" style="position:relative; width:fit-content; margin: 0 auto; background:#000; border-radius:12px; overflow:hidden;">
+      <img id="zerk-map-img" src="" style="width:auto; max-height:65vh; display:block; opacity:0.9"/>
+      <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
+      <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+
+      <!-- THE FLOATING CARD -->
+      <div id="zerk-detail-box" style="display:none; position:absolute; bottom:15px; left:15px; z-index:200; width:220px; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); color:white;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div id="zerk-label" style="font-weight:700; color:#ffec00; text-transform:uppercase; font-size:12px;"></div>
+            
+            <!-- 2. THE FIX: ID must be 'zerk-delete-btn' to match your function -->
+            <button id="zerk-delete-btn" class="btn btn-danger btn-sm" style="font-size:18px; background:none; border:none; color:#ff6b6b; cursor:pointer; line-height:1;">×</button>
+        </div>
+        <div id="zerk-instr" style="font-size:11px; color:#ddd; margin-top:5px; line-height:1.4"></div>
+      </div>
+  </div>
+</div>
+   
     <!-- 3. FULL HISTORY VIEW -->
     <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list"></div></div>
 
