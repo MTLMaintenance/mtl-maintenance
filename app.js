@@ -2193,14 +2193,16 @@ function openEquipDetail(id){
         </div>
       </div>
     </div>
-
 <div id="eq-zerks" class="tab-content" style="display:none">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
     <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
     
-    <!-- 1. ADD THIS BUTTON: Matches your 'deleteZerkView' function -->
+    <!-- THE HIDDEN INPUT (Added this back in) -->
+    <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+
     <button id="btn-delete-view" class="btn btn-danger btn-sm" style="background:#dc3545 !important; display:none;" onclick="deleteZerkView()">🗑️ Delete View</button>
     
+    <!-- This button will now work because it can find 'zerk-upload-input' -->
     <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
   </div>
 
@@ -2213,8 +2215,6 @@ function openEquipDetail(id){
       <div id="zerk-detail-box" style="display:none; position:absolute; bottom:15px; left:15px; z-index:200; width:220px; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); color:white;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start">
             <div id="zerk-label" style="font-weight:700; color:#ffec00; text-transform:uppercase; font-size:12px;"></div>
-            
-            <!-- 2. THE FIX: ID must be 'zerk-delete-btn' to match your function -->
             <button id="zerk-delete-btn" class="btn btn-danger btn-sm" style="font-size:18px; background:none; border:none; color:#ff6b6b; cursor:pointer; line-height:1;">×</button>
         </div>
         <div id="zerk-instr" style="font-size:11px; color:#ddd; margin-top:5px; line-height:1.4"></div>
@@ -2264,6 +2264,7 @@ function openEquipDetail(id){
   renderMiniTimeline(id);
   renderQuickSpecs(id);
 }
+
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
   if(!s) return;
