@@ -2199,6 +2199,7 @@ function openEquipDetail(id){
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
         <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
         <div class="sub-toggle">
+            <button id="btn-delete-view" class="btn btn-danger btn-sm" style="background:#dc3545 !important; display:none;" onclick="deleteZerkView()">🗑️ Delete View</button>
             <button class="btn btn-sm active" id="mode-dot" onclick="setZerkMode('dot')">Point Only</button>
             <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')">Pointer Line</button>
         </div>
