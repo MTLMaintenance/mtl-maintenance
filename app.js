@@ -5753,7 +5753,7 @@ async function deleteZerkView() {
     if(!confirm("Delete this machine photo and ALL dots attached to it?")) return;
 
     try {
-        // 1. Identify which photo to remove (e.g., 'side_1' -> index 0)
+        // 1. Identify which photo to remove
         const viewParts = currentZerkView.split('_');
         const viewIndex = parseInt(viewParts[viewParts.length - 1]) - 1;
 
@@ -5763,7 +5763,7 @@ async function deleteZerkView() {
             .eq('equip_id', equipId)
             .eq('view_name', currentZerkView);
 
-        // 3. Remove photo from the equipment's array in local memory
+        // 3. Remove photo from the local array
         e.zerk_photos.splice(viewIndex, 1);
 
         // 4. Update the equipment record in Supabase
@@ -5776,10 +5776,20 @@ async function deleteZerkView() {
 
         showToast("View deleted ✓");
 
-        // 5. LIVE REFRESH
-        // Reset the tracker and redraw the tab buttons
-        currentZerkView = e.zerk_photos.length > 0 ? 'side_1' : '';
-        refreshZerkMap(equipId); 
+        // 5. THE UI REFRESH
+        if (e.zerk_photos.length === 0) {
+            // FORCE CLEAR: The machine has NO photos left
+            document.getElementById('zerk-map-img').src = "";
+            document.getElementById('zerk-view-switcher').innerHTML = "";
+            document.getElementById('zerk-dots-overlay').innerHTML = "";
+            document.getElementById('zerk-svg-layer').innerHTML = "";
+            document.getElementById('btn-delete-view').style.display = "none";
+            currentZerkView = ""; 
+        } else {
+            // REFRESH: Machine still has other photos
+            currentZerkView = 'side_1'; 
+            refreshZerkMap(equipId); 
+        }
         
         // Hide detail box if it was open
         if(document.getElementById('zerk-detail-box')) {
@@ -5788,10 +5798,9 @@ async function deleteZerkView() {
 
     } catch(err) { 
         console.error("Delete view failed:", err);
-        showToast("Delete failed"); 
+        showToast("Delete failed");     
     }
 }
-
   async function deleteZerk(id) {
     if(!id || !confirm("Delete this grease point?")) return;
     
@@ -5868,7 +5877,8 @@ function renderZerkDots() {
     const overlay = document.getElementById('zerk-dots-overlay');
     const svg = document.getElementById('zerk-svg-layer');
     if(!overlay || !svg) return;
-
+ overlay.innerHTML = ""; 
+    svg.innerHTML = "";
     const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
     
     // 1. Draw Lines in SVG
