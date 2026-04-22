@@ -1471,3 +1471,48 @@ select.form-select, .modal select {
     max-height: 90vh !important;
     overflow-y: auto !important;
 }
+/* --- FLOATING ZERK DETAIL CARD --- */
+#zerk-detail-box {
+    position: absolute !important;
+    bottom: 15px !important;
+    left: 15px !important;
+    z-index: 1000 !important;
+    width: 260px !important;
+    background: rgba(0, 0, 0, 0.8) !important; /* Dark Glass */
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 14px !important;
+    padding: 15px !important;
+    color: #fff !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+    display: none; /* Controlled by JS */
+}
+
+#zerk-label {
+    font-size: 14px !important;
+    color: #ffec00 !important; /* Yellow title */
+    margin-bottom: 4px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#zerk-instr {
+    font-size: 12px !important;
+    color: #ccc !important;
+    line-height: 1.4;
+}
+
+/* Style for the 'Delete View' button next to 'Add View' */
+.btn-delete-view {
+    background: rgba(220, 53, 69, 0.1) !important;
+    border: 1px solid rgba(220, 53, 69, 0.3) !important;
+    color: #ff6b6b !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+    cursor: pointer;
+}
+.btn-delete-view:hover {
+    background: #dc3545 !important;
+    color: #fff !important;
+}
