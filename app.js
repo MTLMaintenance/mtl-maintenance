@@ -5727,32 +5727,55 @@ async function handleMapClick(event) {
         }
     }
 }
-// DELETE AN ENTIRE PHOTO VIEW
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
-    if(!e || !e.zerk_photos) return;
+    
+    // SAFETY FIX: Make sure currentZerkView exists and has a value like 'side_1'
+    if(!e || !e.zerk_photos || !currentZerkView) {
+        alert("Please select a view to delete.");
+        return;
+    }
 
     if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
 
-    // 1. Identify index (e.g., 'side_1' -> index 0)
-    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
-
     try {
-        // 2. Remove photo from array
+        // 1. Identify index (e.g., 'side_1' -> index 0)
+        const viewParts = currentZerkView.split('_');
+        const viewIndex = parseInt(viewParts[viewParts.length - 1]) - 1;
+
+        if (isNaN(viewIndex) || viewIndex < 0) {
+            console.error("Could not determine view index from:", currentZerkView);
+            return;
+        }
+
+        // 2. Remove photo from local memory (The 'Live' update part)
         e.zerk_photos.splice(viewIndex, 1);
 
-        // 3. Remove associated dots from DB
+        // 3. Remove associated dots from Database
         await window._mpdb.from('grease_points').delete()
             .eq('equip_id', equipId)
             .eq('view_name', currentZerkView);
 
-        // 4. Update machine record
-        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
+        // 4. Update machine record in Database
+        await window._mpdb.from('equipment')
+            .update({ zerk_photos: e.zerk_photos })
+            .eq('id', equipId);
         
+        // 5. THE UI FIXES:
+        // Hide the floating card so old info doesn't stay on screen
+        const detailBox = document.getElementById('zerk-detail-box');
+        if (detailBox) detailBox.style.display = 'none';
+
         showToast("View deleted ✓");
-        refreshZerkMap(equipId); // Full refresh of the zerk tab
-    } catch(err) { showToast("Delete failed"); }
+        
+        // Refresh the tab - this redraws the 'View 1, View 2' buttons
+        refreshZerkMap(equipId); 
+
+    } catch(err) { 
+        console.error("Delete View Error:", err);
+        showToast("Delete failed"); 
+    }
 }
 
 async function deleteZerk(id) {
@@ -6006,24 +6029,37 @@ function updateCalEntryTypeButtons(type) {
     setCalEntryType(type);
 }
     async function saveZerkPoint(label, x_label, y_label, x_target, y_target) {
+    const equipId = window._currentDetailEquipId;
+    
+    // This object MUST match the column names in your Supabase table
     const newZerk = {
-        id: uid(),
-        equip_id: window._currentDetailEquipId,
-        view_name: currentZerkView,
+        id: uid(), // Generates a text ID
+        equip_id: equipId,
+        view_name: window.currentZerkView || 'side_1',
         label: label,
-        instructions: prompt("Instructions (optional):") || "",
         x_pos: x_label,
         y_pos: y_label,
         x_target: x_target,
-        y_target: y_target
+        y_target: y_target,
+        instructions: ""
     };
 
-    try {
-        await window._mpdb.from('grease_points').insert(newZerk);
+    // THE FIX: Wrap 'newZerk' in brackets [ ]
+    const { error } = await window._mpdb
+        .from('grease_points')
+        .insert([newZerk]); 
+
+    if (!error) {
+        // Add it to your local list so it shows up without a refresh
         allMachineZerks.push(newZerk);
-        renderZerkDots();
-        showToast("Zerk Saved ✓");
-    } catch(e) { console.error(e); }
+        
+        // REDRAW THE DOTS IMMEDIATELY
+        renderZerkDots(); 
+        showToast("Point saved ✓");
+    } else {
+        console.error("Save failed:", error.message);
+        alert("Error: " + error.message);
+    }
 }
  function renderFullHistoryList(equipId) {
     const container = document.getElementById('eq-history-list');
