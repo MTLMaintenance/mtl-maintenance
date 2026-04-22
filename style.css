@@ -1439,3 +1439,30 @@ select.form-select, .modal select {
     display: block;
     width: 100%;
 }
+/* FORCE THE DOTS TO BE YELLOW AND VISIBLE */
+.zerk-dot {
+    position: absolute !important;
+    width: 20px !important;
+    height: 20px !important;
+    background: #ffec00 !important; /* Safety Yellow */
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    transform: translate(-50%, -50%) !important;
+    cursor: pointer !important;
+    z-index: 500 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5) !important;
+}
+
+/* Ensure the dots overlay fills the whole machine photo */
+#zerk-dots-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 400 !important;
+    pointer-events: auto !important;
+}
