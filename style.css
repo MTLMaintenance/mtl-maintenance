@@ -1439,11 +1439,10 @@ select.form-select, .modal select {
     display: block;
     width: 100%;
 }
-/* FORCE THE DOTS TO BE YELLOW AND VISIBLE */
 .zerk-dot {
     position: absolute !important;
-    width: 20px !important;
-    height: 20px !important;
+    width: 22px !important;
+    height: 22px !important;
     background: #ffec00 !important; /* Safety Yellow */
     color: #000 !important;
     border: 2px solid #000 !important;
@@ -1453,9 +1452,9 @@ select.form-select, .modal select {
     justify-content: center !important;
     font-size: 11px !important;
     font-weight: 800 !important;
-    transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, -50%) !important; /* Centers the dot on the click */
     cursor: pointer !important;
-    z-index: 500 !important;
+    z-index: 500 !important; /* Must be higher than the machine photo */
     box-shadow: 0 2px 5px rgba(0,0,0,0.5) !important;
 }
 
