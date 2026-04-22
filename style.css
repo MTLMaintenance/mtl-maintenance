@@ -337,26 +337,42 @@ body.dark-mode .modal {
 
 #zerk-map-container {
   position: relative !important;
-  width: 100%;
+  /* CHANGE: fit-content ensures the black box wraps the image width precisely */
+  width: fit-content !important; 
+  /* ADD: This limits the map height to 65% of your screen height */
+  max-height: 65vh !important;
+  margin: 0 auto !important; /* Centers the machine photo */
   background: #000;
   border-radius: 8px;
   overflow: hidden;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ADD THIS: This forces the actual image to stay inside the screen bounds */
+#zerk-map-img {
+    max-height: 65vh !important;
+    width: auto !important; /* Prevents the image from stretching horizontally */
+    max-width: 100% !important;
+    display: block;
+    object-fit: contain;
 }
 
 #zerk-dots-overlay {
   position: absolute !important;
   inset: 0 !important;
   z-index: 100 !important;
-cursor: crosshair !important;
+  cursor: crosshair !important;
   pointer-events: auto !important;
 }
 
 .zerk-dot {
   pointer-events: auto !important;
-    position: absolute !important;
+  position: absolute !important;
   width: 24px;
   height: 24px;
-  background: #ffec00 !important; /* Safety Yellow */
+  background: #ffec00 !important; 
   color: #000 !important;
   border: 2px solid #000 !important;
   border-radius: 50% !important;
