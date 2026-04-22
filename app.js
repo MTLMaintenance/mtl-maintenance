@@ -540,7 +540,7 @@ async function uploadZerkView(input) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
-    showToast("⚙️ Processing image...");
+    showToast("⚙️ Saving photo...");
     
     try {
         const base64 = await compressImage(await new Promise(res => {
@@ -550,20 +550,16 @@ async function uploadZerkView(input) {
         if(!e.zerk_photos) e.zerk_photos = [];
         e.zerk_photos.push(base64);
 
-        // SAVE TO DATABASE
-        const { error } = await window._mpdb
-            .from('equipment')
-            .update({ zerk_photos: e.zerk_photos })
-            .eq('id', equipId);
-
-        if (error) throw error;
+        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
 
         showToast("View added ✓");
-        refreshZerkMap(equipId);
-    } catch(err) { 
-        console.error(err);
-        showToast("Upload failed"); 
-    }
+        
+        // --- THE FIX: Force refresh and switch to the new photo ---
+        await refreshZerkMap(equipId); 
+        const newViewName = `side_${e.zerk_photos.length}`;
+        changeZerkView(newViewName, document.getElementById(`btn-side-${e.zerk_photos.length}`));
+
+    } catch(err) { console.error(err); showToast("Upload failed"); }
     input.value = "";
 }
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
