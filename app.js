@@ -2237,6 +2237,7 @@ function openEquipDetail(id){
 
     <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
     <div id="eq-zerks" class="tab-content" style="display:none">
+      <button id="btn-delete-view" class="btn btn-danger btn-sm" onclick="deleteZerkView()">🗑️ Delete View</button>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
         <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
         <div class="sub-toggle">
@@ -2251,6 +2252,7 @@ function openEquipDetail(id){
           <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
       </div>
       <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <button id="zerk-delete-btn" class="btn btn-danger btn-sm" onclick="deleteZerk(window.activeZerkId)">🗑️ Delete</button>
         <div style="display:flex; justify-content:space-between; align-items:center"><div id="zerk-label" style="font-weight:700"></div><button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px" onclick="deleteZerk()">Delete</button></div>
         <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
       </div>
@@ -5731,62 +5733,77 @@ async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
     
-    // SAFETY FIX: Make sure currentZerkView exists and has a value like 'side_1'
     if(!e || !e.zerk_photos || !currentZerkView) {
         alert("Please select a view to delete.");
         return;
     }
 
-    if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
+    if(!confirm("Delete this machine photo and ALL dots attached to it?")) return;
 
     try {
-        // 1. Identify index (e.g., 'side_1' -> index 0)
+        // 1. Identify which photo to remove (e.g., 'side_1' -> index 0)
         const viewParts = currentZerkView.split('_');
         const viewIndex = parseInt(viewParts[viewParts.length - 1]) - 1;
 
-        if (isNaN(viewIndex) || viewIndex < 0) {
-            console.error("Could not determine view index from:", currentZerkView);
-            return;
-        }
-
-        // 2. Remove photo from local memory (The 'Live' update part)
-        e.zerk_photos.splice(viewIndex, 1);
-
-        // 3. Remove associated dots from Database
-        await window._mpdb.from('grease_points').delete()
+        // 2. Delete all dots belonging to this specific view from DB
+        await window._mpdb.from('grease_points')
+            .delete()
             .eq('equip_id', equipId)
             .eq('view_name', currentZerkView);
 
-        // 4. Update machine record in Database
-        await window._mpdb.from('equipment')
+        // 3. Remove photo from the equipment's array in local memory
+        e.zerk_photos.splice(viewIndex, 1);
+
+        // 4. Update the equipment record in Supabase
+        const { error } = await window._mpdb
+            .from('equipment')
             .update({ zerk_photos: e.zerk_photos })
             .eq('id', equipId);
-        
-        // 5. THE UI FIXES:
-        // Hide the floating card so old info doesn't stay on screen
-        const detailBox = document.getElementById('zerk-detail-box');
-        if (detailBox) detailBox.style.display = 'none';
+
+        if (error) throw error;
 
         showToast("View deleted ✓");
-        
-        // Refresh the tab - this redraws the 'View 1, View 2' buttons
+
+        // 5. LIVE REFRESH
+        // Reset the tracker and redraw the tab buttons
+        currentZerkView = e.zerk_photos.length > 0 ? 'side_1' : '';
         refreshZerkMap(equipId); 
+        
+        // Hide detail box if it was open
+        if(document.getElementById('zerk-detail-box')) {
+            document.getElementById('zerk-detail-box').style.display = 'none';
+        }
 
     } catch(err) { 
-        console.error("Delete View Error:", err);
+        console.error("Delete view failed:", err);
         showToast("Delete failed"); 
     }
 }
-
 async function deleteZerk(id) {
-    if(!confirm("Delete this grease point?")) return;
+    if(!id || !confirm("Delete this grease point?")) return;
+    
     try {
-        await window._mpdb.from('grease_points').delete().eq('id', id);
+        // 1. Remove from Database
+        const { error } = await window._mpdb
+            .from('grease_points')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 2. Live Update Memory
+        // Removes it from the list your app is currently drawing
         allMachineZerks = allMachineZerks.filter(z => z.id !== id);
-        renderZerkDots();
+
+        // 3. Live Update UI
+        renderZerkDots(); // Redraws the photo without the deleted dot
         document.getElementById('zerk-detail-box').style.display = 'none';
-        showToast("Point removed");
-    } catch(e) { console.error(e); }
+        
+        showToast("Point removed ✓");
+    } catch(e) { 
+        console.error("Delete point failed:", e);
+        showToast("Error removing point");
+    }
 }
   
 // UPDATE: refreshZerkMap to use the new zerk_photos field
