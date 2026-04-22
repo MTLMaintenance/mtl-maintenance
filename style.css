@@ -337,13 +337,11 @@ body.dark-mode .modal {
 
 #zerk-map-container {
   position: relative !important;
-  /* CHANGE: fit-content ensures the black box wraps the image width precisely */
   width: fit-content !important; 
-  /* ADD: This limits the map height to 65% of your screen height */
   max-height: 65vh !important;
-  margin: 0 auto !important; /* Centers the machine photo */
+  margin: 0 auto !important;
   background: #000;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex !important;
   align-items: center;
@@ -366,7 +364,6 @@ body.dark-mode .modal {
   cursor: crosshair !important;
   pointer-events: auto !important;
 }
-
 .zerk-dot {
   pointer-events: auto !important;
   position: absolute !important;
