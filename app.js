@@ -14,9 +14,7 @@ let tempZerkCoords = { x: 0, y: 0 };
 let calDate = new Date();
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
  let currentCalEntryType = 'one-time';   
- window.currentZerkView = ""; // Tracks which photo (e.g., 'side_1')
-window.activeZerkId = null;  // Tracks which yellow dot is clicked
-// CONFIG
+    // CONFIG
 // ============================================================
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
@@ -639,29 +637,16 @@ if (document.readyState === 'loading') {
 } else { 
     startApp(); 
 }
-function handleOnlineStatus() {
-  const offlineBanner = document.getElementById('offline-banner');
-  const chatOfflineBanner = document.getElementById('chat-offline-banner');
-  if (offlineBanner) offlineBanner.style.display = 'none';
-  if (chatOfflineBanner) chatOfflineBanner.style.display = 'none';
-  setSyncStatus('online');
-  if (offlineQueue.length) syncOfflineQueue();
-  if (document.getElementById('panel-chat')?.classList.contains('active') && typeof renderChat === 'function') {
-    renderChat();
-  }
-  syncStateIfNeeded(true).catch(()=>{});
-}
-function handleOfflineStatus() {
-  const offlineBanner = document.getElementById('offline-banner');
-  const chatOfflineBanner = document.getElementById('chat-offline-banner');
-  if (offlineBanner) offlineBanner.style.display = 'block';
-  if (chatOfflineBanner) chatOfflineBanner.style.display = 'block';
-  setSyncStatus('offline');
-}
 
-window.addEventListener('online', handleOnlineStatus);
-window.addEventListener('offline', handleOfflineStatus);
+window.addEventListener('online',  () => { 
+    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='none';  
+    setSyncStatus('online'); 
+});
 
+window.addEventListener('offline', () => { 
+    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='block'; 
+    setSyncStatus('offline'); 
+});
 // ============================================================
 // AUTH
 // ============================================================
@@ -852,7 +837,7 @@ async function startQRScanner() {
         const equipId = url.searchParams.get("equip");
         if (equipId) {
           stopQRScanner();
-         openEquipDetail(equipId);
+          (equipId);
         } else {
           showToast("Invalid QR Code");
         }
@@ -1126,6 +1111,21 @@ function closePhotoViewer(){ document.getElementById('photo-viewer').classList.r
 
 // MODALS
 // ============================================================
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        el.classList.add('open');
+
+        // Fill dropdowns if the modal needs them
+        if (id === 'task-modal' || id === 'calendar-entry-modal') {
+            populateSelects();
+        }
+    } else {
+        console.error("Modal not found:", id);
+    }
+}
+
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -2072,18 +2072,10 @@ function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
   if(!modal) return;
 
- // 1. Hide all sections referenced by the tab buttons (works for task + equipment detail views)
-  const tabTargets = Array.from(modal.querySelectorAll('.tab'))
-    .map(b => {
-      const click = b.getAttribute('onclick') || '';
-      const match = click.match(/switchDetailTab\('([^']+)'/);
-      return match ? match[1] : null;
-    })
-    .filter(Boolean);
-  tabTargets.forEach(id => {
-    const section = document.getElementById(id);
-    if (section) section.style.display = 'none';
-  });
+  // 1. Hide all tab-content divs
+  const contents = modal.querySelectorAll('.tab-content');
+  contents.forEach(c => c.style.display = 'none');
+
   // 2. Show the specific tab clicked
   const el = document.getElementById(tab);
   if(el) el.style.display = 'block';
@@ -2202,37 +2194,27 @@ function openEquipDetail(id){
       </div>
     </div>
 
-   <!-- 2. ZERK MAP VIEW -->
-<div id="eq-zerks" class="tab-content" style="display:none">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
-    <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
-    
-    <!-- NEW: Delete current view button -->
-    <button class="btn btn-danger btn-sm" style="background:#dc3545 !important; font-size:11px" onclick="deleteZerkView()">🗑️ Delete View</button>
-    
-    <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
-  </div>
-
-  <div id="zerk-map-container" style="position:relative; width:fit-content; margin: 0 auto; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
-      <img id="zerk-map-img" src="" style="width:auto; max-height:65vh; display:block; opacity:0.9"/>
-      <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
-      <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
-
-     <!-- THE FLOATING DETAIL CARD -->
-<div id="zerk-detail-box" style="display:none; position:absolute; bottom:15px; left:15px; z-index:200; width:240px; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); color:white; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start">
-        <div id="zerk-label" style="font-weight:700; color:#ffec00; text-transform:uppercase; font-size:13px; margin-bottom:4px;"></div>
-        <!-- THE FIX: Added window.activeZerkId inside the onclick -->
-        <button class="btn btn-danger btn-sm" 
-                style="font-size:18px; background:none; border:none; padding:0; line-height:1; color:#ff6b6b; cursor:pointer;" 
-                onclick="deleteZerk(window.activeZerkId)">×</button>
+    <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
+    <div id="eq-zerks" class="tab-content" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
+        <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
+        <div class="sub-toggle">
+            <button class="btn btn-sm active" id="mode-dot" onclick="setZerkMode('dot')">Point Only</button>
+            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')">Pointer Line</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+      </div>
+      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+          <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+          <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
+          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+      </div>
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center"><div id="zerk-label" style="font-weight:700"></div><button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px" onclick="deleteZerk()">Delete</button></div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
+      </div>
+      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
     </div>
-    <div id="zerk-instr" style="font-size:12px; color:#ddd; line-height:1.4"></div>
-</div>
-  </div>
-
-  <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
-</div>
 
     <!-- 3. FULL HISTORY VIEW -->
     <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list"></div></div>
@@ -2620,40 +2602,9 @@ function saveOfflineQueue() {
   try { localStorage.setItem('mp_offline_queue', JSON.stringify(offlineQueue)); } catch(e) {}
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
-async function safeUpsert(table, record) {
-  const payload = (record && typeof record === 'object') ? { ...record } : record;
 
-  if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'updated_at')) {
-    const rowId = payload.id || null;
-    const baseUpdatedAt = payload.updated_at || null;
-
-    if (rowId && baseUpdatedAt) {
-      const { data: currentRow, error: currentErr } = await window._mpdb
-        .from(table)
-        .select('id, updated_at')
-        .eq('id', rowId)
-        .maybeSingle();
-      if (currentErr) throw currentErr;
-      if (currentRow?.updated_at && currentRow.updated_at !== baseUpdatedAt) {
-        const conflictError = new Error('Record was modified by another user.');
-        conflictError.code = 'CONFLICT';
-        throw conflictError;
-      }
-    }
-
-    payload.updated_at = new Date().toISOString();
-  }
-
-  const { error } = await window._mpdb.from(table).upsert(payload);
-  if (error) throw error;
-
-  if (record && typeof record === 'object' && Object.prototype.hasOwnProperty.call(record, 'updated_at')) {
-    record.updated_at = payload.updated_at;
-  }
-}
 // Override persist to queue when offline
 const _origPersist = persist;
-
 async function safeUpsert(table, record) {
   const payload = (record && typeof record === 'object') ? { ...record } : record;
 
@@ -2731,6 +2682,8 @@ async function syncOfflineQueue() {
   else { showToast('All changes synced ✓'); setSyncStatus('online'); }
 }
 
+// Auto-sync when coming back online
+window.addEventListener('online', () => { if(offlineQueue.length) syncOfflineQueue(); });
 
 // Show queue banner on load if items pending
 if(offlineQueue.length) document.getElementById('offline-queue-banner').style.display = 'block';
@@ -2745,7 +2698,7 @@ async function markComplete(taskId) {
   // 1. Update machine hours (Helpful for maintenance tracking)
   const equip = state.equipment.find(e => e.id === t.equipId);
   const currentHours = equip ? equip.hours : 0;
-   let meterReadingToLog = null;
+  
   const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
   
   if (newHours !== null && newHours.trim() !== '') {
@@ -2755,11 +2708,12 @@ async function markComplete(taskId) {
         equip.hours = val;
         t.meter = val + ' hrs';
         await persist('equipment', 'upsert', equip);
-        meterReadingToLog = val;
-   const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
-        if (rule && equip) {
-            await window._mpdb.from('recurrence_rules').update({ last_generated_hours: equip.hours }).eq('id', rule.id);
-        }
+         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
+
+    const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
+    if (rule && equip) {
+        await window._mpdb.from('recurrence_rules').update({ last_generated_hours: equip.hours }).eq('id', rule.id);
+    }
       }
     }
   }
@@ -2776,13 +2730,7 @@ async function markComplete(taskId) {
     if (typeof logAuditAction === 'function') {
         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
     }
-if (equip && meterReadingToLog !== null) {
-      await window._mpdb.from('meter_history').insert({
-        equip_id: equip.id,
-        reading: meterReadingToLog,
-        status_at_reading: equip.status
-      });
-    }
+
     // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
     await runRecurrenceEngine();
     
@@ -2800,6 +2748,12 @@ if (equip && meterReadingToLog !== null) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
+
+await window._mpdb.from('meter_history').insert({ 
+    equip_id: equipId, 
+    reading: val, 
+    status_at_reading: e.status 
+});
 }
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
@@ -3193,6 +3147,14 @@ function previewTemplate(id){
   document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
+function saveTpl(){
+  const name=document.getElementById('tpl-name').value.trim();if(!name){showToast('Enter a name');return;}
+  const items=document.getElementById('tpl-items').value.split('\n').filter(Boolean);if(!items.length){showToast('Add checklist items');return;}
+  const tpl={id:'tpl-'+uid(),name,model:document.getElementById('tpl-model').value.trim(),type:document.getElementById('tpl-type').value.trim(),items};
+  state.checklistTemplates.push(tpl);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}
+  closeModal('tpl-modal');renderChecklistTemplates();showToast('Template saved ✓');
+  ['tpl-name','tpl-model','tpl-type','tpl-items'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
 function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}renderChecklistTemplates();showToast('Template deleted');}
 function applyTemplate(){
   const tplId=document.getElementById('tpl-selector')?.value;if(!tplId){showToast('Select a template first');return;}
@@ -3505,6 +3467,7 @@ async function renderUsersTable() {
     }
 }
 
+async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
 async function deleteUser(id) {
     // Look up the name from the cache we saved in renderUsersTable
@@ -3708,7 +3671,18 @@ async function sendChatMessage(){
     showToast('Connection error');
   }
 } // This is the end of the function
-
+function handleChatInput(el){
+  el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';
+  const val=el.value,atIdx=val.lastIndexOf('@');
+  if(atIdx>=0&&(atIdx===val.length-1||/([\w]+)$/.test(val.slice(atIdx+1)))){
+    const query=val.slice(atIdx+1).toLowerCase();
+    const names=[...new Set([...(state.observations||[]).map(o=>o.author),...(state.chatMessages||[]).map(m=>m.author_name||m.author),currentUser.name])].filter(n=>n&&n.toLowerCase().includes(query));
+    const dd=document.getElementById('mention-dropdown');
+    if(dd&&names.length){dd.style.display='block';dd.innerHTML=names.slice(0,6).map(n=>`<div style="padding:6px 10px;cursor:pointer;border-radius:4px;font-size:13px" onmousedown="insertMention('${n}')" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">@${n}</div>`).join('');}
+    else if(dd)dd.style.display='none';
+  }else{const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';}
+}
+function insertMention(name){const i=document.getElementById('chat-input');if(!i)return;const v=i.value;const a=v.lastIndexOf('@');i.value=v.slice(0,a)+'@'+name.replace(/ /g,'')+' ';const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';i.focus();}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
     const menu = document.getElementById('chat-channel-mobile-menu');
@@ -4009,6 +3983,11 @@ function updateUnreadBadge() {
         topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
     }
 }
+
+
+window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
+window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
+
 // ── BUG / SUGGESTION ─────────────────────────────────────────
 
 // ── PULLEQUIPSUPPLIERS with template selector ─────────────────
@@ -4409,6 +4388,28 @@ async function deleteObservation(obsId, equipId) {
         showToast("Observation deleted");
     } catch(e) { showToast("Failed"); }
 }
+
+function editObservation(obsId) {
+    const o = state.observations.find(x => x.id === obsId);
+    if(!o) return;
+
+    const newText = prompt("Edit Observation:", o.body);
+    if(newText === null || newText.trim() === "") return;
+
+    const newSev = prompt("Change Severity? (info, watch, or critical):", o.severity);
+    const validSevs = ['info', 'watch', 'critical'];
+    
+    o.body = newText;
+    if(validSevs.includes(newSev)) o.severity = newSev;
+
+    window._mpdb.from('observations').update({
+        body: o.body,
+        severity: o.severity
+    }).eq('id', obsId).then(() => {
+        refreshObsList(o.equip_id);
+        showToast("Updated ✓");
+    });
+}
 async function saveEditObservation(obsId, equipId) {
   const body = document.getElementById('edit-obs-body')?.value.trim();
   const severity = document.getElementById('edit-obs-severity')?.value;
@@ -4474,7 +4475,26 @@ function openAddInvoice() {
   openModal('invoice-modal');
 }
 
-// 1. Function to handle Drag and Drop
+async function handleInvoicePhoto(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    _invoicePhotoData = await compressImage(dataUrl, 1200, 0.85);
+    
+    // Show preview
+    document.getElementById('invoice-photo-preview-area').innerHTML=`
+      <img src="${_invoicePhotoData}" style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border)"/>
+      <div style="font-size:12px;color:var(--success);margin-top:8px;font-weight:500">✓ Photo ready — scanning now...</div>`;
+    document.getElementById('inv-clear-photo-wrap').style.display='block';
+    
+    // Auto-scan with Claude API
+    await scanInvoiceWithAI(_invoicePhotoData);
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
 function handleInvoiceDrop(event) {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
@@ -4486,58 +4506,26 @@ function handleInvoiceDrop(event) {
   handleInvoicePhoto(input);
 }
 
-// 2. Function to handle the file selection and show the preview
-function handleInvoicePhoto(input) {
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const dataUrl = e.target.result;
-    
-    // Process and compress the image
-    if (typeof compressImage === 'function') {
-        _invoicePhotoData = await compressImage(dataUrl, 1200, 0.85);
-    } else {
-        _invoicePhotoData = dataUrl;
-    }
-    
-    // Show preview UI
-    const previewArea = document.getElementById('invoice-photo-preview-area');
-    if(previewArea) {
-        previewArea.innerHTML=`
-          <img src="${_invoicePhotoData}" style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border)"/>
-          <div style="font-size:12px;color:var(--success);margin-top:8px;font-weight:500">✓ Photo ready — scanning now...</div>`;
-    }
-    if(document.getElementById('inv-clear-photo-wrap')) {
-        document.getElementById('inv-clear-photo-wrap').style.display='block';
-    }
-    
-    // START THE AI SCAN (This calls the function below)
-    await scanInvoiceWithAI(_invoicePhotoData);
-  };
-  reader.readAsDataURL(file);
-  input.value='';
-}
-
-// 3. THE MISSING FUNCTION: The actual AI logic
 async function scanInvoiceWithAI(imageData) {
-  const scanningEl = document.getElementById('invoice-scanning');
-  if (scanningEl) scanningEl.style.display = 'block';
+  document.getElementById('invoice-scanning').style.display='block';
   
   try {
     const base64Data = imageData.split(',')[1];
     const mediaType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
     
-    // Use the Gemini API Key from your app config
-    const apiKey = window._geminiKey; 
-
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+    const GEMINI_KEY = 'AIzaSyPlaceholderReplaceWithYourKey'; // Set via app config
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [
-            { inline_data: { mime_type: mediaType, data: base64Data } },
-            { text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text: {"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}' }
+            {
+              inline_data: { mime_type: mediaType, data: base64Data }
+            },
+            {
+              text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text: {"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}'
+            }
           ]
         }],
         generationConfig: { maxOutputTokens: 500, temperature: 0 }
@@ -4552,34 +4540,34 @@ async function scanInvoiceWithAI(imageData) {
       const clean = text.replace(/```json|```/g, '').trim();
       extracted = JSON.parse(clean);
     } catch(e) {
-      // RegEx fallback if AI response formatting is messy
+      // Try to extract with regex if JSON parse fails
       const amountMatch = text.match(/"amount"\s*:\s*([\d.]+)/);
       const supplierMatch = text.match(/"supplier"\s*:\s*"([^"]+)"/);
       const dateMatch = text.match(/"date"\s*:\s*"([^"]+)"/);
       const numMatch = text.match(/"invoice_number"\s*:\s*"([^"]+)"/);
+      const notesMatch = text.match(/"notes"\s*:\s*"([^"]+)"/);
       if(amountMatch) extracted.amount = parseFloat(amountMatch[1]);
       if(supplierMatch) extracted.supplier = supplierMatch[1];
       if(dateMatch) extracted.date = dateMatch[1];
       if(numMatch) extracted.invoice_number = numMatch[1];
+      if(notesMatch) extracted.notes = notesMatch[1];
     }
 
-    // Populate the form fields automatically
+    // Populate form fields
     if(extracted.supplier) document.getElementById('inv-supplier').value = extracted.supplier;
     if(extracted.invoice_number) document.getElementById('inv-number').value = extracted.invoice_number;
     if(extracted.date) document.getElementById('inv-date').value = extracted.date;
     if(extracted.amount) document.getElementById('inv-amount').value = extracted.amount.toFixed(2);
     if(extracted.notes) document.getElementById('inv-notes').value = extracted.notes;
 
-    if(document.getElementById('invoice-extracted-badge')) {
-        document.getElementById('invoice-extracted-badge').style.display = 'block';
-    }
+    document.getElementById('invoice-extracted-badge').style.display = 'block';
     showToast('✅ Invoice details extracted');
 
   } catch(e) {
     console.error('Invoice scan error:', e);
     showToast('Could not read invoice — please fill in manually');
   } finally {
-    if (scanningEl) scanningEl.style.display = 'none';
+    document.getElementById('invoice-scanning').style.display = 'none';
   }
 }
 
@@ -4727,6 +4715,7 @@ async function deleteInvoicePhotoFromStorage(photoPath) {
 }
 
 // Override deleteInvoice to also remove photo from storage
+const _baseDeleteInvoice = deleteInvoice;
 async function deleteInvoice(invoiceId, equipId) {
   if(!confirm('Delete this invoice?')) return;
   try {
@@ -5223,11 +5212,11 @@ async function saveTool() {
 async function deleteTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id || !confirm("Permanently delete this tool from inventory?")) return;
-const tool = state.tools.find(t => t.id === id);
+
     try {
         await window._mpdb.from('shop_tools').delete().eq('id', id);
-       logAuditAction("Deleted Tool", `Removed ${tool ? tool.name : 'Unknown Tool'}`);
-        state.tools = state.tools.filter(t => t.id !== id);
+       logAuditAction("Deleted Tool", `Removed ${tool ? tool.name : 'Unknown Tool'}`);  
+      state.tools = state.tools.filter(t => t.id !== id);
         closeModal('tool-modal');
         renderTools();
         showToast("Tool deleted");
@@ -5518,9 +5507,162 @@ if (_baseSwitchChannel) {
         }
     };
 }
+
+// Function to send a log to the database
+async function logAuditAction(action, details) {
+  try {
+    await window._mpdb.from('audit_logs').insert({
+      user_name: currentUser?.name || 'System',
+      action: action,
+      details: details,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) { console.warn("Logging failed"); }
+}
+
+// Function to draw the logs on the screen
+async function renderAuditLogs() {
+  const container = document.getElementById('audit-log-list');
+  if(!container) return;
+  
+  try {
+    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(50);
+    if(!data || !data.length) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No logs found.</div>';
+        return;
+    }
+    container.innerHTML = data.map(log => `
+      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; font-size:12px">
+        <div style="color:var(--text3); width:70px; flex-shrink:0">${new Date(log.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        <div style="flex:1"><b>${log.user_name}</b>: ${log.action} <div style="font-size:11px; color:var(--text2)">${log.details}</div></div>
+      </div>
+    `).join('');
+  } catch(e) { container.innerHTML = 'Failed to load logs.'; }
+}
+async function refreshZerkMap(equipId) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e) return;
+
+    const switcher = document.getElementById('zerk-view-switcher');
+    const container = document.getElementById('zerk-map-container');
+    const noPhotos = document.getElementById('zerk-no-photos');
+
+    // 1. Check if photos exist in the database for this machine
+    if(!e.zerk_photos || e.zerk_photos.length === 0) {
+        if(container) container.style.display = 'none';
+        if(noPhotos) noPhotos.style.display = 'block';
+        return;
+    }
+
+    // 2. Photos exist, show the map UI
+    if(container) container.style.display = 'block';
+    if(noPhotos) noPhotos.style.display = 'none';
+
+    // 3. Rebuild the view buttons
+    if(switcher) {
+        switcher.innerHTML = e.zerk_photos.map((_, i) => `
+            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+        `).join('');
+    }
+
+    // 4. Fetch the dots from Supabase
+    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
+    allMachineZerks = data || [];
+    
+    // 5. Load the first side
+    changeZerkView('side_1', document.getElementById('btn-side-1'));
+}
+
+function changeZerkView(viewName, btn) {
+    currentZerkView = viewName;
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    
+    const img = document.getElementById('zerk-map-img');
+    const container = document.getElementById('zerk-map-container');
+
+    // FORCE THE IMAGE TO SHOW
+    if(equip && equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        img.src = equip.zerk_photos[viewIndex];
+        img.style.display = 'block'; // Make sure it's not hidden
+        if(container) container.style.display = 'block';
+    }
+
+    renderZerkDots();
+}
+function changeZerkView(viewName, btn) {
+    currentZerkView = viewName;
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    if(!equip) return;
+
+    // Highlight the active button
+    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.borderColor = 'var(--border2)';
+        b.style.color = 'var(--text)';
+    });
+    if(btn) {
+        btn.style.background = 'var(--accent-bg)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent-text)';
+    }
+
+    // Update the Map Image
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    const img = document.getElementById('zerk-map-img');
+    
+    // FIXED: Changed 'photos' to 'zerk_photos'
+    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        img.src = equip.zerk_photos[viewIndex];
+    }
+
+    // Redraw the dots for THIS specific view
+    renderZerkDots();
+    
+    // Hide the detail box from previous view
+    const detailBox = document.getElementById('zerk-detail-box');
+    if(detailBox) detailBox.style.display = 'none';
+}
+  
+function renderZerkDots() {
+    const overlay = document.getElementById('zerk-dots-overlay');
+    const svg = document.getElementById('zerk-svg-layer');
+    if(!overlay || !svg) return;
+
+    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
+    console.log("Zerk Map: Drawing " + visibleDots.length + " lines/dots.");
+    
+    // 1. CLEAR AND DRAW THE LINES
+    let svgContent = '';
+    visibleDots.forEach(z => {
+        // Only draw a line if the target and label are in different spots
+        if (Number(z.x_target) !== Number(z.x_pos) || Number(z.y_target) !== Number(z.y_pos)) {
+            svgContent += `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" class="zerk-line" style="stroke:yellow; stroke-width:0.8;" />`;
+        }
+    });
+    svg.innerHTML = svgContent;
+
+    // 2. DRAW THE LABELS AND TARGET DOTS
+    let html = visibleDots.map((z, index) => {
+        const isSingleDot = (Number(z.x_target) === Number(z.x_pos));
+        return `
+            ${!isSingleDot ? `<div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>` : ''}
+            <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
+                 ${index + 1}
+            </div>
+        `;
+    }).join('');
+
+    // 3. SHOW PREVIEW DOT (If currently drawing a line)
+    if (zerkDrawingStep === 2) {
+        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; border: 2px solid white; transform: translate(-50%, -50%) scale(2);"></div>`;
+    }
+
+    overlay.innerHTML = html;
+}
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
-     window.activeZerkId = zerkId;
+    
     // Find the specific dot data
     const z = allMachineZerks.find(x => x.id === zerkId);
     if(!z) return;
@@ -5541,7 +5683,7 @@ function showZerkInfo(event, zerkId) {
         // This connects the button to the function we just added
         delBtn.onclick = () => deleteZerk(z.id);
     }
-     window.activeZerkId = zerkId;
+    
     box.style.display = 'block';
 }
 async function handleMapClick(event) {
@@ -5574,6 +5716,33 @@ async function handleMapClick(event) {
             zerkDrawingStep = 1;
         }
     }
+}
+// DELETE AN ENTIRE PHOTO VIEW
+async function deleteZerkView() {
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e || !e.zerk_photos) return;
+
+    if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
+
+    // 1. Identify index (e.g., 'side_1' -> index 0)
+    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
+
+    try {
+        // 2. Remove photo from array
+        e.zerk_photos.splice(viewIndex, 1);
+
+        // 3. Remove associated dots from DB
+        await window._mpdb.from('grease_points').delete()
+            .eq('equip_id', equipId)
+            .eq('view_name', currentZerkView);
+
+        // 4. Update machine record
+        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
+        
+        showToast("View deleted ✓");
+        refreshZerkMap(equipId); // Full refresh of the zerk tab
+    } catch(err) { showToast("Delete failed"); }
 }
 
 async function deleteZerk(id) {
@@ -5624,7 +5793,7 @@ async function refreshZerkMap(equipId) {
 
 // UPDATE: changeZerkView to pull from zerk_photos array
 function changeZerkView(viewName, btn) {
-    window.currentZerkView = viewName;
+    currentZerkView = viewName;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
     
     document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => b.style.borderColor = 'var(--border2)');
@@ -5667,57 +5836,7 @@ function renderZerkDots() {
 
     overlay.innerHTML = html;
 }
-async function deleteZerkView() {
-    // 1. Setup variables
-    const equipId = window._currentDetailEquipId;
-    const e = state.equipment.find(x => x.id === equipId);
-    const viewToDelete = window.currentZerkView; // Tracks which side we are on
     
-    if(!e || !e.zerk_photos || !viewToDelete) {
-        alert("Please select a view to delete.");
-        return;
-    }
-
-    if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
-
-    try {
-        // 2. Find the index (e.g., 'side_1' -> index 0)
-        const viewParts = viewToDelete.split('_');
-        const viewIndex = parseInt(viewParts[viewParts.length - 1]) - 1;
-
-        if (viewIndex < 0 || viewIndex >= e.zerk_photos.length) {
-            console.error("Invalid view index derived from:", viewToDelete);
-            return;
-        }
-
-        // 3. Remove photo from local array
-        e.zerk_photos.splice(viewIndex, 1);
-
-        // 4. Delete associated dots from database
-        await window._mpdb.from('grease_points')
-            .delete()
-            .eq('equip_id', equipId)
-            .eq('view_name', viewToDelete);
-
-        // 5. Update the main equipment record in Supabase
-        await window._mpdb.from('equipment')
-            .update({ zerk_photos: e.zerk_photos })
-            .eq('id', equipId);
-        
-        showToast("View deleted ✓");
-        
-        // 6. Reset state and refresh the tab
-        window.currentZerkView = ""; 
-        document.getElementById('zerk-detail-box').style.display = 'none';
-        
-        if (typeof refreshZerkMap === 'function') {
-            refreshZerkMap(equipId);
-        }
-    } catch(err) { 
-        console.error("Critical delete error:", err);
-        showToast("Delete failed"); 
-    }
-}
 function renderDashboardObs(equipId) {
     const container = document.getElementById('eq-obs-list-dash');
     if(!container) return;
@@ -5966,8 +6085,7 @@ async function saveQuickLogHours() {
   if (!e || isNaN(val)) return;
 
   try {
-   e.hours = val; 
-   await persist('equipment', 'upsert', e);
+    await persist('equipment', 'upsert', e);
     await window._mpdb.from('meter_history').insert({ equip_id: equipId, reading: val, created_at: new Date(date).toISOString() });
     
     // THE LOG
@@ -6202,12 +6320,10 @@ async function renderServiceForecast() {
     let html = '';
     for (let e of state.equipment) {
         const pred = await getAdaptivePrediction(e.id);
-         if (pred && pred.status === 'ACTIVE' && pred.predictedDate) {
-            const days = Math.max(0, Math.ceil((pred.predictedDate - new Date()) / 86400000));
-            if (days > 30) continue;
+        if (pred && pred.status === 'ACTIVE' && pred.days <= 30) {
             html += `<div class="card" style="padding:10px; border-left:4px solid var(--warning)">
                 <div style="font-weight:600; font-size:13px">${e.name}</div>
-               <div style="color:var(--warning); font-weight:700; font-size:12px">Due in ~${days} days</div>
+                <div style="color:var(--warning); font-weight:700; font-size:12px">Due in ~${pred.days} days</div>
             </div>`;
         }
     }
