@@ -637,16 +637,29 @@ if (document.readyState === 'loading') {
 } else { 
     startApp(); 
 }
+function handleOnlineStatus() {
+  const offlineBanner = document.getElementById('offline-banner');
+  const chatOfflineBanner = document.getElementById('chat-offline-banner');
+  if (offlineBanner) offlineBanner.style.display = 'none';
+  if (chatOfflineBanner) chatOfflineBanner.style.display = 'none';
+  setSyncStatus('online');
+  if (offlineQueue.length) syncOfflineQueue();
+  if (document.getElementById('panel-chat')?.classList.contains('active') && typeof renderChat === 'function') {
+    renderChat();
+  }
+  syncStateIfNeeded(true).catch(()=>{});
+}
+function handleOfflineStatus() {
+  const offlineBanner = document.getElementById('offline-banner');
+  const chatOfflineBanner = document.getElementById('chat-offline-banner');
+  if (offlineBanner) offlineBanner.style.display = 'block';
+  if (chatOfflineBanner) chatOfflineBanner.style.display = 'block';
+  setSyncStatus('offline');
+}
 
-window.addEventListener('online',  () => { 
-    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='none';  
-    setSyncStatus('online'); 
-});
+window.addEventListener('online', handleOnlineStatus);
+window.addEventListener('offline', handleOfflineStatus);
 
-window.addEventListener('offline', () => { 
-    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='block'; 
-    setSyncStatus('offline'); 
-});
 // ============================================================
 // AUTH
 // ============================================================
@@ -837,7 +850,7 @@ async function startQRScanner() {
         const equipId = url.searchParams.get("equip");
         if (equipId) {
           stopQRScanner();
-          (equipId);
+         openEquipDetail(equipId);
         } else {
           showToast("Invalid QR Code");
         }
@@ -1111,21 +1124,6 @@ function closePhotoViewer(){ document.getElementById('photo-viewer').classList.r
 
 // MODALS
 // ============================================================
-function openModal(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = 'flex';
-        el.classList.add('open');
-
-        // Fill dropdowns if the modal needs them
-        if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            populateSelects();
-        }
-    } else {
-        console.error("Modal not found:", id);
-    }
-}
-
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -2072,10 +2070,18 @@ function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
   if(!modal) return;
 
-  // 1. Hide all tab-content divs
-  const contents = modal.querySelectorAll('.tab-content');
-  contents.forEach(c => c.style.display = 'none');
-
+ // 1. Hide all sections referenced by the tab buttons (works for task + equipment detail views)
+  const tabTargets = Array.from(modal.querySelectorAll('.tab'))
+    .map(b => {
+      const click = b.getAttribute('onclick') || '';
+      const match = click.match(/switchDetailTab\('([^']+)'/);
+      return match ? match[1] : null;
+    })
+    .filter(Boolean);
+  tabTargets.forEach(id => {
+    const section = document.getElementById(id);
+    if (section) section.style.display = 'none';
+  });
   // 2. Show the specific tab clicked
   const el = document.getElementById(tab);
   if(el) el.style.display = 'block';
@@ -2602,9 +2608,40 @@ function saveOfflineQueue() {
   try { localStorage.setItem('mp_offline_queue', JSON.stringify(offlineQueue)); } catch(e) {}
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
+async function safeUpsert(table, record) {
+  const payload = (record && typeof record === 'object') ? { ...record } : record;
 
+  if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'updated_at')) {
+    const rowId = payload.id || null;
+    const baseUpdatedAt = payload.updated_at || null;
+
+    if (rowId && baseUpdatedAt) {
+      const { data: currentRow, error: currentErr } = await window._mpdb
+        .from(table)
+        .select('id, updated_at')
+        .eq('id', rowId)
+        .maybeSingle();
+      if (currentErr) throw currentErr;
+      if (currentRow?.updated_at && currentRow.updated_at !== baseUpdatedAt) {
+        const conflictError = new Error('Record was modified by another user.');
+        conflictError.code = 'CONFLICT';
+        throw conflictError;
+      }
+    }
+
+    payload.updated_at = new Date().toISOString();
+  }
+
+  const { error } = await window._mpdb.from(table).upsert(payload);
+  if (error) throw error;
+
+  if (record && typeof record === 'object' && Object.prototype.hasOwnProperty.call(record, 'updated_at')) {
+    record.updated_at = payload.updated_at;
+  }
+}
 // Override persist to queue when offline
 const _origPersist = persist;
+
 async function safeUpsert(table, record) {
   const payload = (record && typeof record === 'object') ? { ...record } : record;
 
@@ -2682,8 +2719,6 @@ async function syncOfflineQueue() {
   else { showToast('All changes synced ✓'); setSyncStatus('online'); }
 }
 
-// Auto-sync when coming back online
-window.addEventListener('online', () => { if(offlineQueue.length) syncOfflineQueue(); });
 
 // Show queue banner on load if items pending
 if(offlineQueue.length) document.getElementById('offline-queue-banner').style.display = 'block';
@@ -2698,7 +2733,7 @@ async function markComplete(taskId) {
   // 1. Update machine hours (Helpful for maintenance tracking)
   const equip = state.equipment.find(e => e.id === t.equipId);
   const currentHours = equip ? equip.hours : 0;
-  
+   let meterReadingToLog = null;
   const newHours = prompt(`Update meter for ${equip?.name || 'machine'}?\nCurrent: ${currentHours.toLocaleString()} hrs\nEnter new reading (or cancel to skip):`);
   
   if (newHours !== null && newHours.trim() !== '') {
@@ -2708,12 +2743,11 @@ async function markComplete(taskId) {
         equip.hours = val;
         t.meter = val + ' hrs';
         await persist('equipment', 'upsert', equip);
-         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
-
-    const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
-    if (rule && equip) {
-        await window._mpdb.from('recurrence_rules').update({ last_generated_hours: equip.hours }).eq('id', rule.id);
-    }
+        meterReadingToLog = val;
+   const rule = state.recurrenceRules.find(r => r.equip_id === t.equipId && r.type === 'hours');
+        if (rule && equip) {
+            await window._mpdb.from('recurrence_rules').update({ last_generated_hours: equip.hours }).eq('id', rule.id);
+        }
       }
     }
   }
@@ -2730,7 +2764,13 @@ async function markComplete(taskId) {
     if (typeof logAuditAction === 'function') {
         logAuditAction("Completed WO", `${t.name} on ${equip?.name || 'Unknown'}`);
     }
-
+if (equip && meterReadingToLog !== null) {
+      await window._mpdb.from('meter_history').insert({
+        equip_id: equip.id,
+        reading: meterReadingToLog,
+        status_at_reading: equip.status
+      });
+    }
     // 4. Trigger Recurrence (Checks if a new 500hr service etc. needs to be created)
     await runRecurrenceEngine();
     
@@ -2748,12 +2788,6 @@ async function markComplete(taskId) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
-
-await window._mpdb.from('meter_history').insert({ 
-    equip_id: equipId, 
-    reading: val, 
-    status_at_reading: e.status 
-});
 }
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
@@ -3147,14 +3181,6 @@ function previewTemplate(id){
   document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
 }
-function saveTpl(){
-  const name=document.getElementById('tpl-name').value.trim();if(!name){showToast('Enter a name');return;}
-  const items=document.getElementById('tpl-items').value.split('\n').filter(Boolean);if(!items.length){showToast('Add checklist items');return;}
-  const tpl={id:'tpl-'+uid(),name,model:document.getElementById('tpl-model').value.trim(),type:document.getElementById('tpl-type').value.trim(),items};
-  state.checklistTemplates.push(tpl);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}
-  closeModal('tpl-modal');renderChecklistTemplates();showToast('Template saved ✓');
-  ['tpl-name','tpl-model','tpl-type','tpl-items'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-}
 function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}renderChecklistTemplates();showToast('Template deleted');}
 function applyTemplate(){
   const tplId=document.getElementById('tpl-selector')?.value;if(!tplId){showToast('Select a template first');return;}
@@ -3467,7 +3493,6 @@ async function renderUsersTable() {
     }
 }
 
-async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
 async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
 async function deleteUser(id) {
     // Look up the name from the cache we saved in renderUsersTable
@@ -3671,18 +3696,7 @@ async function sendChatMessage(){
     showToast('Connection error');
   }
 } // This is the end of the function
-function handleChatInput(el){
-  el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';
-  const val=el.value,atIdx=val.lastIndexOf('@');
-  if(atIdx>=0&&(atIdx===val.length-1||/([\w]+)$/.test(val.slice(atIdx+1)))){
-    const query=val.slice(atIdx+1).toLowerCase();
-    const names=[...new Set([...(state.observations||[]).map(o=>o.author),...(state.chatMessages||[]).map(m=>m.author_name||m.author),currentUser.name])].filter(n=>n&&n.toLowerCase().includes(query));
-    const dd=document.getElementById('mention-dropdown');
-    if(dd&&names.length){dd.style.display='block';dd.innerHTML=names.slice(0,6).map(n=>`<div style="padding:6px 10px;cursor:pointer;border-radius:4px;font-size:13px" onmousedown="insertMention('${n}')" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">@${n}</div>`).join('');}
-    else if(dd)dd.style.display='none';
-  }else{const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';}
-}
-function insertMention(name){const i=document.getElementById('chat-input');if(!i)return;const v=i.value;const a=v.lastIndexOf('@');i.value=v.slice(0,a)+'@'+name.replace(/ /g,'')+' ';const dd=document.getElementById('mention-dropdown');if(dd)dd.style.display='none';i.focus();}
+
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
     const menu = document.getElementById('chat-channel-mobile-menu');
@@ -3983,11 +3997,6 @@ function updateUnreadBadge() {
         topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
     }
 }
-
-
-window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
-window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
-
 // ── BUG / SUGGESTION ─────────────────────────────────────────
 
 // ── PULLEQUIPSUPPLIERS with template selector ─────────────────
@@ -4388,28 +4397,6 @@ async function deleteObservation(obsId, equipId) {
         showToast("Observation deleted");
     } catch(e) { showToast("Failed"); }
 }
-
-function editObservation(obsId) {
-    const o = state.observations.find(x => x.id === obsId);
-    if(!o) return;
-
-    const newText = prompt("Edit Observation:", o.body);
-    if(newText === null || newText.trim() === "") return;
-
-    const newSev = prompt("Change Severity? (info, watch, or critical):", o.severity);
-    const validSevs = ['info', 'watch', 'critical'];
-    
-    o.body = newText;
-    if(validSevs.includes(newSev)) o.severity = newSev;
-
-    window._mpdb.from('observations').update({
-        body: o.body,
-        severity: o.severity
-    }).eq('id', obsId).then(() => {
-        refreshObsList(o.equip_id);
-        showToast("Updated ✓");
-    });
-}
 async function saveEditObservation(obsId, equipId) {
   const body = document.getElementById('edit-obs-body')?.value.trim();
   const severity = document.getElementById('edit-obs-severity')?.value;
@@ -4505,8 +4492,6 @@ function handleInvoiceDrop(event) {
   input.files = dt.files;
   handleInvoicePhoto(input);
 }
-
-async function scanInvoiceWithAI(imageData) {
   document.getElementById('invoice-scanning').style.display='block';
   
   try {
@@ -4715,7 +4700,6 @@ async function deleteInvoicePhotoFromStorage(photoPath) {
 }
 
 // Override deleteInvoice to also remove photo from storage
-const _baseDeleteInvoice = deleteInvoice;
 async function deleteInvoice(invoiceId, equipId) {
   if(!confirm('Delete this invoice?')) return;
   try {
@@ -5212,11 +5196,11 @@ async function saveTool() {
 async function deleteTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id || !confirm("Permanently delete this tool from inventory?")) return;
-
+const tool = state.tools.find(t => t.id === id);
     try {
         await window._mpdb.from('shop_tools').delete().eq('id', id);
-       logAuditAction("Deleted Tool", `Removed ${tool ? tool.name : 'Unknown Tool'}`);  
-      state.tools = state.tools.filter(t => t.id !== id);
+       logAuditAction("Deleted Tool", `Removed ${tool ? tool.name : 'Unknown Tool'}`);
+        state.tools = state.tools.filter(t => t.id !== id);
         closeModal('tool-modal');
         renderTools();
         showToast("Tool deleted");
@@ -5506,159 +5490,6 @@ if (_baseSwitchChannel) {
             if (sidebar) sidebar.classList.remove('open');
         }
     };
-}
-
-// Function to send a log to the database
-async function logAuditAction(action, details) {
-  try {
-    await window._mpdb.from('audit_logs').insert({
-      user_name: currentUser?.name || 'System',
-      action: action,
-      details: details,
-      created_at: new Date().toISOString()
-    });
-  } catch(e) { console.warn("Logging failed"); }
-}
-
-// Function to draw the logs on the screen
-async function renderAuditLogs() {
-  const container = document.getElementById('audit-log-list');
-  if(!container) return;
-  
-  try {
-    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(50);
-    if(!data || !data.length) {
-        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No logs found.</div>';
-        return;
-    }
-    container.innerHTML = data.map(log => `
-      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; font-size:12px">
-        <div style="color:var(--text3); width:70px; flex-shrink:0">${new Date(log.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-        <div style="flex:1"><b>${log.user_name}</b>: ${log.action} <div style="font-size:11px; color:var(--text2)">${log.details}</div></div>
-      </div>
-    `).join('');
-  } catch(e) { container.innerHTML = 'Failed to load logs.'; }
-}
-async function refreshZerkMap(equipId) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e) return;
-
-    const switcher = document.getElementById('zerk-view-switcher');
-    const container = document.getElementById('zerk-map-container');
-    const noPhotos = document.getElementById('zerk-no-photos');
-
-    // 1. Check if photos exist in the database for this machine
-    if(!e.zerk_photos || e.zerk_photos.length === 0) {
-        if(container) container.style.display = 'none';
-        if(noPhotos) noPhotos.style.display = 'block';
-        return;
-    }
-
-    // 2. Photos exist, show the map UI
-    if(container) container.style.display = 'block';
-    if(noPhotos) noPhotos.style.display = 'none';
-
-    // 3. Rebuild the view buttons
-    if(switcher) {
-        switcher.innerHTML = e.zerk_photos.map((_, i) => `
-            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
-        `).join('');
-    }
-
-    // 4. Fetch the dots from Supabase
-    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
-    allMachineZerks = data || [];
-    
-    // 5. Load the first side
-    changeZerkView('side_1', document.getElementById('btn-side-1'));
-}
-
-function changeZerkView(viewName, btn) {
-    currentZerkView = viewName;
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
-    
-    const img = document.getElementById('zerk-map-img');
-    const container = document.getElementById('zerk-map-container');
-
-    // FORCE THE IMAGE TO SHOW
-    if(equip && equip.zerk_photos && equip.zerk_photos[viewIndex]) {
-        img.src = equip.zerk_photos[viewIndex];
-        img.style.display = 'block'; // Make sure it's not hidden
-        if(container) container.style.display = 'block';
-    }
-
-    renderZerkDots();
-}
-function changeZerkView(viewName, btn) {
-    currentZerkView = viewName;
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    if(!equip) return;
-
-    // Highlight the active button
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.borderColor = 'var(--border2)';
-        b.style.color = 'var(--text)';
-    });
-    if(btn) {
-        btn.style.background = 'var(--accent-bg)';
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.color = 'var(--accent-text)';
-    }
-
-    // Update the Map Image
-    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
-    const img = document.getElementById('zerk-map-img');
-    
-    // FIXED: Changed 'photos' to 'zerk_photos'
-    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
-        img.src = equip.zerk_photos[viewIndex];
-    }
-
-    // Redraw the dots for THIS specific view
-    renderZerkDots();
-    
-    // Hide the detail box from previous view
-    const detailBox = document.getElementById('zerk-detail-box');
-    if(detailBox) detailBox.style.display = 'none';
-}
-  
-function renderZerkDots() {
-    const overlay = document.getElementById('zerk-dots-overlay');
-    const svg = document.getElementById('zerk-svg-layer');
-    if(!overlay || !svg) return;
-
-    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
-    console.log("Zerk Map: Drawing " + visibleDots.length + " lines/dots.");
-    
-    // 1. CLEAR AND DRAW THE LINES
-    let svgContent = '';
-    visibleDots.forEach(z => {
-        // Only draw a line if the target and label are in different spots
-        if (Number(z.x_target) !== Number(z.x_pos) || Number(z.y_target) !== Number(z.y_pos)) {
-            svgContent += `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" class="zerk-line" style="stroke:yellow; stroke-width:0.8;" />`;
-        }
-    });
-    svg.innerHTML = svgContent;
-
-    // 2. DRAW THE LABELS AND TARGET DOTS
-    let html = visibleDots.map((z, index) => {
-        const isSingleDot = (Number(z.x_target) === Number(z.x_pos));
-        return `
-            ${!isSingleDot ? `<div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>` : ''}
-            <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
-                 ${index + 1}
-            </div>
-        `;
-    }).join('');
-
-    // 3. SHOW PREVIEW DOT (If currently drawing a line)
-    if (zerkDrawingStep === 2) {
-        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; border: 2px solid white; transform: translate(-50%, -50%) scale(2);"></div>`;
-    }
-
-    overlay.innerHTML = html;
 }
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
@@ -6085,7 +5916,8 @@ async function saveQuickLogHours() {
   if (!e || isNaN(val)) return;
 
   try {
-    await persist('equipment', 'upsert', e);
+   e.hours = val; 
+   await persist('equipment', 'upsert', e);
     await window._mpdb.from('meter_history').insert({ equip_id: equipId, reading: val, created_at: new Date(date).toISOString() });
     
     // THE LOG
@@ -6320,10 +6152,12 @@ async function renderServiceForecast() {
     let html = '';
     for (let e of state.equipment) {
         const pred = await getAdaptivePrediction(e.id);
-        if (pred && pred.status === 'ACTIVE' && pred.days <= 30) {
+         if (pred && pred.status === 'ACTIVE' && pred.predictedDate) {
+            const days = Math.max(0, Math.ceil((pred.predictedDate - new Date()) / 86400000));
+            if (days > 30) continue;
             html += `<div class="card" style="padding:10px; border-left:4px solid var(--warning)">
                 <div style="font-weight:600; font-size:13px">${e.name}</div>
-                <div style="color:var(--warning); font-weight:700; font-size:12px">Due in ~${pred.days} days</div>
+               <div style="color:var(--warning); font-weight:700; font-size:12px">Due in ~${days} days</div>
             </div>`;
         }
     }
