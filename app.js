@@ -28,18 +28,15 @@ async function refreshAllDropdowns() {
         ]);
 
         // 2. Map the data into HTML strings
- const suppliers = supRes.data || [];
-        const equipment = equipRes.data || [];
-        const users = userRes.data || [];
-     
-     const supHTML = '<option value="">— Select Supplier —</option>' + 
-         suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');  
+        const supHTML = '<option value="">— Select Supplier —</option>' + 
+            supRes.data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
             
         const equipHTML = '<option value="">— Select Equipment —</option>' + 
-         equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join('');   
+            equipRes.data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
 
         const userHTML = '<option value="">— Select User —</option>' + 
-       users.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
+            userRes.data.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
+
         // 3. Find EVERY dropdown in the app and fill them NOW
         // (Use the IDs from your 8,000 lines here)
         const selectors = {
@@ -88,6 +85,81 @@ async function populateSupplierDropdown() {
         console.error("❌ Supplier Load Error:", e.message);
     }
 }
+async function deleteGeneralItem(id, tableType) {
+    console.log("🗑️ Delete attempt initiated...");
+    console.log("ID:", id, "Type:", tableType);
+
+    // 1. Table Map - Make sure these match your Supabase table names!
+    const tableMap = {
+        'tasks': 'tasks',          // Is your work order table named 'tasks'?
+        'schedules': 'schedules',  // Is your calendar table named 'schedules'?
+        'absences': 'staff_absences'
+    };
+    
+    const tableName = tableMap[tableType];
+    
+    if (!tableName) {
+        console.error("❌ Error: Could not find a table for type:", tableType);
+        return;
+    }
+
+    // 2. Confirmation
+    if (!confirm("Are you sure you want to permanently delete this item?")) {
+        console.log("Delete cancelled by user.");
+        return;
+    }
+
+    try {
+        // 3. Talk to Supabase
+        const { error } = await window._mpdb
+            .from(tableName)
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error("❌ Supabase Error:", error.message);
+            alert("Delete failed: " + error.message);
+            return;
+        }
+
+        console.log("✅ Successfully deleted from Database.");
+
+        // 4. Update local memory so it disappears from the screen instantly
+        // This removes the item from the lists your app is currently looking at
+        if (tableType === 'tasks' && typeof state !== 'undefined' && state.tasks) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+        }
+        if (tableType === 'schedules' && typeof state !== 'undefined' && state.schedules) {
+            state.schedules = state.schedules.filter(s => s.id !== id);
+        }
+        if (tableType === 'absences' && typeof staffAbsences !== 'undefined') {
+            staffAbsences = staffAbsences.filter(a => a.id !== id);
+        }
+
+        // 5. Refresh UI
+        alert("Item deleted successfully.");
+        closeModal('cal-action-modal'); // Close the popup
+        
+        if (typeof renderCalendar === 'function') {
+            renderCalendar(); // Redraw the calendar background
+        }
+
+    } catch (e) {
+        console.error("❌ Critical JS Error during delete:", e);
+        alert("An unexpected error occurred. Check the console.");
+    }
+  try {
+        const { data: suppliers } = await window._mpdb
+            .from('suppliers').select('id, name').order('name');
+
+        const dropdown = document.getElementById('p-supplier-select');
+        if (dropdown && suppliers) {
+            let html = '<option value="">— Select Supplier —</option>';
+            suppliers.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
+            dropdown.innerHTML = html;
+        }
+    } catch (e) { console.error(e); }
+}
 
 async function deleteGeneralItem(id, tableType) {
     const tableMap = {
@@ -117,7 +189,8 @@ async function deleteGeneralItem(id, tableType) {
 
         console.log("✅ Database delete successful. Now clearing local memory...");
 
-       
+        // --- CRITICAL: CLEAR LOCAL MEMORY ---
+        // We search through 'state' and 'staffAbsences' to remove the item manually
         if (typeof state !== 'undefined') {
             if (state.tasks) state.tasks = state.tasks.filter(item => item.id !== id);
             if (state.schedules) state.schedules = state.schedules.filter(item => item.id !== id);
@@ -540,7 +613,7 @@ async function uploadZerkView(input) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
 
-    showToast("⚙️ Saving photo...");
+    showToast("⚙️ Processing image...");
     
     try {
         const base64 = await compressImage(await new Promise(res => {
@@ -550,16 +623,20 @@ async function uploadZerkView(input) {
         if(!e.zerk_photos) e.zerk_photos = [];
         e.zerk_photos.push(base64);
 
-        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
+        // SAVE TO DATABASE
+        const { error } = await window._mpdb
+            .from('equipment')
+            .update({ zerk_photos: e.zerk_photos })
+            .eq('id', equipId);
+
+        if (error) throw error;
 
         showToast("View added ✓");
-        
-        // --- THE FIX: Force refresh and switch to the new photo ---
-        await refreshZerkMap(equipId); 
-        const newViewName = `side_${e.zerk_photos.length}`;
-        changeZerkView(newViewName, document.getElementById(`btn-side-${e.zerk_photos.length}`));
-
-    } catch(err) { console.error(err); showToast("Upload failed"); }
+        refreshZerkMap(equipId);
+    } catch(err) { 
+        console.error(err);
+        showToast("Upload failed"); 
+    }
     input.value = "";
 }
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
@@ -800,12 +877,7 @@ async function doRegister() {
 
 async function signOut() {
   await destroySession();
- if (autoSyncTimer) {
-    clearInterval(autoSyncTimer);
-    autoSyncTimer = null;
-  }
-  stopRealtimeSync(); 
- localStorage.removeItem('mp_session');
+  localStorage.removeItem('mp_session');
   currentUser=null;
   document.getElementById('app').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
@@ -882,19 +954,11 @@ function quickLogHours(equipId) {
 // STATE
 // ============================================================
 let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
-let isLoadingState = false;
-let lastStateSyncAt = 0;
-let autoSyncTimer = null;
-let syncListenersBound = false;
-let realtimeSyncChannel = null;
-let realtimeSyncDebounceTimer = null;
-const AUTO_SYNC_MS = 30000;
+
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 async function loadState() {
-  if (isLoadingState) return;
-  isLoadingState = true; 
- setSyncStatus('syncing');
+  setSyncStatus('syncing');
   try {
     // 1. Fetch all 10 main tables (Matches the order in state)
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
@@ -944,14 +1008,11 @@ if(templates && templates.length > 0) {
 }
     // 3. Calculate metrics
     state.monthlyCosts = computeMonthlyCosts();
-     lastStateSyncAt = Date.now();
-   setSyncStatus('online');
+    setSyncStatus('online');
 
   } catch(e) { 
     console.error('Load error:', e); 
     setSyncStatus('offline'); 
-  } finally {
-    isLoadingState = false;
   }
 
   // 4. Load observations (kept separate for better performance)
@@ -959,22 +1020,6 @@ if(templates && templates.length > 0) {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
   } catch(e) {}
-}
-async function syncStateIfNeeded(force = false) {
-  if (!currentUser || !window._mpdb || !navigator.onLine) return;
-  if (!force && (Date.now() - lastStateSyncAt) < AUTO_SYNC_MS) return;
-  await loadState();
-  applyUserGroupFilter();
-  if (typeof renderChat === 'function' && document.getElementById('panel-chat')?.classList.contains('active')) {
-    renderChat();
-  }
-}
-
-function startAutoSync() {
-  if (autoSyncTimer) clearInterval(autoSyncTimer);
-  autoSyncTimer = setInterval(() => {
-    syncStateIfNeeded(false).catch(err => console.warn('Auto sync failed:', err));
-  }, AUTO_SYNC_MS);
 }
 function computeMonthlyCosts() {
   const now=new Date();
@@ -1027,7 +1072,7 @@ async function runRecurrenceEngine() {
       const exists=state.tasks.find(t=>t.name===rule.name && t.due===wo.due && t.equipId===rule.equip_id);
       if (!exists) {
         state.tasks.push(wo);
-        await safeUpsert('tasks', wo);
+        await window._mpdb.from('tasks').upsert(wo);
         // Update rule next_due
         let next=new Date(nextDue);
         if (rule.interval_unit==='day')   next.setDate(next.getDate()+rule.interval_value);
@@ -2189,35 +2234,29 @@ function openEquipDetail(id){
         </div>
       </div>
     </div>
-<div id="eq-zerks" class="tab-content" style="display:none">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
-    <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
-    
-    <!-- THE HIDDEN INPUT (Added this back in) -->
-    <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
 
-    <button id="btn-delete-view" class="btn btn-danger btn-sm" style="background:#dc3545 !important; display:none;" onclick="deleteZerkView()">🗑️ Delete View</button>
-    
-    <!-- This button will now work because it can find 'zerk-upload-input' -->
-    <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
-  </div>
-
-  <div id="zerk-map-container" style="position:relative; width:fit-content; margin: 0 auto; background:#000; border-radius:12px; overflow:hidden;">
-      <img id="zerk-map-img" src="" style="width:auto; max-height:65vh; display:block; opacity:0.9"/>
-      <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
-      <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
-
-      <!-- THE FLOATING CARD -->
-      <div id="zerk-detail-box" style="display:none; position:absolute; bottom:15px; left:15px; z-index:200; width:220px; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); color:white;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start">
-            <div id="zerk-label" style="font-weight:700; color:#ffec00; text-transform:uppercase; font-size:12px;"></div>
-            <button id="zerk-delete-btn" class="btn btn-danger btn-sm" style="font-size:18px; background:none; border:none; color:#ff6b6b; cursor:pointer; line-height:1;">×</button>
+    <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
+    <div id="eq-zerks" class="tab-content" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap">
+        <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
+        <div class="sub-toggle">
+            <button class="btn btn-sm active" id="mode-dot" onclick="setZerkMode('dot')">Point Only</button>
+            <button class="btn btn-sm" id="mode-line" onclick="setZerkMode('line')">Pointer Line</button>
         </div>
-        <div id="zerk-instr" style="font-size:11px; color:#ddd; margin-top:5px; line-height:1.4"></div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
       </div>
-  </div>
-</div>
-   
+      <div id="zerk-map-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; background:#000; border:1px solid var(--border)">
+          <img id="zerk-map-img" src="" style="width:100%; display:block; opacity:0.9"/>
+          <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
+          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100; cursor:crosshair" onclick="handleMapClick(event)"></div>
+      </div>
+      <div id="zerk-detail-box" style="display:none; margin-top:12px; padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center"><div id="zerk-label" style="font-weight:700"></div><button class="btn btn-danger btn-sm" id="zerk-delete-btn" style="font-size:10px" onclick="deleteZerk()">Delete</button></div>
+        <div id="zerk-instr" style="font-size:13px; color:var(--text2); margin-top:4px"></div>
+      </div>
+      <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+    </div>
+
     <!-- 3. FULL HISTORY VIEW -->
     <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list"></div></div>
 
@@ -2260,7 +2299,6 @@ function openEquipDetail(id){
   renderMiniTimeline(id);
   renderQuickSpecs(id);
 }
-
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
   if(!s) return;
@@ -2608,37 +2646,6 @@ function saveOfflineQueue() {
 
 // Override persist to queue when offline
 const _origPersist = persist;
-async function safeUpsert(table, record) {
-  const payload = (record && typeof record === 'object') ? { ...record } : record;
-
-  if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'updated_at')) {
-    const rowId = payload.id || null;
-    const baseUpdatedAt = payload.updated_at || null;
-
-    if (rowId && baseUpdatedAt) {
-      const { data: currentRow, error: currentErr } = await window._mpdb
-        .from(table)
-        .select('id, updated_at')
-        .eq('id', rowId)
-        .maybeSingle();
-      if (currentErr) throw currentErr;
-      if (currentRow?.updated_at && currentRow.updated_at !== baseUpdatedAt) {
-        const conflictError = new Error('Record was modified by another user.');
-        conflictError.code = 'CONFLICT';
-        throw conflictError;
-      }
-    }
-
-    payload.updated_at = new Date().toISOString();
-  }
-
-  const { error } = await window._mpdb.from(table).upsert(payload);
-  if (error) throw error;
-
-  if (record && typeof record === 'object' && Object.prototype.hasOwnProperty.call(record, 'updated_at')) {
-    record.updated_at = payload.updated_at;
-  }
-}
 async function persist(table, action, record) {
   if(!navigator.onLine) {
     offlineQueue.push({ table, action, record, ts: Date.now() });
@@ -2647,16 +2654,11 @@ async function persist(table, action, record) {
     return;
   }
   try {
-    if(action==='upsert') await safeUpsert(table, record);
+    if(action==='upsert') await window._mpdb.from(table).upsert(record);
     if(action==='delete') await window._mpdb.from(table).delete().eq('id', record.id);
     setSyncStatus('online'); showToast('Saved & synced ✓');
   } catch(e) {
-     if (e && e.code === 'CONFLICT') {
-      showToast('Someone else updated this item first. Loading latest data...');
-      await syncStateIfNeeded(true);
-      return;
-    }
-   offlineQueue.push({ table, action, record, ts: Date.now() });
+    offlineQueue.push({ table, action, record, ts: Date.now() });
     saveOfflineQueue();
     setSyncStatus('offline'); showToast('Saved locally — will sync when online');
   }
@@ -2668,16 +2670,9 @@ async function syncOfflineQueue() {
   const failed = [];
   for(const item of offlineQueue) {
     try {
-      if(item.action==='upsert') await safeUpsert(item.table, item.record);
+      if(item.action==='upsert') await window._mpdb.from(item.table).upsert(item.record);
       if(item.action==='delete') await window._mpdb.from(item.table).delete().eq('id', item.record.id);
-    } catch(e) {
-      if (e && e.code === 'CONFLICT') {
-        showToast('A queued change conflicted with a newer edit. Latest data loaded.');
-        await syncStateIfNeeded(true);
-        continue;
-      }
-      failed.push(item);
-    }
+    } catch(e) { failed.push(item); }
   }
   offlineQueue = failed;
   saveOfflineQueue();
@@ -2903,7 +2898,7 @@ async function createBulkWO() {
   for(const equipId of checked) {
     const record = { id:uid(), name, equipId, assign:'', priority, due, cost:0, meter:'', status:'Open', notes, photos:[], checklist:[] };
     state.tasks.push(record);
-     await safeUpsert('tasks', record);
+    await window._mpdb.from('tasks').upsert(record);
     created++;
   }
   document.getElementById('bulk-wo-card').style.display='none';
@@ -4119,14 +4114,6 @@ async function enterApp(){
   await initChat();
   updateLastSeen();
   setInterval(updateLastSeen, 2 * 60 * 1000);
-startAutoSync();
-  if (!syncListenersBound) {
-    window.addEventListener('focus', () => syncStateIfNeeded(true).catch(()=>{}));
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') syncStateIfNeeded(true).catch(()=>{});
-    });
-    syncListenersBound = true;
-  }
 }
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
@@ -4906,7 +4893,27 @@ function renderTools() {
     }).join('');
 }
 
-
+async function saveTool() {
+    const id = document.getElementById('tool-edit-id').value;
+    const tool = {
+        id: id || uid(),
+        name: document.getElementById('tool-name').value.trim(),
+        category: document.getElementById('tool-cat').value,
+        location: document.getElementById('tool-loc').value.trim(),
+        health: parseInt(document.getElementById('tool-health').value),
+        is_lost: document.getElementById('tool-lost').checked,
+        last_updated: new Date().toISOString()
+    };
+    if(!tool.name) return;
+    await window._mpdb.from('shop_tools').upsert(tool);
+    const idx = state.tools.findIndex(x => x.id === tool.id);
+    if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+        logAuditAction("Tool Update", `${name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
+    if(tool.health <= 40 || tool.is_lost) {
+        await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
+    }
+    closeModal('tool-modal'); renderTools();
+}
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
@@ -5189,7 +5196,7 @@ async function saveTool() {
     };
 
     try {
-       await safeUpsert('shop_tools', tool);
+        await window._mpdb.from('shop_tools').upsert(tool);
         
         // Update local memory
         const idx = state.tools.findIndex(x => x.id === tool.id);
@@ -5542,7 +5549,6 @@ async function renderAuditLogs() {
     `).join('');
   } catch(e) { container.innerHTML = 'Failed to load logs.'; }
 }
-// 1. Updated Refresh Function
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
@@ -5550,27 +5556,22 @@ async function refreshZerkMap(equipId) {
     const switcher = document.getElementById('zerk-view-switcher');
     const container = document.getElementById('zerk-map-container');
     const noPhotos = document.getElementById('zerk-no-photos');
-    const delViewBtn = document.getElementById('btn-delete-view'); // Target the red trash button
 
-    // 1. Check if photos exist
+    // 1. Check if photos exist in the database for this machine
     if(!e.zerk_photos || e.zerk_photos.length === 0) {
         if(container) container.style.display = 'none';
-        if(delViewBtn) delViewBtn.style.display = 'none'; // Hide delete if no photo
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // 2. Photos exist, show UI and the Delete View button
+    // 2. Photos exist, show the map UI
     if(container) container.style.display = 'block';
-    if(delViewBtn) delViewBtn.style.display = 'block'; // SHOW DELETE VIEW BUTTON
     if(noPhotos) noPhotos.style.display = 'none';
 
     // 3. Rebuild the view buttons
     if(switcher) {
         switcher.innerHTML = e.zerk_photos.map((_, i) => `
-            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" 
-                style="border: 1px solid var(--border);"
-                onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
         `).join('');
     }
 
@@ -5578,38 +5579,10 @@ async function refreshZerkMap(equipId) {
     const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
     allMachineZerks = data || [];
     
-    // 5. Load the first side immediately
+    // 5. Load the first side
     changeZerkView('side_1', document.getElementById('btn-side-1'));
 }
 
-// 2. Updated Change View Function
-function changeZerkView(viewName, btn) {
-    // CRITICAL: Update the global variable so renderZerkDots knows which dots to show
-    currentZerkView = viewName; 
-    
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    
-    // UI highlight for buttons
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => b.style.borderColor = 'rgba(255,255,255,0.1)');
-    if(btn) btn.style.borderColor = '#007bff';
-
-    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
-    const img = document.getElementById('zerk-map-img');
-    
-    if(equip && equip.zerk_photos && equip.zerk_photos[viewIndex]) {
-        img.src = equip.zerk_photos[viewIndex];
-    }
-
-    // REDRAW THE DOTS
-    if (typeof renderZerkDots === 'function') {
-        renderZerkDots();
-    }
-    
-    // Hide the info card when switching views
-    if(document.getElementById('zerk-detail-box')) {
-        document.getElementById('zerk-detail-box').style.display = 'none';
-    }
-}
 function changeZerkView(viewName, btn) {
     currentZerkView = viewName;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
@@ -5666,21 +5639,20 @@ function renderZerkDots() {
     const svg = document.getElementById('zerk-svg-layer');
     if(!overlay || !svg) return;
 
-    // We use the window variable to ensure we have the correct side (e.g. side_1)
-    const activeView = window.currentZerkView || 'side_1';
-    const visibleDots = allMachineZerks.filter(z => z.view_name === activeView);
+    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
+    console.log("Zerk Map: Drawing " + visibleDots.length + " lines/dots.");
     
-    console.log(`Rendering ${visibleDots.length} dots for view: ${activeView}`);
-
-    // 1. Draw Lines
-    svg.innerHTML = visibleDots.map(z => {
+    // 1. CLEAR AND DRAW THE LINES
+    let svgContent = '';
+    visibleDots.forEach(z => {
+        // Only draw a line if the target and label are in different spots
         if (Number(z.x_target) !== Number(z.x_pos) || Number(z.y_target) !== Number(z.y_pos)) {
-            return `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" style="stroke:#ffec00; stroke-width:1.5;" />`;
+            svgContent += `<line x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" class="zerk-line" style="stroke:yellow; stroke-width:0.8;" />`;
         }
-        return '';
-    }).join('');
+    });
+    svg.innerHTML = svgContent;
 
-    // 2. Draw Labels and Target Dots
+    // 2. DRAW THE LABELS AND TARGET DOTS
     let html = visibleDots.map((z, index) => {
         const isSingleDot = (Number(z.x_target) === Number(z.x_pos));
         return `
@@ -5691,9 +5663,9 @@ function renderZerkDots() {
         `;
     }).join('');
 
-    // 3. Show drawing preview
-    if (typeof zerkDrawingStep !== 'undefined' && zerkDrawingStep === 2) {
-        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; transform: translate(-50%, -50%) scale(2); border: 1px solid #000;"></div>`;
+    // 3. SHOW PREVIEW DOT (If currently drawing a line)
+    if (zerkDrawingStep === 2) {
+        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; border: 2px solid white; transform: translate(-50%, -50%) scale(2);"></div>`;
     }
 
     overlay.innerHTML = html;
@@ -5756,25 +5728,43 @@ async function handleMapClick(event) {
     }
 }
 // DELETE AN ENTIRE PHOTO VIEW
-async function deleteZerk(id) {
-    if(!id || !confirm("Delete this grease point?")) return;
+async function deleteZerkView() {
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e || !e.zerk_photos) return;
+
+    if(!confirm("Delete this photo and ALL grease points pinned to it?")) return;
+
+    // 1. Identify index (e.g., 'side_1' -> index 0)
+    const viewIndex = parseInt(currentZerkView.split('_')[1]) - 1;
+
     try {
-        await window._mpdb.from('grease_points').delete().eq('id', id);
+        // 2. Remove photo from array
+        e.zerk_photos.splice(viewIndex, 1);
+
+        // 3. Remove associated dots from DB
+        await window._mpdb.from('grease_points').delete()
+            .eq('equip_id', equipId)
+            .eq('view_name', currentZerkView);
+
+        // 4. Update machine record
+        await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
         
-        // 1. Remove from local memory instantly
-        allMachineZerks = allMachineZerks.filter(z => z.id !== id);
-        
-        // 2. Hide the info card
-        document.getElementById('zerk-detail-box').style.display = 'none';
-        
-        // 3. FORCE REDRAW NOW
-        renderZerkDots(); 
-        
-        showToast("Point removed ✓");
-    } catch(e) { console.error(e); }
+        showToast("View deleted ✓");
+        refreshZerkMap(equipId); // Full refresh of the zerk tab
+    } catch(err) { showToast("Delete failed"); }
 }
 
-
+async function deleteZerk(id) {
+    if(!confirm("Delete this grease point?")) return;
+    try {
+        await window._mpdb.from('grease_points').delete().eq('id', id);
+        allMachineZerks = allMachineZerks.filter(z => z.id !== id);
+        renderZerkDots();
+        document.getElementById('zerk-detail-box').style.display = 'none';
+        showToast("Point removed");
+    } catch(e) { console.error(e); }
+}
   
 // UPDATE: refreshZerkMap to use the new zerk_photos field
 async function refreshZerkMap(equipId) {
@@ -6214,8 +6204,8 @@ async function saveTpl() {
 
   try {
     // Save to Supabase
+    await window._mpdb.from('checklist_templates').upsert(record);
 
-await safeUpsert('checklist_templates', record);
     // Update local memory
     const idx = state.checklistTemplates.findIndex(t => t.id === record.id);
     if(idx > -1) state.checklistTemplates[idx] = record;
