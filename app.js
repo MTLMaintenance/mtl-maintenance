@@ -5545,6 +5545,7 @@ async function renderAuditLogs() {
     `).join('');
   } catch(e) { container.innerHTML = 'Failed to load logs.'; }
 }
+// 1. Updated Refresh Function
 async function refreshZerkMap(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if(!e) return;
@@ -5552,22 +5553,27 @@ async function refreshZerkMap(equipId) {
     const switcher = document.getElementById('zerk-view-switcher');
     const container = document.getElementById('zerk-map-container');
     const noPhotos = document.getElementById('zerk-no-photos');
+    const delViewBtn = document.getElementById('btn-delete-view'); // Target the red trash button
 
-    // 1. Check if photos exist in the database for this machine
+    // 1. Check if photos exist
     if(!e.zerk_photos || e.zerk_photos.length === 0) {
         if(container) container.style.display = 'none';
+        if(delViewBtn) delViewBtn.style.display = 'none'; // Hide delete if no photo
         if(noPhotos) noPhotos.style.display = 'block';
         return;
     }
 
-    // 2. Photos exist, show the map UI
+    // 2. Photos exist, show UI and the Delete View button
     if(container) container.style.display = 'block';
+    if(delViewBtn) delViewBtn.style.display = 'block'; // SHOW DELETE VIEW BUTTON
     if(noPhotos) noPhotos.style.display = 'none';
 
     // 3. Rebuild the view buttons
     if(switcher) {
         switcher.innerHTML = e.zerk_photos.map((_, i) => `
-            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
+            <button class="btn btn-secondary btn-sm" id="btn-side-${i+1}" 
+                style="border: 1px solid var(--border);"
+                onclick="changeZerkView('side_${i+1}', this)">View ${i+1}</button>
         `).join('');
     }
 
@@ -5575,10 +5581,38 @@ async function refreshZerkMap(equipId) {
     const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
     allMachineZerks = data || [];
     
-    // 5. Load the first side
+    // 5. Load the first side immediately
     changeZerkView('side_1', document.getElementById('btn-side-1'));
 }
 
+// 2. Updated Change View Function
+function changeZerkView(viewName, btn) {
+    // CRITICAL: Update the global variable so renderZerkDots knows which dots to show
+    currentZerkView = viewName; 
+    
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    
+    // UI highlight for buttons
+    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => b.style.borderColor = 'rgba(255,255,255,0.1)');
+    if(btn) btn.style.borderColor = '#007bff';
+
+    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
+    const img = document.getElementById('zerk-map-img');
+    
+    if(equip && equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        img.src = equip.zerk_photos[viewIndex];
+    }
+
+    // REDRAW THE DOTS
+    if (typeof renderZerkDots === 'function') {
+        renderZerkDots();
+    }
+    
+    // Hide the info card when switching views
+    if(document.getElementById('zerk-detail-box')) {
+        document.getElementById('zerk-detail-box').style.display = 'none';
+    }
+}
 function changeZerkView(viewName, btn) {
     currentZerkView = viewName;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
