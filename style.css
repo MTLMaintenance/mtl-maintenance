@@ -1432,3 +1432,32 @@ select.form-select:focus {
     height: auto !important;
     min-height: 500px;
 }
+/* 1. Machinery Photo (Bottom layer) */
+#zerk-map-img {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* 2. SVG Lines (Middle layer) */
+#zerk-svg-layer {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 10 !important;
+    pointer-events: none !important; /* Clicks pass through to dots */
+}
+
+/* 3. Clickable Overlay (Top layer) */
+#zerk-dots-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 20 !important;
+    pointer-events: auto !important;
+}
+
+/* 4. The Yellow Dots */
+.zerk-dot {
+    z-index: 100 !important;
+    background: #ffec00 !important;
+    color: black !important;
+    font-weight: 800 !important;
+}
