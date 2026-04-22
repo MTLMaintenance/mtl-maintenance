@@ -4462,27 +4462,8 @@ function openAddInvoice() {
   openModal('invoice-modal');
 }
 
-async function handleInvoicePhoto(input) {
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const dataUrl = e.target.result;
-    _invoicePhotoData = await compressImage(dataUrl, 1200, 0.85);
-    
-    // Show preview
-    document.getElementById('invoice-photo-preview-area').innerHTML=`
-      <img src="${_invoicePhotoData}" style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border)"/>
-      <div style="font-size:12px;color:var(--success);margin-top:8px;font-weight:500">✓ Photo ready — scanning now...</div>`;
-    document.getElementById('inv-clear-photo-wrap').style.display='block';
-    
-    // Auto-scan with Claude API
-    await scanInvoiceWithAI(_invoicePhotoData);
-  };
-  reader.readAsDataURL(file);
-  input.value='';
-}
-
-async function handleInvoiceDrop(event) {
+// 1. Function to handle Drag and Drop
+function handleInvoiceDrop(event) {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
   if(!file || !file.type.startsWith('image/')) return;
@@ -4492,25 +4473,59 @@ async function handleInvoiceDrop(event) {
   input.files = dt.files;
   handleInvoicePhoto(input);
 }
-  document.getElementById('invoice-scanning').style.display='block';
+
+// 2. Function to handle the file selection and show the preview
+function handleInvoicePhoto(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    
+    // Process and compress the image
+    if (typeof compressImage === 'function') {
+        _invoicePhotoData = await compressImage(dataUrl, 1200, 0.85);
+    } else {
+        _invoicePhotoData = dataUrl;
+    }
+    
+    // Show preview UI
+    const previewArea = document.getElementById('invoice-photo-preview-area');
+    if(previewArea) {
+        previewArea.innerHTML=`
+          <img src="${_invoicePhotoData}" style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border)"/>
+          <div style="font-size:12px;color:var(--success);margin-top:8px;font-weight:500">✓ Photo ready — scanning now...</div>`;
+    }
+    if(document.getElementById('inv-clear-photo-wrap')) {
+        document.getElementById('inv-clear-photo-wrap').style.display='block';
+    }
+    
+    // START THE AI SCAN (This calls the function below)
+    await scanInvoiceWithAI(_invoicePhotoData);
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+// 3. THE MISSING FUNCTION: The actual AI logic
+async function scanInvoiceWithAI(imageData) {
+  const scanningEl = document.getElementById('invoice-scanning');
+  if (scanningEl) scanningEl.style.display = 'block';
   
   try {
     const base64Data = imageData.split(',')[1];
     const mediaType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
     
-    const GEMINI_KEY = 'AIzaSyPlaceholderReplaceWithYourKey'; // Set via app config
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
+    // Use the Gemini API Key from your app config
+    const apiKey = window._geminiKey; 
+
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [
-            {
-              inline_data: { mime_type: mediaType, data: base64Data }
-            },
-            {
-              text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text: {"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}'
-            }
+            { inline_data: { mime_type: mediaType, data: base64Data } },
+            { text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text: {"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}' }
           ]
         }],
         generationConfig: { maxOutputTokens: 500, temperature: 0 }
@@ -4525,34 +4540,34 @@ async function handleInvoiceDrop(event) {
       const clean = text.replace(/```json|```/g, '').trim();
       extracted = JSON.parse(clean);
     } catch(e) {
-      // Try to extract with regex if JSON parse fails
+      // RegEx fallback if AI response formatting is messy
       const amountMatch = text.match(/"amount"\s*:\s*([\d.]+)/);
       const supplierMatch = text.match(/"supplier"\s*:\s*"([^"]+)"/);
       const dateMatch = text.match(/"date"\s*:\s*"([^"]+)"/);
       const numMatch = text.match(/"invoice_number"\s*:\s*"([^"]+)"/);
-      const notesMatch = text.match(/"notes"\s*:\s*"([^"]+)"/);
       if(amountMatch) extracted.amount = parseFloat(amountMatch[1]);
       if(supplierMatch) extracted.supplier = supplierMatch[1];
       if(dateMatch) extracted.date = dateMatch[1];
       if(numMatch) extracted.invoice_number = numMatch[1];
-      if(notesMatch) extracted.notes = notesMatch[1];
     }
 
-    // Populate form fields
+    // Populate the form fields automatically
     if(extracted.supplier) document.getElementById('inv-supplier').value = extracted.supplier;
     if(extracted.invoice_number) document.getElementById('inv-number').value = extracted.invoice_number;
     if(extracted.date) document.getElementById('inv-date').value = extracted.date;
     if(extracted.amount) document.getElementById('inv-amount').value = extracted.amount.toFixed(2);
     if(extracted.notes) document.getElementById('inv-notes').value = extracted.notes;
 
-    document.getElementById('invoice-extracted-badge').style.display = 'block';
+    if(document.getElementById('invoice-extracted-badge')) {
+        document.getElementById('invoice-extracted-badge').style.display = 'block';
+    }
     showToast('✅ Invoice details extracted');
 
   } catch(e) {
     console.error('Invoice scan error:', e);
     showToast('Could not read invoice — please fill in manually');
   } finally {
-    document.getElementById('invoice-scanning').style.display = 'none';
+    if (scanningEl) scanningEl.style.display = 'none';
   }
 }
 
