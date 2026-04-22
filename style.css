@@ -1471,3 +1471,23 @@ select.form-select, .modal select {
     background: #ffec00 !important;
     color: black !important;
 }
+/* Ensure the machine photo doesn't cover the dots */
+#zerk-map-img {
+    z-index: 1 !important;
+}
+
+#zerk-svg-layer {
+    z-index: 10 !important;
+    pointer-events: none; /* Let clicks pass through to the overlay */
+}
+
+#zerk-dots-overlay {
+    z-index: 20 !important;
+    pointer-events: auto !important;
+}
+
+.zerk-dot {
+    z-index: 100 !important; /* Always on top */
+    background: #ffec00 !important;
+    color: #000 !important;
+}
