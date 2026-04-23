@@ -484,7 +484,7 @@
     </button>
 </div>
 
-<!-- THE ONLY TOOL CRIB PANEL -->
+<!-- THE TOOL CRIB PANEL -->
 <div class="panel" id="panel-tools">
   <div class="section-header">
     <span class="section-title">Tool Crib & Wishlist</span>
@@ -501,21 +501,28 @@
   </div>
 
   <!-- Inventory View -->
-  <div id="tool-inventory-view">
+  <div id="tool-inventory-view" style="display:block;">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Tool Name</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th>Procurement</th></tr></thead>
-        <tbody id="tools-table-body"></tbody>
+        <thead>
+          <tr>
+            <th>Tool Name</th>
+            <th>Category</th>
+            <th>Location</th>
+            <th>Condition</th>
+            <th>Status</th>
+            <th>Procurement</th>
+          </tr>
+        </thead>
+        <tbody id="tools-table-body">
+          <!-- JS will fill this -->
+        </tbody>
       </table>
     </div>
   </div>
 
   <!-- Wishlist View -->
   <div id="tool-wishlist-view" style="display:none">
-    <div style="background:var(--warning-bg); color:var(--warning-text); padding:12px 16px; border-radius:var(--radius); font-size:13px; margin-bottom:14px; border:1px solid var(--warning); display:flex; align-items:center; gap:10px">
-        <span style="font-size:18px">💡</span>
-        <div><b>Note to Crew:</b> Before suggesting a new tool, please review the <b>Denied History</b> tab.</div>
-    </div>
     <div class="grid-2" id="wishlist-container"></div>
   </div>
 
