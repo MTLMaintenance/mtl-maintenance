@@ -1481,3 +1481,17 @@ select.form-select:focus {
     min-height: 80px !important;
     max-height: 150px !important;
 }
+/* 1. Kill the 'Zombie' boxes globally */
+#tool-tab-obs, #tool-obs-list, #tool-notes-input {
+    display: none !important;
+}
+
+/* 2. Only 'Release' them when the modal is actually open */
+#tool-modal[style*="display: flex"] #tool-tab-obs {
+    display: flex !important;
+}
+
+/* 3. Ensure the list inside is visible */
+#tool-modal[style*="display: flex"] #tool-obs-list {
+    display: block !important;
+}
