@@ -5239,7 +5239,7 @@ function resetToolForm() {
     // 1. THE FIX: Show the delete button because we ARE editing
     const deleteBtn = document.getElementById('tool-delete-btn');
     if (deleteBtn) 
-        deleteBtn.style.setProperty('display', 'block', 'important');
+        deleteBtn.style.setProperty('display', 'inline-block', 'important');
     
      // 2. Fill the hidden ID field
     const idInput = document.getElementById('tool-edit-id');
