@@ -5140,15 +5140,15 @@ function switchToolModalTab(tab) {
     
     if (tab === 'details') {
         details.style.display = 'block';
-        obs.style.setProperty('display', 'none', 'important');
+        obs.style.display = 'none';
     } else {
         details.style.display = 'none';
-        // We use flex here so the internal layout stays organized
-        obs.style.setProperty('display', 'flex', 'important');
+        // We use flex for the notes tab so the list stays on top and input stays on bottom
+        obs.style.display = 'flex'; 
         if (typeof renderToolObsList === 'function') renderToolObsList();
     }
 
-    // Update button highlighting
+    // Highlighting the buttons
     document.getElementById('btn-tool-details')?.classList.toggle('active', tab === 'details');
     document.getElementById('btn-tool-obs')?.classList.toggle('active', tab === 'observations');
 }
