@@ -1243,74 +1243,65 @@
 </div>
 <!-- THE MASTER TOOL MODAL -->
 <div class="modal-backdrop" id="tool-modal" style="display:none">
-  <div class="modal" style="max-width:500px; background: white; color: black; border-radius: 15px; overflow: visible !important; display: flex; flex-direction: column;">
+  <div class="modal" style="max-width:500px; background: white; color: black; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden !important;">
     
     <input type="hidden" id="tool-edit-id">
 
-    <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-      <span class="modal-title" id="tool-modal-title" style="font-weight: 700; font-size: 18px;">Tool Details</span>
-      <button class="modal-close" onclick="closeModal('tool-modal')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #888;">✕</button>
+    <div style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+      <span id="tool-modal-title" style="font-weight: 700; font-size: 18px;">Tool Details</span>
+      <button onclick="closeModal('tool-modal')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #888;">✕</button>
     </div>
 
-    <!-- TABS -->
-    <div class="tab-bar" style="padding: 10px 20px; display: flex; gap: 8px; background: #fafafa; border-bottom: 1px solid #eee;">
+    <div style="padding: 10px 20px; display: flex; gap: 8px; background: #fafafa; border-bottom: 1px solid #eee;">
       <button class="tab active" id="btn-tool-details" onclick="switchToolModalTab('details')" style="padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600;">Details</button>
       <button class="tab" id="btn-tool-obs" onclick="switchToolModalTab('observations')" style="padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; color: #666;">Notes / Obs</button>
     </div>
 
-    <!-- TAB 1: DETAILS -->
-    <div id="tool-tab-details" style="padding: 20px;">
-      <div class="form-group" style="margin-bottom:15px">
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Tool Name *</label>
-        <input class="form-input" id="tool-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-      </div>
-
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:15px;">
-        <div class="form-group">
-          <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Category</label>
-          <select class="form-select" id="tool-cat" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff;">
-            <option value="Hand Tool">Hand Tool</option>
-            <option value="Power Tool">Power Tool</option>
-            <option value="Diagnostic">Diagnostic</option>
-            <option value="Other">Other</option>
-          </select>
+    <div id="tool-tab-content-wrapper" style="flex: 1; overflow-y: auto; min-height: 300px; max-height: 60vh;">
+      
+      <div id="tool-tab-details" style="padding: 20px;">
+        <div style="margin-bottom:15px">
+          <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Tool Name *</label>
+          <input class="form-input" id="tool-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         </div>
-        <div class="form-group">
-          <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Location</label>
-          <input class="form-input" id="tool-loc" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:15px;">
+          <div>
+            <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Category</label>
+            <select class="form-select" id="tool-cat" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff;">
+              <option value="Hand Tool">Hand Tool</option>
+              <option value="Power Tool">Power Tool</option>
+              <option value="Diagnostic">Diagnostic</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Location</label>
+            <input class="form-input" id="tool-loc" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+          </div>
         </div>
+        <div style="margin-bottom:20px">
+          <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Condition (<span id="cond-val">100%</span>)</label>
+          <input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%; accent-color: #000;" oninput="document.getElementById('cond-val').textContent = this.value + '%'">
+        </div>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+          <input type="checkbox" id="tool-lost" style="width:18px; height:18px; accent-color:#000;">
+          <b>This tool is lost</b>
+        </label>
       </div>
 
-      <div class="form-group" style="margin-bottom:20px">
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Condition (<span id="cond-val">100%</span>)</label>
-        <input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%; accent-color: #000;" oninput="document.getElementById('cond-val').textContent = this.value + '%'">
+      <div id="tool-tab-obs" style="display:none; padding:20px;">
+          <div id="tool-obs-list" style="margin-bottom:15px; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #fdfdfd; min-height: 50px;"></div>
+          <textarea id="tool-notes-input" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px; resize: none; font-size: 13px;" placeholder="Add a note..."></textarea>
+          <button class="btn btn-secondary btn-sm" onclick="addToolNote()" style="margin-top: 8px; width: 100%;">Post Note</button>
       </div>
 
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
-        <input type="checkbox" id="tool-lost" style="width:18px; height:18px; accent-color:#000;">
-        <b>This tool is lost</b>
-      </label>
     </div>
 
-    <!-- TAB 2: OBSERVATIONS (Fixed layout) -->
-    <div id="tool-tab-obs" style="display:none; padding:20px; flex-direction: column; gap: 15px;">
-        <div id="tool-obs-list" style="max-height:200px; overflow-y:auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #fdfdfd;">
-            <!-- History loads here -->
-        </div>
-        <div>
-            <textarea id="tool-notes-input" style="width:100%; height:70px; padding:10px; border:1px solid #ddd; border-radius:8px; resize: none; font-size: 13px;" placeholder="Add a note..."></textarea>
-            <button class="btn btn-secondary btn-sm" onclick="addToolNote()" style="margin-top: 8px; width: 100%;">Post Note</button>
-        </div>
-    </div>
-
-    <!-- FOOTER (Added Delete Button) -->
-    <div style="padding: 20px; display:flex; gap:12px; justify-content:space-between; border-top: 1px solid #eee; background: #fafafa; border-radius: 0 0 15px 15px;">
-      <<button id="tool-delete-btn" type="button" class="btn btn-danger" onclick="deleteTool()" style="background:#dc3545 !important; color:white; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; display:none;">
-    🗑️ Delete
-</button>!
+    <div style="padding: 20px; display:flex; gap:12px; justify-content:space-between; border-top: 1px solid #eee; background: #fafafa;">
+      <button id="tool-delete-btn" type="button" onclick="deleteTool()" style="background:#dc3545 !important; color:white !important; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-size: 13px; display:none;">🗑️ Delete Tool</button>
       <div style="display:flex; gap:10px; margin-left: auto;">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('tool-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
-        <button type="button" class="btn btn-primary" onclick="saveTool()" style="background:#000 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Tool</button>
+        <button type="button" onclick="closeModal('tool-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
+        <button type="button" onclick="saveTool()" style="background:#000 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Tool</button>
       </div>
     </div>
   </div>
