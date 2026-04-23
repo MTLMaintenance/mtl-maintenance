@@ -5269,45 +5269,51 @@ function resetToolForm() {
     if (lostCheck) lostCheck.checked = !!tool.is_lost;
 }
 
-// 3. DELETE A TOOL
 async function deleteTool() {
-    // 1. Use the global ID we saved in editTool
-    const id = currentEditingToolId;
+    // 1. Grab the ID from the hidden input right now
+    const id = document.getElementById('tool-edit-id').value;
+    
     if(!id) {
-        showToast("Error: No tool selected to delete.");
+        console.error("Delete failed: No Tool ID found in the form.");
+        showToast("Error: No ID found");
         return;
     }
 
-    // 2. Find the tool name for the confirmation
+    // Find the name locally for the popup
     const tool = state.tools.find(t => t.id === id);
     const toolName = tool ? (tool.tool_name || tool.name) : 'this tool';
 
-    if(!confirm(`Permanently delete "${toolName}"?`)) return;
+    // 2. Confirmation
+    if(!confirm(`Permanently delete "${toolName}" from the database?`)) return;
 
     try {
-        // 3. Physical Delete from Supabase
+        console.log("Deleting tool from database. ID:", id);
+
+        // 3. PHYSICAL DELETE from Supabase
         const { error } = await window._mpdb
-            .from('tool_requests')
+            .from('tool_requests') // Check: Is your table 'tool_requests' or 'shop_tools'?
             .delete()
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase rejected deletion:", error.message);
+            alert("Database Error: " + error.message);
+            return;
+        }
 
-        // 4. Success - Update UI
+        // 4. Update UI instantly
         state.tools = state.tools.filter(t => t.id !== id);
         
-        // Hide the ghost button and modal
+        // Hide button and close window
         document.getElementById('tool-delete-btn').style.display = 'none';
         closeModal('tool-modal');
         
         if (typeof renderTools === 'function') renderTools();
         showToast("Tool deleted successfully ✓");
-        
-        currentEditingToolId = null; // Clear the tracker
 
     } catch (e) {
-        console.error("Delete failed:", e);
-        showToast("Delete failed: " + e.message);
+        console.error("Delete crash:", e);
+        showToast("App Error: " + e.message);
     }
 }
 async function deleteToolObservation(obsId) {
