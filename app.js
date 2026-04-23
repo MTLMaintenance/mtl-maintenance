@@ -5135,13 +5135,23 @@ function healthColor(score) {
 }
 // Switches between Details and Observations inside the tool popup
 function switchToolModalTab(tab) {
-    document.getElementById('tool-tab-details').style.display = tab === 'details' ? 'block' : 'none';
-    document.getElementById('tool-tab-obs').style.display = tab === 'observations' ? 'block' : 'none';
-    document.getElementById('btn-tool-details').classList.toggle('active', tab === 'details');
-    document.getElementById('btn-tool-obs').classList.toggle('active', tab === 'observations');
-    if(tab === 'observations') renderToolObsList();
-}
+    const details = document.getElementById('tool-tab-details');
+    const obs = document.getElementById('tool-tab-obs');
+    
+    if (tab === 'details') {
+        details.style.display = 'block';
+        obs.style.setProperty('display', 'none', 'important');
+    } else {
+        details.style.display = 'none';
+        // We use flex here so the internal layout stays organized
+        obs.style.setProperty('display', 'flex', 'important');
+        if (typeof renderToolObsList === 'function') renderToolObsList();
+    }
 
+    // Update button highlighting
+    document.getElementById('btn-tool-details')?.classList.toggle('active', tab === 'details');
+    document.getElementById('btn-tool-obs')?.classList.toggle('active', tab === 'observations');
+}
 // 2. Render Observations specific to a tool
 function renderToolObsList() {
     const toolId = document.getElementById('tool-edit-id').value;
