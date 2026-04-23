@@ -4866,31 +4866,36 @@ async function toggleToolStatus(id) {
   await persist('shop_tools', 'upsert', t);
   renderTools();
 }  
-function switchToolTab(view) {
-    // Hide all views
-    document.getElementById('tool-inventory-view').style.display = 'none';
-    document.getElementById('tool-wishlist-view').style.display = 'none';
-    document.getElementById('tool-denied-view').style.display = 'none';
+function switchToolTab(tab) {
+    console.log("Switching Tool Tab to:", tab);
     
-    // Deactivate all tabs
-    document.getElementById('tool-inv-tab').classList.remove('active');
-    document.getElementById('tool-wish-tab').classList.remove('active');
-    document.getElementById('tool-denied-tab').classList.remove('active');
+    const views = {
+        'inventory': document.getElementById('tool-inventory-view'),
+        'wishlist': document.getElementById('tool-wishlist-view'),
+        'denied': document.getElementById('tool-denied-view')
+    };
 
-    // Show selected
-    if (view === 'inventory') {
-        document.getElementById('tool-inventory-view').style.display = 'block';
-        document.getElementById('tool-inv-tab').classList.add('active');
-        renderTools();
-    } else if (view === 'wishlist') {
-        document.getElementById('tool-wishlist-view').style.display = 'block';
-        document.getElementById('tool-wish-tab').classList.add('active');
-        renderWishlist();
-    } else if (view === 'denied') {
-        document.getElementById('tool-denied-view').style.display = 'block';
-        document.getElementById('tool-denied-tab').classList.add('active');
-        renderDeniedList();
+    // 1. Hide all views safely
+    Object.values(views).forEach(view => {
+        if (view) view.style.display = 'none';
+    });
+
+    // 2. Show the requested view
+    const target = views[tab];
+    if (target) {
+        target.style.display = 'block';
+    } else {
+        console.warn("Could not find view container for:", tab);
     }
+
+    // 3. Update tab button highlights
+    document.querySelectorAll('#panel-tools .tab').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById(`tool-${tab.substring(0,3)}-tab`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // 4. Refresh data if needed
+    if (tab === 'inventory' && typeof renderTools === 'function') renderTools();
+    if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
