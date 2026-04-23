@@ -4913,48 +4913,63 @@ function renderTools() {
 }
 
 async function saveTool() {
-    const idInput = document.getElementById('tool-edit-id');
-    const id = idInput ? idInput.value : '';
-    // 1. THE FIX: Changed 'name' to 'tool_name' to match your DB
+    console.log("--- Starting Save Tool Process ---");
+    // 1. Get references to the HTML elements
+    const idEl = document.getElementById('tool-edit-id');
+    const nameEl = document.getElementById('tool-name'); // This must match the ID in your HTML
+    const catEl = document.getElementById('tool-cat');
+    const locEl = document.getElementById('tool-loc');
+    const healthEl = document.getElementById('tool-health');
+    const lostEl = document.getElementById('tool-lost');
+    // 2. Build the object (Keys must match Supabase column names EXACTLY)
     const tool = {
-        id: (id && id.trim() !== "") ? id : uid(),
-        tool_name: document.getElementById('tool-name').value.trim(), // MATCHES DB
-        category: document.getElementById('tool-cat').value,
-        location: document.getElementById('tool-loc').value.trim(),
-        health: parseInt(document.getElementById('tool-health').value) || 0,
-        is_lost: document.getElementById('tool-lost').checked,
+        id: (idEl && idEl.value.trim() !== "") ? idEl.value : uid(),
+        tool_name: nameEl ? nameEl.value.trim() : null, // THE FIX: Use 'tool_name' as the key
+        category: catEl ? catEl.value : 'Other',
+        location: locEl ? locEl.value.trim() : '',
+        health: healthEl ? parseInt(healthEl.value) : 100,
+        is_lost: lostEl ? lostEl.checked : false,
         last_updated: new Date().toISOString()
     };
-    // 2. Simple Validation (Update this to check tool_name too)
-    if(!tool.tool_name) {
-        showToast("Please enter a tool name");
+    console.log("Attempting to send this data:", tool);
+    // 3. Validation
+    if (!tool.tool_name) {
+        showToast("Error: Tool Name is required.");
         return;
     }
     try {
-        // 3. Save to Supabase
+        // 4. Send to Supabase (Wrapped in [ ] for reliability)
         const { error } = await window._mpdb
             .from('tool_requests')
-            .upsert([tool]); 
+            .upsert([tool]);
         if (error) {
-            console.error("Supabase reject detail:", error.message);
-            showToast("DB Error: " + error.message);
+            console.error("Supabase rejected the save:", error.message);
+            showToast("Database Error: " + error.message);
             return;
         }
-        // 4. Update local state (Use tool.tool_name here)
+        // 5. Update local state
         if (!state.tools) state.tools = [];
         const idx = state.tools.findIndex(x => x.id === tool.id);
-        if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+        if (idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
 
-        // 5. Audit Log (Updated variable name)
+        // 6. Audit Log
         if (typeof logAuditAction === 'function') {
             logAuditAction("Tool Update", `${tool.tool_name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
         }
-        // ... rest of your alert and success logic ...
-        closeModal('tool-modal'); 
+        // 7. Alerts
+        if (tool.health <= 40 || tool.is_lost) {
+            if (typeof notifyManagers === 'function') {
+                await notifyManagers(`⚠️ TOOL ALERT: "${tool.tool_name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL (' + tool.health + '%)'}.`);
+            }
+        }
+        // 8. Success UI
+        closeModal('tool-modal');
         if (typeof renderTools === 'function') renderTools();
         showToast("Tool saved successfully ✓");
+
     } catch (e) {
-        console.error("JavaScript Crash:", e);
+        console.error("Critical JavaScript error:", e);
+        showToast("App Error: " + e.message);
     }
 }
 function renderWishlist() {
