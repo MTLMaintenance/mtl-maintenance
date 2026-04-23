@@ -26,7 +26,7 @@ jobs:
           # We check the URL for a trailing slash which causes 404s
           CLEAN_URL=$(echo "${{ secrets.SUPABASE_URL }}" | sed 's:/*$::')
           
-          TABLES="chat_messages profiles equipment parts suppliers work_orders staff_absences tasks schedules tool_crib_items"
+          TABLES="chat_messages profiles equipment parts suppliers wo_comments staff_absences tasks schedules tool_requests"
           
           for table in $TABLES; do
             echo "Attempting to fetch table: $table"
