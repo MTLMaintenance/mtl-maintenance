@@ -6630,8 +6630,8 @@ async function exportFullDatabase() {
         'staff_absences',
         'tasks',
         'schedules',        // This is your Calendar data
-        'tool_requests' 
-        'wo_comments'
+        'tool_requests', 
+        'wo_comments',
     ];
 
     if (!confirm("Download a full snapshot of all data (including Calendar and Tool Crib)?")) return;
