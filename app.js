@@ -5273,36 +5273,33 @@ async function deleteTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id) return;
 
-    // 1. Find the tool in local memory so we can get its name for the log
+    // Find the name before deleting so the log is accurate
     const tool = state.tools.find(t => t.id === id);
     const toolName = tool ? (tool.tool_name || tool.name) : 'Unknown Tool';
 
-    if(!confirm(`Permanently delete "${toolName}" from inventory?`)) return;
+    if(!confirm(`Permanently delete "${toolName}"?`)) return;
 
     try {
-        // 2. Delete from Supabase (Ensure this matches your active table name)
-        const { error } = await window._mpdb
-            .from('tool_requests') 
-            .delete()
-            .eq('id', id);
-
+        // 1. Delete the tool
+        const { error } = await window._mpdb.from('tool_requests').delete().eq('id', id);
         if (error) throw error;
 
-        // 3. Log the action (Fixed the variable name and used backticks)
-        if (typeof logAuditAction === 'function') {
-            logAuditAction("Deleted Tool", `Removed ${toolName}`);
-        }
+        // 2. Try to log the action (Wrapped so it doesn't crash the app if it fails)
+        try {
+            if (typeof logAuditAction === 'function') {
+                await logAuditAction("Deleted Tool", `Removed: ${toolName}`);
+            }
+        } catch (logErr) { console.warn("Logging failed, but tool was deleted."); }
 
-        // 4. Update local state and refresh UI
+        // 3. Update UI
         state.tools = state.tools.filter(t => t.id !== id);
         closeModal('tool-modal');
-        
         if (typeof renderTools === 'function') renderTools();
-        showToast("Tool deleted ✓");
+        showToast("Tool removed ✓");
 
     } catch(e) {
         console.error("Delete failed:", e);
-        showToast("Delete failed: " + e.message);
+        showToast("Error: " + e.message);
     }
 }
 async function deleteToolObservation(obsId) {
