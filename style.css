@@ -1461,3 +1461,23 @@ select.form-select:focus {
     color: black !important;
     font-weight: 800 !important;
 }
+/* Ensure the Tool Modal has a limit and scrolls internally */
+#tool-modal .modal {
+    max-height: 90vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Force the content area to scroll, not the whole window */
+#tool-tab-details, #tool-tab-obs {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 20px !important;
+    min-height: 300px;
+}
+
+/* Ensure the notes textarea doesn't push things out */
+#tool-notes-input {
+    min-height: 80px !important;
+    max-height: 150px !important;
+}
