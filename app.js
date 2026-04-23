@@ -5190,37 +5190,58 @@ async function addToolObservation() {
 }
 function resetToolForm() {
     console.log("Resetting Tool Form Safely...");
-    // List all possible IDs in your tool form
-    const fieldIds = ['tool-id', 'tool-name', 'tool-category', 'tool-location', 'tool-status'];
     
+    // 1. Reset the Title so it doesn't say "Edit" when adding a new tool
+    const titleEl = document.getElementById('tool-modal-title');
+    if (titleEl) titleEl.textContent = 'Add New Tool';
+
+    // 2. THE FIX: Hide the delete button when adding new
+    const deleteBtn = document.getElementById('tool-delete-btn');
+    if (deleteBtn) deleteBtn.style.display = 'none'; 
+
+    // 3. List of IDs based on your HTML
+    const fieldIds = [
+        'tool-edit-id', // Clears the hidden ID
+        'tool-name', 
+        'tool-cat',     // Matches HTML
+        'tool-loc',     // Matches HTML
+        'tool-health'   // Matches HTML
+    ];
+
     fieldIds.forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-            el.value = ''; // Only try to set it if the element is found
-        }
+        if (el) el.value = (id === 'tool-health') ? '100' : ''; 
     });
+
+    // Reset health text
+    const condVal = document.getElementById('cond-val');
+    if (condVal) condVal.textContent = '100%';
+
+    // Reset checkbox
+    const lostCheck = document.getElementById('tool-lost');
+    if (lostCheck) lostCheck.checked = false;
 }
-    function editTool(id) {
+   function editTool(id) {
     console.log("Editing Tool ID:", id);
     
-    // 1. Find the tool in your list
     const tool = state.tools.find(x => x.id === id);
     if (!tool) {
-        console.error("Tool not found in state!");
+        console.error("Tool not found!");
         return;
     }
 
-    // 2. Open the modal
     if (typeof openModal === 'function') openModal('tool-modal');
-    
-    // 3. Reset to the details tab
     if (typeof switchToolModalTab === 'function') switchToolModalTab('details');
 
-    // 4. Fill the hidden ID field (CRITICAL for saving)
+    // 1. THE FIX: Show the delete button because we ARE editing
+    const deleteBtn = document.getElementById('tool-delete-btn');
+    if (deleteBtn) deleteBtn.style.display = 'block';
+
+    // 2. Fill the hidden ID field
     const idInput = document.getElementById('tool-edit-id');
     if (idInput) idInput.value = tool.id;
 
-    // 5. THE FIX: Fill the labels and inputs SAFELY
+    // 3. Fill Labels and Inputs
     const titleEl = document.getElementById('tool-modal-title');
     if (titleEl) titleEl.textContent = 'Edit: ' + (tool.tool_name || tool.name);
 
@@ -5241,25 +5262,43 @@ function resetToolForm() {
 
     const lostCheck = document.getElementById('tool-lost');
     if (lostCheck) lostCheck.checked = !!tool.is_lost;
-
-    console.log("Edit form populated successfully.");
 }
-
 
 // 3. DELETE A TOOL
 async function deleteTool() {
     const id = document.getElementById('tool-edit-id').value;
-    if(!id || !confirm("Permanently delete this tool from inventory?")) return;
+    if(!id) return;
+
+    // 1. Find the tool in local memory so we can get its name for the log
+    const tool = state.tools.find(t => t.id === id);
+    const toolName = tool ? (tool.tool_name || tool.name) : 'Unknown Tool';
+
+    if(!confirm(`Permanently delete "${toolName}" from inventory?`)) return;
 
     try {
-        await window._mpdb.from('shop_tools').delete().eq('id', id);
-       logAuditAction("Deleted Tool", `Removed ${tool ? tool.name : 'Unknown Tool'}`);  
-      state.tools = state.tools.filter(t => t.id !== id);
+        // 2. Delete from Supabase (Ensure this matches your active table name)
+        const { error } = await window._mpdb
+            .from('tool_requests') 
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 3. Log the action (Fixed the variable name and used backticks)
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Deleted Tool", `Removed ${toolName}`);
+        }
+
+        // 4. Update local state and refresh UI
+        state.tools = state.tools.filter(t => t.id !== id);
         closeModal('tool-modal');
-        renderTools();
-        showToast("Tool deleted");
+        
+        if (typeof renderTools === 'function') renderTools();
+        showToast("Tool deleted ✓");
+
     } catch(e) {
-        showToast("Delete failed");
+        console.error("Delete failed:", e);
+        showToast("Delete failed: " + e.message);
     }
 }
 async function deleteToolObservation(obsId) {
