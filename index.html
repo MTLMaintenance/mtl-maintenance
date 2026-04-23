@@ -827,25 +827,21 @@
 </div>
 
     <div id="toast"></div>
-
-    <!-- 2. Observations Tab -->
-    <div id="tool-tab-obs" style="display:none">
-      <div style="background:var(--bg2); padding:10px; border-radius:var(--radius); border:1px solid var(--border); margin-bottom:12px">
-        <textarea class="form-textarea" id="tool-obs-input" placeholder="Add a note about this tool..." style="min-height:60px"></textarea>
-        <button class="btn btn-secondary btn-sm" style="margin-top:8px; width:100%" onclick="addToolObservation()">Post Note</button>
-      </div>
-      <div id="tool-obs-list" style="max-height:200px; overflow-y:auto"></div>
+<!-- Notes/Obs tab in Tool Crib-->
+   <div id="tool-tab-obs" style="display:none; padding:15px; height: 350px; display: flex; flex-direction: column;">
+    <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:10px;">Maintenance History</label>
+    
+    <!-- SCROLLABLE LIST AREA -->
+    <div id="tool-obs-list" style="flex: 1; overflow-y: auto; background: #f9f9f9; border-radius: 10px; padding: 10px; border: 1px solid #eee; margin-bottom: 15px;">
+        <!-- Notes will load here -->
     </div>
 
-    <input type="hidden" id="tool-edit-id"/>
-    <div class="form-row" style="margin-top:20px; justify-content:space-between">
-      <div style="display:flex; gap:8px">
-      </div>
+    <!-- INPUT AREA (Pinned to bottom of tab) -->
+    <div style="border-top: 1px solid #eee; padding-top: 10px;">
+        <textarea id="tool-notes-input" style="width:100%; height:60px; padding:10px; border:1px solid #ddd; border-radius:8px; resize:none; font-size:13px; background: white; color: black;" placeholder="Add a new observation..."></textarea>
+        <button class="btn btn-secondary" onclick="addToolNote()" style="margin-top: 8px; width: 100%; background: #333 !important; color: white !important;">Post Note</button>
     </div>
-  </div>
 </div>
-
-
 <!-- Wishlist Modal -->
 <div class="modal-backdrop" id="wishlist-modal" style="display:none">
   <div class="modal" style="max-width:400px">
