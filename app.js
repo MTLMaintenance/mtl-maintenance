@@ -4928,14 +4928,17 @@ async function saveTool() {
         // THE FIX: We send the name to BOTH 'name' and 'tool_name' 
         // so no matter which column the DB requires, it gets the data.
         const tool = {
-            id: (id && id.trim() !== "") ? id : uid(),
-            name: rawName,           // Field required by current error
-            tool_name: rawName,      // Field required by previous error
-            category: document.getElementById('tool-cat').value,
-            location: document.getElementById('tool-loc').value.trim(),
-            health: parseInt(document.getElementById('tool-health').value) || 0,
-            is_lost: document.getElementById('tool-lost').checked,
-            last_updated: new Date().toISOString()
+        id: id || uid(),
+        tool_name: document.getElementById('tool-name').value.trim(),
+        name: document.getElementById('tool-name').value.trim(), // Keep both for safety
+        category: document.getElementById('tool-cat').value,
+        location: document.getElementById('tool-loc').value.trim(),
+        health: parseInt(document.getElementById('tool-health').value) || 100,
+        is_lost: document.getElementById('tool-lost').checked,
+        
+        // --- THE FIX FOR WISHLIST BUG ---
+        status: 'available', // This tells the app it belongs in 'Inventory'
+        last_updated: new Date().toISOString()
         };
         console.log("Sending object to Supabase:", tool);
 
@@ -5223,7 +5226,7 @@ function resetToolForm() {
 }
    function editTool(id) {
     console.log("Editing Tool ID:", id);
-    
+   
     const tool = state.tools.find(x => x.id === id);
     if (!tool) {
         console.error("Tool not found!");
@@ -5235,8 +5238,8 @@ function resetToolForm() {
 
     // 1. THE FIX: Show the delete button because we ARE editing
     const deleteBtn = document.getElementById('tool-delete-btn');
-    if (deleteBtn) deleteBtn.style.display = 'block';
-
+    if (deleteBtn) {
+        deleteBtn.style.setProperty('display', 'block', 'important');
     // 2. Fill the hidden ID field
     const idInput = document.getElementById('tool-edit-id');
     if (idInput) idInput.value = tool.id;
