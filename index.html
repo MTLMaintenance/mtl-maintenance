@@ -1280,14 +1280,17 @@
               style="background:#dc3545 !important; color:white !important; border:none !important; padding:10px 15px !important; border-radius:8px !important; cursor:pointer !important; font-size: 13px !important; display:none; position: static !important;">
           🗑️ Delete Tool
       </button>
-      
+      <button id="tool-receive-btn" type="button" onclick="receiveTool()" 
+        style="background:#28a745 !important; color:white !important; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-size: 13px; display:none;">
+    📦 Mark as Received
+</button>
       <div style="display:flex; gap:10px; margin-left: auto;">
         <button type="button" onclick="closeModal('tool-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
         <button type="button" onclick="saveTool()" style="background:#000 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Tool</button>
       </div>
     </div>
-  </div> <!-- Closes the white modal -->
-</div> <!-- Closes the dark backdrop -->
+  </div> 
+</div> 
    <!-- ADD PART MODAL (The Popup) -->
 <div class="modal-backdrop" id="part-modal" style="display:none;">
   <div class="modal" style="max-width:500px; background:white; color:black; padding:25px; border-radius:15px; border:1px solid #ccc; position:relative; overflow:visible !important;">
