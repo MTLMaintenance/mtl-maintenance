@@ -4931,7 +4931,7 @@ async function saveTool() {
     }
     try {
         // 3. Save to Supabase (Ensure table name 'shop_tools' is correct)
-        const { error } = await window._mpdb.from('shop_tools').upsert(tool);
+        const { error } = await window._mpdb.from('tool_requests').upsert(tool);
         if (error) throw error;
         // 4. Update local state
         const idx = state.tools.findIndex(x => x.id === tool.id);
@@ -5220,44 +5220,6 @@ function editTool(id) {
     openModal('tool-modal');
 }
 
-// 2. SAVE TOOL CHANGES
-async function saveTool() {
-    const id = document.getElementById('tool-edit-id').value;
-    const name = document.getElementById('tool-name').value.trim();
-    if(!name) { showToast("Name is required"); return; }
-
-    const tool = {
-        id: id || uid(), // If no ID, it's a new tool
-        name: name,
-        category: document.getElementById('tool-cat').value,
-        location: document.getElementById('tool-loc').value.trim(),
-        health: parseInt(document.getElementById('tool-health').value),
-        is_lost: document.getElementById('tool-lost').checked,
-        last_updated: new Date().toISOString()
-    };
-
-    try {
-        await window._mpdb.from('shop_tools').upsert(tool);
-        
-        // Update local memory
-        const idx = state.tools.findIndex(x => x.id === tool.id);
-        if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
-
-        // Notify managers if broken or lost
-        if(tool.health <= 40 || tool.is_lost) {
-            if(typeof notifyToolManagers === 'function') {
-                notifyToolManagers(`⚠️ TOOL ALERT: "${tool.name}" is ${tool.is_lost ? 'LOST' : 'BROKEN ('+tool.health+'%)'}`);
-            }
-        }
-
-        closeModal('tool-modal');
-        renderTools(); // Redraw the table
-        showToast("Tool Saved ✓");
-    } catch(e) {
-        showToast("Error saving tool");
-        console.error(e);
-    }
-}
 
 // 3. DELETE A TOOL
 async function deleteTool() {
