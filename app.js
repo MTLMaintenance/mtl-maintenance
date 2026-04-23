@@ -1,3 +1,4 @@
+let currentEditingToolId = null;
 let selectedLoginUser = null;
 let enteredPin = "";
 let lastClickedDate = "";
@@ -5226,7 +5227,7 @@ function resetToolForm() {
 }
    function editTool(id) {
     console.log("Editing Tool ID:", id);
-   
+   currentEditingToolId = id;
     const tool = state.tools.find(x => x.id === id);
     if (!tool) {
         console.error("Tool not found!");
@@ -5270,36 +5271,43 @@ function resetToolForm() {
 
 // 3. DELETE A TOOL
 async function deleteTool() {
-    const id = document.getElementById('tool-edit-id').value;
-    if(!id) return;
+    // 1. Use the global ID we saved in editTool
+    const id = currentEditingToolId;
+    if(!id) {
+        showToast("Error: No tool selected to delete.");
+        return;
+    }
 
-    // Find the name before deleting so the log is accurate
+    // 2. Find the tool name for the confirmation
     const tool = state.tools.find(t => t.id === id);
-    const toolName = tool ? (tool.tool_name || tool.name) : 'Unknown Tool';
+    const toolName = tool ? (tool.tool_name || tool.name) : 'this tool';
 
     if(!confirm(`Permanently delete "${toolName}"?`)) return;
 
     try {
-        // 1. Delete the tool
-        const { error } = await window._mpdb.from('tool_requests').delete().eq('id', id);
+        // 3. Physical Delete from Supabase
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .delete()
+            .eq('id', id);
+
         if (error) throw error;
 
-        // 2. Try to log the action (Wrapped so it doesn't crash the app if it fails)
-        try {
-            if (typeof logAuditAction === 'function') {
-                await logAuditAction("Deleted Tool", `Removed: ${toolName}`);
-            }
-        } catch (logErr) { console.warn("Logging failed, but tool was deleted."); }
-
-        // 3. Update UI
+        // 4. Success - Update UI
         state.tools = state.tools.filter(t => t.id !== id);
+        
+        // Hide the ghost button and modal
+        document.getElementById('tool-delete-btn').style.display = 'none';
         closeModal('tool-modal');
+        
         if (typeof renderTools === 'function') renderTools();
-        showToast("Tool removed ✓");
+        showToast("Tool deleted successfully ✓");
+        
+        currentEditingToolId = null; // Clear the tracker
 
-    } catch(e) {
+    } catch (e) {
         console.error("Delete failed:", e);
-        showToast("Error: " + e.message);
+        showToast("Delete failed: " + e.message);
     }
 }
 async function deleteToolObservation(obsId) {
