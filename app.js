@@ -4914,24 +4914,46 @@ function renderTools() {
 
 async function saveTool() {
     const id = document.getElementById('tool-edit-id').value;
+    // 1. Collect the data
     const tool = {
         id: id || uid(),
         name: document.getElementById('tool-name').value.trim(),
         category: document.getElementById('tool-cat').value,
         location: document.getElementById('tool-loc').value.trim(),
-        health: parseInt(document.getElementById('tool-health').value),
+        health: parseInt(document.getElementById('tool-health').value) || 0,
         is_lost: document.getElementById('tool-lost').checked,
         last_updated: new Date().toISOString()
     };
-    if(!tool.name) return;
-    await window._mpdb.from('shop_tools').upsert(tool);
-    const idx = state.tools.findIndex(x => x.id === tool.id);
-    if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
-        logAuditAction("Tool Update", `${name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
-    if(tool.health <= 40 || tool.is_lost) {
-        await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
+    // 2. Simple Validation
+    if(!tool.name) {
+        showToast("Please enter a tool name");
+        return;
     }
-    closeModal('tool-modal'); renderTools();
+    try {
+        // 3. Save to Supabase (Ensure table name 'shop_tools' is correct)
+        const { error } = await window._mpdb.from('shop_tools').upsert(tool);
+        if (error) throw error;
+        // 4. Update local state
+        const idx = state.tools.findIndex(x => x.id === tool.id);
+        if(idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+        // 5. FIXED: Audit Log (Using tool.name and backticks)
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Tool Update", `${tool.name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
+        }
+        // 6. Alert Managers for critical issues
+        if(tool.health <= 40 || tool.is_lost) {
+            if (typeof notifyManagers === 'function') {
+                await notifyManagers(`⚠️ TOOL ALERT: "${tool.name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
+            }
+        }
+        // 7. Success - close and refresh
+        closeModal('tool-modal'); 
+        if (typeof renderTools === 'function') renderTools();
+        showToast("Tool saved successfully ✓");
+    } catch (e) {
+        console.error("Save Tool Failed:", e);
+        showToast("Error saving tool");
+    }
 }
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
