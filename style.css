@@ -1481,3 +1481,16 @@ select.form-select:focus {
     min-height: 80px !important;
     max-height: 150px !important;
 }
+/* Force the delete button to stay inside the modal footer */
+#tool-modal .modal div:last-child {
+    position: relative !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+#tool-delete-btn {
+    position: static !important; /* Forces it to stay in the flex row */
+    order: -1 !important;        /* Makes sure it stays on the left side */
+    visibility: visible;
+}
