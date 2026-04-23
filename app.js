@@ -5267,7 +5267,14 @@ function resetToolForm() {
 
     const lostCheck = document.getElementById('tool-lost');
     if (lostCheck) lostCheck.checked = !!tool.is_lost;
-}
+// Show 'Received' button ONLY if tool is ordered
+    const receiveBtn = document.getElementById('tool-receive-btn');
+    if (receiveBtn) {
+        const isOrdered = (tool.status === 'ORDERED' || tool.status === 'ON ORDER');
+        receiveBtn.style.display = isOrdered ? 'inline-block' : 'none';
+    }
+
+   }
 
 async function deleteTool() {
     // 1. Grab the ID from the hidden input right now
@@ -6852,5 +6859,38 @@ async function jumpToTaskEdit(taskId) {
     if (editModal) {
         editModal.style.setProperty('display', 'block', 'important');
         editModal.style.zIndex = "2000005";
+    }
+}
+async function receiveTool() {
+    const id = document.getElementById('tool-edit-id').value;
+    if(!id) return;
+
+    try {
+        showToast("Checking in tool...");
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .update({ 
+                status: 'available', 
+                location: 'Main Tool Crib', // Set a default location
+                health: 100,
+                last_updated: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Update local state
+        const idx = state.tools.findIndex(t => t.id === id);
+        if(idx > -1) {
+            state.tools[idx].status = 'available';
+            state.tools[idx].health = 100;
+        }
+
+        closeModal('tool-modal');
+        renderTools();
+        showToast("Tool is now in inventory! ✓");
+    } catch (e) {
+        console.error(e);
+        showToast("Update failed");
     }
 }
