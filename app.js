@@ -5200,31 +5200,49 @@ function resetToolForm() {
         }
     });
 }
-    // 1. OPEN THE TOOL POPUP
-function editTool(id) {
-    console.log("Opening tool popup for ID:", id);
-    const t = state.tools.find(x => x.id === id);
-    if(!t) return;
+    function editTool(id) {
+    console.log("Editing Tool ID:", id);
+    
+    // 1. Find the tool in your list
+    const tool = state.tools.find(x => x.id === id);
+    if (!tool) {
+        console.error("Tool not found in state!");
+        return;
+    }
 
-    // Reset popup to 'Details' tab
+    // 2. Open the modal
+    if (typeof openModal === 'function') openModal('tool-modal');
+    
+    // 3. Reset to the details tab
     if (typeof switchToolModalTab === 'function') switchToolModalTab('details');
 
-    // Fill the hidden ID field so the save function knows which tool to update
-    document.getElementById('tool-edit-id').value = t.id;
-    
-    // Fill the visible fields
-    document.getElementById('tool-name').value = t.name;
-    document.getElementById('tool-cat').value = t.category || 'Other';
-    document.getElementById('tool-loc').value = t.location || '';
-    document.getElementById('tool-health').value = t.health || 100;
-    document.getElementById('health-val-display').textContent = (t.health || 100) + '%';
-    document.getElementById('tool-lost').checked = !!t.is_lost;
-    
-    // Show the delete button because we are editing an existing tool
-    const delBtn = document.getElementById('tool-delete-btn');
-    if(delBtn) delBtn.style.display = 'block';
-    
-    openModal('tool-modal');
+    // 4. Fill the hidden ID field (CRITICAL for saving)
+    const idInput = document.getElementById('tool-edit-id');
+    if (idInput) idInput.value = tool.id;
+
+    // 5. THE FIX: Fill the labels and inputs SAFELY
+    const titleEl = document.getElementById('tool-modal-title');
+    if (titleEl) titleEl.textContent = 'Edit: ' + (tool.tool_name || tool.name);
+
+    const nameInput = document.getElementById('tool-name');
+    if (nameInput) nameInput.value = tool.tool_name || tool.name || '';
+
+    const catInput = document.getElementById('tool-cat');
+    if (catInput) catInput.value = tool.category || 'Other';
+
+    const locInput = document.getElementById('tool-loc');
+    if (locInput) locInput.value = tool.location || '';
+
+    const healthInput = document.getElementById('tool-health');
+    if (healthInput) healthInput.value = tool.health || 100;
+
+    const healthDisplay = document.getElementById('cond-val');
+    if (healthDisplay) healthDisplay.textContent = (tool.health || 100) + '%';
+
+    const lostCheck = document.getElementById('tool-lost');
+    if (lostCheck) lostCheck.checked = !!tool.is_lost;
+
+    console.log("Edit form populated successfully.");
 }
 
 
