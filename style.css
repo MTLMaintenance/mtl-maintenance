@@ -1482,15 +1482,16 @@ select.form-select:focus {
     max-height: 150px !important;
 }
 /* Force the delete button to stay inside the modal footer */
-#tool-modal .modal div:last-child {
+/* Force the button to stay inside the white card footer */
+#tool-modal .modal {
     position: relative !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
+    z-index: 1000001 !important; /* One layer higher than the backdrop */
 }
 
 #tool-delete-btn {
-    position: static !important; /* Forces it to stay in the flex row */
-    order: -1 !important;        /* Makes sure it stays on the left side */
-    visibility: visible;
+    position: relative !important; /* Stops it from flying to the corner */
+    bottom: auto !important;
+    left: auto !important;
+    display: inline-block !important;
+    z-index: 1000005 !important; /* Ensure it's clickable */
 }
