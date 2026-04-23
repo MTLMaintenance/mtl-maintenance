@@ -6626,12 +6626,12 @@ async function exportFullDatabase() {
         'profiles', 
         'equipment', 
         'parts', 
-        'suppliers', 
-        'work_orders', 
+        'suppliers',  
         'staff_absences',
         'tasks',
         'schedules',        // This is your Calendar data
-        'tool_crib_items'   // This is your Tool Crib data
+        'tool_requests' 
+        'wo_comments'
     ];
 
     if (!confirm("Download a full snapshot of all data (including Calendar and Tool Crib)?")) return;
