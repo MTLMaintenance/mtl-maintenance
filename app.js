@@ -4869,31 +4869,28 @@ async function toggleToolStatus(id) {
 function switchToolTab(tab) {
     console.log("Switching Tool Tab to:", tab);
     
-    const views = {
-        'inventory': document.getElementById('tool-inventory-view'),
-        'wishlist': document.getElementById('tool-wishlist-view'),
-        'denied': document.getElementById('tool-denied-view')
-    };
+    // IDs must match the divs in your 'panel-tools'
+    const inventory = document.getElementById('tool-inventory-view');
+    const wishlist = document.getElementById('tool-wishlist-view');
+    const denied = document.getElementById('tool-denied-view');
 
-    // 1. Hide all views safely
-    Object.values(views).forEach(view => {
-        if (view) view.style.display = 'none';
-    });
+    // Safety checks to prevent crashing if a div is missing
+    if (inventory) inventory.style.display = tab === 'inventory' ? 'block' : 'none';
+    if (wishlist) wishlist.style.display = tab === 'wishlist' ? 'block' : 'none';
+    if (denied) denied.style.display = tab === 'denied' ? 'block' : 'none';
 
-    // 2. Show the requested view
-    const target = views[tab];
-    if (target) {
-        target.style.display = 'block';
-    } else {
-        console.warn("Could not find view container for:", tab);
-    }
-
-    // 3. Update tab button highlights
+    // Update active state of buttons
     document.querySelectorAll('#panel-tools .tab').forEach(b => b.classList.remove('active'));
-    const activeBtn = document.getElementById(`tool-${tab.substring(0,3)}-tab`);
+    
+    // Determine which button to highlight
+    let btnId = 'tool-inv-tab';
+    if (tab === 'wishlist') btnId = 'tool-wish-tab';
+    if (tab === 'denied') btnId = 'tool-denied-tab';
+    
+    const activeBtn = document.getElementById(btnId);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // 4. Refresh data if needed
+    // Refresh the lists
     if (tab === 'inventory' && typeof renderTools === 'function') renderTools();
     if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
 }
