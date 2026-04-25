@@ -7146,6 +7146,8 @@ function renderConsumables() {
         const isLow = c.qty <= c.reorder;
         return `
             <tr>
+                <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
+    <td><b>${c.name}</b></td>
                 <td><b>${c.name}</b></td>
                 <td>${c.num || '—'}</td>
                 <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
@@ -7157,4 +7159,71 @@ function renderConsumables() {
                 <td><button class="btn btn-danger btn-sm" onclick="deleteConsumable('${c.id}')">Del</button></td>
             </tr>`;
     }).join('');
+}
+// 1. OPEN THE MODAL (For New Items)
+function openAddConsumable() {
+    document.getElementById('c-modal-title').textContent = "Add Shop Supply";
+    document.getElementById('c-edit-id').value = "";
+    document.getElementById('btn-delete-consumable').style.display = "none";
+    
+    // Reset fields
+    ['c-name', 'c-num', 'c-cost', 'c-qty', 'c-reorder'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = (id.includes('qty') || id.includes('reorder')) ? '0' : '';
+    });
+    
+    // Fill suppliers (re-using your existing supplier loader)
+    if (typeof populateSupplierDropdown === 'function') {
+        populateSupplierDropdown('c-supplier-select');
+    }
+    
+    openModal('consumable-modal');
+}
+
+// 2. OPEN THE MODAL (For Editing)
+window.editConsumable = function(id) {
+    const item = state.consumables.find(c => c.id === id);
+    if (!item) return;
+
+    document.getElementById('c-modal-title').textContent = "Edit Item: " + item.name;
+    document.getElementById('c-edit-id').value = item.id;
+    document.getElementById('btn-delete-consumable').style.display = "block";
+
+    document.getElementById('c-name').value = item.name || "";
+    document.getElementById('c-num').value = item.num || "";
+    document.getElementById('c-cost').value = item.cost || 0;
+    document.getElementById('c-qty').value = item.qty || 0;
+    document.getElementById('c-reorder').value = item.reorder || 0;
+    document.getElementById('c-supplier-select').value = item.supplier_id || "";
+
+    openModal('consumable-modal');
+};
+
+// 3. SAVE LOGIC
+async function saveConsumable() {
+    const editId = document.getElementById('c-edit-id').value;
+    const name = document.getElementById('c-name').value.trim();
+    if(!name) return alert("Please enter a name");
+
+    const record = {
+        id: editId || uid(),
+        name: name,
+        num: document.getElementById('c-num').value,
+        supplier_id: document.getElementById('c-supplier-select').value || null,
+        qty: parseInt(document.getElementById('c-qty').value) || 0,
+        reorder: parseInt(document.getElementById('c-reorder').value) || 0,
+        cost: parseFloat(document.getElementById('c-cost').value) || 0,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        await window._mpdb.from('consumables').upsert([record]);
+        
+        // Refresh local memory and UI
+        await fetchConsumables(); 
+        closeModal('consumable-modal');
+        showToast("Consumable saved ✓");
+    } catch(e) {
+        alert("Save failed: " + e.message);
+    }
 }
