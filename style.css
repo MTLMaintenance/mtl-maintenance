@@ -1495,3 +1495,37 @@ select.form-select:focus {
 #tool-modal[style*="display: flex"] #tool-obs-list {
     display: block !important;
 }
+/* FORCE TOOL CRIB LAYOUT */
+#panel-tools.active {
+    display: block !important;
+    position: relative !important;
+    width: 95% !important;
+    max-width: 1200px;
+    margin: 20px auto !important;
+    z-index: 10 !important;
+    background: rgba(255, 255, 255, 0.95) !important; /* Semi-white background to see text */
+    padding: 20px !important;
+    border-radius: 15px;
+    color: #000 !important; /* Force black text on the white card */
+    min-height: 400px;
+}
+
+/* Ensure the Inventory list is visible */
+#tool-inventory-view {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Force the table to have black text so you can read it */
+#panel-tools table, 
+#panel-tools td, 
+#panel-tools th, 
+#panel-tools b {
+    color: #000000 !important;
+}
+
+/* Make sure the rows actually have height */
+#tools-table-body tr {
+    height: 45px !important;
+    border-bottom: 1px solid #ddd !important;
+}
