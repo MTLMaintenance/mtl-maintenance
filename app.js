@@ -7547,17 +7547,16 @@ async function saveWishRequest() {
     if (!rawName || !reason) return alert("Fill in name and reason.");
 
     const req = {
-        id: (editId && editId !== "") ? editId : uid(), // Use old ID if editing
+        id: (editId && editId !== "") ? editId : uid(),
         name: rawName,
         tool_name: rawName,
-        request_reason: reason,
-        notes: reason,
+        // THE FIX: Only using columns we confirmed exist
+        request_reason: reason, 
         requested_by: currentUser.full_name || currentUser.username,
         author_id: String(currentUser.id), 
         status: 'requested',
         created_at: new Date().toISOString()
     };
-
     try {
         // Use upsert so it updates the existing row if ID matches
         const { error } = await window._mpdb.from('tool_requests').upsert([req]);
