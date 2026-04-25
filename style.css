@@ -1576,46 +1576,57 @@ select.form-select:focus {
     display: none !important;
 }
 
-/* --- THE DARK BAR (The Container) --- */
-#parts-subtab-bar {
-    background: rgba(0, 0, 0, 0.45) !important; /* Dark translucent bar */
-    padding: 4px !important;
-    border-radius: 12px !important; /* Rounded corners */
+
+
+/* 1. THE OUTER BAR */
+#panel-parts .tab-bar {
+    background: rgba(0, 0, 0, 0.45) !important;
+    padding: 5px !important;
+    border-radius: 12px !important;
     display: inline-flex !important;
-    gap: 4px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Subtle glow border */
-    backdrop-filter: blur(8px) !important;
+    gap: 5px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
     margin-bottom: 20px !important;
+    height: auto !important;
+    width: auto !important;
+    float: none !important;
 }
 
-/* --- THE BUTTONS (Inactive State) --- */
-#parts-subtab-bar .tab {
-    background: transparent !important; /* Forces background away */
+/* 2. THE BUTTONS (INACTIVE) */
+#panel-parts .tab-bar button.tab {
+    background: transparent !important;
     background-color: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important; /* Faded white text */
-    border: none !important; /* KILLS THE BLACK BORDER BOX */
-    padding: 8px 20px !important;
+    color: rgba(255, 255, 255, 0.7) !important; 
+    /* THIS KILLS THE BORDERS AND SQUARES */
+    border: none !important; 
+    outline: none !important;
+    box-shadow: none !important;
+    
+    padding: 8px 22px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
     font-weight: 600 !important;
     cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     transition: all 0.2s ease !important;
-    box-shadow: none !important;
     margin: 0 !important;
 }
 
-/* --- THE WHITE PILL (Active State) --- */
-#parts-subtab-bar .tab.active {
-    background: #ffffff !important; /* Solid white background */
+/* 3. THE ACTIVE BUTTON (WHITE PILL) */
+#panel-parts .tab-bar button.tab.active {
+    background: #ffffff !important;
     background-color: #ffffff !important;
-    color: #1a1a1a !important; /* Dark black/gray text */
+    color: #1a1a1a !important; /* Bold Dark Text */
     font-weight: 700 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    border: none !important; /* Ensures no border on white pill */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    border: none !important;
 }
 
-/* Hover effect for the inactive one */
-#parts-subtab-bar .tab:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.1) !important;
+/* 4. HOVER EFFECT */
+#panel-parts .tab-bar button.tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.15) !important;
     color: #ffffff !important;
 }
