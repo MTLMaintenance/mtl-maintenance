@@ -7446,3 +7446,83 @@ async function processReview(newStatus) {
     renderToolWishlist();
     renderToolDeniedHistory();
 }
+window.currentReviewId = null;
+
+function openReviewModal(id) {
+    console.log("Opening Review Modal for ID:", id);
+    
+    // 1. Find the tool in your app's memory
+    const tool = state.tools.find(t => t.id === id);
+    if (!tool) {
+        console.error("Tool not found!");
+        return;
+    }
+
+    // 2. Save the ID globally so the Approve/Deny buttons know who to target
+    window.currentReviewId = id;
+
+    // 3. Fill the Modal with the request info
+    if (document.getElementById('rev-title')) {
+        document.getElementById('rev-title').textContent = "Review: " + (tool.tool_name || tool.name);
+    }
+    
+    if (document.getElementById('rev-reason')) {
+        document.getElementById('rev-reason').textContent = "Requested by: " + tool.requested_by + "\nReason: " + (tool.request_reason || tool.notes || "None provided.");
+    }
+
+    // 4. Clear the inputs for the new review
+    if (document.getElementById('rev-date')) document.getElementById('rev-date').value = "";
+    if (document.getElementById('rev-denial-reason')) document.getElementById('rev-denial-reason').value = "";
+
+    // 5. Physically show the modal
+    // (Ensure you have 'review-modal' at the bottom of your HTML)
+    openModal('review-modal');
+}
+async function processReview(newStatus) {
+    const id = window.currentReviewId;
+    if (!id) return;
+
+    const arrivalDate = document.getElementById('rev-date').value;
+    const denialReason = document.getElementById('rev-denial-reason').value;
+
+    // Validate based on choice
+    if (newStatus === 'ordered' && !arrivalDate) {
+        alert("Please select an expected arrival date.");
+        return;
+    }
+    if (newStatus === 'denied' && !denialReason) {
+        alert("Please provide a reason for the denial.");
+        return;
+    }
+
+    try {
+        showToast("Updating request...");
+        
+        const updates = { 
+            status: newStatus,
+            // If denied, it moves to the Denied tab. If ordered, it stays in Wishlist with a date.
+            expected_arrival: newStatus === 'ordered' ? arrivalDate : null,
+            denial_reason: newStatus === 'denied' ? denialReason : null,
+            last_updated: new Date().toISOString()
+        };
+
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) throw error;
+
+        showToast(newStatus === 'ordered' ? "Tool Ordered! 📦" : "Request Denied ❌");
+        
+        // Close and Refresh everything
+        closeModal('review-modal');
+        await fetchTools();
+        renderToolWishlist();
+        renderToolDeniedHistory();
+
+    } catch (e) {
+        console.error("Review process failed:", e);
+        alert("Update failed: " + e.message);
+    }
+}
