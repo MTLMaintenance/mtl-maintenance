@@ -142,10 +142,16 @@
     </div>
     
     <!-- FIXED: Clickable Parts Low card matches the others now -->
-    <div class="metric-card" onclick="showPanel('parts')" style="cursor:pointer">
-        <div class="metric-label">Parts Low</div>
+  <div class="metric-card" onclick="showPanel('parts')" style="cursor:pointer; min-height: 120px; display: flex; flex-direction: column;">
+    <div class="metric-label">Parts Low</div>
+    <div style="display: flex; align-items: baseline; gap: 10px;">
         <div class="metric-value" id="dash-low-parts">0</div>
     </div>
+    <!-- NEW: This is where the list of names will appear -->
+    <div id="dash-low-parts-list" style="margin-top: 10px; font-size: 11px; text-align: left; max-height: 60px; overflow-y: auto; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 5px;">
+        <div style="color: #aaa; font-style: italic;">All stock OK</div>
+    </div>
+</div>
     
     <div class="metric-card">
         <div class="metric-label">Open WOs</div>
