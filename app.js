@@ -5190,14 +5190,12 @@ function renderToolObsList() {
 
     const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
 
-    // Filter notes for this tool
-    const obs = (state.observations || []).filter(o => o.tool_id === toolId);
+    // THE FIX: Check both equip_id and tool_id to find the notes
+    const obs = (state.observations || []).filter(o => o.tool_id === toolId || o.equip_id === toolId);
     
-    // Sort newest at top
     const sortedObs = [...obs].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
     container.innerHTML = sortedObs.length ? sortedObs.map(o => {
-        // Only the person who wrote the note (or an admin) can see the buttons
         const isAuthor = o.author === (currentUser.full_name || currentUser.username);
         const canControl = isManager || isAuthor;
 
@@ -5208,8 +5206,8 @@ function renderToolObsList() {
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span class="note-date">${new Date(o.created_at).toLocaleDateString()}</span>
                     ${canControl ? `
-                        <button class="note-edit-btn" onclick="editToolObservation('${o.id}')" title="Edit">✎</button>
-                        <button class="note-del-btn" onclick="deleteToolObservation('${o.id}')" title="Delete">✕</button>
+                        <button class="note-edit-btn" onclick="editToolObservation('${o.id}')">✎</button>
+                        <button class="note-del-btn" onclick="deleteToolObservation('${o.id}')">✕</button>
                     ` : ''}
                 </div>
             </div>
@@ -6951,28 +6949,31 @@ async function addToolNote() {
 
     const newNote = {
         id: crypto.randomUUID(),
-        tool_id: toolId,
+        // THE FIX: Use 'equip_id' because your database requires it
+        equip_id: toolId, 
+        tool_id: toolId, // Including this too in case you have both columns
         author: currentUser.full_name || currentUser.username,
         body: body,
         created_at: new Date().toISOString()
     };
 
     try {
-        // 1. Save to Supabase (Ensure your table is named 'observations')
+        console.log("Sending note to Supabase:", newNote);
+        
         const { error } = await window._mpdb.from('observations').insert([newNote]);
         if (error) throw error;
 
-        // 2. Update local memory so it shows up instantly
+        // Update local memory
         if (!state.observations) state.observations = [];
         state.observations.push(newNote);
 
-        // 3. Clear input and redraw list
+        // Clear input and redraw list
         input.value = "";
         renderToolObsList();
         showToast("Note added ✓");
 
     } catch (e) {
-        console.error(e);
+        console.error("Supabase Save Error:", e.message);
         alert("Failed to save note: " + e.message);
     }
 }
