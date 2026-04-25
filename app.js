@@ -4884,20 +4884,16 @@ async function toggleToolStatus(id) {
 function switchToolTab(tab) {
     console.log("Switching Tool Tab to:", tab);
     
-    // IDs must match the divs in your 'panel-tools'
     const inventory = document.getElementById('tool-inventory-view');
     const wishlist = document.getElementById('tool-wishlist-view');
     const denied = document.getElementById('tool-denied-view');
 
-    // Safety checks to prevent crashing if a div is missing
     if (inventory) inventory.style.display = tab === 'inventory' ? 'block' : 'none';
     if (wishlist) wishlist.style.display = tab === 'wishlist' ? 'block' : 'none';
     if (denied) denied.style.display = tab === 'denied' ? 'block' : 'none';
 
-    // Update active state of buttons
     document.querySelectorAll('#panel-tools .tab').forEach(b => b.classList.remove('active'));
     
-    // Determine which button to highlight
     let btnId = 'tool-inv-tab';
     if (tab === 'wishlist') btnId = 'tool-wish-tab';
     if (tab === 'denied') btnId = 'tool-denied-tab';
@@ -4905,9 +4901,10 @@ function switchToolTab(tab) {
     const activeBtn = document.getElementById(btnId);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // Refresh the lists
-    if (tab === 'inventory' && typeof renderTools === 'function') renderTools();
-    if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
+    // THE FIX: Specifically trigger the correct render function for the tab
+    if (tab === 'inventory') renderTools();
+    if (tab === 'wishlist') renderToolWishlist();
+    if (tab === 'denied') renderToolDeniedHistory(); // <--- This was missing!
 }
 // 1. The Rendering Function
 function renderTools() {
@@ -7299,24 +7296,52 @@ window.deleteConsumable = async function(id) {
     }
 };
 // 1. Logic to show the Wishlist
+// 1. Render the Wishlist Table
 function renderToolWishlist() {
-    const container = document.getElementById('wishlist-container');
-    if (!container) return;
+    const tableBody = document.getElementById('wishlist-table-body');
+    if (!tableBody) return;
 
-    // Filter tools to find ones that are NOT available and NOT denied
-    // (Assuming these are 'pending' or have no status)
-    const wishlist = state.tools.filter(t => t.status !== 'available' && t.status !== 'denied');
+    // Filter for pending requests
+    const wishlist = (window.state.tools || []).filter(t => 
+        t.status !== 'available' && t.status !== 'denied' && t.status !== 'OK'
+    );
 
     if (wishlist.length === 0) {
-        container.innerHTML = '<div style="color:#aaa; padding:40px; text-align:center; grid-column: span 2;">The wishlist is empty.</div>';
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
         return;
     }
 
-    container.innerHTML = wishlist.map(t => `
-        <div class="card" style="padding:15px; background:rgba(255,255,255,0.05);">
-            <div style="font-weight:700; color:#fff;">${t.tool_name || t.name}</div>
-            <div style="font-size:12px; color:#aaa; margin-top:5px;">Category: ${t.category || 'Other'}</div>
-            <button class="btn btn-primary btn-sm" style="margin-top:10px; width:100%" onclick="window.editTool('${t.id}')">Review Request</button>
-        </div>
+    tableBody.innerHTML = wishlist.map(t => `
+        <tr onclick="window.editTool('${t.id}')" style="cursor:pointer;">
+            <td><b>${t.tool_name || t.name}</b></td>
+            <td>${t.category || 'Other'}</td>
+            <td>${t.requested_by || '—'}</td>
+            <td><span class="badge bi">REQUESTED</span></td>
+            <td><button class="btn btn-primary btn-sm" style="height:28px; padding:0 10px;">Review</button></td>
+        </tr>
+    `).join('');
+}
+
+// 2. Render the Denied History Table
+function renderToolDeniedHistory() {
+    const tableBody = document.getElementById('denied-table-body');
+    if (!tableBody) return;
+
+    // Filter for denied tools
+    const denied = (window.state.tools || []).filter(t => t.status === 'denied');
+
+    if (denied.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No denied items in history.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = denied.map(t => `
+        <tr onclick="window.editTool('${t.id}')" style="cursor:pointer;">
+            <td><b>${t.tool_name || t.name}</b></td>
+            <td>${t.category || 'Other'}</td>
+            <td style="color:#dc3545; font-size:12px;">${t.denial_reason || 'No reason provided'}</td>
+            <td><span class="badge bd">DENIED</span></td>
+            <td><button class="btn btn-secondary btn-sm" style="height:28px; padding:0 10px;">View</button></td>
+        </tr>
     `).join('');
 }
