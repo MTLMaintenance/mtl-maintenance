@@ -7155,9 +7155,9 @@ function renderConsumables() {
     body.innerHTML = state.consumables.map(c => {
         const isLow = c.qty <= c.reorder;
         
-        // We removed the last <td> cell entirely
+        // THE FIX: Added the <tr> tag with the onclick event
         return `
-          
+            <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
                 <td><b>${c.name}</b></td>
                 <td>${c.num || '—'}</td>
                 <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
@@ -7170,7 +7170,6 @@ function renderConsumables() {
     }).join('');
 }
 // 1. OPEN THE MODAL (For New Items)
-// 1. OPEN MODAL FOR NEW ITEM
 window.openAddConsumable = function() {
     console.log("🚀 Opening Consumable Modal for new entry...");
     
