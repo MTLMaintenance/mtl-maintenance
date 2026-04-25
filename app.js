@@ -4897,35 +4897,31 @@ function switchToolTab(tab) {
 }
 // 1. The Rendering Function
 function renderTools() {
-    console.log("--- Starting renderTools (Keys Synchronized) ---");
     const tableBody = document.getElementById('tools-table-body');
-    if (!tableBody) return console.error("ID 'tools-table-body' missing!");
+    if (!tableBody) return;
 
-    // Use window.state to ensure we are looking at the same memory as fetchTools
-    const tools = (window.state && window.state.tools) ? window.state.tools : [];
+    // Use the global window state to ensure we have the fresh data from fetchTools()
+    const tools = window.state.tools || [];
 
     if (tools.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools found in database.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
         return;
     }
 
-    // Filter to ONLY show 'available' tools in the inventory tab
-    // (Your logs show 1 is 'denied' and 4 are 'available')
-    const inventoryTools = tools.filter(t => t.status === 'available' || !t.status);
-
-    tableBody.innerHTML = inventoryTools.map(t => {
-        // MATCHING YOUR LOG KEYS: tool_name, health, status
-        const name = t.tool_name || t.name || 'Unnamed Tool';
+    tableBody.innerHTML = tools.map(t => {
+        // MATCHING SUPABASE COLUMN NAMES:
+        const name = t.tool_name || t.name || 'Unnamed';
         const health = t.health || 100;
         const status = t.status || 'available';
-        
+        const location = t.location || '—';
+
         return `
-            <tr onclick="editTool('${t.id}')" style="cursor:pointer; background:rgba(255,255,255,0.02);">
-                <td style="font-weight:600; color:#fff;"><b>${name}</b></td>
-                <td style="color:#aaa;">${t.category || 'Other'}</td>
-                <td style="color:#aaa;">${t.location || '—'}</td>
+            <tr onclick="editTool('${t.id}')" style="cursor:pointer;">
+                <td><b>${name}</b></td>
+                <td>${t.category || 'Other'}</td>
+                <td>${location}</td>
                 <td>
-                    <div style="width:60px; height:8px; background:#444; border-radius:4px; overflow:hidden;">
+                    <div style="width:60px; height:8px; background:#eee; border-radius:4px; overflow:hidden;">
                         <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
                     </div>
                 </td>
@@ -4933,59 +4929,59 @@ function renderTools() {
                 <td>${t.procurement || '—'}</td>
             </tr>`;
     }).join('');
-    
-    console.log(`✅ Successfully drew ${inventoryTools.length} tools.`);
 }
-
 // 2. The Saving Function (THE FIX: Added the missing header and try block)
 async function saveTool() {
+    console.log("--- SUBMITTING NEW TOOL ---");
     try {
         const idInput = document.getElementById('tool-edit-id');
         const id = idInput ? idInput.value : '';
         const nameInput = document.getElementById('tool-name');
         
         if(!nameInput || !nameInput.value.trim()) {
-            showToast("Please enter a tool name");
+            alert("Please enter a tool name");
             return;
         }
 
+        const toolName = nameInput.value.trim();
+
+        // 1. Prepare the object for Supabase
         const tool = {
             id: (id && id.trim() !== "") ? id : uid(),
-            tool_name: nameInput.value.trim(),
-            name: nameInput.value.trim(), 
+            name: toolName, 
+            tool_name: toolName, 
             category: document.getElementById('tool-cat').value,
             location: document.getElementById('tool-loc').value.trim(),
             health: parseInt(document.getElementById('tool-health').value) || 100,
             is_lost: document.getElementById('tool-lost').checked,
-            status: 'available',
+            status: 'available', // This ensures it passes the 'Inventory' filter
             last_updated: new Date().toISOString()
         };
 
-        console.log("Sending object to Supabase:", tool);
-
+        // 2. Save to Supabase
         const { error } = await window._mpdb
             .from('tool_requests')
             .upsert([tool]);
 
         if (error) {
-            console.error("Supabase Error:", error.message);
-            showToast("DB Error: " + error.message);
+            alert("Database Error: " + error.message);
             return;
         }
 
-        // Update local memory
-        if (!state.tools) state.tools = [];
-        const idx = state.tools.findIndex(x => x.id === tool.id);
-        if (idx > -1) state.tools[idx] = tool; else state.tools.push(tool);
+        // --- THE KEY FIX: TOTAL SYNC ---
+        // 3. Re-download the full list from the database
+        if (typeof fetchTools === 'function') {
+            await fetchTools();
+        }
 
-        // Success - close and refresh
+        // 4. Update the screen
         closeModal('tool-modal'); 
-        renderTools();
+        renderTools(); 
+        
         showToast("Tool saved successfully ✓");
 
     } catch (e) {
-        console.error("JavaScript Crash in saveTool:", e);
-        showToast("App Error. Check Console.");
+        console.error("❌ Save Tool Error:", e);
     }
 }
 function renderWishlist() {
@@ -5309,50 +5305,41 @@ function resetToolForm() {
    }
 
 async function deleteTool() {
-    // 1. Grab the ID from the hidden input right now
+    // 1. Get the ID from the hidden input
     const id = document.getElementById('tool-edit-id').value;
-    
-    if(!id) {
-        console.error("Delete failed: No Tool ID found in the form.");
-        showToast("Error: No ID found");
-        return;
-    }
+    if(!id) return;
 
-    // Find the name locally for the popup
     const tool = state.tools.find(t => t.id === id);
     const toolName = tool ? (tool.tool_name || tool.name) : 'this tool';
 
-    // 2. Confirmation
-    if(!confirm(`Permanently delete "${toolName}" from the database?`)) return;
+    if(!confirm(`Permanently delete "${toolName}"?`)) return;
 
     try {
-        console.log("Deleting tool from database. ID:", id);
+        console.log("Attempting to delete ID:", id);
 
-        // 3. PHYSICAL DELETE from Supabase
+        // 2. THE FIX: Explicitly target the 'tool_requests' table
         const { error } = await window._mpdb
-            .from('tool_requests') // Check: Is your table 'tool_requests' or 'shop_tools'?
+            .from('tool_requests') 
             .delete()
             .eq('id', id);
 
         if (error) {
-            console.error("Supabase rejected deletion:", error.message);
-            alert("Database Error: " + error.message);
-            return;
+            console.error("Supabase Error:", error.message);
+            // If it's not found in 'tool_requests', maybe it's in 'shop_tools'?
+            console.log("Checking backup table 'shop_tools'...");
+            await window._mpdb.from('shop_tools').delete().eq('id', id);
         }
 
-        // 4. Update UI instantly
+        // 3. Update local memory immediately (The 'Live' part)
         state.tools = state.tools.filter(t => t.id !== id);
         
-        // Hide button and close window
-        document.getElementById('tool-delete-btn').style.display = 'none';
         closeModal('tool-modal');
-        
-        if (typeof renderTools === 'function') renderTools();
-        showToast("Tool deleted successfully ✓");
+        renderTools(); // Redraw the white box
+        showToast("Tool removed ✓");
 
     } catch (e) {
-        console.error("Delete crash:", e);
-        showToast("App Error: " + e.message);
+        console.error("Delete function crashed:", e);
+        showToast("Delete failed.");
     }
 }
 async function deleteToolObservation(obsId) {
