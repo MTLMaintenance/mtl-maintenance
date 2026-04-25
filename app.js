@@ -6833,7 +6833,7 @@ function teleportModals() {
     console.log("🚀 Placing items in their final homes...");
     
     // 1. POPUPS go to the body
-    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal'];
+    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','consumable-modal'];
     modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
@@ -7161,52 +7161,58 @@ function renderConsumables() {
     }).join('');
 }
 // 1. OPEN THE MODAL (For New Items)
-function openAddConsumable() {
-    document.getElementById('c-modal-title').textContent = "Add Shop Supply";
-    document.getElementById('c-edit-id').value = "";
-    document.getElementById('btn-delete-consumable').style.display = "none";
+// 1. OPEN MODAL FOR NEW ITEM
+window.openAddConsumable = function() {
+    console.log("🚀 Opening Consumable Modal for new entry...");
     
-    // Reset fields
-    ['c-name', 'c-num', 'c-cost', 'c-qty', 'c-reorder'].forEach(id => {
+    // Set Title and clear Hidden ID
+    if (document.getElementById('c-modal-title')) document.getElementById('c-modal-title').textContent = "Add Shop Supply";
+    if (document.getElementById('c-edit-id')) document.getElementById('c-edit-id').value = "";
+    if (document.getElementById('btn-delete-consumable')) document.getElementById('btn-delete-consumable').style.display = "none";
+    
+    // Reset all fields to empty/zero
+    const fields = ['c-name', 'c-num', 'c-cost', 'c-qty', 'c-reorder'];
+    fields.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.value = (id.includes('qty') || id.includes('reorder')) ? '0' : '';
     });
     
-    // Fill suppliers (re-using your existing supplier loader)
+    // Fill suppliers (Specifically for the Consumable dropdown)
+    // If your function supports passing an ID, use it here
     if (typeof populateSupplierDropdown === 'function') {
-        populateSupplierDropdown('c-supplier-select');
+        populateSupplierDropdown(); 
     }
     
     openModal('consumable-modal');
-}
+};
 
-// 2. OPEN THE MODAL (For Editing)
+// 2. OPEN MODAL FOR EDITING
 window.editConsumable = function(id) {
     const item = state.consumables.find(c => c.id === id);
     if (!item) return;
 
-    document.getElementById('c-modal-title').textContent = "Edit Item: " + item.name;
-    document.getElementById('c-edit-id').value = item.id;
-    document.getElementById('btn-delete-consumable').style.display = "block";
+    if (document.getElementById('c-modal-title')) document.getElementById('c-modal-title').textContent = "Edit Item: " + item.name;
+    if (document.getElementById('c-edit-id')) document.getElementById('c-edit-id').value = item.id;
+    if (document.getElementById('btn-delete-consumable')) document.getElementById('btn-delete-consumable').style.display = "block";
 
-    document.getElementById('c-name').value = item.name || "";
-    document.getElementById('c-num').value = item.num || "";
-    document.getElementById('c-cost').value = item.cost || 0;
-    document.getElementById('c-qty').value = item.qty || 0;
-    document.getElementById('c-reorder').value = item.reorder || 0;
-    document.getElementById('c-supplier-select').value = item.supplier_id || "";
+    if (document.getElementById('c-name')) document.getElementById('c-name').value = item.name || "";
+    if (document.getElementById('c-num')) document.getElementById('c-num').value = item.num || "";
+    if (document.getElementById('c-cost')) document.getElementById('c-cost').value = item.cost || 0;
+    if (document.getElementById('c-qty')) document.getElementById('c-qty').value = item.qty || 0;
+    if (document.getElementById('c-reorder')) document.getElementById('c-reorder').value = item.reorder || 0;
+    if (document.getElementById('c-supplier-select')) document.getElementById('c-supplier-select').value = item.supplier_id || "";
 
     openModal('consumable-modal');
 };
 
-// 3. SAVE LOGIC
+// 3. SAVE TO SUPABASE
 async function saveConsumable() {
     const editId = document.getElementById('c-edit-id').value;
     const name = document.getElementById('c-name').value.trim();
     if(!name) return alert("Please enter a name");
 
     const record = {
-        id: editId || uid(),
+        id: (editId && editId !== "") ? editId : uid(),
         name: name,
         num: document.getElementById('c-num').value,
         supplier_id: document.getElementById('c-supplier-select').value || null,
@@ -7217,9 +7223,9 @@ async function saveConsumable() {
     };
 
     try {
-        await window._mpdb.from('consumables').upsert([record]);
+        const { error } = await window._mpdb.from('consumables').upsert([record]);
+        if (error) throw error;
         
-        // Refresh local memory and UI
         await fetchConsumables(); 
         closeModal('consumable-modal');
         showToast("Consumable saved ✓");
