@@ -7197,17 +7197,33 @@ window.openAddConsumable = function() {
 
 // 2. OPEN MODAL FOR EDITING
 window.editConsumable = function(id) {
- const delBtn = document.getElementById('btn-delete-consumable');
-if (delBtn) {
-    delBtn.style.setProperty('display', 'block', 'important');   
- 
- const item = state.consumables.find(c => c.id === id);
-    if (!item) return;
-}
-    if (document.getElementById('c-modal-title')) document.getElementById('c-modal-title').textContent = "Edit Item: " + item.name;
-    if (document.getElementById('c-edit-id')) document.getElementById('c-edit-id').value = item.id;
-    if (document.getElementById('btn-delete-consumable')) document.getElementById('btn-delete-consumable').style.display = "block";
+    console.log("🛠️ Opening Edit for Consumable ID:", id);
 
+    // 1. Find the item data FIRST
+    const item = state.consumables.find(c => c.id === id);
+    if (!item) {
+        console.error("Item not found in memory.");
+        return;
+    }
+
+    // 2. Open the Modal UI
+    if (typeof openModal === 'function') openModal('consumable-modal');
+
+    // 3. Force the Delete button to show
+    const delBtn = document.getElementById('btn-delete-consumable');
+    if (delBtn) {
+        delBtn.style.setProperty('display', 'block', 'important');
+    }
+
+    // 4. Fill the IDs and Labels
+    if (document.getElementById('c-modal-title')) {
+        document.getElementById('c-modal-title').textContent = "Edit Item: " + (item.name || "Unnamed");
+    }
+    if (document.getElementById('c-edit-id')) {
+        document.getElementById('c-edit-id').value = item.id;
+    }
+
+    // 5. Fill all input fields
     if (document.getElementById('c-name')) document.getElementById('c-name').value = item.name || "";
     if (document.getElementById('c-num')) document.getElementById('c-num').value = item.num || "";
     if (document.getElementById('c-cost')) document.getElementById('c-cost').value = item.cost || 0;
@@ -7215,9 +7231,8 @@ if (delBtn) {
     if (document.getElementById('c-reorder')) document.getElementById('c-reorder').value = item.reorder || 0;
     if (document.getElementById('c-supplier-select')) document.getElementById('c-supplier-select').value = item.supplier_id || "";
 
-    openModal('consumable-modal');
+    console.log("✅ Consumable form populated successfully.");
 };
-
 // 3. SAVE TO SUPABASE
 async function saveConsumable() {
     const editId = document.getElementById('c-edit-id').value;
