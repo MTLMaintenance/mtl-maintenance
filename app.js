@@ -4127,7 +4127,8 @@ async function enterApp(){
   }
 
   // 4. Data Logic
-  await loadState();
+   await fetchTools();
+ await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
   showPanel('dashboard');
@@ -5579,12 +5580,14 @@ async function showPanel(id) {
             if (typeof renderChat === 'function') renderChat(); 
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
-        'tools': () => { 
-            // THIS IS THE TOOLS BLOCK
-            if (typeof switchToolTab === 'function') switchToolTab('inventory');
-            if (typeof renderTools === 'function') renderTools(); 
-            if (typeof updateWishCount === 'function') updateWishCount(); 
-        }
+        'tools': async () => { 
+    // If the list is still undefined or empty, try to fetch it now
+    if (!state.tools || state.tools.length === 0) {
+        await fetchTools();
+    }
+    if (typeof switchToolTab === 'function') switchToolTab('inventory');
+    if (typeof renderTools === 'function') renderTools(); 
+}
     };
 
     // 6. Execute the render if it exists
@@ -6888,5 +6891,26 @@ async function receiveTool() {
     } catch (e) {
         console.error(e);
         showToast("Update failed");
+    }
+}
+async function fetchTools() {
+    console.log("📡 Fetching tools from Supabase...");
+    try {
+        // Use 'tool_requests' (the table we confirmed earlier)
+        const { data, error } = await window._mpdb
+            .from('tool_requests')
+            .select('*');
+
+        if (error) throw error;
+
+        state.tools = data || [];
+        console.log(`✅ Loaded ${state.tools.length} tools into memory.`);
+        
+        // If we are currently looking at the tools tab, redraw it
+        if (typeof renderTools === 'function') renderTools();
+
+    } catch (e) {
+        console.error("❌ Failed to fetch tools:", e.message);
+        state.tools = []; // Set to empty array so renderTools doesn't crash
     }
 }
