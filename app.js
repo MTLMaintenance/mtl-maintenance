@@ -1929,8 +1929,32 @@ function renderParts() {
         </tr>`;
     }).join('');
 }
-async function deletePart(id){ if(!confirm('Delete this part?'))return; state.parts=state.parts.filter(p=>p.id!==id); await persist('parts','delete',{id}); renderParts(); updateMetrics(); }
+// 1. THE DELETE FUNCTION
+window.deletePart = async function() {
+    const id = document.getElementById('part-edit-id').value;
+    if(!id) return;
 
+    const part = state.parts.find(p => p.id === id);
+    if(!confirm(`Permanently delete "${part.name}"?`)) return;
+
+    try {
+        await window._mpdb.from('parts').delete().eq('id', id);
+        state.parts = state.parts.filter(p => p.id !== id);
+        closeModal('part-modal');
+        renderParts();
+        showToast("Part removed");
+    } catch(e) { showToast("Delete failed"); }
+};
+
+// 2. SHOW BUTTON WHEN EDITING
+// Add this inside your editPart(id) function:
+const delBtn = document.getElementById('btn-delete-part');
+if (delBtn) delBtn.style.display = 'block';
+
+// 3. HIDE BUTTON WHEN ADDING NEW
+// Add this inside your resetPartForm() function:
+const delBtnNew = document.getElementById('btn-delete-part');
+if (delBtnNew) delBtnNew.style.display = 'none';
 // ============================================================
 // SUPPLIERS
 // ============================================================
