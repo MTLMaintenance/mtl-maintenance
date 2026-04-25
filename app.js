@@ -6894,23 +6894,34 @@ async function receiveTool() {
     }
 }
 async function fetchTools() {
-    console.log("📡 Fetching tools from Supabase...");
+    console.log("🔍 Checking connection to 'tool_requests' table...");
+    
     try {
-        // Use 'tool_requests' (the table we confirmed earlier)
         const { data, error } = await window._mpdb
             .from('tool_requests')
             .select('*');
 
-        if (error) throw error;
+        if (error) {
+            console.error("❌ Supabase returned an error:", error.message);
+            return;
+        }
 
-        state.tools = data || [];
-        console.log(`✅ Loaded ${state.tools.length} tools into memory.`);
-        
-        // If we are currently looking at the tools tab, redraw it
-        if (typeof renderTools === 'function') renderTools();
+        console.log("📦 RAW DATA RECEIVED:", data);
 
-    } catch (e) {
-        console.error("❌ Failed to fetch tools:", e.message);
-        state.tools = []; // Set to empty array so renderTools doesn't crash
+        // Ensure the global state is ready
+        if (typeof window.state === 'undefined') window.state = {};
+        window.state.tools = data || [];
+
+        console.log(`✅ State updated. There are now ${window.state.tools.length} tools in memory.`);
+
+        // Force the draw
+        if (typeof renderTools === 'function') {
+            renderTools();
+        } else {
+            console.warn("⚠️ renderTools function not found!");
+        }
+
+    } catch (err) {
+        console.error("💥 Function crashed:", err);
     }
 }
