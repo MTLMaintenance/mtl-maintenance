@@ -1196,7 +1196,9 @@
     <span class="section-title">Parts & Consumables</span>
     <div style="display:flex; gap:8px">
         <!-- New 'Add Consumable' button -->
-        <button id="add-consumable-btn" class="btn btn-primary btn-sm" style="display:none;" onclick="openAddConsumable()">+ Add Consumable</button>
+        <button id="add-consumable-btn" class="btn btn-primary btn-sm" onclick="window.openAddConsumable()">
+    + Add Consumable
+</button>
         <!-- Existing 'Add Part' button -->
         <button id="add-part-btn" class="btn btn-primary btn-sm" onclick="resetPartForm(); populateSupplierDropdown(); openModal('part-modal');">+ Add Part</button>
     </div>
