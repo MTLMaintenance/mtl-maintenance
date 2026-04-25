@@ -7298,3 +7298,25 @@ window.deleteConsumable = async function(id) {
         alert("Delete failed: " + e.message);
     }
 };
+// 1. Logic to show the Wishlist
+function renderToolWishlist() {
+    const container = document.getElementById('wishlist-container');
+    if (!container) return;
+
+    // Filter tools to find ones that are NOT available and NOT denied
+    // (Assuming these are 'pending' or have no status)
+    const wishlist = state.tools.filter(t => t.status !== 'available' && t.status !== 'denied');
+
+    if (wishlist.length === 0) {
+        container.innerHTML = '<div style="color:#aaa; padding:40px; text-align:center; grid-column: span 2;">The wishlist is empty.</div>';
+        return;
+    }
+
+    container.innerHTML = wishlist.map(t => `
+        <div class="card" style="padding:15px; background:rgba(255,255,255,0.05);">
+            <div style="font-weight:700; color:#fff;">${t.tool_name || t.name}</div>
+            <div style="font-size:12px; color:#aaa; margin-top:5px;">Category: ${t.category || 'Other'}</div>
+            <button class="btn btn-primary btn-sm" style="margin-top:10px; width:100%" onclick="window.editTool('${t.id}')">Review Request</button>
+        </div>
+    `).join('');
+}
