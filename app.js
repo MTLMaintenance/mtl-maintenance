@@ -6817,31 +6817,23 @@ function openUserPermissions(userId) {
     }
 }
 function teleportModals() {
-    console.log("🚀 Teleporting modals and panels to the correct home...");
+    console.log("🚀 Placing items in their final homes...");
     
-    // 1. Find your main app wrapper (Check if your ID is 'app' or 'main')
-    const mainWrapper = document.getElementById('app') || document.body;
-
-    const ids = [
-        'user-perms-modal', 
-        'cal-action-modal', 
-        'absence-detail-modal', 
-        'calendar-entry-modal',
-        'part-modal'
-    ];
-    
-    // Modals go to the BODY (top level)
-    ids.forEach(id => {
+    // 1. MODALS go to the <body> (The top layer)
+    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal'];
+    modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
 
-    // --- THE FIX FOR PARTS ---
-    const partsPanel = document.getElementById('panel-parts');
-    if (partsPanel) {
-        // Move it into the MAIN WRAPPER, not the body
-        mainWrapper.appendChild(partsPanel);
-        console.log("✅ Parts Panel moved to Main Wrapper.");
+    // 2. THE TOOL CRIB PANEL goes inside the main APP wrapper
+    // (Check if your main container is 'app' or 'main-container')
+    const mainApp = document.getElementById('app') || document.querySelector('.main-content');
+    const toolsPanel = document.getElementById('panel-tools');
+    
+    if (toolsPanel && mainApp) {
+        mainApp.appendChild(toolsPanel);
+        console.log("✅ Tool Crib moved into the App container.");
     }
 }
 async function jumpToTaskEdit(taskId) {
