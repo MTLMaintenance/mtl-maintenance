@@ -1900,7 +1900,7 @@ function renderParts() {
     if (!tableBody) return;
 
     if (!state.parts || state.parts.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:20px;">No parts found.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:20px; color:#888;">No parts found in inventory.</td></tr>';
         return;
     }
 
@@ -1910,17 +1910,22 @@ function renderParts() {
         const out = qty === 0;
         const low = qty <= reorder;
 
-        return `<tr>
+        // 1. THE FIX: We add onclick="editPart('${p.id}')" to the row
+        return `
+        <tr onclick="editPart('${p.id}')" style="cursor:pointer;">
             <td style="font-weight:600">${p.name || 'Unnamed'}</td>
-            <td>${p.num || '—'}</td>
+            <td style="font-size:12px; color:#666;">${p.num || '—'}</td>
             <td>${typeof supplierName === 'function' ? supplierName(p.supplier_id) : '—'}</td>
-            <td style="font-weight:700; color:${out ? 'red' : low ? 'orange' : 'inherit'}">${qty}</td>
+            <td style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${qty}</td>
             <td>${reorder}</td>
             <td>$${parseFloat(p.cost || 0).toFixed(2)}</td>
             <td>$${(qty * parseFloat(p.cost || 0)).toLocaleString()}</td>
-            <td>${p.auto_reorder ? 'On' : 'Off'}</td>
+            <td><span class="badge ${p.auto_reorder ? 'bs' : 'bg'}">${p.auto_reorder ? 'On' : 'Off'}</span></td>
             <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
-            <td><button class="btn btn-danger btn-sm" onclick="deletePart('${p.id}')">Del</button></td>
+            <td>
+                <!-- 2. THE FIX: event.stopPropagation() prevents the row-click from firing when you click 'Del' -->
+                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deletePart('${p.id}')">Del</button>
+            </td>
         </tr>`;
     }).join('');
 }
@@ -6999,28 +7004,49 @@ async function editToolObservation(id) {
     }
 }
 // 1. OPEN THE EDIT FORM
-function editPart(id) {
-    const part = state.parts.find(p => p.id === id);
-    if (!part) return;
-
-    // Set the Title
-    document.getElementById('part-modal-title').textContent = "Edit Part: " + part.name;
+window.editPart = function(id) {
+    console.log("🛠️ Attempting to edit Part ID:", id);
     
-    // Fill the hidden ID (THIS IS THE KEY)
-    document.getElementById('part-edit-id').value = part.id;
+    // 1. Find the data
+    const part = state.parts.find(p => p.id === id);
+    if (!part) {
+        console.error("Part data not found in state.parts");
+        return;
+    }
 
-    // Fill the inputs
-    document.getElementById('p-name').value = part.name || "";
-    document.getElementById('p-num').value = part.num || "";
-    document.getElementById('p-cost').value = part.cost || 0;
-    document.getElementById('p-qty').value = part.qty || 0;
-    document.getElementById('p-reorder').value = part.reorder || 0;
-    document.getElementById('p-reorder-qty').value = part.reorder_qty || 10;
-    document.getElementById('p-auto-reorder').checked = !!part.auto_reorder;
-    document.getElementById('p-supplier-select').value = part.supplier_id || "";
+    // 2. Open Modal
+    if (typeof openModal === 'function') openModal('part-modal');
+    
+    // 3. Fill the Title
+    const titleEl = document.getElementById('part-modal-title');
+    if (titleEl) titleEl.textContent = "Edit Part: " + part.name;
 
-    openModal('part-modal');
-}
+    // 4. Fill the hidden ID (Essential for saving)
+    const idInput = document.getElementById('part-edit-id');
+    if (idInput) idInput.value = part.id;
+
+    // 5. Fill Form Inputs
+    const fields = {
+        'p-name': part.name,
+        'p-num': part.num,
+        'p-cost': part.cost,
+        'p-qty': part.qty,
+        'p-reorder': part.reorder,
+        'p-reorder-qty': part.reorder_qty,
+        'p-supplier-select': part.supplier_id
+    };
+
+    for (const [fieldId, value] of Object.entries(fields)) {
+        const el = document.getElementById(fieldId);
+        if (el) el.value = value || (fieldId.includes('p-') ? '' : 0);
+    }
+
+    // Set Checkbox
+    const autoCheck = document.getElementById('p-auto-reorder');
+    if (autoCheck) autoCheck.checked = !!part.auto_reorder;
+
+    console.log("✅ Edit form populated.");
+};
 
 // 2. RESET THE FORM (Run this when clicking '+ Add Part')
 function resetPartForm() {
