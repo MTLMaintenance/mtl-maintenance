@@ -1190,15 +1190,44 @@
     </div>
   </div>
 </div>
- <!-- PARTS PANEL -->
+<!-- PARTS & CONSUMABLES PANEL -->
 <div class="panel" id="panel-parts">
   <div class="section-header">
-    <span class="section-title">Parts & Inventory</span>
-    <button class="btn btn-primary" onclick="populateSupplierDropdown(); openModal('part-modal');">
-      + Add Part
-    </button>
+    <span class="section-title">Parts & Consumables</span>
+    <div style="display:flex; gap:8px">
+        <!-- New 'Add Consumable' button -->
+        <button id="add-consumable-btn" class="btn btn-primary btn-sm" style="display:none;" onclick="openAddConsumable()">+ Add Consumable</button>
+        <!-- Existing 'Add Part' button -->
+        <button id="add-part-btn" class="btn btn-primary btn-sm" onclick="resetPartForm(); populateSupplierDropdown(); openModal('part-modal');">+ Add Part</button>
+    </div>
   </div>
 
+  <!-- SUB-TABS FOR PARTS -->
+  <div class="tab-bar" style="margin-bottom: 15px;">
+    <button class="tab active" id="btn-parts-inv" onclick="switchPartsSubTab('inventory')">Main Inventory</button>
+    <button class="tab" id="btn-parts-cons" onclick="switchPartsSubTab('consumables')">Consumables</button>
+  </div>
+
+  <!-- VIEW 1: MAIN INVENTORY -->
+  <div id="parts-inventory-view">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Part Name</th><th>Part #</th><th>Supplier</th><th>In Stock</th><th>Reorder</th><th>Cost</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <tbody id="parts-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VIEW 2: CONSUMABLES (The New Section) -->
+  <div id="parts-consumables-view" style="display:none;">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item Name</th><th>Reference #</th><th>Supplier</th><th>In Stock</th><th>Reorder</th><th>Cost</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <tbody id="consumables-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
   <!-- Container for Low Stock Alerts -->
   <div id="reorder-alerts"></div>
 
