@@ -1423,14 +1423,10 @@ select.form-select:focus {
     z-index: 10001;
 #panel-parts.active {
     display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
     position: relative !important;
-    top: 0 !important;
-    margin-top: 0 !important;
     width: 100% !important;
-    height: auto !important;
     min-height: 500px;
+    z-index: 1; /* Keeps it on the right layer */
 }
 /* 1. Machinery Photo (Bottom layer) */
 #zerk-map-img {
@@ -1661,5 +1657,24 @@ div#panel-parts div.tab-bar button.tab.active {
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #1a1a1a !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+/* --- THE ULTIMATE OVERRIDE FOR PARTS PILLS --- */
+#panel-parts #parts-subtab-bar button.tab {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important; /* Forces the black box from line 82 to die */
+    color: rgba(255, 255, 255, 0.7) !important;
+    padding: 8px 22px !important;
+    border-radius: 8px !important;
+    min-height: 0 !important; /* Overrides the 32px from line 82 */
+    box-shadow: none !important;
+}
+
+#panel-parts #parts-subtab-bar button.tab.active {
+    background: #ffffff !important; /* Solid white pill */
+    background-color: #ffffff !important;
+    color: #1a1a1a !important; /* Dark text */
+    font-weight: 800 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
