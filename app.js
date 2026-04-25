@@ -5069,47 +5069,6 @@ async function handleWish(id, status) {
     else await notifyManagers(`✅ Tool approved: "${req.tool_name}" (Req by ${req.requested_by})`);
     renderWishlist();
 }
-async function () {
-    const editId = document.getElementById('wish-edit-id').value;
-    const name = document.getElementById('wish-name').value.trim();
-    const reason = document.getElementById('wish-reason').value.trim();
-
-    if (!name || !reason) return alert("Fill in name and reason.");
-
-    const req = {
-        // Use existing ID if editing, otherwise generate a new one
-        id: (editId && editId !== "") ? editId : uid(),
-        name: name,
-        tool_name: name,
-        request_reason: reason,
-        notes: reason,
-        requested_by: currentUser.full_name || currentUser.username,
-        author_id: String(currentUser.id),
-        status: 'requested',
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        // THE FIX: Use 'upsert' to handle edits
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .upsert([req]);
-
-        if (error) throw error;
-
-        showToast("Updated successfully ✓");
-        closeModal('wishlist-modal');
-        
-        // Reset the form for next time
-        document.getElementById('wish-edit-id').value = "";
-        document.getElementById('wish-modal-title').textContent = "💡 Suggest a Tool";
-        document.getElementById('wish-submit-btn').textContent = "Submit Request";
-
-        await fetchTools();
-        renderToolWishlist();
-
-    } catch (e) { alert("Error: " + e.message); }
-}
 function updateWishCount() {
     const count = state.wishlist.filter(w => w.status === 'pending').length;
     const badge = document.getElementById('wish-count');
