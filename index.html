@@ -249,65 +249,6 @@
   </div>
 
   
-<!-- ADD PART MODAL -->
-<div class="modal-backdrop" id="part-modal" style="display:none;">
-  <div class="modal" style="max-width:500px; background:white; color:black; padding:25px; border-radius:15px; border:1px solid #ccc; position:relative; overflow:visible !important;">
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-      <h3 style="margin:0;">Add Part</h3>
-      <button onclick="closeModal('part-modal')" style="font-size:20px; cursor:pointer; background:none; border:none; color:#000;">✕</button>
-    </div>
-
-    <div class="form-group" style="margin-bottom:12px">
-        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Name *</label>
-        <input class="form-input" id="p-name" placeholder="e.g. Hydraulic Filter" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-        <div>
-            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Number</label>
-            <input class="form-input" id="p-num" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-        <div>
-            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Unit Cost ($)</label>
-            <input class="form-input" id="p-cost" type="number" step="0.01" value="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom:12px">
-        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Supplier</label>
-        <select class="form-select" id="p-supplier-select" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-            <option value="">— Select Supplier —</option>
-        </select>
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-        <div>
-            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Qty In Stock</label>
-            <input class="form-input" id="p-qty" type="number" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-        <div>
-            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Reorder At (qty)</label>
-            <input class="form-input" id="p-reorder" type="number" value="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom:20px;">
-        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Auto-Reorder Qty</label>
-        <input class="form-input" id="p-reorder-qty" type="number" value="10" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="p-auto-reorder">
-            <label for="p-auto-reorder" style="font-size:12px;">Enable Auto-Reorder Alert</label>
-        </div>
-    </div>
-
-    <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button onclick="closeModal('part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Cancel</button>
-        <button onclick="savePart()" style="background:black; color:white; border:none; padding:10px 25px; border-radius:8px; font-weight:bold; cursor:pointer;">Add Part</button>
-    </div>
-  </div>
-</div>
-  
   <!-- SUPPLIERS -->
   <div class="panel" id="panel-suppliers">
     <div class="section-header"><span class="section-title">Supplier Management</span><button class="btn btn-primary" onclick="openModal('supplier-modal')">+ Add Supplier</button></div>
@@ -772,66 +713,6 @@
       <div id="assign-users-list"></div>
     </div>
     <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('equip-modal')">Cancel</button><button class="btn btn-primary" onclick="saveEquipment()">Add Equipment</button></div>
-  </div>
-</div>
-
-<!-- Part Modal -->
-<!-- PARTS MODAL (NEUTRAL ZONE) -->
-<div class="modal-backdrop" id="part-modal" style="display:none; position:fixed; z-index:1000000 !important; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; backdrop-filter:blur(5px);">
-  
-  <div class="modal" style="max-width:500px; background: white !important; color: black !important; border-radius: 15px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: visible !important;">
-    
-    <!-- THE FIX: Hidden field to track if we are editing an existing part -->
-    <input type="hidden" id="part-edit-id">
-
-    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
-      <span class="modal-title" id="part-modal-title" style="font-weight:700; font-size:18px; color:black !important;">Add Part</span>
-      <button class="modal-close" onclick="closeModal('part-modal')" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
-    </div>
-
-    <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-      <div style="grid-column: span 2;">
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Part Name *</label>
-        <input class="form-input" id="p-name" placeholder="e.g. Hydraulic Filter HF200" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
-      </div>
-      
-      <div>
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Part Number</label>
-        <input class="form-input" id="p-num" placeholder="HF-200-A" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
-      </div>
-
-      <div>
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Unit Cost ($)</label>
-        <input class="form-input" id="p-cost" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
-      </div>
-
-      <div style="grid-column: span 2;">
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Supplier</label>
-        <select class="form-select" id="p-supplier-select" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background:white; color:black;"></select>
-      </div>
-
-      <div>
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Qty In Stock</label>
-        <input class="form-input" id="p-qty" type="number" min="0" placeholder="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
-      </div>
-
-      <div>
-        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Reorder At</label>
-        <input class="form-input" id="p-reorder" type="number" min="0" placeholder="2" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
-      </div>
-
-      <div style="grid-column: span 2; display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; padding:10px; border-radius:8px;">
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:black;">
-          <input type="checkbox" id="p-auto-reorder"/> Enable Auto-Reorder Alert
-        </label>
-        <input class="form-input" id="p-reorder-qty" type="number" placeholder="Qty" style="width:70px; padding:5px; border:1px solid #ddd; border-radius:4px; color:black;">
-      </div>
-    </div>
-
-    <div style="margin-top:25px; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid #eee; padding-top:20px;">
-      <button class="btn" onclick="closeModal('part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
-      <button class="btn" onclick="savePart()" style="background:#000 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Part</button>
-    </div>
   </div>
 </div>
 
@@ -1330,59 +1211,6 @@
     </div>
 </div>
 
-<!-- ==========================================
-     MODALS NEUTRAL ZONE (Last items in body)
-     ========================================== -->
-
-<!-- 1. ADD PART MODAL -->
-<div class="modal-backdrop" id="part-modal" style="display:none;">
-  <div class="modal" style="max-width:500px; background:white; color:black; padding:25px; border-radius:15px; border:1px solid #ccc; position:relative; overflow:visible !important;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-      <h3 style="margin:0; color: black;">Add New Part</h3>
-      <button onclick="closeModal('part-modal')" style="font-size:20px; cursor:pointer; background:none; border:none; color:#000;">✕</button>
-    </div>
-    <div class="form-group" style="margin-bottom:12px">
-        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Name *</label>
-        <input class="form-input" id="p-name" placeholder="e.g. Hydraulic Filter" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-    </div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-        <div>
-            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Part Number</label>
-            <input class="form-input" id="p-num" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-        <div>
-            <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Unit Cost ($)</label>
-            <input class="form-input" id="p-cost" type="number" step="0.01" value="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        </div>
-    </div>
-    <div class="form-group" style="margin-bottom:12px">
-        <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Supplier</label>
-        <select class="form-select" id="p-supplier-select" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background: white; color: black;">
-            <option value="">— Select Supplier —</option>
-        </select>
-    </div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-        <div><label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Qty In Stock</label><input class="form-input" id="p-qty" type="number" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;"></div>
-        <div><label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Reorder At</label><input class="form-input" id="p-reorder" type="number" value="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;"></div>
-    </div>
-    <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button onclick="closeModal('part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Cancel</button>
-        <button onclick="savePart()" style="background:black; color:white; border:none; padding:10px 25px; border-radius:8px; font-weight:bold; cursor:pointer;">Add Part</button>
-    <div style="padding: 20px; display:flex; justify-content:space-between; align-items:center; border-top: 1px solid #eee; background: #fafafa;">
-    <!-- ADD THIS DELETE BUTTON -->
-    <button id="btn-delete-part" type="button" onclick="window.deletePart()" 
-            style="background:#dc3545 !important; color:white !important; border:none !important; padding:10px 15px !important; border-radius:8px !important; cursor:pointer !important; font-size: 13px !important; display:none;">
-        🗑️ Delete Part
-    </button>
-      
-    <div style="display:flex; gap:10px; margin-left: auto;">
-        <button type="button" onclick="closeModal('part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
-        <button type="button" onclick="savePart()" style="background:#000 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Part</button>
-    </div>
-</div>
-    </div>
-  </div>
-</div>
 
 <!-- THE MASTER TOOL MODAL -->
 <div class="modal-backdrop" id="tool-modal" style="display:none; position:fixed; z-index:1000000 !important; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center;">
@@ -1507,6 +1335,83 @@
         <button class="btn" onclick="closeModal('consumable-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
         <button class="btn" onclick="saveConsumable()" style="background:#28a745 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Item</button>
       </div>
+    </div>
+  </div>
+</div>
+ <!-- THE MASTER PART MODAL -->
+<div class="modal-backdrop" id="part-modal" style="display:none; position:fixed; z-index:1000000 !important; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+  <div class="modal" style="max-width:500px; background: white !important; color: black !important; border-radius: 15px; display: flex; flex-direction: column; overflow: visible !important; position: relative !important;">
+    
+    <!-- HIDDEN ID: Vital for editing existing parts -->
+    <input type="hidden" id="part-edit-id">
+
+    <!-- Header -->
+    <div style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="part-modal-title" style="margin:0; color: black !important; font-weight:700;">Add New Part</h3>
+      <button onclick="closeModal('part-modal')" style="background:none; border:none; font-size:20px; cursor:pointer; color:#000;">✕</button>
+    </div>
+
+    <!-- Scrollable Body -->
+    <div style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+        <div class="form-group" style="margin-bottom:15px">
+            <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Part Name *</label>
+            <input class="form-input" id="p-name" placeholder="e.g. Hydraulic Filter" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; color:black;">
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:15px;">
+            <div>
+                <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Part Number</label>
+                <input class="form-input" id="p-num" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+            </div>
+            <div>
+                <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Unit Cost ($)</label>
+                <input class="form-input" id="p-cost" type="number" step="0.01" value="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:15px">
+            <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Supplier</label>
+            <select class="form-select" id="p-supplier-select" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background: white; color: black;">
+                <option value="">— Select Supplier —</option>
+            </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:15px;">
+            <div>
+                <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Qty In Stock</label>
+                <input class="form-input" id="p-qty" type="number" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+            </div>
+            <div>
+                <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Min. Stock Level</label>
+                <input class="form-input" id="p-reorder" type="number" value="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+            </div>
+        </div>
+
+        <!-- Auto Reorder Section -->
+        <div style="background:#f9f9f9; padding:15px; border-radius:12px; border:1px solid #eee;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:black; font-weight:600;">
+                    <input type="checkbox" id="p-auto-reorder" style="width:18px; height:18px;"> Enable Auto-Reorder
+                </label>
+                <div>
+                    <label style="font-size:10px; color:#888; display:block;">ORDER QTY</label>
+                    <input class="form-input" id="p-reorder-qty" type="number" value="10" style="width:70px; padding:5px; border:1px solid #ddd; border-radius:4px; color:black;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding: 20px; display:flex; justify-content:space-between; align-items:center; border-top: 1px solid #eee; background: #fafafa; border-radius: 0 0 15px 15px;">
+        <button id="btn-delete-part" type="button" onclick="window.deletePart()" 
+                style="background:#dc3545 !important; color:white !important; border:none !important; padding:10px 15px !important; border-radius:8px !important; cursor:pointer !important; font-size: 13px !important; font-weight:bold; display:none;">
+            🗑️ Delete Part
+        </button>
+          
+        <div style="display:flex; gap:10px; margin-left: auto;">
+            <button type="button" class="btn" onclick="closeModal('part-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
+            <button type="button" class="btn" onclick="savePart()" style="background:#000 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:10px; font-weight:700; cursor:pointer;">Save Part</button>
+        </div>
     </div>
   </div>
 </div>
