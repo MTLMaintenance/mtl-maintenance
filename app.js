@@ -6998,31 +6998,39 @@ async function editToolObservation(id) {
         showToast("Update failed");
     }
 }
+// 1. OPEN THE EDIT FORM
 function editPart(id) {
-    console.log("Opening Edit for Part:", id);
-    
-    // 1. Find the part in local memory
     const part = state.parts.find(p => p.id === id);
     if (!part) return;
 
-    // 2. Fill the hidden ID field (Vital for updating the right row)
-    const idInput = document.getElementById('part-edit-id');
-    if (idInput) idInput.value = part.id;
+    // Set the Title
+    document.getElementById('part-modal-title').textContent = "Edit Part: " + part.name;
+    
+    // Fill the hidden ID (THIS IS THE KEY)
+    document.getElementById('part-edit-id').value = part.id;
 
-    // 3. Fill the form fields
+    // Fill the inputs
     document.getElementById('p-name').value = part.name || "";
     document.getElementById('p-num').value = part.num || "";
-    document.getElementById('p-supplier-select').value = part.supplier_id || "";
+    document.getElementById('p-cost').value = part.cost || 0;
     document.getElementById('p-qty').value = part.qty || 0;
     document.getElementById('p-reorder').value = part.reorder || 0;
-    document.getElementById('p-cost').value = part.cost || 0;
     document.getElementById('p-reorder-qty').value = part.reorder_qty || 10;
     document.getElementById('p-auto-reorder').checked = !!part.auto_reorder;
+    document.getElementById('p-supplier-select').value = part.supplier_id || "";
 
-    // 4. Update the Modal Title so you know you are editing
-    const title = document.querySelector('#part-modal h3');
-    if (title) title.textContent = "Edit Part: " + part.name;
-
-    // 5. Open the modal
     openModal('part-modal');
+}
+
+// 2. RESET THE FORM (Run this when clicking '+ Add Part')
+function resetPartForm() {
+    document.getElementById('part-modal-title').textContent = "Add New Part";
+    document.getElementById('part-edit-id').value = ""; // Clear the ID
+    
+    const ids = ['p-name', 'p-num', 'p-cost', 'p-qty', 'p-reorder', 'p-reorder-qty'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = (id.includes('qty') || id.includes('reorder')) ? '0' : '';
+    });
+    document.getElementById('p-auto-reorder').checked = false;
 }
