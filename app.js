@@ -4894,7 +4894,7 @@ function switchToolTab(tab) {
     if (tab === 'inventory' && typeof renderTools === 'function') renderTools();
     if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
 }
-function renderTools() {
+async function renderTools() {
     console.log("--- Starting renderTools ---");
     const tableBody = document.getElementById('tools-table-body');
     
