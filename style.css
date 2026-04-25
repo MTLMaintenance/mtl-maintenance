@@ -1576,49 +1576,46 @@ select.form-select:focus {
     display: none !important;
 }
 
-/* --- CONSOLIDATED PARTS SUB-TABS --- */
-/* --- FORCE PARTS SUB-TABS TO MATCH TOOL CRIB --- */
+/* 1. THE DARK OUTER BAR */
 #parts-subtab-bar {
-    background: rgba(0, 0, 0, 0.45) !important;
-    padding: 4px !important;
-    border-radius: 12px !important;
+    background: rgba(0, 0, 0, 0.5) !important; /* Dark translucent bar */
+    padding: 6px !important;
+    border-radius: 14px !important; /* Very rounded corners */
     display: inline-flex !important;
-    gap: 4px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    gap: 6px !important;
+    border: none !important;
     backdrop-filter: blur(10px) !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 25px !important;
     height: auto !important;
-    width: auto !important;
 }
 
-/* Inactive Tabs */
+/* 2. THE BUTTONS (INACTIVE) */
 #parts-subtab-bar .tab {
     background: transparent !important;
-    background-color: transparent !important; /* Explicitly kill bg */
-    color: rgba(255, 255, 255, 0.7) !important; 
-    border: none !important; 
+    color: #ffffff !important; /* White text for inactive */
+    border: none !important; /* REMOVES THE BLACK BORDER BOX */
     outline: none !important;
-    padding: 8px 20px !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
+    padding: 8px 22px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
     font-weight: 600 !important;
     cursor: pointer !important;
+    transition: all 0.2s ease !important;
     box-shadow: none !important;
-    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
-/* Active Tab (The White Pill) */
+/* 3. THE ACTIVE PILL (WHITE) */
 #parts-subtab-bar .tab.active {
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-    color: #1a1a1a !important; /* Dark text */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
-    border: none !important;
+    background: #ffffff !important; /* Solid white */
+    color: #000000 !important;   /* Bold black text */
+    font-weight: 800 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Hover effect */
+/* 4. HOVER EFFECT */
 #parts-subtab-bar .tab:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
     color: #ffffff !important;
-    border: none !important;
 }
