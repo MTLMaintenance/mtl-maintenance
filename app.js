@@ -7143,27 +7143,30 @@ async function fetchConsumables() {
     } catch (e) { console.error(e); }
 }
 
-// 4. Render Table
 function renderConsumables() {
     const body = document.getElementById('consumables-table-body');
     if (!body || !state.consumables) return;
 
+    if (state.consumables.length === 0) {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">No items found.</td></tr>';
+        return;
+    }
+
     body.innerHTML = state.consumables.map(c => {
         const isLow = c.qty <= c.reorder;
+        
+        // We removed the last <td> cell entirely
         return `
-           <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
-    <td><b>${c.name}</b></td>
-    <td>${c.num || '—'}</td>
-    <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
-    <td style="font-weight:700;">${c.qty}</td>
-    <td>${c.reorder}</td>
-    <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
-    <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
-    <td><span class="badge ${c.qty <= c.reorder ? 'bd' : 'bs'}">${c.qty <= c.reorder ? 'LOW' : 'OK'}</span></td>
-    
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); window.deleteConsumable('${c.id}')">Del</button>
-    </td>
-</tr>`;
+            <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
+                <td><b>${c.name}</b></td>
+                <td>${c.num || '—'}</td>
+                <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
+                <td style="font-weight:700; color:${isLow ? '#dc3545' : 'inherit'};">${c.qty}</td>
+                <td>${c.reorder}</td>
+                <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
+                <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
+                <td><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
+            </tr>`;
     }).join('');
 }
 // 1. OPEN THE MODAL (For New Items)
