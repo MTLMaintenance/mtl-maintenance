@@ -4034,7 +4034,7 @@ async function renderDashboard(){
       renderRecentTasks();
       renderRecentObservations();
       renderSchedDash();
-      
+       updateDashboardParts();
       // We REMOVED renderFleetHealthDash() and renderCostChart() from here
       
   } catch (e) {
@@ -7059,4 +7059,39 @@ function resetPartForm() {
         if(el) el.value = (id.includes('qty') || id.includes('reorder')) ? '0' : '';
     });
     document.getElementById('p-auto-reorder').checked = false;
+}
+function updateDashboardParts() {
+    const bigNumber = document.getElementById('dash-low-parts');
+    const listContainer = document.getElementById('dash-low-parts-list');
+    
+    if (!bigNumber || !listContainer) return;
+
+    // 1. Filter for parts that are below reorder point
+    const lowParts = (state.parts || []).filter(p => {
+        const qty = parseInt(p.qty) || 0;
+        const reorder = parseInt(p.reorder) || 0;
+        return qty <= reorder;
+    });
+
+    // 2. Update the Big Number
+    bigNumber.textContent = lowParts.length;
+    bigNumber.style.color = lowParts.length > 0 ? '#d9480f' : 'inherit';
+
+    // 3. Build the List
+    if (lowParts.length === 0) {
+        listContainer.innerHTML = '<div style="color: #aaa; font-style: italic;">All stock OK</div>';
+        return;
+    }
+
+    listContainer.innerHTML = lowParts.map(p => {
+        const isOut = (parseInt(p.qty) || 0) === 0;
+        return `
+            <div style="margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                • ${p.name}: 
+                <b style="color: ${isOut ? '#dc3545' : '#fd7e14'}">
+                    ${isOut ? 'OUT' : p.qty + ' left'}
+                </b>
+            </div>
+        `;
+    }).join('');
 }
