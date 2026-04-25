@@ -7233,3 +7233,41 @@ async function saveConsumable() {
         alert("Save failed: " + e.message);
     }
 }
+window.deleteConsumable = async function(id) {
+    // 1. Identify which ID to delete
+    // If an ID wasn't passed (clicked from modal), grab it from the hidden input
+    const targetId = id || document.getElementById('c-edit-id').value;
+    
+    if (!targetId) {
+        console.error("Delete failed: No ID found.");
+        return;
+    }
+
+    // 2. Find the name for the confirmation box
+    const item = state.consumables.find(c => c.id === targetId);
+    const itemName = item ? item.name : "this item";
+
+    if (!confirm(`Are you sure you want to permanently delete "${itemName}"?`)) return;
+
+    try {
+        // 3. Delete from Supabase
+        const { error } = await window._mpdb
+            .from('consumables')
+            .delete()
+            .eq('id', targetId);
+
+        if (error) throw error;
+
+        // 4. Update local memory
+        state.consumables = state.consumables.filter(c => c.id !== targetId);
+
+        // 5. Success - Refresh UI
+        closeModal('consumable-modal');
+        renderConsumables();
+        showToast("Item removed ✓");
+
+    } catch (e) {
+        console.error("Delete error:", e);
+        alert("Delete failed: " + e.message);
+    }
+};
