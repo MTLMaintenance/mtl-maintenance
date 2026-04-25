@@ -7157,7 +7157,7 @@ function renderConsumables() {
         
         // We removed the last <td> cell entirely
         return `
-            <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
+                
                 <td><b>${c.name}</b></td>
                 <td>${c.num || '—'}</td>
                 <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
