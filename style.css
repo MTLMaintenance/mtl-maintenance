@@ -1610,3 +1610,43 @@ select.form-select:focus {
     background: rgba(255, 255, 255, 0.1) !important;
     color: #ffffff !important;
 }
+/* --- PARTS SUB-TAB BAR CONTAINER --- */
+#parts-subtab-bar {
+    background: rgba(0, 0, 0, 0.45) !important; /* Dark glassy bar */
+    padding: 4px !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    gap: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* --- THE INDIVIDUAL BUTTONS --- */
+#parts-subtab-bar .tab {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.7) !important; /* Faded white text */
+    border: none !important; /* REMOVES THAT BLACK BORDER */
+    padding: 8px 20px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+
+/* --- THE ACTIVE PILL (WHITE) --- */
+#parts-subtab-bar .tab.active {
+    background: #ffffff !important;
+    color: #1a1a1a !important; /* Dark text on white button */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Hover effect for inactive tabs */
+#parts-subtab-bar .tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
