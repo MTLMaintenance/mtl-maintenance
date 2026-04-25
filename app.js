@@ -7340,26 +7340,21 @@ function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
     if (!tableBody) return;
 
-    // THE FIX: Show both 'requested' (new) and 'ordered' (approved but not here yet)
-    const wishlist = (window.state.tools || []).filter(t => 
-        t.status === 'requested' || t.status === 'ordered'
-    );
-
-    if (wishlist.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
-        return;
-    }
+    const wishlist = (state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
 
     tableBody.innerHTML = wishlist.map(t => {
-        // Author check for Edit/Delete
         const isAuthor = String(t.author_id) === String(currentUser.id);
         const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
         
         let actionBtn = '';
         if (isAdmin) {
             actionBtn = `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${t.id}')">Review</button>`;
-        } else if (isAuthor) {
-            actionBtn = `<button class="btn btn-secondary btn-sm" onclick="editWishItem('${t.id}')">✎ Edit</button>`;
+        } else if (isAuthor && t.status === 'requested') {
+            // Author gets Edit AND Delete, but only before it is Ordered
+            actionBtn = `
+                <button class="btn btn-secondary btn-sm" onclick="editWishItem('${t.id}')">✎</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteWishItem('${t.id}')">🗑️</button>
+            `;
         }
 
         const statusLabel = t.status === 'ordered' 
@@ -7372,7 +7367,7 @@ function renderToolWishlist() {
                 <td>${t.category || 'Other'}</td>
                 <td>${t.requested_by}</td>
                 <td>${statusLabel}</td>
-                <td>${actionBtn}</td>
+                <td><div style="display:flex; gap:5px;">${actionBtn}</div></td>
             </tr>`;
     }).join('');
 }
@@ -7567,19 +7562,68 @@ async function processReview(newStatus) {
         alert("Update failed: " + e.message);
     }
 }
+// 1. OPEN THE EDIT VIEW
 window.editWishItem = function(id) {
     const item = state.tools.find(t => t.id === id);
     if (!item) return;
 
-    // 1. Open the Modal
     openModal('wishlist-modal');
-
-    // 2. Set the 'Editing' mode
+    
+    // Set text to 'Edit mode'
     document.getElementById('wish-modal-title').textContent = "✎ Edit Suggestion";
     document.getElementById('wish-submit-btn').textContent = "Update Suggestion";
+    
+    // Fill the hidden ID and the inputs
     document.getElementById('wish-edit-id').value = item.id;
-
-    // 3. Fill the boxes
     document.getElementById('wish-name').value = item.tool_name || item.name || "";
     document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
 };
+
+// 2. THE SAVE/UPDATE FUNCTION
+async function saveWishRequest() {
+    const editId = document.getElementById('wish-edit-id').value;
+    const rawName = document.getElementById('wish-name').value.trim();
+    const reason = document.getElementById('wish-reason').value.trim();
+
+    if (!rawName || !reason) return alert("Fill in name and reason.");
+
+    const req = {
+        id: (editId && editId !== "") ? editId : uid(), // Use old ID if editing
+        name: rawName,
+        tool_name: rawName,
+        request_reason: reason,
+        notes: reason,
+        requested_by: currentUser.full_name || currentUser.username,
+        author_id: String(currentUser.id), 
+        status: 'requested',
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        // Use upsert so it updates the existing row if ID matches
+        const { error } = await window._mpdb.from('tool_requests').upsert([req]);
+        if (error) throw error;
+
+        showToast(editId ? "Updated ✓" : "Suggestion sent ✓");
+        closeModal('wishlist-modal');
+        
+        // Reset modal for next time
+        document.getElementById('wish-edit-id').value = "";
+        document.getElementById('wish-modal-title').textContent = "💡 Suggest a Tool";
+        document.getElementById('wish-submit-btn').textContent = "Submit Request";
+
+        await fetchTools();
+        renderToolWishlist();
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+// 3. THE DELETE FUNCTION (Authors only)
+async function deleteWishItem(id) {
+    if(!confirm("Are you sure you want to delete your request?")) return;
+    try {
+        await window._mpdb.from('tool_requests').delete().eq('id', id);
+        showToast("Request removed");
+        await fetchTools();
+        renderToolWishlist();
+    } catch(e) { showToast("Delete failed"); }
+}
