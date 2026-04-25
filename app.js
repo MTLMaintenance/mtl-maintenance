@@ -7302,39 +7302,17 @@ function renderToolWishlist() {
     const wishlist = (window.state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
 
     tableBody.innerHTML = wishlist.map(t => {
-        // --- DEBUG LOGS: Open console (F12) to see why buttons hide ---
-        const myId = String(currentUser.id);
-        const itemAuthorId = String(t.author_id || "");
-        const isAuthor = (itemAuthorId === myId);
-        const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
-        
-        console.log(`Checking Tool: ${t.tool_name} | Author ID in DB: ${itemAuthorId} | My ID: ${myId} | Match: ${isAuthor}`);
-
-        let actionBtn = '';
-        if (isAdmin) {
-            // Managers get Review
-            actionBtn = `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${t.id}')">Review</button>`;
-        } 
-        
-        // If I am the author, show Edit/Delete (even if I am also an admin)
-        if (isAuthor && t.status === 'requested') {
-            actionBtn += `
-                <button class="btn btn-secondary btn-sm" style="margin-left:5px;" onclick="window.editWishItem('${t.id}')">✎</button>
-                <button class="btn btn-danger btn-sm" style="margin-left:5px;" onclick="window.deleteWishItem('${t.id}')">🗑️</button>
-            `;
-        }
-
         const statusLabel = t.status === 'ordered' 
             ? '<span class="badge bi">📦 ON ORDER</span>' 
             : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
 
+        // THE FIX: Entire row is clickable. No buttons in the table.
         return `
-            <tr>
+            <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
                 <td><b>${t.tool_name}</b></td>
                 <td>${t.category || 'Other'}</td>
                 <td>${t.requested_by}</td>
                 <td>${statusLabel}</td>
-                <td><div style="display:flex; align-items:center;">${actionBtn}</div></td>
             </tr>`;
     }).join('');
 }
@@ -7608,3 +7586,25 @@ window.deleteWishItem = async function(id) {
         alert("Delete failed: " + e.message);
     }
 };
+window.openWishDetailCard = function(id) {
+    const item = window.state.tools.find(t => t.id === id);
+    if (!item) return;
+
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+    const isAuthor = String(item.author_id) === String(currentUser.id);
+
+    if (isAdmin) {
+        // Manager clicks it -> Open the Review Card we made earlier
+        openReviewModal(id); 
+    } else if (isAuthor) {
+        // Author clicks it -> Open the Suggestion Card to Edit or Delete
+        window.editWishItem(id);
+        
+        // Ensure the delete button is visible inside that card
+        const delBtn = document.getElementById('btn-delete-wish');
+        if (delBtn) delBtn.style.display = 'block';
+    } else {
+        // Just a regular user -> Show a read-only alert or do nothing
+        showToast("Only the author or a manager can edit this request.");
+    }
+}
