@@ -2420,23 +2420,43 @@ async function saveTask(){
 
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
-async function savePart(){
-  const name=document.getElementById('p-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const record={
-    id:uid(), name,
-    num:        document.getElementById('p-num').value,
-    supplier_id:document.getElementById('p-supplier-select').value||null,
-    qty:        parseInt(document.getElementById('p-qty').value)||0,
-    reorder:    parseInt(document.getElementById('p-reorder').value)||0,
-    cost:       parseFloat(document.getElementById('p-cost').value)||0,
-    auto_reorder:document.getElementById('p-auto-reorder').checked,
-    reorder_qty:parseInt(document.getElementById('p-reorder-qty').value)||10,
-  };
-  state.parts.push(record);
-  await persist('parts','upsert',record);
-  closeModal('part-modal'); renderParts(); updateMetrics();
-  ['p-name','p-num','p-qty','p-reorder','p-cost','p-reorder-qty'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('p-auto-reorder').checked=false;
+async function savePart() {
+    // Check if we are editing an existing part
+    const editId = document.getElementById('part-edit-id').value;
+    const name = document.getElementById('p-name').value.trim();
+    
+    if(!name) { showToast('Please enter a name'); return; }
+
+    const record = {
+        id: editId || uid(), // Use the existing ID if it's there!
+        name: name,
+        num: document.getElementById('p-num').value,
+        supplier_id: document.getElementById('p-supplier-select').value || null,
+        qty: parseInt(document.getElementById('p-qty').value) || 0,
+        reorder: parseInt(document.getElementById('p-reorder').value) || 0,
+        cost: parseFloat(document.getElementById('p-cost').value) || 0,
+        auto_reorder: document.getElementById('p-auto-reorder').checked,
+        reorder_qty: parseInt(document.getElementById('p-reorder-qty').value) || 10,
+    };
+
+    try {
+        // Save to Supabase (upsert handles both Add and Edit)
+        await window._mpdb.from('parts').upsert([record]);
+        
+        // Update local state
+        const idx = state.parts.findIndex(x => x.id === record.id);
+        if(idx > -1) state.parts[idx] = record; else state.parts.push(record);
+
+        closeModal('part-modal');
+        renderParts(); 
+        showToast("Part saved successfully ✓");
+
+        // RESET the hidden ID for next time
+        document.getElementById('part-edit-id').value = "";
+        
+    } catch(e) {
+        showToast("Save failed");
+    }
 }
 
 async function saveSupplier(){
@@ -6977,4 +6997,32 @@ async function editToolObservation(id) {
         console.error(e);
         showToast("Update failed");
     }
+}
+function editPart(id) {
+    console.log("Opening Edit for Part:", id);
+    
+    // 1. Find the part in local memory
+    const part = state.parts.find(p => p.id === id);
+    if (!part) return;
+
+    // 2. Fill the hidden ID field (Vital for updating the right row)
+    const idInput = document.getElementById('part-edit-id');
+    if (idInput) idInput.value = part.id;
+
+    // 3. Fill the form fields
+    document.getElementById('p-name').value = part.name || "";
+    document.getElementById('p-num').value = part.num || "";
+    document.getElementById('p-supplier-select').value = part.supplier_id || "";
+    document.getElementById('p-qty').value = part.qty || 0;
+    document.getElementById('p-reorder').value = part.reorder || 0;
+    document.getElementById('p-cost').value = part.cost || 0;
+    document.getElementById('p-reorder-qty').value = part.reorder_qty || 10;
+    document.getElementById('p-auto-reorder').checked = !!part.auto_reorder;
+
+    // 4. Update the Modal Title so you know you are editing
+    const title = document.querySelector('#part-modal h3');
+    if (title) title.textContent = "Edit Part: " + part.name;
+
+    // 5. Open the modal
+    openModal('part-modal');
 }
