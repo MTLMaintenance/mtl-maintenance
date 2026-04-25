@@ -4894,6 +4894,7 @@ function switchToolTab(tab) {
     if (tab === 'inventory' && typeof renderTools === 'function') renderTools();
     if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
 }
+// 1. The Rendering Function
 async function renderTools() {
     console.log("--- Starting renderTools ---");
     const tableBody = document.getElementById('tools-table-body');
@@ -4910,15 +4911,11 @@ async function renderTools() {
 
     try {
         tableBody.innerHTML = state.tools.map(t => {
-            // 1. SAFE CHECKS: Prevent crash if data is missing
-            const location = t.location || ''; // Use empty string if null
+            const location = t.location || ''; 
             const name = t.tool_name || t.name || 'Unnamed Tool';
             const health = t.health || 100;
-            
             const isOnOrder = location.includes('ON ORDER');
             const isCritical = (health <= 40 || t.is_lost) && !isOnOrder;
-
-            // 2. PERMISSION CHECK: Safely check if the 'can' function exists
             const canManage = (typeof can === 'function') ? can('canManageTools') : true;
 
             return `
@@ -4931,38 +4928,48 @@ async function renderTools() {
                 <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : isOnOrder ? '<span style="font-size:11px; color:#007bff">Arriving soon</span>' : '—'}</td>
             </tr>`;
         }).join('');
-        
         console.log("✅ Tools rendered successfully.");
     } catch (err) {
         console.error("❌ CRASH in renderTools loop:", err);
     }
 }
 
-        // THE FIX: We send the name to BOTH 'name' and 'tool_name' 
-        // so no matter which column the DB requires, it gets the data.
-        const tool = {
-        id: id || uid(),
-        tool_name: document.getElementById('tool-name').value.trim(),
-        name: document.getElementById('tool-name').value.trim(), // Keep both for safety
-        category: document.getElementById('tool-cat').value,
-        location: document.getElementById('tool-loc').value.trim(),
-        health: parseInt(document.getElementById('tool-health').value) || 100,
-        is_lost: document.getElementById('tool-lost').checked,
+// 2. The Saving Function (THE FIX: Added the missing header and try block)
+async function saveTool() {
+    try {
+        const idInput = document.getElementById('tool-edit-id');
+        const id = idInput ? idInput.value : '';
+        const nameInput = document.getElementById('tool-name');
         
-        // --- THE FIX FOR WISHLIST BUG ---
-        status: 'available', // This tells the app it belongs in 'Inventory'
-        last_updated: new Date().toISOString()
+        if(!nameInput || !nameInput.value.trim()) {
+            showToast("Please enter a tool name");
+            return;
+        }
+
+        const tool = {
+            id: (id && id.trim() !== "") ? id : uid(),
+            tool_name: nameInput.value.trim(),
+            name: nameInput.value.trim(), 
+            category: document.getElementById('tool-cat').value,
+            location: document.getElementById('tool-loc').value.trim(),
+            health: parseInt(document.getElementById('tool-health').value) || 100,
+            is_lost: document.getElementById('tool-lost').checked,
+            status: 'available',
+            last_updated: new Date().toISOString()
         };
+
         console.log("Sending object to Supabase:", tool);
 
         const { error } = await window._mpdb
             .from('tool_requests')
             .upsert([tool]);
+
         if (error) {
             console.error("Supabase Error:", error.message);
             showToast("DB Error: " + error.message);
             return;
         }
+
         // Update local memory
         if (!state.tools) state.tools = [];
         const idx = state.tools.findIndex(x => x.id === tool.id);
@@ -4970,11 +4977,11 @@ async function renderTools() {
 
         // Success - close and refresh
         closeModal('tool-modal'); 
-        if (typeof renderTools === 'function') renderTools();
+        renderTools();
         showToast("Tool saved successfully ✓");
 
     } catch (e) {
-        console.error("JavaScript Crash:", e);
+        console.error("JavaScript Crash in saveTool:", e);
         showToast("App Error. Check Console.");
     }
 }
