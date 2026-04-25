@@ -7095,3 +7095,66 @@ function updateDashboardParts() {
         `;
     }).join('');
 }
+// 1. Initialize memory for consumables
+if (typeof state !== 'undefined' && !state.consumables) {
+    state.consumables = [];
+}
+
+// 2. Tab Switcher
+function switchPartsSubTab(tab) {
+    const invView = document.getElementById('parts-inventory-view');
+    const consView = document.getElementById('parts-consumables-view');
+    const partBtn = document.getElementById('add-part-btn');
+    const consBtn = document.getElementById('add-consumable-btn');
+
+    if (tab === 'inventory') {
+        invView.style.display = 'block';
+        consView.style.display = 'none';
+        partBtn.style.display = 'block';
+        consBtn.style.display = 'none';
+        renderParts();
+    } else {
+        invView.style.display = 'none';
+        consView.style.display = 'block';
+        partBtn.style.display = 'none';
+        consBtn.style.display = 'block';
+        fetchConsumables(); // Load data when clicking the tab
+    }
+
+    // Update button highlighting
+    document.getElementById('btn-parts-inv').classList.toggle('active', tab === 'inventory');
+    document.getElementById('btn-parts-cons').classList.toggle('active', tab === 'consumables');
+}
+
+// 3. Fetch Data
+async function fetchConsumables() {
+    try {
+        const { data, error } = await window._mpdb.from('consumables').select('*').order('name');
+        if (data) {
+            state.consumables = data;
+            renderConsumables();
+        }
+    } catch (e) { console.error(e); }
+}
+
+// 4. Render Table
+function renderConsumables() {
+    const body = document.getElementById('consumables-table-body');
+    if (!body || !state.consumables) return;
+
+    body.innerHTML = state.consumables.map(c => {
+        const isLow = c.qty <= c.reorder;
+        return `
+            <tr>
+                <td><b>${c.name}</b></td>
+                <td>${c.num || '—'}</td>
+                <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
+                <td style="color:${isLow ? 'red' : 'inherit'}; font-weight:700;">${c.qty}</td>
+                <td>${c.reorder}</td>
+                <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
+                <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
+                <td><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteConsumable('${c.id}')">Del</button></td>
+            </tr>`;
+    }).join('');
+}
