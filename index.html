@@ -804,8 +804,11 @@
 <div class="modal-backdrop" id="wishlist-modal" style="display:none; position:fixed; z-index:1000000 !important; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; backdrop-filter:blur(5px);">
   <div class="modal" style="max-width:420px; background: white !important; color: black !important; border-radius: 20px; padding: 30px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: visible !important;">
     
+    <!-- THE FIX: Hidden ID field -->
+    <input type="hidden" id="wish-edit-id">
+
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <h3 style="margin:0; font-weight:800; font-size:20px; color:#000 !important;">💡 Suggest a Tool</h3>
+      <h3 id="wish-modal-title" style="margin:0; font-weight:800; font-size:20px; color:#000 !important;">💡 Suggest a Tool</h3>
       <button onclick="closeModal('wishlist-modal')" style="background:none; border:none; font-size:24px; cursor:pointer; color:#888;">✕</button>
     </div>
 
@@ -821,7 +824,7 @@
 
     <div style="display:flex; gap:12px;">
       <button class="btn" onclick="closeModal('wishlist-modal')" style="flex:1; background:#eee; border:none; padding:12px; border-radius:10px; cursor:pointer; color:#333; font-weight:600;">Cancel</button>
-      <button class="btn" onclick="saveWishRequest()" style="flex:2; background:#000 !important; color:#fff !important; border:none; padding:12px; border-radius:10px; font-weight:700; cursor:pointer;">Submit Request</button>
+      <button class="btn" id="wish-submit-btn" onclick="saveWishRequest()" style="flex:2; background:#000 !important; color:#fff !important; border:none; padding:12px; border-radius:10px; font-weight:700; cursor:pointer;">Submit Request</button>
     </div>
   </div>
 </div>
