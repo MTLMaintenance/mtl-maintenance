@@ -1678,3 +1678,21 @@ div#panel-parts div.tab-bar button.tab.active {
     font-weight: 800 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
+#review-modal.active {
+    display: flex !important;
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85) !important;
+    z-index: 2000010 !important; /* Put it on top of everything */
+    justify-content: center;
+    align-items: center;
+}
+
+#review-modal .modal {
+    background: white !important;
+    color: black !important;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    min-width: 320px;
+}
