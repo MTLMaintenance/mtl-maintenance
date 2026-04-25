@@ -1575,6 +1575,3 @@ select.form-select:focus {
 #reorder-alerts {
     display: none !important;
 }
-.stat-label, .section-title, .card-title {
-    text-transform: none !important;
-}
