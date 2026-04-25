@@ -4932,7 +4932,7 @@ function renderTools() {
 }
 // 2. The Saving Function (THE FIX: Added the missing header and try block)
 async function saveTool() {
-    console.log("--- SUBMITTING NEW TOOL ---");
+    console.log("--- SUBMITTING TOOL UPDATE ---");
     try {
         const idInput = document.getElementById('tool-edit-id');
         const id = idInput ? idInput.value : '';
@@ -4954,7 +4954,7 @@ async function saveTool() {
             location: document.getElementById('tool-loc').value.trim(),
             health: parseInt(document.getElementById('tool-health').value) || 100,
             is_lost: document.getElementById('tool-lost').checked,
-            status: 'available', // This ensures it passes the 'Inventory' filter
+            status: 'available', // This ensures it stays in the Inventory list
             last_updated: new Date().toISOString()
         };
 
@@ -4968,20 +4968,33 @@ async function saveTool() {
             return;
         }
 
-        // --- THE KEY FIX: TOTAL SYNC ---
-        // 3. Re-download the full list from the database
+        // 3. LOGGING: Record the update in your audit trail
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Tool Update", `${tool.tool_name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
+        }
+
+        // 4. ALERTS: Notify managers if tool is critical or lost
+        if(tool.health <= 40 || tool.is_lost) {
+            if (typeof notifyManagers === 'function') {
+                await notifyManagers(`⚠️ TOOL ALERT: "${tool.tool_name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
+            }
+        }
+
+        // --- THE LIVE UPDATE FIX ---
+        // 5. Re-download the full list from the database
         if (typeof fetchTools === 'function') {
             await fetchTools();
         }
 
-        // 4. Update the screen
+        // 6. Refresh the screen and close window
         closeModal('tool-modal'); 
-        renderTools(); 
+        if (typeof renderTools === 'function') renderTools(); 
         
         showToast("Tool saved successfully ✓");
 
     } catch (e) {
         console.error("❌ Save Tool Error:", e);
+        showToast("Save failed. Check console.");
     }
 }
 function renderWishlist() {
@@ -5303,41 +5316,56 @@ function resetToolForm() {
     console.log("✅ Edit form loaded for:", tool.tool_name || tool.name);
 }
 async function deleteTool() {
-    // 1. Get the ID from the hidden input
+    // 1. Get the ID of the tool we are currently editing
     const id = document.getElementById('tool-edit-id').value;
     if(!id) return;
 
-    const tool = state.tools.find(t => t.id === id);
+    // Find the name locally for the confirmation message
+    const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
+    const tool = localList.find(t => t.id === id);
     const toolName = tool ? (tool.tool_name || tool.name) : 'this tool';
 
-    if(!confirm(`Permanently delete "${toolName}"?`)) return;
+    if(!confirm(`Are you sure you want to permanently delete "${toolName}"?`)) return;
 
     try {
-        console.log("Attempting to delete ID:", id);
+        console.log("Deleting from database...");
 
-        // 2. THE FIX: Explicitly target the 'tool_requests' table
+        // 2. Physical Delete from Supabase
         const { error } = await window._mpdb
-            .from('tool_requests') 
+            .from('tool_requests')
             .delete()
             .eq('id', id);
 
         if (error) {
-            console.error("Supabase Error:", error.message);
-            // If it's not found in 'tool_requests', maybe it's in 'shop_tools'?
-            console.log("Checking backup table 'shop_tools'...");
-            await window._mpdb.from('shop_tools').delete().eq('id', id);
+            alert("Database Error: " + error.message);
+            return;
         }
 
-        // 3. Update local memory immediately (The 'Live' part)
-        state.tools = state.tools.filter(t => t.id !== id);
+        // --- THE LIVE UPDATE FIX ---
         
+        // 3. Remove the tool from local memory (Filter it out)
+        if (window.state && window.state.tools) {
+            window.state.tools = window.state.tools.filter(t => t.id !== id);
+        } else if (typeof state !== 'undefined' && state.tools) {
+            state.tools = state.tools.filter(t => t.id !== id);
+        }
+
+        console.log("✅ Tool removed from memory.");
+
+        // 4. Close the modal
         closeModal('tool-modal');
-        renderTools(); // Redraw the white box
-        showToast("Tool removed ✓");
+        
+        // 5. Redraw the table IMMEDIATELY
+        if (typeof renderTools === 'function') {
+            renderTools(); 
+            console.log("✅ UI Redrawn.");
+        }
+
+        showToast("Tool deleted successfully ✓");
 
     } catch (e) {
-        console.error("Delete function crashed:", e);
-        showToast("Delete failed.");
+        console.error("Delete failed:", e);
+        showToast("Error deleting tool.");
     }
 }
 async function deleteToolObservation(obsId) {
