@@ -5253,57 +5253,55 @@ function resetToolForm() {
     const lostCheck = document.getElementById('tool-lost');
     if (lostCheck) lostCheck.checked = false;
 }
-   function editTool(id) {
-    console.log("Editing Tool ID:", id);
-   currentEditingToolId = id;
-    const tool = state.tools.find(x => x.id === id);
+  async function editTool(id) {
+    console.log("--- Edit Tool Request ---");
+    console.log("Looking for ID:", id);
+
+    // 1. Try to find the tool in local memory first
+    // We check both 'state.tools' and 'window.state.tools' for safety
+    const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
+    let tool = localList.find(x => x.id === id);
+
+    // 2. THE FIX: If not found in memory, fetch directly from Supabase
     if (!tool) {
-        console.error("Tool not found!");
-        return;
+        console.warn("Tool not found in memory. Fetching from database...");
+        const { data, error } = await window._mpdb
+            .from('tool_requests')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (data) {
+            tool = data;
+        } else {
+            alert("Error: This tool no longer exists in the database.");
+            return;
+        }
     }
 
-    if (typeof openModal === 'function') openModal('tool-modal');
+    // 3. Open the Modal and reset UI
+    openModal('tool-modal');
     if (typeof switchToolModalTab === 'function') switchToolModalTab('details');
 
-    // 1. THE FIX: Show the delete button because we ARE editing
-    const deleteBtn = document.getElementById('tool-delete-btn');
-    if (deleteBtn) 
-        deleteBtn.style.setProperty('display', 'inline-block', 'important');
-    
-     // 2. Fill the hidden ID field
+    // 4. Fill the hidden ID field (This is vital for saving)
     const idInput = document.getElementById('tool-edit-id');
     if (idInput) idInput.value = tool.id;
 
-    // 3. Fill Labels and Inputs
-    const titleEl = document.getElementById('tool-modal-title');
-    if (titleEl) titleEl.textContent = 'Edit: ' + (tool.tool_name || tool.name);
+    // 5. Populate Form Fields
+    document.getElementById('tool-modal-title').textContent = 'Edit: ' + (tool.tool_name || tool.name);
+    document.getElementById('tool-name').value = tool.tool_name || tool.name || '';
+    document.getElementById('tool-cat').value = tool.category || 'Other';
+    document.getElementById('tool-loc').value = tool.location || '';
+    document.getElementById('tool-health').value = tool.health || 100;
+    document.getElementById('cond-val').textContent = (tool.health || 100) + '%';
+    document.getElementById('tool-lost').checked = !!tool.is_lost;
 
-    const nameInput = document.getElementById('tool-name');
-    if (nameInput) nameInput.value = tool.tool_name || tool.name || '';
+    // 6. Show the Delete Button
+    const delBtn = document.getElementById('tool-delete-btn');
+    if (delBtn) delBtn.style.display = 'block';
 
-    const catInput = document.getElementById('tool-cat');
-    if (catInput) catInput.value = tool.category || 'Other';
-
-    const locInput = document.getElementById('tool-loc');
-    if (locInput) locInput.value = tool.location || '';
-
-    const healthInput = document.getElementById('tool-health');
-    if (healthInput) healthInput.value = tool.health || 100;
-
-    const healthDisplay = document.getElementById('cond-val');
-    if (healthDisplay) healthDisplay.textContent = (tool.health || 100) + '%';
-
-    const lostCheck = document.getElementById('tool-lost');
-    if (lostCheck) lostCheck.checked = !!tool.is_lost;
-// Show 'Received' button ONLY if tool is ordered
-    const receiveBtn = document.getElementById('tool-receive-btn');
-    if (receiveBtn) {
-        const isOrdered = (tool.status === 'ORDERED' || tool.status === 'ON ORDER');
-        receiveBtn.style.display = isOrdered ? 'inline-block' : 'none';
-    }
-
-   }
-
+    console.log("✅ Edit form loaded for:", tool.tool_name || tool.name);
+}
 async function deleteTool() {
     // 1. Get the ID from the hidden input
     const id = document.getElementById('tool-edit-id').value;
