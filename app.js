@@ -7299,26 +7299,34 @@ function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
     if (!tableBody) return;
 
-    const wishlist = (state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
+    const wishlist = (window.state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
 
     tableBody.innerHTML = wishlist.map(t => {
-        const isAuthor = String(t.author_id) === String(currentUser.id);
+        // --- DEBUG LOGS: Open console (F12) to see why buttons hide ---
+        const myId = String(currentUser.id);
+        const itemAuthorId = String(t.author_id || "");
+        const isAuthor = (itemAuthorId === myId);
         const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
         
+        console.log(`Checking Tool: ${t.tool_name} | Author ID in DB: ${itemAuthorId} | My ID: ${myId} | Match: ${isAuthor}`);
+
         let actionBtn = '';
         if (isAdmin) {
+            // Managers get Review
             actionBtn = `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${t.id}')">Review</button>`;
-        } else if (isAuthor && t.status === 'requested') {
-            // Author gets Edit AND Delete, but only before it is Ordered
-            actionBtn = `
-                <button class="btn btn-secondary btn-sm" onclick="editWishItem('${t.id}')">✎</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteWishItem('${t.id}')">🗑️</button>
+        } 
+        
+        // If I am the author, show Edit/Delete (even if I am also an admin)
+        if (isAuthor && t.status === 'requested') {
+            actionBtn += `
+                <button class="btn btn-secondary btn-sm" style="margin-left:5px;" onclick="window.editWishItem('${t.id}')">✎</button>
+                <button class="btn btn-danger btn-sm" style="margin-left:5px;" onclick="window.deleteWishItem('${t.id}')">🗑️</button>
             `;
         }
 
         const statusLabel = t.status === 'ordered' 
             ? '<span class="badge bi">📦 ON ORDER</span>' 
-            : '<span class="badge" style="background:#eee; color:#666;">Pending</span>';
+            : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
 
         return `
             <tr>
@@ -7326,7 +7334,7 @@ function renderToolWishlist() {
                 <td>${t.category || 'Other'}</td>
                 <td>${t.requested_by}</td>
                 <td>${statusLabel}</td>
-                <td><div style="display:flex; gap:5px;">${actionBtn}</div></td>
+                <td><div style="display:flex; align-items:center;">${actionBtn}</div></td>
             </tr>`;
     }).join('');
 }
@@ -7598,14 +7606,24 @@ async function saveWishRequest() {
         alert("Error: " + e.message); 
     }
 }
+window.deleteWishItem = async function(id) {
+    if (!confirm("Are you sure you want to delete your tool suggestion?")) return;
 
-// 3. THE DELETE FUNCTION (Authors only)
-async function deleteWishItem(id) {
-    if(!confirm("Are you sure you want to delete your request?")) return;
     try {
-        await window._mpdb.from('tool_requests').delete().eq('id', id);
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
         showToast("Request removed");
-        await fetchTools();
+
+        // Update memory and UI
+        window.state.tools = window.state.tools.filter(t => t.id !== id);
         renderToolWishlist();
-    } catch(e) { showToast("Delete failed"); }
-}
+
+    } catch (e) {
+        alert("Delete failed: " + e.message);
+    }
+};
