@@ -1295,12 +1295,31 @@
         <div style="margin-bottom:20px"><label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Condition (<span id="cond-val">100%</span>)</label><input type="range" id="tool-health" min="0" max="100" value="100" style="width:100%; accent-color: #000;" oninput="document.getElementById('cond-val').textContent = this.value + '%'"></div>
         <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" id="tool-lost" style="width:18px; height:18px; accent-color:#000;"><b>This tool is lost</b></label>
       </div>
-      <div id="tool-tab-obs" style="display:none; padding:20px;">
-          <div id="tool-obs-list" style="margin-bottom:15px; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #fdfdfd; min-height: 50px;"></div>
-          <textarea id="tool-notes-input" style="width:100%; height:80px; padding:10px; border:1px solid #ddd; border-radius:8px; resize: none; font-size: 13px;" placeholder="Add a note..."></textarea>
-          <button class="btn btn-secondary btn-sm" onclick="addToolNote()" style="margin-top: 8px; width: 100%;">Post Note</button>
-      </div>
+     <!-- THE CLEANED OBSERVATIONS TAB -->
+<div id="tool-tab-obs" style="display:none; flex-direction:column; height:450px;">
+    
+    <!-- 1. THE LOG FEED (Scrollable area for old notes) -->
+    <div style="flex:1; overflow-y:auto; padding:15px; background:#fcfcfc; border-bottom:1px solid #eee;" id="tool-obs-list-container">
+        <label style="display:block; font-size:10px; color:#aaa; text-transform:uppercase; font-weight:700; margin-bottom:10px; letter-spacing:1px;">Maintenance History</label>
+        <div id="tool-obs-list">
+            <!-- Notes will render as clean 'cards' here -->
+        </div>
     </div>
+
+    <!-- 2. THE INPUT SECTION (Pinned to bottom) -->
+    <div style="padding:20px; background:#fff; border-radius: 0 0 15px 15px;">
+        <div style="position:relative;">
+            <textarea id="tool-notes-input" 
+                style="width:100%; height:90px; padding:12px; border:1px solid #e0e0e0; border-radius:12px; resize:none; font-size:13px; background:#f9f9f9; outline:none; transition:border-color 0.2s;" 
+                placeholder="Type a new observation or note..."></textarea>
+            
+            <button class="btn" onclick="addToolNote()" 
+                style="position:absolute; bottom:10px; right:10px; background:#000 !important; color:#fff !important; border:none; padding:6px 15px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;">
+                Post Note
+            </button>
+        </div>
+    </div>
+</div>
 
     <!-- FOOTER: FORCED CONTAINER -->
     <div style="padding: 20px; display:flex; justify-content:space-between; align-items:center; border-top: 1px solid #eee; background: #fafafa; position: relative !important;">
