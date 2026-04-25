@@ -6876,7 +6876,7 @@ function teleportModals() {
     console.log("🚀 Placing items in their final homes...");
     
     // 1. POPUPS go to the body
-    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','consumable-modal'];
+    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
     modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
@@ -7448,7 +7448,7 @@ async function processReview(newStatus) {
 }
 window.currentReviewId = null;
 
-async function openReviewModal(id) {
+async functwindow.openReviewModal = async functionion openReviewModal(id) {
     console.log("🔍 Attempting to Review Tool ID:", id);
     
     // 1. Try to find the tool in local memory first
