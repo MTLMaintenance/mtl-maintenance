@@ -1575,3 +1575,37 @@ select.form-select:focus {
 #reorder-alerts {
     display: none !important;
 }
+/* --- PARTS & CONSUMABLES SUB-TABS --- */
+#panel-parts .tab-bar {
+    background: rgba(0, 0, 0, 0.3) !important; /* Darker glassy background */
+    padding: 5px !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    gap: 5px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+}
+
+#panel-parts .tab {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.6) !important; /* Faded white for inactive */
+    border: none !important;
+    padding: 8px 20px !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease;
+}
+
+/* THE INVERSION: Active tab becomes solid black with bright white text */
+#panel-parts .tab.active {
+    background: #000000 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+#panel-parts .tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
