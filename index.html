@@ -127,38 +127,65 @@
   </div>
 
   <!-- DASHBOARD -->
-  <div class="panel active" id="panel-dashboard">
+ <div class="panel active" id="panel-dashboard">
   <div id="alert-section"></div>
 
+  <!-- TOP STATS ROW: Using 'metrics' and 'metric-card' for consistency -->
   <div class="metrics">
-    <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
-    <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
-    <div class="stat-card" onclick="showPanel('parts')" style="cursor:pointer; display: flex; flex-direction: column; justify-content: space-between;">
-   <div class="card stat-card" onclick="showPanel('parts')" style="cursor:pointer">
-  <div class="stat-label">Parts Low</div>
-  <div class="stat-value" id="dash-low-parts">0</div>
-</div>
-    <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
+    <div class="metric-card">
+        <div class="metric-label">Equipment</div>
+        <div class="metric-value" id="m-total">0</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-label">Overdue</div>
+        <div class="metric-value v-danger" id="m-overdue">0</div>
+    </div>
+    
+    <!-- FIXED: Clickable Parts Low card matches the others now -->
+    <div class="metric-card" onclick="showPanel('parts')" style="cursor:pointer">
+        <div class="metric-label">Parts Low</div>
+        <div class="metric-value" id="dash-low-parts">0</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-label">Open WOs</div>
+        <div class="metric-value" id="m-open">0</div>
+    </div>
   </div>
 
+  <!-- MIDDLE ROW -->
   <div class="grid-2">
     <div class="card">
-      <div class="card-header"><span class="card-title">Equipment Status</span><button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button></div>
+      <div class="card-header">
+          <span class="card-title">Equipment Status</span>
+          <button class="btn btn-secondary btn-sm" onclick="showPanel('equipment')">View all</button>
+      </div>
       <div id="equip-list-dash"></div>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Upcoming Maintenance</span><button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button></div>
+      <div class="card-header">
+          <span class="card-title">Upcoming Maintenance</span>
+          <button class="btn btn-secondary btn-sm" onclick="showPanel('calendar')">Calendar</button>
+      </div>
       <div id="sched-list-dash"></div>
     </div>
   </div>
 
+  <!-- BOTTOM ROW -->
   <div class="grid-2" style="margin-top:12px">
     <div class="card">
-      <div class="card-header"><span class="card-title">Recent Work Orders</span><span class="badge bg" id="task-count-badge"></span></div>
+      <div class="card-header">
+          <span class="card-title">Recent Work Orders</span>
+          <span class="badge bg" id="task-count-badge"></span>
+      </div>
       <div id="recent-tasks"></div>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Recent Observations</span><span class="badge bg" id="obs-count-badge"></span></div>
+      <div class="card-header">
+          <span class="card-title">Recent Observations</span>
+          <span class="badge bg" id="obs-count-badge"></span>
+      </div>
       <div id="recent-obs-list"></div>
     </div>
   </div>
