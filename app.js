@@ -7540,39 +7540,63 @@ window.editWishItem = function(id) {
 
 // 2. THE SAVE/UPDATE FUNCTION
 async function saveWishRequest() {
+    console.log("--- SUBMITTING WISHLIST REQUEST ---");
+    
     const editId = document.getElementById('wish-edit-id').value;
     const rawName = document.getElementById('wish-name').value.trim();
     const reason = document.getElementById('wish-reason').value.trim();
 
     if (!rawName || !reason) return alert("Fill in name and reason.");
 
+    // 1. Prepare the data object
     const req = {
         id: (editId && editId !== "") ? editId : uid(),
         name: rawName,
         tool_name: rawName,
-        // THE FIX: Only using columns we confirmed exist
         request_reason: reason, 
         requested_by: currentUser.full_name || currentUser.username,
         author_id: String(currentUser.id), 
-        status: 'requested',
+        status: 'requested', // This status puts it in the Wishlist tab
         created_at: new Date().toISOString()
     };
+
     try {
-        // Use upsert so it updates the existing row if ID matches
+        // 2. Save to Supabase
         const { error } = await window._mpdb.from('tool_requests').upsert([req]);
         if (error) throw error;
 
         showToast(editId ? "Updated ✓" : "Suggestion sent ✓");
+
+        // 3. THE LIVE SYNC FIX:
+        // Update both possible locations for 'state'
+        if (!window.state) window.state = {};
+        if (!window.state.tools) window.state.tools = [];
+        
+        // Remove old version if editing, then add the new one
+        window.state.tools = window.state.tools.filter(t => t.id !== req.id);
+        window.state.tools.push(req);
+        
+        // Match the local 'state' variable if it exists separately
+        if (typeof state !== 'undefined') state.tools = window.state.tools;
+
+        // 4. Update the UI
         closeModal('wishlist-modal');
         
-        // Reset modal for next time
+        // Trigger the Wishlist table to redraw
+        if (typeof renderToolWishlist === 'function') {
+            renderToolWishlist();
+            console.log("✅ Wishlist redrawn with new item.");
+        }
+
+        // 5. Cleanup the modal
         document.getElementById('wish-edit-id').value = "";
         document.getElementById('wish-modal-title').textContent = "💡 Suggest a Tool";
         document.getElementById('wish-submit-btn').textContent = "Submit Request";
 
-        await fetchTools();
-        renderToolWishlist();
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) { 
+        console.error("Save Error:", e.message);
+        alert("Error: " + e.message); 
+    }
 }
 
 // 3. THE DELETE FUNCTION (Authors only)
