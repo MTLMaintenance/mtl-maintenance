@@ -7145,19 +7145,19 @@ function renderConsumables() {
     body.innerHTML = state.consumables.map(c => {
         const isLow = c.qty <= c.reorder;
         return `
-            <tr>
-                <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
+           <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
     <td><b>${c.name}</b></td>
-                <td><b>${c.name}</b></td>
-                <td>${c.num || '—'}</td>
-                <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
-                <td style="color:${isLow ? 'red' : 'inherit'}; font-weight:700;">${c.qty}</td>
-                <td>${c.reorder}</td>
-                <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
-                <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
-                <td><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteConsumable('${c.id}')">Del</button></td>
-            </tr>`;
+    <td>${c.num || '—'}</td>
+    <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
+    <td style="font-weight:700;">${c.qty}</td>
+    <td>${c.reorder}</td>
+    <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
+    <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
+    <td><span class="badge ${c.qty <= c.reorder ? 'bd' : 'bs'}">${c.qty <= c.reorder ? 'LOW' : 'OK'}</span></td>
+    <td>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); window.deleteConsumable('${c.id}')">Del</button>
+    </td>
+</tr>`;
     }).join('');
 }
 // 1. OPEN THE MODAL (For New Items)
