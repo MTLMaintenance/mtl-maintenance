@@ -5558,7 +5558,6 @@ async function showPanel(id) {
 
     // 4. Highlight the clicked button
     navButtons.forEach(btn => {
-        // This checks if the button's onclick contains the panel ID
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
             btn.classList.add('active');
         }
@@ -5566,42 +5565,22 @@ async function showPanel(id) {
 
     // 5. THE SWITCHBOARD (Logic for every tab)
     const renderMap = {
-        'dashboard': async () => {
-            if (typeof renderDashboard === 'function') await renderDashboard();
-        },
-        'calendar': async () => {
-            if (typeof renderCalendar === 'function') await renderCalendar();
-        },
-        'equipment': () => {
-            if (typeof renderEquipmentTable === 'function') renderEquipmentTable();
-        },
-        'tasks': () => {
-            if (typeof renderTasks === 'function') renderTasks();
-        },
-        'parts': () => {
-            if (typeof renderParts === 'function') renderParts();
-        },
-        'suppliers': () => {
-            if (typeof renderSuppliers === 'function') renderSuppliers();
-        },
-        'documents': () => {
-            if (typeof renderDocuments === 'function') renderDocuments();
-        },
-        'analytics': () => {
-            if (typeof renderAnalytics === 'function') renderAnalytics();
-        },
-        'admin': () => {
-            if (typeof renderAdminPanel === 'function') renderAdminPanel();
-        },
-        'checklists': () => {
-            if (typeof renderChecklistTemplates === 'function') renderChecklistTemplates();
-        },
+        'dashboard': async () => { if (typeof renderDashboard === 'function') await renderDashboard(); },
+        'calendar': async () => { if (typeof renderCalendar === 'function') await renderCalendar(); },
+        'equipment': () => { if (typeof renderEquipmentTable === 'function') renderEquipmentTable(); },
+        'tasks': () => { if (typeof renderTasks === 'function') renderTasks(); },
+        'parts': () => { if (typeof renderParts === 'function') renderParts(); },
+        'suppliers': () => { if (typeof renderSuppliers === 'function') renderSuppliers(); },
+        'documents': () => { if (typeof renderDocuments === 'function') renderDocuments(); },
+        'analytics': () => { if (typeof renderAnalytics === 'function') renderAnalytics(); },
+        'admin': () => { if (typeof renderAdminPanel === 'function') renderAdminPanel(); },
+        'checklists': () => { if (typeof renderChecklistTemplates === 'function') renderChecklistTemplates(); },
         'chat': () => { 
             if (typeof renderChat === 'function') renderChat(); 
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
         'tools': () => { 
-            // This forces the Tool Crib to reset to the 'Inventory' tab when opened
+            // THIS IS THE TOOLS BLOCK
             if (typeof switchToolTab === 'function') switchToolTab('inventory');
             if (typeof renderTools === 'function') renderTools(); 
             if (typeof updateWishCount === 'function') updateWishCount(); 
@@ -5612,29 +5591,17 @@ async function showPanel(id) {
     if (renderMap[id]) {
         await renderMap[id]();
     }
+
+    // 7. Post-render fixes
     if (id === 'chat') {
-        requestAnimationFrame(() => {
-            applyDesktopChatHeight();
-        });
+        requestAnimationFrame(() => { if (typeof applyDesktopChatHeight === 'function') applyDesktopChatHeight(); });
     }
+    
     if (id !== 'calendar') {
         const calPanel = document.getElementById('panel-calendar');
         if (calPanel) calPanel.style.overflowY = '';
     }
-}
-
-// Ensure the Mobile Chat Auto-Close logic is placed OUTSIDE of showPanel
-const _baseSwitchChannel = typeof switchChannel === 'function' ? switchChannel : null;
-if (_baseSwitchChannel) {
-    switchChannel = function(channel, btn) {
-        _baseSwitchChannel(channel, btn);
-        // AUTO-CLOSE SIDEBAR ON MOBILE
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('chat-sidebar');
-            if (sidebar) sidebar.classList.remove('open');
-        }
-    };
-}
+} // <--- This closing bracket was likely missing or misplaced
 
 // Function to send a log to the database
 async function logAuditAction(action, details) {
