@@ -4895,38 +4895,48 @@ function switchToolTab(tab) {
     if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
 }
 function renderTools() {
+    console.log("--- Starting renderTools ---");
     const tableBody = document.getElementById('tools-table-body');
-    if(!tableBody) return;
+    
+    if(!tableBody) {
+        console.error("Could not find element: tools-table-body");
+        return;
+    }
 
-    tableBody.innerHTML = state.tools.map(t => {
-        const isOnOrder = t.location && t.location.includes('ON ORDER');
-        const critical = (t.health <= 40 || t.is_lost) && !isOnOrder;
-        const rowClick = can('canManageTools') ? `onclick="editTool('${t.id}')"` : '';
-        const rowCursor = can('canManageTools') ? 'pointer' : 'default';
-
-        return `<tr onclick="editTool('${t.id}')" style="cursor:pointer; ${isOnOrder ? 'background: var(--accent-bg)' : ''}">
-            <td><b>${t.name}</b></td>
-            <td>${t.category}</td>
-            <td><span style="${isOnOrder ? 'font-weight:700; color:var(--accent-text)' : ''}">${t.location || '—'}</span></td>
-            <td>${isOnOrder ? '—' : t.health + '%'}</td>
-            <td>${isOnOrder ? '<span class="badge bi">ORDERED</span>' : t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
-            <td>${critical ? '<span class="badge bd">🛒 REPLACE</span>' : isOnOrder ? '<span style="font-size:11px; color:var(--accent-text)">Arriving soon</span>' : '—'}</td>
-        </tr>`;
-    }).join('');
-}
-
-async function saveTool() {
-    console.log("--- Executing Save Tool (Double-Name Fix) ---");
+    if (!state.tools || state.tools.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools found.</td></tr>';
+        return;
+    }
 
     try {
-        const idInput = document.getElementById('tool-edit-id');
-        const id = idInput ? idInput.value : '';
-        const rawName = document.getElementById('tool-name').value.trim();
+        tableBody.innerHTML = state.tools.map(t => {
+            // 1. SAFE CHECKS: Prevent crash if data is missing
+            const location = t.location || ''; // Use empty string if null
+            const name = t.tool_name || t.name || 'Unnamed Tool';
+            const health = t.health || 100;
+            
+            const isOnOrder = location.includes('ON ORDER');
+            const isCritical = (health <= 40 || t.is_lost) && !isOnOrder;
 
-        if (!rawName) {
-            showToast("Please enter a tool name");
-            return;
-        }
+            // 2. PERMISSION CHECK: Safely check if the 'can' function exists
+            const canManage = (typeof can === 'function') ? can('canManageTools') : true;
+
+            return `
+            <tr onclick="${canManage ? `editTool('${t.id}')` : ''}" style="cursor:${canManage ? 'pointer' : 'default'}; ${isOnOrder ? 'background: rgba(0,123,255,0.1)' : ''}">
+                <td><b>${name}</b></td>
+                <td>${t.category || 'Other'}</td>
+                <td><span style="${isOnOrder ? 'font-weight:700; color:#007bff' : ''}">${location || '—'}</span></td>
+                <td>${isOnOrder ? '—' : health + '%'}</td>
+                <td>${isOnOrder ? '<span class="badge bi">ORDERED</span>' : t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
+                <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : isOnOrder ? '<span style="font-size:11px; color:#007bff">Arriving soon</span>' : '—'}</td>
+            </tr>`;
+        }).join('');
+        
+        console.log("✅ Tools rendered successfully.");
+    } catch (err) {
+        console.error("❌ CRASH in renderTools loop:", err);
+    }
+}
 
         // THE FIX: We send the name to BOTH 'name' and 'tool_name' 
         // so no matter which column the DB requires, it gets the data.
