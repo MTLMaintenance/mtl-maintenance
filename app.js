@@ -4912,8 +4912,7 @@ function renderTools() {
     if (!tableBody) return;
 
     // Use the global window state to ensure we have the fresh data from fetchTools()
-    const tools = window.state.tools || [];
-
+   const tools = (window.state.tools || []).filter(t => t.status === 'available');
     if (tools.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
         return;
@@ -7327,33 +7326,39 @@ function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
     if (!tableBody) return;
 
-    // Filter for requested items or items currently on order
-    const wishlist = (state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
+    // THE FIX: Show both 'requested' (new) and 'ordered' (approved but not here yet)
+    const wishlist = (window.state.tools || []).filter(t => 
+        t.status === 'requested' || t.status === 'ordered'
+    );
+
+    if (wishlist.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
+        return;
+    }
 
     tableBody.innerHTML = wishlist.map(t => {
+        // Author check for Edit/Delete
         const isAuthor = String(t.author_id) === String(currentUser.id);
         const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
         
-        let actions = '';
-        
+        let actionBtn = '';
         if (isAdmin) {
-            // Managers get the Review button
-            actions = `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${t.id}')">Review</button>`;
+            actionBtn = `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${t.id}')">Review</button>`;
         } else if (isAuthor) {
-            // Authors get Edit/Delete (Only if not already ordered)
-            if (t.status === 'requested') {
-                actions = `<button class="btn btn-secondary btn-sm" onclick="editWishItem('${t.id}')">✎</button>
-                           <button class="btn btn-danger btn-sm" onclick="deleteTool()">🗑️</button>`;
-            }
+            actionBtn = `<button class="btn btn-secondary btn-sm" onclick="editWishItem('${t.id}')">✎ Edit</button>`;
         }
+
+        const statusLabel = t.status === 'ordered' 
+            ? '<span class="badge bi">📦 ON ORDER</span>' 
+            : '<span class="badge" style="background:#eee; color:#666;">Pending</span>';
 
         return `
             <tr>
                 <td><b>${t.tool_name}</b></td>
-                <td>${t.status === 'ordered' ? '<span class="badge bi">📦 ON ORDER</span>' : 'Requested'}</td>
+                <td>${t.category || 'Other'}</td>
                 <td>${t.requested_by}</td>
-                <td style="font-size:11px; color:#888;">${t.expected_arrival || 'Pending Review'}</td>
-                <td><div style="display:flex; gap:5px;">${actions}</div></td>
+                <td>${statusLabel}</td>
+                <td>${actionBtn}</td>
             </tr>`;
     }).join('');
 }
