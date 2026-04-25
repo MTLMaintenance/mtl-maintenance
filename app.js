@@ -4896,43 +4896,45 @@ function switchToolTab(tab) {
     if (tab === 'wishlist' && typeof renderToolWishlist === 'function') renderToolWishlist();
 }
 // 1. The Rendering Function
-async function renderTools() {
-    console.log("--- Starting renderTools ---");
+function renderTools() {
+    console.log("--- Starting renderTools (Keys Synchronized) ---");
     const tableBody = document.getElementById('tools-table-body');
-    
-    if(!tableBody) {
-        console.error("Could not find element: tools-table-body");
+    if (!tableBody) return console.error("ID 'tools-table-body' missing!");
+
+    // Use window.state to ensure we are looking at the same memory as fetchTools
+    const tools = (window.state && window.state.tools) ? window.state.tools : [];
+
+    if (tools.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools found in database.</td></tr>';
         return;
     }
 
-    if (!state.tools || state.tools.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools found.</td></tr>';
-        return;
-    }
+    // Filter to ONLY show 'available' tools in the inventory tab
+    // (Your logs show 1 is 'denied' and 4 are 'available')
+    const inventoryTools = tools.filter(t => t.status === 'available' || !t.status);
 
-    try {
-        tableBody.innerHTML = state.tools.map(t => {
-            const location = t.location || ''; 
-            const name = t.tool_name || t.name || 'Unnamed Tool';
-            const health = t.health || 100;
-            const isOnOrder = location.includes('ON ORDER');
-            const isCritical = (health <= 40 || t.is_lost) && !isOnOrder;
-            const canManage = (typeof can === 'function') ? can('canManageTools') : true;
-
-            return `
-            <tr onclick="${canManage ? `editTool('${t.id}')` : ''}" style="cursor:${canManage ? 'pointer' : 'default'}; ${isOnOrder ? 'background: rgba(0,123,255,0.1)' : ''}">
-                <td><b>${name}</b></td>
-                <td>${t.category || 'Other'}</td>
-                <td><span style="${isOnOrder ? 'font-weight:700; color:#007bff' : ''}">${location || '—'}</span></td>
-                <td>${isOnOrder ? '—' : health + '%'}</td>
-                <td>${isOnOrder ? '<span class="badge bi">ORDERED</span>' : t.is_lost ? '<span class="badge bd">LOST</span>' : '<span class="badge bs">OK</span>'}</td>
-                <td>${isCritical ? '<span class="badge bd">🛒 REPLACE</span>' : isOnOrder ? '<span style="font-size:11px; color:#007bff">Arriving soon</span>' : '—'}</td>
+    tableBody.innerHTML = inventoryTools.map(t => {
+        // MATCHING YOUR LOG KEYS: tool_name, health, status
+        const name = t.tool_name || t.name || 'Unnamed Tool';
+        const health = t.health || 100;
+        const status = t.status || 'available';
+        
+        return `
+            <tr onclick="editTool('${t.id}')" style="cursor:pointer; background:rgba(255,255,255,0.02);">
+                <td style="font-weight:600; color:#fff;"><b>${name}</b></td>
+                <td style="color:#aaa;">${t.category || 'Other'}</td>
+                <td style="color:#aaa;">${t.location || '—'}</td>
+                <td>
+                    <div style="width:60px; height:8px; background:#444; border-radius:4px; overflow:hidden;">
+                        <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
+                    </div>
+                </td>
+                <td><span class="badge ${status === 'available' ? 'bs' : 'bi'}">${status.toUpperCase()}</span></td>
+                <td>${t.procurement || '—'}</td>
             </tr>`;
-        }).join('');
-        console.log("✅ Tools rendered successfully.");
-    } catch (err) {
-        console.error("❌ CRASH in renderTools loop:", err);
-    }
+    }).join('');
+    
+    console.log(`✅ Successfully drew ${inventoryTools.length} tools.`);
 }
 
 // 2. The Saving Function (THE FIX: Added the missing header and try block)
