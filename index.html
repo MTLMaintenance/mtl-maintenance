@@ -1441,7 +1441,63 @@
     </div>
   </div> 
 </div> 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<!-- CONSUMABLE MODAL (NEUTRAL ZONE) -->
+<div class="modal-backdrop" id="consumable-modal" style="display:none; position:fixed; z-index:1000000 !important; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+  
+  <div class="modal" style="max-width:500px; background: white !important; color: black !important; border-radius: 15px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: visible !important;">
+    
+    <input type="hidden" id="c-edit-id">
+
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+      <span class="modal-title" id="c-modal-title" style="font-weight:700; font-size:18px; color:#28a745 !important;">Add Shop Supply / Consumable</span>
+      <button class="modal-close" onclick="closeModal('consumable-modal')" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
+    </div>
+
+    <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <div style="grid-column: span 2;">
+        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Item Name (e.g. WD-40, Gloves) *</label>
+        <input class="form-input" id="c-name" placeholder="Item Name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+      </div>
+      
+      <div>
+        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Reference / SKU #</label>
+        <input class="form-input" id="c-num" placeholder="Part #" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+      </div>
+
+      <div>
+        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Unit Cost ($)</label>
+        <input class="form-input" id="c-cost" type="number" min="0" step="0.01" value="0.00" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+      </div>
+
+      <div style="grid-column: span 2;">
+        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Preferred Supplier</label>
+        <select class="form-select" id="c-supplier-select" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; background:white; color:black;">
+            <!-- Populated by populateSupplierDropdown() -->
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Current Stock</label>
+        <input class="form-input" id="c-qty" type="number" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+      </div>
+
+      <div>
+        <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Min. Stock (Reorder)</label>
+        <input class="form-input" id="c-reorder" type="number" value="5" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; color:black;">
+      </div>
+    </div>
+
+    <div style="margin-top:25px; display:flex; gap:12px; justify-content:space-between; border-top:1px solid #eee; padding-top:20px;">
+      <button class="btn" id="btn-delete-consumable" onclick="deleteConsumable()" style="background:#dc3545 !important; color:white !important; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-size:13px; display:none;">🗑️ Delete</button>
+      
+      <div style="display:flex; gap:10px; margin-left: auto;">
+        <button class="btn" onclick="closeModal('consumable-modal')" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; color:#333;">Cancel</button>
+        <button class="btn" onclick="saveConsumable()" style="background:#28a745 !important; color:#fff !important; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Item</button>
+      </div>
+    </div>
+  </div>
+</div>
+ <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
