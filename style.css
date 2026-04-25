@@ -1577,40 +1577,48 @@ select.form-select:focus {
 }
 
 /* --- CONSOLIDATED PARTS SUB-TABS --- */
+/* --- FORCE PARTS SUB-TABS TO MATCH TOOL CRIB --- */
 #parts-subtab-bar {
-    background: rgba(0, 0, 0, 0.45) !important; /* Dark translucent background */
+    background: rgba(0, 0, 0, 0.45) !important;
     padding: 4px !important;
     border-radius: 12px !important;
     display: inline-flex !important;
     gap: 4px !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px) !important;
     margin-bottom: 20px !important;
     height: auto !important;
     width: auto !important;
 }
 
+/* Inactive Tabs */
 #parts-subtab-bar .tab {
     background: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important; /* Faded white text */
-    border: none !important; /* Removes the black border box */
+    background-color: transparent !important; /* Explicitly kill bg */
+    color: rgba(255, 255, 255, 0.7) !important; 
+    border: none !important; 
+    outline: none !important;
     padding: 8px 20px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     box-shadow: none !important;
-    transition: all 0.2s ease;
+    margin: 0 !important;
 }
 
-/* THE INVERSION: Active tab becomes the white pill */
+/* Active Tab (The White Pill) */
 #parts-subtab-bar .tab.active {
     background: #ffffff !important;
-    color: #1a1a1a !important; /* Dark text on white button */
+    background-color: #ffffff !important;
+    color: #1a1a1a !important; /* Dark text */
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+    border: none !important;
 }
 
+/* Hover effect */
 #parts-subtab-bar .tab:hover:not(.active) {
     background: rgba(255, 255, 255, 0.1) !important;
     color: #ffffff !important;
+    border: none !important;
 }
