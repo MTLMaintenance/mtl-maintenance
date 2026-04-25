@@ -7197,7 +7197,10 @@ window.openAddConsumable = function() {
 
 // 2. OPEN MODAL FOR EDITING
 window.editConsumable = function(id) {
-    const item = state.consumables.find(c => c.id === id);
+ const delBtn = document.getElementById('btn-delete-consumable');
+if (delBtn) {
+    delBtn.style.setProperty('display', 'block', 'important');   
+ const item = state.consumables.find(c => c.id === id);
     if (!item) return;
 
     if (document.getElementById('c-modal-title')) document.getElementById('c-modal-title').textContent = "Edit Item: " + item.name;
