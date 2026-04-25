@@ -5189,25 +5189,34 @@ function renderToolObsList() {
     const container = document.getElementById('tool-obs-list');
     if(!toolId || !container) return;
 
-    // Check if the current user has permission to delete
+    // Check permissions
     const canDeleteNotes = currentUser.role === 'admin' || currentUser.role === 'manager';
 
+    // Get notes for this specific tool
     const obs = state.observations.filter(o => o.tool_id === toolId);
     
-    container.innerHTML = obs.map(o => `
-        <div style="padding:10px; border-bottom:1px solid var(--border); font-size:13px; position:relative">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
-                <div style="font-size:11px; color:var(--text3); font-weight:600">
-                    ${o.author} · ${new Date(o.created_at).toLocaleDateString()}
+    // Sort so newest notes are at the top
+    const sortedObs = [...obs].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+    container.innerHTML = sortedObs.length ? sortedObs.map(o => `
+        <div class="note-card">
+            <div class="note-header">
+                <div class="note-author">
+                    <span style="font-size:14px">👤</span> ${o.author}
                 </div>
-                ${canDeleteNotes ? 
-                    `<button class="btn btn-danger" style="padding:2px 6px; font-size:10px" 
-                        onclick="deleteToolObservation('${o.id}')" title="Delete Note">✕</button>` 
-                    : ''}
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="note-date">${new Date(o.created_at).toLocaleDateString()}</span>
+                    ${canDeleteNotes ? 
+                        `<button class="note-del-btn" onclick="deleteToolObservation('${o.id}')" title="Delete Note">✕</button>` 
+                        : ''}
+                </div>
             </div>
-            <div style="line-height:1.4; color:var(--text)">${o.body}</div>
+            <div class="note-body">${o.body}</div>
         </div>
-    `).join('') || '<div style="color:var(--text3); font-size:12px; padding:20px; text-align:center">No notes recorded for this tool.</div>';
+    `).join('') : `
+        <div style="color:#aaa; font-size:13px; padding:40px 20px; text-align:center; font-style:italic;">
+            No maintenance notes recorded for this tool yet.
+        </div>`;
 }
 
 // 3. Add an observation to a tool
