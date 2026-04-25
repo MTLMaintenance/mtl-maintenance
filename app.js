@@ -5071,36 +5071,55 @@ async function handleWish(id, status) {
     renderWishlist();
 }
 async function saveWishRequest() {
-    const name = document.getElementById('wish-name').value.trim();
+    const rawName = document.getElementById('wish-name').value.trim();
     const reason = document.getElementById('wish-reason').value.trim();
     
-    if(!name || !reason) { 
+    if(!rawName || !reason) { 
         showToast("Please provide both the Tool Name and the Reason."); 
         return; 
     }
 
+    // THE FIX: We send 'name' and 'tool_name' to satisfy the database constraints
     const req = { 
         id: uid(), 
-        tool_name: name, 
-        request_reason: reason, // NEW FIELD
-        requested_by: currentUser.name, 
-        status: 'pending', 
+        name: rawName,           // Mandatory column 1
+        tool_name: rawName,      // Mandatory column 2
+        notes: reason,           // General purpose notes column
+        request_reason: reason,  // Your specific column
+        requested_by: currentUser.full_name || currentUser.username, 
+        status: 'requested',     // Matches the filter in your Wishlist tab
         created_at: new Date().toISOString() 
     };
 
     try {
-        await window._mpdb.from('tool_requests').insert(req);
-        state.wishlist.unshift(req);
+        // 1. Save to Supabase (Wrapped in [ ] for reliability)
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .insert([req]);
+
+        if (error) throw error;
+
+        // 2. THE FIX FOR THE BLANK SCREEN: 
+        // Update 'state.tools' because that's what renderToolWishlist looks at
+        if (!state.tools) state.tools = [];
+        state.tools.push(req);
         
-        // Reset form
+        // 3. Reset form
         document.getElementById('wish-name').value = '';
         document.getElementById('wish-reason').value = '';
         
+        // 4. UI Feedback
         closeModal('wishlist-modal'); 
-        switchToolTab('wishlist');
+        
+        // Refresh the Wishlist table immediately
+        if (typeof renderToolWishlist === 'function') {
+            renderToolWishlist();
+        }
+        
         showToast("Suggestion submitted for review ✓");
     } catch(e) {
-        showToast("Error submitting request");
+        console.error("Wishlist Error:", e.message);
+        showToast("Error submitting request: " + e.message);
     }
 }
 function updateWishCount() {
