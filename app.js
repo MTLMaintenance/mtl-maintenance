@@ -7295,18 +7295,18 @@ window.deleteConsumable = async function(id) {
     }
 };
 // 1. Logic to show the Wishlist
+// 1. Updated Wishlist Renderer
 function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
     if (!tableBody) return;
 
     const wishlist = (window.state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
 
-    tableBody.innerHTML = wishlist.map(t => {
+    tableBody.innerHTML = wishlist.length ? wishlist.map(t => {
         const statusLabel = t.status === 'ordered' 
             ? '<span class="badge bi">📦 ON ORDER</span>' 
             : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
 
-        // THE FIX: Entire row is clickable. No buttons in the table.
         return `
             <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
                 <td><b>${t.tool_name}</b></td>
@@ -7314,7 +7314,7 @@ function renderToolWishlist() {
                 <td>${t.requested_by}</td>
                 <td>${statusLabel}</td>
             </tr>`;
-    }).join('');
+    }).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
 }
 async function reviewWishlist(id) {
     const tool = state.tools.find(t => t.id === id);
@@ -7345,28 +7345,20 @@ async function reviewWishlist(id) {
         }
     }
 }
-// 2. Render the Denied History Table
+// 2. Updated Denied History Renderer
 function renderToolDeniedHistory() {
     const tableBody = document.getElementById('denied-table-body');
     if (!tableBody) return;
 
-    // Filter for denied tools
     const denied = (window.state.tools || []).filter(t => t.status === 'denied');
 
-    if (denied.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No denied items in history.</td></tr>';
-        return;
-    }
-
-    tableBody.innerHTML = denied.map(t => `
-        <tr onclick="window.editTool('${t.id}')" style="cursor:pointer;">
-            <td><b>${t.tool_name || t.name}</b></td>
+    tableBody.innerHTML = denied.length ? denied.map(t => `
+        <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
+            <td><b>${t.tool_name}</b></td>
             <td>${t.category || 'Other'}</td>
-            <td style="color:#dc3545; font-size:12px;">${t.denial_reason || 'No reason provided'}</td>
+            <td style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
             <td><span class="badge bd">DENIED</span></td>
-            <td><button class="btn btn-secondary btn-sm" style="height:28px; padding:0 10px;">View</button></td>
-        </tr>
-    `).join('');
+        </tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No denied items.</td></tr>';
 }
 async function checkToolArrivals() {
     const today = new Date().toISOString().split('T')[0];
@@ -7594,17 +7586,13 @@ window.openWishDetailCard = function(id) {
     const isAuthor = String(item.author_id) === String(currentUser.id);
 
     if (isAdmin) {
-        // Manager clicks it -> Open the Review Card we made earlier
+        // Manager opens the Review Card
         openReviewModal(id); 
-    } else if (isAuthor) {
-        // Author clicks it -> Open the Suggestion Card to Edit or Delete
+    } else if (isAuthor && item.status === 'requested') {
+        // Author opens the Suggestion Card to Edit
         window.editWishItem(id);
-        
-        // Ensure the delete button is visible inside that card
-        const delBtn = document.getElementById('btn-delete-wish');
-        if (delBtn) delBtn.style.display = 'block';
     } else {
-        // Just a regular user -> Show a read-only alert or do nothing
-        showToast("Only the author or a manager can edit this request.");
+        // Just show the details in a non-editable way if they aren't the owner
+        alert(`Tool: ${item.tool_name}\nStatus: ${item.status.toUpperCase()}\nReason: ${item.request_reason || 'None'}`);
     }
 }
