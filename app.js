@@ -1922,7 +1922,7 @@ function renderParts() {
             <td>$${(qty * parseFloat(p.cost || 0)).toLocaleString()}</td>
             <td><span class="badge ${p.auto_reorder ? 'bs' : 'bg'}">${p.auto_reorder ? 'On' : 'Off'}</span></td>
             <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
-            <td>
+            
                 <!-- 2. THE FIX: event.stopPropagation() prevents the row-click from firing when you click 'Del' -->
                 <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deletePart('${p.id}')">Del</button>
             </td>
@@ -7154,7 +7154,7 @@ function renderConsumables() {
     <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
     <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
     <td><span class="badge ${c.qty <= c.reorder ? 'bd' : 'bs'}">${c.qty <= c.reorder ? 'LOW' : 'OK'}</span></td>
-    <td>
+    
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); window.deleteConsumable('${c.id}')">Del</button>
     </td>
 </tr>`;
