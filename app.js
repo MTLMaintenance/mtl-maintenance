@@ -5069,7 +5069,7 @@ async function handleWish(id, status) {
     else await notifyManagers(`✅ Tool approved: "${req.tool_name}" (Req by ${req.requested_by})`);
     renderWishlist();
 }
-async function saveWishRequest() {
+async function () {
     const editId = document.getElementById('wish-edit-id').value;
     const name = document.getElementById('wish-name').value.trim();
     const reason = document.getElementById('wish-reason').value.trim();
