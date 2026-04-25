@@ -7353,27 +7353,47 @@ function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
     if (!tableBody) return;
 
-    // Filter for pending requests
-    const wishlist = (window.state.tools || []).filter(t => 
-        t.status !== 'available' && t.status !== 'denied' && t.status !== 'OK'
-    );
-
-    if (wishlist.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
-        return;
-    }
+    const wishlist = (state.tools || []).filter(t => t.status === 'requested' || t.status === 'pending');
 
     tableBody.innerHTML = wishlist.map(t => `
-        <tr onclick="window.editTool('${t.id}')" style="cursor:pointer;">
+        <tr onclick="reviewWishlist('${t.id}')" style="cursor:pointer;">
             <td><b>${t.tool_name || t.name}</b></td>
             <td>${t.category || 'Other'}</td>
             <td>${t.requested_by || '—'}</td>
             <td><span class="badge bi">REQUESTED</span></td>
-            <td><button class="btn btn-primary btn-sm" style="height:28px; padding:0 10px;">Review</button></td>
+            <td><button class="btn btn-primary btn-sm" style="height:28px;">Review</button></td>
         </tr>
     `).join('');
 }
+async function reviewWishlist(id) {
+    const tool = state.tools.find(t => t.id === id);
+    if (!tool) return;
 
+    const reason = tool.request_reason || tool.notes || "No reason provided.";
+    
+    // Simple Manager Review
+    const action = confirm(`Tool: ${tool.tool_name}\nRequested by: ${tool.requested_by}\n\nReason: "${reason}"\n\nClick OK to Approve (move to Inventory) or Cancel to leave it on the Wishlist.`);
+
+    if (action) {
+        // MOVE TO INVENTORY
+        showToast("Moving to Inventory...");
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .update({ 
+                status: 'available', 
+                location: 'Main Crib', 
+                health: 100 
+            })
+            .eq('id', id);
+
+        if (!error) {
+            await fetchTools();
+            renderTools();
+            renderToolWishlist();
+            showToast("Tool Approved ✓");
+        }
+    }
+}
 // 2. Render the Denied History Table
 function renderToolDeniedHistory() {
     const tableBody = document.getElementById('denied-table-body');
