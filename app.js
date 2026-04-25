@@ -5073,54 +5073,29 @@ async function handleWish(id, status) {
 async function saveWishRequest() {
     const rawName = document.getElementById('wish-name').value.trim();
     const reason = document.getElementById('wish-reason').value.trim();
-    
-    if(!rawName || !reason) { 
-        showToast("Please provide both the Tool Name and the Reason."); 
-        return; 
-    }
 
-    // THE FIX: We send 'name' and 'tool_name' to satisfy the database constraints
-    const req = { 
-        id: uid(), 
-        name: rawName,           // Mandatory column 1
-        tool_name: rawName,      // Mandatory column 2
-        notes: reason,           // General purpose notes column
-        request_reason: reason,  // Your specific column
-        requested_by: currentUser.full_name || currentUser.username, 
-        status: 'requested',     // Matches the filter in your Wishlist tab
-        created_at: new Date().toISOString() 
+    if (!rawName || !reason) return alert("Fill in name and reason.");
+
+    const req = {
+        id: uid(),
+        name: rawName,
+        tool_name: rawName,
+        request_reason: reason,
+        requested_by: currentUser.full_name || currentUser.username,
+        author_id: String(currentUser.id), // THE KEY: Saves who created it
+        status: 'requested',
+        created_at: new Date().toISOString()
     };
 
     try {
-        // 1. Save to Supabase (Wrapped in [ ] for reliability)
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .insert([req]);
-
+        const { error } = await window._mpdb.from('tool_requests').insert([req]);
         if (error) throw error;
 
-        // 2. THE FIX FOR THE BLANK SCREEN: 
-        // Update 'state.tools' because that's what renderToolWishlist looks at
-        if (!state.tools) state.tools = [];
-        state.tools.push(req);
-        
-        // 3. Reset form
-        document.getElementById('wish-name').value = '';
-        document.getElementById('wish-reason').value = '';
-        
-        // 4. UI Feedback
-        closeModal('wishlist-modal'); 
-        
-        // Refresh the Wishlist table immediately
-        if (typeof renderToolWishlist === 'function') {
-            renderToolWishlist();
-        }
-        
-        showToast("Suggestion submitted for review ✓");
-    } catch(e) {
-        console.error("Wishlist Error:", e.message);
-        showToast("Error submitting request: " + e.message);
-    }
+        showToast("Suggestion sent ✓");
+        closeModal('wishlist-modal');
+        await fetchTools();
+        renderToolWishlist();
+    } catch (e) { alert("Error: " + e.message); }
 }
 function updateWishCount() {
     const count = state.wishlist.filter(w => w.status === 'pending').length;
@@ -7348,22 +7323,39 @@ window.deleteConsumable = async function(id) {
     }
 };
 // 1. Logic to show the Wishlist
-// 1. Render the Wishlist Table
 function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
     if (!tableBody) return;
 
-    const wishlist = (state.tools || []).filter(t => t.status === 'requested' || t.status === 'pending');
+    // Filter for requested items or items currently on order
+    const wishlist = (state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
 
-    tableBody.innerHTML = wishlist.map(t => `
-        <tr onclick="reviewWishlist('${t.id}')" style="cursor:pointer;">
-            <td><b>${t.tool_name || t.name}</b></td>
-            <td>${t.category || 'Other'}</td>
-            <td>${t.requested_by || '—'}</td>
-            <td><span class="badge bi">REQUESTED</span></td>
-            <td><button class="btn btn-primary btn-sm" style="height:28px;">Review</button></td>
-        </tr>
-    `).join('');
+    tableBody.innerHTML = wishlist.map(t => {
+        const isAuthor = String(t.author_id) === String(currentUser.id);
+        const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+        
+        let actions = '';
+        
+        if (isAdmin) {
+            // Managers get the Review button
+            actions = `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${t.id}')">Review</button>`;
+        } else if (isAuthor) {
+            // Authors get Edit/Delete (Only if not already ordered)
+            if (t.status === 'requested') {
+                actions = `<button class="btn btn-secondary btn-sm" onclick="editWishItem('${t.id}')">✎</button>
+                           <button class="btn btn-danger btn-sm" onclick="deleteTool()">🗑️</button>`;
+            }
+        }
+
+        return `
+            <tr>
+                <td><b>${t.tool_name}</b></td>
+                <td>${t.status === 'ordered' ? '<span class="badge bi">📦 ON ORDER</span>' : 'Requested'}</td>
+                <td>${t.requested_by}</td>
+                <td style="font-size:11px; color:#888;">${t.expected_arrival || 'Pending Review'}</td>
+                <td><div style="display:flex; gap:5px;">${actions}</div></td>
+            </tr>`;
+    }).join('');
 }
 async function reviewWishlist(id) {
     const tool = state.tools.find(t => t.id === id);
