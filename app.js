@@ -7157,7 +7157,7 @@ function renderConsumables() {
         
         // We removed the last <td> cell entirely
         return `
-                
+          
                 <td><b>${c.name}</b></td>
                 <td>${c.num || '—'}</td>
                 <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
@@ -7200,9 +7200,10 @@ window.editConsumable = function(id) {
  const delBtn = document.getElementById('btn-delete-consumable');
 if (delBtn) {
     delBtn.style.setProperty('display', 'block', 'important');   
+ 
  const item = state.consumables.find(c => c.id === id);
     if (!item) return;
-
+}
     if (document.getElementById('c-modal-title')) document.getElementById('c-modal-title').textContent = "Edit Item: " + item.name;
     if (document.getElementById('c-edit-id')) document.getElementById('c-edit-id').value = item.id;
     if (document.getElementById('btn-delete-consumable')) document.getElementById('btn-delete-consumable').style.display = "block";
