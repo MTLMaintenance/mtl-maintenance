@@ -4906,40 +4906,52 @@ function switchToolTab(tab) {
     if (tab === 'wishlist') renderToolWishlist();
     if (tab === 'denied') renderToolDeniedHistory(); // <--- This was missing!
 }
-// 1. The Rendering Function
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
     if (!tableBody) return;
 
-    // Use the global window state to ensure we have the fresh data from fetchTools()
-   const tools = (window.state.tools || []).filter(t => t.status === 'available');
+    // THE FIX: Show 'available' items AND 'ordered' items in this list
+    const tools = (window.state.tools || []).filter(t => t.status === 'available' || t.status === 'ordered');
+    
     if (tools.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
         return;
     }
 
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+
     tableBody.innerHTML = tools.map(t => {
-        // MATCHING SUPABASE COLUMN NAMES:
         const name = t.tool_name || t.name || 'Unnamed';
         const health = t.health || 100;
         const status = t.status || 'available';
         const location = t.location || '—';
+        const isOrdered = status === 'ordered';
+
+        // Add a "Check In" button for managers if the tool is currently on order
+        let actionBtn = '';
+        if (isOrdered && isAdmin) {
+            actionBtn = `<button class="btn btn-primary btn-sm" 
+                         style="background:#28a745 !important; border:none; padding:4px 8px; font-size:10px; margin-left:10px;" 
+                         onclick="event.stopPropagation(); window.receiveOrderedTool('${t.id}')">📦 Check In</button>`;
+        }
 
         return `
-            <tr onclick="editTool('${t.id}')" style="cursor:pointer;">
-                <td><b>${name}</b></td>
+            <tr onclick="editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'opacity:0.8; background:rgba(0,123,255,0.02);' : ''}">
+                <td><b>${name}</b> ${actionBtn}</td>
                 <td>${t.category || 'Other'}</td>
-                <td>${location}</td>
+                <td><span style="${isOrdered ? 'color:#007bff; font-weight:600;' : ''}">${isOrdered ? '📦 ON ORDER' : location}</span></td>
                 <td>
+                    ${isOrdered ? '—' : `
                     <div style="width:60px; height:8px; background:#eee; border-radius:4px; overflow:hidden;">
                         <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
-                    </div>
+                    </div>`}
                 </td>
-                <td><span class="badge ${status === 'available' ? 'bs' : 'bi'}">${status.toUpperCase()}</span></td>
-                <td>${t.procurement || '—'}</td>
+                <td><span class="badge ${isOrdered ? 'bi' : (t.is_lost ? 'bd' : 'bs')}">${status.toUpperCase()}</span></td>
+                <td>${isOrdered ? `<span style="font-size:11px; color:#007bff">Due: ${t.expected_arrival || '??'}</span>` : (t.procurement || '—')}</td>
             </tr>`;
     }).join('');
 }
+
 // 2. The Saving Function (THE FIX: Added the missing header and try block)
 async function saveTool() {
     console.log("--- SUBMITTING TOOL UPDATE ---");
@@ -7586,13 +7598,58 @@ window.openWishDetailCard = function(id) {
     const isAuthor = String(item.author_id) === String(currentUser.id);
 
     if (isAdmin) {
-        // Manager opens the Review Card
-        openReviewModal(id); 
+        // 1. Managers/Admins always get the "Power User" Card
+        window.openReviewModal(id); 
     } else if (isAuthor && item.status === 'requested') {
-        // Author opens the Suggestion Card to Edit
+        // 2. Regular users who wrote it get the "Edit Suggestion" Card
         window.editWishItem(id);
     } else {
-        // Just show the details in a non-editable way if they aren't the owner
-        alert(`Tool: ${item.tool_name}\nStatus: ${item.status.toUpperCase()}\nReason: ${item.request_reason || 'None'}`);
+        // 3. Everyone else gets a Read-Only view
+        alert(`Tool: ${item.tool_name}\nRequested by: ${item.requested_by}\nReason: ${item.request_reason || 'No details'}`);
     }
+}
+window.deleteWishItem = async function(id) {
+    if (!id) return;
+    
+    const item = state.tools.find(t => t.id === id);
+    const itemName = item ? item.tool_name : "this request";
+
+    if (!confirm(`Are you sure you want to permanently delete "${itemName}"?`)) return;
+
+    try {
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        showToast("Request deleted ✓");
+        
+        // Close BOTH possible modals
+        closeModal('review-modal');
+        closeModal('wishlist-modal');
+
+        // Sync and Refresh UI
+        await fetchTools();
+        renderToolWishlist();
+        renderToolDeniedHistory();
+
+    } catch (e) {
+        alert("Delete failed: " + e.message);
+    }
+};
+window.receiveOrderedTool = async function(id) {
+    if (!confirm("Confirm this tool has arrived and is now in inventory?")) return;
+
+    await window._mpdb.from('tool_requests').update({ 
+        status: 'available', 
+        location: 'Main Crib', 
+        health: 100 
+    }).eq('id', id);
+
+    await fetchTools();
+    renderTools();
+    renderToolWishlist();
+    showToast("Tool checked in ✓");
 }
