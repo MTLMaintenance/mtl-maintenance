@@ -1562,3 +1562,12 @@ select.form-select:focus {
     line-height: 1.4;
     white-space: pre-wrap; /* Keeps line breaks from the textarea */
 }
+    .note-edit-btn {
+    background: none !important;
+    border: none !important;
+    color: #007bff !important;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 5px;
+}
+.note-edit-btn:hover { color: #0056b3 !important; }
