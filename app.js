@@ -1896,64 +1896,33 @@ async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!=
 // PARTS
 // ============================================================
 function renderParts() {
-  console.log("Rendering parts list...");
-  
-  // 1. Safety check for the data
-  if (!state.parts || !Array.isArray(state.parts)) {
-    console.error("State.parts is not an array or is missing.");
-    return;
-  }
+    const tableBody = document.getElementById('parts-table-body');
+    if (!tableBody) return;
 
-  // 2. Safely handle Reorder Alerts
-  const alertEl = document.getElementById('reorder-alerts');
-  if (alertEl) {
-    const reorderAlerts = state.parts.filter(p => p.qty <= (p.reorder || 0) && p.auto_reorder);
-    alertEl.innerHTML = reorderAlerts.map(p =>
-      `<div class="alert alert-w" style="background:#fff3cd; color:#856404; padding:10px; border-radius:8px; margin-bottom:10px; font-size:13px;">
-        🔄 <b>Auto-reorder:</b> ${p.name} (Stock: ${p.qty})
-      </div>`
-    ).join('');
-  }
+    if (!state.parts || state.parts.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:20px;">No parts found.</td></tr>';
+        return;
+    }
 
-  // 3. Safely handle the Table Body
-  const tableBody = document.getElementById('parts-table-body');
-  if (!tableBody) {
-    console.error("Could not find 'parts-table-body' in the HTML.");
-    return;
-  }
+    tableBody.innerHTML = state.parts.map(p => {
+        const qty = parseInt(p.qty) || 0;
+        const reorder = parseInt(p.reorder) || 0;
+        const out = qty === 0;
+        const low = qty <= reorder;
 
-  tableBody.innerHTML = state.parts.map(p => {
-    const qty = parseInt(p.qty) || 0;
-    const reorder = parseInt(p.reorder) || 0;
-    const cost = parseFloat(p.cost) || 0;
-    const out = qty === 0;
-    const low = qty <= reorder;
-
-    // Safety check for supplier name
-    let sup = "Unknown";
-    try {
-      if (typeof supplierName === 'function') {
-        sup = supplierName(p.supplier_id);
-      }
-    } catch(e) { sup = "—"; }
-
-    return `<tr>
-      <td style="font-weight:600">${p.name || 'Unnamed Part'}</td>
-      <td style="font-size:12px; color:#666">${p.num || '—'}</td>
-      <td style="font-size:12px; color:#666">${sup}</td>
-      <td style="font-weight:700; color:${out ? '#d9534f' : low ? '#f0ad4e' : 'inherit'}">${qty}</td>
-      <td style="color:#666">${reorder}</td>
-      <td>$${cost.toFixed(2)}</td>
-      <td style="font-weight:700">$${(qty * cost).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-      <td><span class="badge ${p.auto_reorder ? 'bs' : 'bg'}" style="padding:2px 6px; border-radius:4px; background:${p.auto_reorder ? '#28a745':'#6c757d'}; color:white; font-size:10px;">${p.auto_reorder ? 'On' : 'Off'}</span></td>
-      <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}" style="padding:2px 6px; border-radius:4px; background:${out ? '#d9534f' : low ? '#f0ad4e':'#28a745'}; color:white; font-size:10px;">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
-      <td onclick="event.stopPropagation()">
-        <button class="btn btn-danger btn-sm" onclick="deletePart('${p.id}')" style="padding:2px 8px; font-size:11px;">Del</button>
-      </td>
-    </tr>`;
-  }).join('');
-  
-  console.log("Parts rendered successfully.");
+        return `<tr>
+            <td style="font-weight:600">${p.name || 'Unnamed'}</td>
+            <td>${p.num || '—'}</td>
+            <td>${typeof supplierName === 'function' ? supplierName(p.supplier_id) : '—'}</td>
+            <td style="font-weight:700; color:${out ? 'red' : low ? 'orange' : 'inherit'}">${qty}</td>
+            <td>${reorder}</td>
+            <td>$${parseFloat(p.cost || 0).toFixed(2)}</td>
+            <td>$${(qty * parseFloat(p.cost || 0)).toLocaleString()}</td>
+            <td>${p.auto_reorder ? 'On' : 'Off'}</td>
+            <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
+            <td><button class="btn btn-danger btn-sm" onclick="deletePart('${p.id}')">Del</button></td>
+        </tr>`;
+    }).join('');
 }
 async function deletePart(id){ if(!confirm('Delete this part?'))return; state.parts=state.parts.filter(p=>p.id!==id); await persist('parts','delete',{id}); renderParts(); updateMetrics(); }
 
@@ -6838,40 +6807,22 @@ function openUserPermissions(userId) {
 function teleportModals() {
     console.log("🚀 Placing items in their final homes...");
     
-    // 1. MODALS go to the <body> (The top layer)
+    // 1. POPUPS go to the body
     const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal'];
     modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
 
-    // 2. THE TOOL CRIB PANEL goes inside the main APP wrapper
-    // (Check if your main container is 'app' or 'main-container')
+    // 2. MAIN PANELS go to the main app wrapper
     const mainApp = document.getElementById('app') || document.querySelector('.main-content');
-    const toolsPanel = document.getElementById('panel-tools');
     
-    if (toolsPanel && mainApp) {
-        mainApp.appendChild(toolsPanel);
-        console.log("✅ Tool Crib moved into the App container.");
-    }
-}
-async function jumpToTaskEdit(taskId) {
-    console.log("🚀 Opening Edit Window for:", taskId);
-    
-    // 1. Close the current day list popup
-    closeModal('cal-action-modal');
-
-    // 2. Open the edit window directly (without switching tabs)
-    if (typeof openTaskDetail === 'function') {
-        openTaskDetail(taskId);
-    }
-
-    // 3. Force the edit modal to the absolute front
-    const editModal = document.getElementById('calendar-entry-modal') || document.getElementById('task-modal');
-    if (editModal) {
-        editModal.style.setProperty('display', 'block', 'important');
-        editModal.style.zIndex = "2000005";
-    }
+    // THE FIX: Move both Tools and Parts into the main view area
+    const panelsToMove = ['panel-tools', 'panel-parts'];
+    panelsToMove.forEach(id => {
+        const p = document.getElementById(id);
+        if (p && mainApp) mainApp.appendChild(p);
+    });
 }
 async function receiveTool() {
     const id = document.getElementById('tool-edit-id').value;
