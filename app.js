@@ -5183,40 +5183,39 @@ function switchToolModalTab(tab) {
     document.getElementById('btn-tool-details')?.classList.toggle('active', tab === 'details');
     document.getElementById('btn-tool-obs')?.classList.toggle('active', tab === 'observations');
 }
-// 2. Render Observations specific to a tool
 function renderToolObsList() {
     const toolId = document.getElementById('tool-edit-id').value;
     const container = document.getElementById('tool-obs-list');
     if(!toolId || !container) return;
 
-    // Check permissions
-    const canDeleteNotes = currentUser.role === 'admin' || currentUser.role === 'manager';
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
 
-    // Get notes for this specific tool
-    const obs = state.observations.filter(o => o.tool_id === toolId);
+    // Filter notes for this tool
+    const obs = (state.observations || []).filter(o => o.tool_id === toolId);
     
-    // Sort so newest notes are at the top
+    // Sort newest at top
     const sortedObs = [...obs].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
-    container.innerHTML = sortedObs.length ? sortedObs.map(o => `
+    container.innerHTML = sortedObs.length ? sortedObs.map(o => {
+        // Only the person who wrote the note (or an admin) can see the buttons
+        const isAuthor = o.author === (currentUser.full_name || currentUser.username);
+        const canControl = isManager || isAuthor;
+
+        return `
         <div class="note-card">
             <div class="note-header">
-                <div class="note-author">
-                    <span style="font-size:14px">👤</span> ${o.author}
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
+                <div class="note-author">👤 ${o.author}</div>
+                <div style="display:flex; align-items:center; gap:8px;">
                     <span class="note-date">${new Date(o.created_at).toLocaleDateString()}</span>
-                    ${canDeleteNotes ? 
-                        `<button class="note-del-btn" onclick="deleteToolObservation('${o.id}')" title="Delete Note">✕</button>` 
-                        : ''}
+                    ${canControl ? `
+                        <button class="note-edit-btn" onclick="editToolObservation('${o.id}')" title="Edit">✎</button>
+                        <button class="note-del-btn" onclick="deleteToolObservation('${o.id}')" title="Delete">✕</button>
+                    ` : ''}
                 </div>
             </div>
             <div class="note-body">${o.body}</div>
-        </div>
-    `).join('') : `
-        <div style="color:#aaa; font-size:13px; padding:40px 20px; text-align:center; font-style:italic;">
-            No maintenance notes recorded for this tool yet.
         </div>`;
+    }).join('') : `<div style="color:#aaa; font-size:13px; padding:40px 20px; text-align:center; font-style:italic;">No notes recorded.</div>`;
 }
 
 // 3. Add an observation to a tool
@@ -6939,5 +6938,91 @@ async function fetchTools() {
 
     } catch (err) {
         console.error("💥 Function crashed:", err);
+    }
+}
+// --- TOOL NOTE ACTIONS ---
+
+async function addToolNote() {
+    const toolId = document.getElementById('tool-edit-id').value;
+    const input = document.getElementById('tool-notes-input');
+    const body = input ? input.value.trim() : "";
+
+    if (!toolId || !body) return;
+
+    const newNote = {
+        id: crypto.randomUUID(),
+        tool_id: toolId,
+        author: currentUser.full_name || currentUser.username,
+        body: body,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        // 1. Save to Supabase (Ensure your table is named 'observations')
+        const { error } = await window._mpdb.from('observations').insert([newNote]);
+        if (error) throw error;
+
+        // 2. Update local memory so it shows up instantly
+        if (!state.observations) state.observations = [];
+        state.observations.push(newNote);
+
+        // 3. Clear input and redraw list
+        input.value = "";
+        renderToolObsList();
+        showToast("Note added ✓");
+
+    } catch (e) {
+        console.error(e);
+        alert("Failed to save note: " + e.message);
+    }
+}
+
+async function deleteToolObservation(id) {
+    if (!confirm("Are you sure you want to delete this note?")) return;
+
+    try {
+        // 1. Delete from Supabase
+        const { error } = await window._mpdb.from('observations').delete().eq('id', id);
+        if (error) throw error;
+
+        // 2. Remove from local memory
+        state.observations = state.observations.filter(o => o.id !== id);
+
+        // 3. Redraw list
+        renderToolObsList();
+        showToast("Note deleted");
+
+    } catch (e) {
+        console.error(e);
+        showToast("Delete failed");
+    }
+}
+
+async function editToolObservation(id) {
+    const note = state.observations.find(o => o.id === id);
+    if (!note) return;
+
+    const newBody = prompt("Edit your note:", note.body);
+    if (newBody === null || newBody.trim() === "" || newBody === note.body) return;
+
+    try {
+        // 1. Update Supabase
+        const { error } = await window._mpdb
+            .from('observations')
+            .update({ body: newBody.trim() })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 2. Update local memory
+        note.body = newBody.trim();
+
+        // 3. Redraw list
+        renderToolObsList();
+        showToast("Note updated ✓");
+
+    } catch (e) {
+        console.error(e);
+        showToast("Update failed");
     }
 }
