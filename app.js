@@ -7448,35 +7448,62 @@ async function processReview(newStatus) {
 }
 window.currentReviewId = null;
 
-function openReviewModal(id) {
-    console.log("Opening Review Modal for ID:", id);
+async function openReviewModal(id) {
+    console.log("🔍 Attempting to Review Tool ID:", id);
     
-    // 1. Find the tool in your app's memory
-    const tool = state.tools.find(t => t.id === id);
+    // 1. Try to find the tool in local memory first
+    const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
+    let tool = localList.find(t => t.id === id);
+
+    // 2. THE FIX: If not found in memory, fetch it directly from Supabase
     if (!tool) {
-        console.error("Tool not found!");
-        return;
+        console.warn("Tool not found in local memory. Fetching from Supabase...");
+        try {
+            const { data, error } = await window._mpdb
+                .from('tool_requests')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (data) {
+                tool = data;
+            } else {
+                alert("Error: Could not find this request in the database.");
+                return;
+            }
+        } catch (err) {
+            console.error("Fetch failed:", err);
+            return;
+        }
     }
 
-    // 2. Save the ID globally so the Approve/Deny buttons know who to target
+    // 3. Save the ID globally for the buttons to use
     window.currentReviewId = id;
 
-    // 3. Fill the Modal with the request info
-    if (document.getElementById('rev-title')) {
-        document.getElementById('rev-title').textContent = "Review: " + (tool.tool_name || tool.name);
-    }
+    // 4. Fill the Modal UI
+    const title = document.getElementById('rev-title');
+    const reason = document.getElementById('rev-reason');
     
-    if (document.getElementById('rev-reason')) {
-        document.getElementById('rev-reason').textContent = "Requested by: " + tool.requested_by + "\nReason: " + (tool.request_reason || tool.notes || "None provided.");
+    if (title) title.textContent = "Review: " + (tool.tool_name || tool.name);
+    if (reason) {
+        reason.innerHTML = `
+            <div style="margin-bottom:8px;"><b>Requested by:</b> ${tool.requested_by || 'Unknown'}</div>
+            <div><b>Reason:</b> ${tool.request_reason || tool.notes || 'No reason provided.'}</div>
+        `;
     }
 
-    // 4. Clear the inputs for the new review
+    // 5. Clear the manager inputs
     if (document.getElementById('rev-date')) document.getElementById('rev-date').value = "";
     if (document.getElementById('rev-denial-reason')) document.getElementById('rev-denial-reason').value = "";
 
-    // 5. Physically show the modal
-    // (Ensure you have 'review-modal' at the bottom of your HTML)
-    openModal('review-modal');
+    // 6. Physically show the modal
+    if (typeof openModal === 'function') {
+        openModal('review-modal');
+    } else {
+        document.getElementById('review-modal').style.display = 'flex';
+    }
+    
+    console.log("✅ Review modal successfully loaded.");
 }
 async function processReview(newStatus) {
     const id = window.currentReviewId;
