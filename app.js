@@ -5459,9 +5459,42 @@ async function handleWishDenial(id) {
   renderWishlist();
 }
 
-function promptWishlistCheck() {
-    alert("Please ensure you have checked the 'Denied History' tab to see if this tool was previously rejected before submitting your suggestion.");
-    openModal('wishlist-modal');
+async function promptWishlistCheck() {
+    const toolName = prompt("Enter the name of the tool you are suggesting:");
+    if (!toolName || toolName.trim() === "") return;
+    const category = prompt("What category? (e.g. Power Tool, Diagnostic, Hand Tool)", "Power Tool");
+    // THE FIX: We send both 'name' and 'tool_name' to ensure it satisfies Supabase
+    const newRequest = {
+        id: uid(),
+        name: toolName.trim(),        // Column 1
+        tool_name: toolName.trim(),   // Column 2 (Matching previous fix)
+        category: category || 'Other',
+        status: 'requested',          // This marks it as a Wishlist item
+        requested_by: currentUser.full_name || currentUser.username,
+        created_at: new Date().toISOString()
+    };
+    try {
+        console.log("Submitting suggestion:", newRequest);
+        const { error } = await window._mpdb
+            .from('tool_requests')
+            .insert([newRequest]);
+        if (error) {
+            console.error("Supabase Suggestion Error:", error.message);
+            alert("Could not submit suggestion: " + error.message);
+            return;
+        }
+        showToast("Suggestion submitted ✓");
+        // REFRESH DATA: Reload the tools into memory
+        if (typeof fetchTools === 'function') {
+            await fetchTools(); 
+        }
+        // REFRESH UI: If you are looking at the Wishlist, redraw it
+        if (typeof renderToolWishlist === 'function') {
+            renderToolWishlist();
+        }
+    } catch (e) {
+        console.error("Critical error in suggestion:", e);
+    }
 }
     
 function syncAdminRoleSelects() {
