@@ -1912,8 +1912,8 @@ function renderParts() {
 
         // 1. THE FIX: We add onclick="editPart('${p.id}')" to the row
         return `
-        <tr onclick="editPart('${p.id}')" style="cursor:pointer;">
-            <td style="font-weight:600">${p.name || 'Unnamed'}</td>
+        <tr onclick="window.editPart('${p.id}')" style="cursor:pointer;">
+    <td style="font-weight:600">${p.name || 'Unnamed'}</td>
             <td style="font-size:12px; color:#666;">${p.num || '—'}</td>
             <td>${typeof supplierName === 'function' ? supplierName(p.supplier_id) : '—'}</td>
             <td style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${qty}</td>
