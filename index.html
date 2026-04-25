@@ -418,7 +418,6 @@
     <div class="card">
       <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
       <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
-    
     </div>
     <div class="card" style="margin-top:12px">
       <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
@@ -437,7 +436,7 @@
     <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
   </div>
 
-  <!-- 5. SETTINGS (All System Settings go here) -->
+  <!-- 5. SETTINGS -->
   <div id="admin-settings" style="display:none">
     <!-- AI Key Section -->
     <div class="card">
@@ -448,17 +447,28 @@
       </div>
       <div id="gemini-key-status" style="font-size:12px;margin-top:8px;color:var(--text2)"></div>
     </div>
- <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-top: 30px; border: 1px dashed #444;">
-    <h3 style="margin-top:0; font-size:16px; color:#fff; display:flex; align-items:center; gap:10px;">
-        <span>💾</span> System Data Recovery
-    </h3>
-    <p style="font-size:12px; color:#aaa; margin-bottom:15px;">
-        Downloads every row from every table in Supabase. Keep this file safe as a master backup.
-    </p>
-    
-    <button onclick="exportFullDatabase()" class="btn-primary" style="background:#007bff !important; border:none !important; padding:10px 20px !important; border-radius:8px !important; cursor:pointer !important; font-weight:700 !important; color:#fff !important;">
-        Download Full Backup (.json)
-    </button>
+
+    <!-- NEW: SYSTEM AUDIT LOG (Moved here so it doesn't leak) -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">
+        <span class="card-title">System Audit Log</span>
+        <button class="btn btn-secondary btn-sm" onclick="fetchAuditLogs()">Refresh</button>
+      </div>
+      <div id="audit-log-list" style="max-height:300px; overflow-y:auto; font-size:12px; padding:10px;">
+          <!-- Logs will load here -->
+      </div>
+    </div>
+    <!-- DATA RECOVERY SECTION -->
+    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-top: 12px; border: 1px dashed #444;">
+        <h3 style="margin-top:0; font-size:16px; color:#fff; display:flex; align-items:center; gap:10px;">
+            <span>💾</span> System Data Recovery
+        </h3>
+        <p style="font-size:12px; color:#aaa; margin-bottom:15px;">Downloads every row from every table for emergency backup.</p>
+        <button onclick="exportFullDatabase()" class="btn-primary" style="background:#007bff !important; border:none !important; padding:10px 20px !important; border-radius:8px !important; cursor:pointer !important; font-weight:700 !important; color:#fff !important;">
+            Download Full Backup (.json)
+        </button>
+    </div>
+  </div>
 </div>
 
 <!-- THE TOOL CRIB PANEL -->
@@ -521,13 +531,6 @@
     </table>
   </div>
 </div>
-    <!-- Audit Log -->
-    <div class="card" style="margin-top:12px">
-      <div class="card-header"><span class="card-title">System Audit Log</span><button class="btn btn-secondary btn-sm" onclick="renderAuditLogs()">Refresh</button></div>
-      <div id="audit-log-list" style="max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,0.03)"></div>
-    </div>
-  </div>
-
 </div>
 <!-- CALENDAR PANEL -->
 <div class="panel" id="panel-calendar">
