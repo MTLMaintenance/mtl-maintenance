@@ -7409,3 +7409,35 @@ function renderToolDeniedHistory() {
         </tr>
     `).join('');
 }
+async function checkToolArrivals() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Find tools that are 'ordered' and the arrival date has passed or is today
+    const arrived = (state.tools || []).filter(t => t.status === 'ordered' && t.expected_arrival <= today);
+
+    for (let tool of arrived) {
+        await window._mpdb.from('tool_requests').update({ 
+            status: 'available',
+            location: 'Main Crib',
+            health: 100 
+        }).eq('id', tool.id);
+    }
+    
+    if (arrived.length > 0) await fetchTools();
+}
+
+async function processReview(newStatus) {
+    const id = window.currentReviewId;
+    const date = document.getElementById('rev-date').value;
+    const reason = document.getElementById('rev-denial-reason').value;
+
+    const updates = { status: newStatus };
+    if (newStatus === 'ordered') updates.expected_arrival = date;
+    if (newStatus === 'denied') updates.denial_reason = reason;
+
+    await window._mpdb.from('tool_requests').update(updates).eq('id', id);
+    closeModal('review-modal');
+    await fetchTools();
+    renderToolWishlist();
+    renderToolDeniedHistory();
+}
