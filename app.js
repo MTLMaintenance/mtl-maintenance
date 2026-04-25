@@ -7448,7 +7448,7 @@ async function processReview(newStatus) {
 }
 window.currentReviewId = null;
 
-async functwindow.openReviewModal = async functionion openReviewModal(id) {
+window.openReviewModal = async function(id) {
     console.log("🔍 Attempting to Review Tool ID:", id);
     
     // 1. Try to find the tool in local memory first
