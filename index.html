@@ -133,7 +133,10 @@
   <div class="metrics">
     <div class="metric-card"><div class="metric-label">Equipment</div><div class="metric-value" id="m-total">0</div></div>
     <div class="metric-card"><div class="metric-label">Overdue</div><div class="metric-value v-danger" id="m-overdue">0</div></div>
-    <div class="metric-card"><div class="metric-label">Parts Low</div><div class="metric-value" id="m-parts">0</div></div>
+    <div class="stat-card" onclick="showPanel('parts')" style="cursor:pointer;">
+    <div class="stat-label">PARTS LOW</div>
+    <div class="stat-value" id="dash-low-parts">0</div>
+</div>
     <div class="metric-card"><div class="metric-label">Open WOs</div><div class="metric-value" id="m-open">0</div></div>
   </div>
 
