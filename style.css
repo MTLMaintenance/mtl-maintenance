@@ -1573,3 +1573,26 @@ select.form-select:focus {
         padding-left: 32px;
     }
 }
+/* This forces every ID that ends in '-modal' to be a centered popup */
+[id$="-modal"] {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important; /* Sit on top of everything */
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: none; /* Controlled by openModal function */
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    flex-direction: column;
+    padding: 20px;
+}
+
+/* Fix for the backdrop to make sure it covers the whole screen */
+.modal-backdrop {
+    z-index: 200 !important;
+}
