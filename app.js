@@ -1153,27 +1153,21 @@ function closePhotoViewer(){ document.getElementById('photo-viewer').classList.r
 
 // MODALS
 // ============================================================
-function openModal(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = 'flex';
-        el.classList.add('open');
-
-        // Fill dropdowns if the modal needs them
-        if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            populateSelects();
-        }
-    } else {
-        console.error("Modal not found:", id);
-    }
-}
-
 function closeModal(id) {
     const el = document.getElementById(id);
+    const backdrop = document.querySelector('.modal-backdrop');
+
     if (el) {
         el.style.display = 'none';
-        el.classList.remove('active'); // THE FIX: Removes the class so it's unclickable
         el.classList.remove('open');
+        el.classList.remove('active');
+    }
+
+    // Only hide backdrop if NO other modals are open
+    const openModals = document.querySelectorAll('.modal.open, .modal.active');
+    if (openModals.length === 0 && backdrop) {
+        backdrop.style.display = 'none';
+        backdrop.classList.remove('active');
     }
 }
 // --- THE DROPDOWN PAINTER ---
@@ -4079,13 +4073,28 @@ function renderAlerts(){
 // ── OVERRIDDEN openModal ──────────────────────────────────────
 function openModal(id) {
     const el = document.getElementById(id);
+    const backdrop = document.querySelector('.modal-backdrop');
+
     if (el) {
+        // 1. TELEPORT: Move the modal to the body so it's not trapped in a tab
+        if (el.parentElement !== document.body) {
+            document.body.appendChild(el);
+        }
+
+        // 2. SHOW MODAL
         el.style.display = 'flex';
         el.classList.add('open');
+        el.classList.add('active'); // Added to match your CSS
 
-        // Fill dropdowns if the modal needs them
+        // 3. SHOW BACKDROP
+        if (backdrop) {
+            backdrop.style.display = 'flex';
+            backdrop.classList.add('active');
+        }
+
+        // Fill dropdowns if needed
         if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            populateSelects();
+            setTimeout(populateSelects, 10); // Tiny delay ensures modal is ready
         }
     } else {
         console.error("Modal not found:", id);
