@@ -62,13 +62,13 @@ input::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 .btn-absence {
-    background: #000 !important;
-    color: #fff !important;
-    border: none !important;
-    padding: 6px 12px !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
+    background: #000 ;
+    color: #fff ;
+    border: none ;
+    padding: 6px 12px ;
+    border-radius: 8px ;
+    font-size: 13px ;
+    font-weight: 600 ;
     cursor: pointer;
     transition: opacity 0.2s;
 }
@@ -84,60 +84,60 @@ input::-webkit-calendar-picker-indicator {
 
 .view-toggle .btn,
 .sub-toggle .btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  padding: 5px 12px !important;
-  min-height: 32px !important;
-  border: none !important;
-  border-radius: var(--radius) !important;
-  background: transparent !important;
-  color: rgba(2626,24,0.72) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  font-family: inherit !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  transition: all 0.15s ease !important;
-  box-shadow: none !important;
+  display: inline-flex ;
+  align-items: center ;
+  justify-content: center;
+  gap: 5px ;
+  padding: 5px 12px ;
+  min-height: 32px ;
+  border: none ;
+  border-radius: var(--radius) ;
+  background: transparent ;
+  color: rgba(26,24,0.72) ;
+  font-size: 12px ;
+  font-weight: 600 ;
+  font-family: inherit ;
+  cursor: pointer;
+  white-space: nowrap ;
+  transition: all 0.15s ease;
+  box-shadow: none ;
 }
 
 .view-toggle .btn:hover,
 :hover,
 .sub-toggle .btn:hover {
-  background: rgba(255,255,255,0.55) !important;
-  color: #1a1a18 !important;
+  background: rgba(255,255,255,0.55);
+  color: #1a1a18 ;
 }
 
 .view-toggle .btn.active,
 .active,
 .sub-toggle .btn.active {
-  background: #ffffff !important;
-  color: var(--text) !important;
-  font-weight: 700 !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+  background: #ffffff ;
+  color: var(--text) ;
+  font-weight: 700 ;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) ;
 }
 
 #panel-tools ,
 #panel-admin ,
 #panel-equipment .sub-toggle .btn,
 #panel-calendar .view-toggle .btn {
-  color: rgba(255,255,255,0.85) !important;
+  color: rgba(255,255,255,0.85) ;
 }
 #panel-tools :hover,
 #panel-admin :hover,
 #panel-equipment .sub-toggle .btn:hover,
 #panel-calendar .view-toggle .btn:hover {
-  color: #ffffff !important;
-  background: rgba(255,255,255,0.18) !important;
+  color: #ffffff ;
+  background: rgba(255,255,255,0.18) ;
 }
 #panel-tools .active,
 #panel-admin .active,
 #panel-equipment .sub-toggle .btn.active,
 #panel-calendar .view-toggle .btn.active {
-  background: #ffffff !important;
-  color: #1a1a18 !important;
+  background: #ffffff ;
+  color: #1a1a18 ;
 }
     /* Observation Severity Colors */
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
@@ -159,10 +159,10 @@ input::-webkit-calendar-picker-indicator {
 
   /* 1. Main Cards */
 .card {
-  background: rgba(255, 255, 255, 0.92) 
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4) 
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-top: 4px solid var(--accent); /* Universal Blue Bar */
   border-radius: var(--radius-lg);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -259,10 +259,6 @@ body.dark-mode .modal {
     .badge.b-progress { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; } /* In Progress - Blue */
 .badge.b-parts { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }    /* Waiting for Parts - Orange */
     /* --- CALENDAR BELLS & WHISTLES --- */
-.modal-backdrop {
-    z-index: 5000 !important; /* Higher than any other element */
-}
-
 /* 2. Lower the Calendar layer so it doesn't block popups */
 #panel-calendar.active {
     z-index: 100 !important; /* Lowered from 999 to 100 */
@@ -951,13 +947,13 @@ body, html {
 .toolbar-left { display: flex; align-items: center; gap: 12px; }
 
 .btn-absence-trigger { 
-    background: rgba(0, 0, 0, 0.2) !important; color: #fff !important; border: none !important; 
-    padding: 8px 14px !important; border-radius: 10px !important; font-size: 13px !important; 
-    font-weight: 600 !important; cursor: pointer; 
+    background: rgba(0, 0, 0, 0.2) ; color: #fff ; border: none ; 
+    padding: 8px 14px ; border-radius: 10px ; font-size: 13px ; 
+    font-weight: 600 ; cursor: pointer; 
 }
 
 .view-toggle { background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 12px; display: flex; gap: 4px; }
-.btn-primary { background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 16px !important; border-radius: 8px !important; }
+.btn-primary { background: #000 ; color: #fff; font-weight: 700 !; padding: 8px 16px; border-radius: 8px ; }
 
 
 /* ============================================================
@@ -1171,13 +1167,13 @@ body, html {
 /* Standard Buttons: Make both Save and Cancel solid Black */
 #user-perms-modal .btn-primary, 
 #user-perms-modal .btn-secondary {
-    background: #000000 !important;
-    color: #ffffff !important;
-    border: 1px solid #000000 !important;
-    padding: 10px 20px !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
+    background: #000000 ;
+    color: #ffffff ;
+    border: 1px solid #000000 ;
+    padding: 10px 20px ;
+    border-radius: 8px ;
+    font-weight: 700 ;
+    cursor: pointer;
     transition: opacity 0.2s;
 }
 
@@ -1364,14 +1360,14 @@ body, html {
 
 /* The Clear button needs smaller text to fit */
 .btn-clear {
-    font-size: 12px !important;
-    color: #ff6b6b !important;
+    font-size: 12px ;
+    color: #ff6b6b ;
 }
 
 /* The Green Submit button */
 .btn-submit {
-    background: #28a745 !important;
-    border-color: #28a745 !important;
+    background: #28a745;
+    border-color: #28a745 ;
 }
 
 .pin-btn:active {
@@ -1730,8 +1726,8 @@ select.form-select:focus {
 .tab-bar button.active,
 .sub-toggle .btn.active, 
 .view-toggle .btn.active {
-    background: #ffffff !important;
-    color: #1a1a18 !important;
+    background: #ffffff ;
+    color: #1a1a18 ;
     font-weight: 800;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
