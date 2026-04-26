@@ -1153,20 +1153,28 @@ function closePhotoViewer(){ document.getElementById('photo-viewer').classList.r
 
 // MODALS
 // ============================================================
-function openModal(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = 'flex';
-        el.classList.add('open');
-
-        // Fill dropdowns if the modal needs them
-        if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            populateSelects();
-        }
+window.openModal = function(id) {
+    console.log("🎯 Attempting to open Modal:", id);
+    const modal = document.getElementById(id);
+    if (modal) {
+        // FORCE visibility to override any panel-hiding logic
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.classList.add('active');
+        modal.classList.add('open');
+        console.log("✅ Success: " + id + " is now visible.");
     } else {
-        console.error("Modal not found:", id);
+        console.error("❌ Error: Modal ID not found:", id);
+        alert("System Error: Modal window is missing from HTML.");
     }
-}
+};
+
+window.closeModal = function(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active', 'open');
+    }
+};
 
 function closeModal(id) {
     const el = document.getElementById(id);
