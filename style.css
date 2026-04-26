@@ -549,11 +549,12 @@ body, html {
 /* LEFT: Branding area */
 .topbar-left {
     display: flex !important;
-    align-items: center;
-    gap: 20px;
-    padding-right: 20px; /* Buffer before the nav starts */
+    align-items: center !important;
+    gap: 15px;
+    /* CHANGE: allow it to shrink slightly (via the search bar) but not grow */
+    flex: 0 1 auto !important; 
+    white-space: nowrap;
 }
-
 /* The Logo Text - Force White & Bold */
 .logo {
     display: inline-block !important;
@@ -1522,3 +1523,53 @@ select.form-select:focus {
     font-weight: 700; 
   }
 } /* Closing Mobile */
+/* --- RESPONSIVE ENGINE --- */
+
+/* 1. Make the search bar flexible */
+.search-container {
+    /* Starts at 220px, but can shrink down to 140px before anything else moves */
+    width: 220px; 
+    min-width: 140px; 
+    flex-shrink: 1; /* This tells the bar: "You are the first to give up space" */
+    transition: width 0.3s ease; /* Smooth transition when resizing */
+}
+
+/* 2. Logo must never shrink */
+.logo {
+    flex-shrink: 0 !important;
+}
+
+/* 3. Navigation Safety Net */
+.nav {
+    flex: 1 1 auto;
+    min-width: 0; /* Allows the middle section to shrink to fit the screen */
+    overflow-x: auto; /* If buttons still don't fit, they will swipe side-to-side */
+    scrollbar-width: none; /* Hide scrollbar on Firefox */
+}
+.nav::-webkit-scrollbar { display: none; } /* Hide scrollbar on Chrome/Safari */
+
+/* 4. Logic for Medium Screens (Laptops/Tablets) */
+@media screen and (max-width: 1400px) {
+    .search-container {
+        width: 150px; /* Shrink search automatically on standard laptops */
+    }
+    .topbar {
+        padding: 0 10px !important; /* Tighten edge padding to save space */
+        gap: 10px;
+    }
+}
+
+/* 5. Logic for Small Screens (Tablets/Phonable) */
+@media screen and (max-width: 1100px) {
+    /* On small screens, hide the search bar text and just show icon to save 150px */
+    #global-search::placeholder {
+        color: transparent;
+    }
+    .search-container {
+        width: 40px; /* Only big enough for the magnifying glass */
+        min-width: 40px;
+    }
+    #global-search {
+        padding-left: 32px;
+    }
+}
