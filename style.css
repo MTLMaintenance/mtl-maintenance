@@ -1579,20 +1579,42 @@ select.form-select:focus {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    z-index: 9999 !important; /* Sit on top of everything */
-    background: var(--bg);
-    border-radius: var(--radius-lg);
+    z-index: 9001 !important; /* Higher than backdrop */
+    
+    background: #fff;
+    color: #333;
+    padding: 25px;
+    border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    display: none; /* Controlled by openModal function */
+    
     width: 90%;
     max-width: 600px;
     max-height: 85vh;
     overflow-y: auto;
+    display: none; /* Hidden until openModal runs */
     flex-direction: column;
-    padding: 20px;
 }
 
 /* Fix for the backdrop to make sure it covers the whole screen */
 .modal-backdrop {
-    z-index: 200 !important;
+    z-index: 9000 !important;
+    position: fixed !important;
+    display: none;;
+}
+
+/* 3. Dark mode support for modals */
+body.dark-mode [id$="-modal"] {
+    background: #1e1e1c;
+    color: #e8e6de;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* 4. Fix for the "Save" and "Cancel" button rows inside modals */
+.modal-footer, .form-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.05);
 }
