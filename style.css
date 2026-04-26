@@ -13,6 +13,15 @@
 #invoice-extracted-badge,
 button[onclick="saveInvoice()"] {
     display: none ;
+.badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
+.badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
+.badge.obs-critical { background: #FCEBEB; color: #A32D2D; border: 1px solid #E24B4A; }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
 }
 .type-btn {
     flex: 1;
@@ -41,7 +50,7 @@ button[onclick="saveInvoice()"] {
 
 .modal-input {
     width: 100%;
-    background: #2a2a2a ;
+    background: var(--bg) ;
     border: 1px solid #444 ;
     color: #fff ;
     padding: 12px ;
