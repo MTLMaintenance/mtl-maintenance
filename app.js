@@ -7541,7 +7541,7 @@ async function saveWishRequest() {
 
     if (!rawName || !reason) return alert("Fill in name and reason.");
 
-    // FIND THE ORIGINAL ITEM (if editing)
+    // FIND THE ORIGINAL ITEM (if we are editing)
     const existing = editId ? state.tools.find(t => t.id === editId) : null;
 
     const req = {
@@ -7550,9 +7550,11 @@ async function saveWishRequest() {
         tool_name: rawName,
         request_reason: reason, 
         notes: reason,
-        // THE FIX: Only set author if this is a NEW request. If editing, keep the original.
+        
+        // THE FIX: If editing, keep the original names. If new, use current user.
         requested_by: existing ? existing.requested_by : (currentUser.full_name || currentUser.username),
         author_id: existing ? existing.author_id : String(currentUser.id), 
+        
         status: 'requested',
         created_at: existing ? existing.created_at : new Date().toISOString()
     };
@@ -7563,8 +7565,14 @@ async function saveWishRequest() {
 
         showToast("Saved successfully ✓");
         closeModal('wishlist-modal');
+        
+        // Refresh memory and UI
         await fetchTools();
         renderToolWishlist();
+        
+        // Clear the ID for next time
+        document.getElementById('wish-edit-id').value = "";
+
     } catch (e) { alert("Error: " + e.message); }
 }
 window.deleteWishItem = async function(id) {
@@ -7605,9 +7613,6 @@ window.openWishDetailCard = function(id) {
     const authorId = String(item.author_id || "");
     const isAuthor = (myId === authorId);
 
-    console.log("User Role:", currentUser.role, "| Is Admin:", isAdmin);
-    console.log("My ID:", myId, "| Author ID:", authorId, "| Match:", isAuthor);
-
     // 1. Open Modal
     openModal('wishlist-modal');
 
@@ -7616,20 +7621,18 @@ window.openWishDetailCard = function(id) {
     document.getElementById('wish-name').value = item.tool_name || item.name || "";
     document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
 
-    // 3. THE FORCE FIX: Show delete button if Admin or Author
+    // 3. THE FORCE FIX: Use 'inline-block' so it sits correctly in the footer
     const delBtn = document.getElementById('btn-delete-wish');
     if (delBtn) {
         if (isAdmin || isAuthor) {
             console.log("✅ Permission Check Passed: Showing Delete Button");
-            delBtn.style.setProperty('display', 'block', 'important');
+            delBtn.style.setProperty('display', 'inline-block', 'important');
             delBtn.style.visibility = 'visible';
             delBtn.style.opacity = '1';
         } else {
             console.log("❌ Permission Check Failed: Hiding Delete Button");
             delBtn.style.display = 'none';
         }
-    } else {
-        console.error("❌ ERROR: Could not find HTML element with ID 'btn-delete-wish'");
     }
 };
 window.deleteWishItem = async function() {
