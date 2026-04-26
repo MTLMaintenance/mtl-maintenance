@@ -7604,29 +7604,50 @@ window.deleteWishItem = async function(id) {
     }
 };
 window.openWishDetailCard = function(id) {
+    console.log("--- Opening Wishlist Detail Card ---");
+    
+    // 1. Find the item in state
     const item = window.state.tools.find(t => t.id === id);
-    if (!item) return;
+    if (!item) return console.error("Item not found in memory.");
 
+    // 2. Permission Logic
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
     const isAuthor = String(item.author_id) === String(currentUser.id);
 
-    // 1. Open the Modal
+    console.log(`Target: ${item.tool_name} | Is Admin: ${isAdmin} | Is Author: ${isAuthor}`);
+
+    // 3. Open the Modal
     openModal('wishlist-modal');
 
-    // 2. Fill the inputs
-    document.getElementById('wish-edit-id').value = item.id;
-    document.getElementById('wish-name').value = item.tool_name || item.name || "";
-    document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
+    // 4. Populate Form Fields (with safety checks)
+    const editIdEl = document.getElementById('wish-edit-id');
+    const nameEl = document.getElementById('wish-name');
+    const reasonEl = document.getElementById('wish-reason');
+    const modalTitle = document.getElementById('wish-modal-title');
+    const submitBtn = document.getElementById('wish-submit-btn');
 
-    // 3. THE FINAL FIX FOR THE BUTTON:
+    if (editIdEl) editIdEl.value = item.id;
+    if (nameEl) nameEl.value = item.tool_name || item.name || "";
+    if (reasonEl) reasonEl.value = item.request_reason || item.notes || "";
+    
+    // Change UI to 'Edit mode'
+    if (modalTitle) modalTitle.textContent = "✎ Edit Suggestion";
+    if (submitBtn) submitBtn.textContent = "Update Suggestion";
+
+    // 5. THE BUTTON FIX: Show delete button if authorized
     const delBtn = document.getElementById('btn-delete-wish');
     if (delBtn) {
         if (isAdmin || isAuthor) {
-            // Use inline-block so it sits next to the other buttons
+            console.log("✅ Showing Delete Button");
             delBtn.style.setProperty('display', 'inline-block', 'important');
+            delBtn.style.visibility = 'visible';
+            delBtn.style.opacity = '1';
         } else {
+            console.log("❌ User not authorized to delete this request.");
             delBtn.style.display = 'none';
         }
+    } else {
+        console.warn("⚠️ Button ID 'btn-delete-wish' not found in HTML.");
     }
 };
 window.deleteWishItem = async function() {
