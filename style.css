@@ -526,72 +526,61 @@ body, html {
     align-items: center;
     justify-content: space-between;
     height: 60px;
-    background: #000000; /* Solid black */
+    width: 100% !important; /* Ensure it takes full width */
+    box-sizing: border-box;
+    background: #000000 !important;
     padding: 0 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
     position: sticky;
     top: 0;
-    z-index: var(--z-nav);
-    gap: 20px;
+    z-index: 1000;
+    overflow: hidden; /* Keeps the bar itself from scrolling */
 }
 
-/* LEFT SECTION: Logo & Search */
+/* LEFT SECTION - Locked to left */
 .topbar-left {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
+    flex-shrink: 0; /* Prevents logo/search from shrinking */
+    min-width: 300px; /* Gives enough room for logo + search */
+}
+
+/* CENTER NAVIGATION - Flexible and Scrollable */
+.nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px;
+    flex: 1; /* Takes up all remaining middle space */
+    justify-content: center;
+    overflow-x: auto; /* Allows scrolling if buttons don't fit */
+    white-space: nowrap;
+    scrollbar-width: none; /* Hides scrollbar on Firefox */
+    padding: 0 10px;
+}
+.nav::-webkit-scrollbar { display: none; } /* Hides scrollbar on Chrome/Safari */
+
+.nav-btn {
+    flex-shrink: 0; /* Prevents buttons from getting squished */
+}
+
+/* RIGHT SECTION - Locked to right */
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0; /* Prevents buttons from shrinking */
+    justify-content: flex-end;
+}
+
+/* Fix for the search bar width inside the left container */
+.search-container {
+    width: 180px;
     flex-shrink: 0;
 }
 
-.logo {
-    color: #fff;
-    font-size: 18px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    white-space: nowrap;
-}
-
 #global-search {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #fff;
-    font-size: 13px;
-    width: 200px;
-    transition: width 0.3s ease;
-}
-
-#global-search:focus {
-    width: 280px;
-    outline: none;
-    border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.15);
-}
-
-/* CENTER SECTION: Navigation Links */
-.nav {
-    display: flex;
-    gap: 4px;
-    overflow: visible; /* We want these visible on PC */
-}
-
-.nav-btn {
-    background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    border: none;
-    padding: 8px 12px;
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: 4px;
-    white-space: nowrap;
-}
-
-.nav-btn.active {
-    color: #fff;
-    font-weight: 700;
-    background: rgba(255, 255, 255, 0.1);
+    width: 100%;
+    padding: 6px 10px 6px 30px;
 }
 
 /* RIGHT SECTION: Action Buttons */
