@@ -7610,23 +7610,32 @@ window.openWishDetailCard = function(id) {
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
     const isAuthor = String(item.author_id) === String(currentUser.id);
 
-    // THE FIX: If you are the Admin OR the Author, you get the Edit window
-    if (isAdmin || isAuthor) {
-        window.editWishItem(id);
-    } else {
-        // Regular users who didn't write it just see the info
-        alert(`Tool: ${item.tool_name}\nRequested by: ${item.requested_by}\nReason: ${item.request_reason || 'No details'}`);
+    // 1. Open the Modal
+    openModal('wishlist-modal');
+
+    // 2. FILL THE DATA
+    document.getElementById('wish-edit-id').value = item.id;
+    document.getElementById('wish-name').value = item.tool_name || item.name || "";
+    document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
+
+    // 3. THE FIX: Show the delete button ONLY if authorized
+    const delBtn = document.getElementById('btn-delete-wish');
+    if (delBtn) {
+        if (isAdmin || isAuthor) {
+            delBtn.style.setProperty('display', 'block', 'important');
+        } else {
+            delBtn.style.display = 'none';
+        }
     }
 };
-window.deleteWishItem = async function(id) {
+window.deleteWishItem = async function() {
+    const id = document.getElementById('wish-edit-id').value;
     if (!id) return;
-    
-    const item = state.tools.find(t => t.id === id);
-    const itemName = item ? item.tool_name : "this request";
 
-    if (!confirm(`Are you sure you want to permanently delete "${itemName}"?`)) return;
+    if (!confirm("Are you sure you want to permanently delete this tool suggestion?")) return;
 
     try {
+        // Delete from Database
         const { error } = await window._mpdb
             .from('tool_requests')
             .delete()
@@ -7635,15 +7644,11 @@ window.deleteWishItem = async function(id) {
         if (error) throw error;
 
         showToast("Request deleted ✓");
-        
-        // Close BOTH possible modals
-        closeModal('review-modal');
         closeModal('wishlist-modal');
 
-        // Sync and Refresh UI
-        await fetchTools();
+        // Update local memory and UI instantly
+        window.state.tools = window.state.tools.filter(t => t.id !== id);
         renderToolWishlist();
-        renderToolDeniedHistory();
 
     } catch (e) {
         alert("Delete failed: " + e.message);
