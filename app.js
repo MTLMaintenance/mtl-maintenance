@@ -7604,33 +7604,27 @@ window.deleteWishItem = async function(id) {
     }
 };
 window.openWishDetailCard = function(id) {
-    console.log("--- DEBUG: Opening Wish Detail ---");
     const item = window.state.tools.find(t => t.id === id);
-    if (!item) return console.error("Item not found in state.tools");
+    if (!item) return;
 
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const myId = String(currentUser.id);
-    const authorId = String(item.author_id || "");
-    const isAuthor = (myId === authorId);
+    const isAuthor = String(item.author_id) === String(currentUser.id);
 
-    // 1. Open Modal
+    // 1. Open the Modal
     openModal('wishlist-modal');
 
-    // 2. Fill Data
+    // 2. Fill the inputs
     document.getElementById('wish-edit-id').value = item.id;
     document.getElementById('wish-name').value = item.tool_name || item.name || "";
     document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
 
-    // 3. THE FORCE FIX: Use 'inline-block' so it sits correctly in the footer
+    // 3. THE FINAL FIX FOR THE BUTTON:
     const delBtn = document.getElementById('btn-delete-wish');
     if (delBtn) {
         if (isAdmin || isAuthor) {
-            console.log("✅ Permission Check Passed: Showing Delete Button");
+            // Use inline-block so it sits next to the other buttons
             delBtn.style.setProperty('display', 'inline-block', 'important');
-            delBtn.style.visibility = 'visible';
-            delBtn.style.opacity = '1';
         } else {
-            console.log("❌ Permission Check Failed: Hiding Delete Button");
             delBtn.style.display = 'none';
         }
     }
