@@ -519,7 +519,7 @@ body, html {
   padding: 0 ;
   /* Keep the original app background from the primary #app rule above. */
 }
-/* --- TOPBAR MASTER ALIGNMENT --- */
+/* --- TOPBAR REPAIR: FORCE LEFT VISIBILITY --- */
 .topbar {
     display: flex !important;
     flex-direction: row !important;
@@ -532,64 +532,76 @@ body, html {
     box-sizing: border-box !important;
     position: sticky;
     top: 0;
-    z-index: 1001;
-    overflow: hidden;
+    z-index: 2000; /* Higher z-index to ensure visibility */
 }
 
-/* LEFT: Locked to the left edge, will not grow or shrink */
+/* LEFT: Branding & Search - FORCED WIDTH */
 .topbar-left {
     display: flex !important;
     align-items: center !important;
-    gap: 15px;
-    flex: 0 0 auto !important; /* This prevents the right side from pushing into it */
-    min-width: fit-content;
+    gap: 15px !important;
+    flex: 0 0 320px !important; /* Forces this section to be exactly 320px wide */
+    min-width: 320px !important;
+    overflow: visible !important;
 }
 
-/* CENTER: The Navigation. This is the only part allowed to expand/stretch */
+.logo {
+    color: #ffffff !important; /* Bright white */
+    font-weight: 800 !important;
+    font-size: 16px !important;
+    white-space: nowrap !important;
+    cursor: pointer;
+    display: block !important;
+}
+
+.search-container {
+    position: relative !important;
+    width: 160px !important;
+    display: block !important;
+}
+
+#global-search {
+    width: 100% !important;
+    height: 30px !important;
+    background: rgba(255,255,255,0.15) !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    padding: 0 10px 0 30px !important;
+    font-size: 12px !important;
+}
+
+/* CENTER: Navigation - ALLOW TO SHRINK */
 .nav {
     display: flex !important;
     flex-direction: row !important;
     justify-content: center !important;
-    align-items: center !important;
-    gap: 8px;
-    flex: 1 1 auto !important; /* Takes up all the middle space */
-    overflow-x: auto;
-    white-space: nowrap;
+    gap: 5px !important;
+    flex: 1 1 auto !important; /* Shrink and grow as needed */
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    margin: 0 10px !important;
 }
 
-/* RIGHT: Locked to the right edge. Shrinks to fit ONLY the buttons */
+/* RIGHT: User & Buttons */
 .topbar-right {
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 8px;
-    flex: 0 0 auto !important; /* CRITICAL: Prevents stretching to the left */
-    width: auto !important;     /* Forces it to be only as wide as the buttons */
-    min-width: fit-content;
+    gap: 8px !important;
+    flex: 0 0 auto !important;
+    min-width: fit-content !important;
 }
 
-/* Ensure the Logo doesn't disappear */
-.logo {
-    color: #fff !important;
-    font-weight: 800 !important;
-    font-size: 16px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-}
-
-/* Ensure the search bar stays visible on the left */
-.search-container {
-    width: 160px !important;
-    flex-shrink: 0 !important;
-}
-
-#global-search {
-    width: 100%;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: white;
-    padding: 5px 10px 5px 30px;
-    border-radius: 6px;
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: #fff;
+    opacity: 0.7;
+    pointer-events: none;
 }
 /* --- MOBILE RESPONSIVENESS REPAIR --- */
 @media screen and (max-width: 1100px) {
