@@ -146,22 +146,6 @@ body.dark-mode .modal {
     background: #ffffff;
     border-bottom: 3px solid var(--accent);
 }
-
-.stat-row {
-    display: flex;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--bg3);
-}
-
-.stat-row:last-child { border-bottom: none; }
-    .badge.b-progress { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; } /* In Progress - Blue */
-.badge.b-parts { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }    /* Waiting for Parts - Orange */
-    /* --- CALENDAR BELLS & WHISTLES --- */
-/* 2. Lower the Calendar layer so it doesn't block popups */
-#panel-calendar.active {
-}
-
 /* 3. Keep the Topbar in the middle (Above content, below popups) */
 
     .cal-event {
@@ -408,9 +392,6 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .cal-event.completed{background:var(--success-bg);color:var(--success-text)}
 .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .cal-nav-title{font-weight:600;font-size:15px;flex:1;text-align:center}
-/* ANALYTICS */
-.stat-row{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
-.stat-row:last-child{border-bottom:none}
 /* RECURRENCE */
 .recur-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .recur-item:last-child{border-bottom:none}
@@ -679,28 +660,6 @@ body, html {
     font-weight: 600 ; cursor: pointer; 
 }
 
-
-
-
-/* ============================================================
-   2. DESKTOP ONLY (min-width: 769px)
-   ============================================================ */
-@media screen and (min-width: 769px) {
-  .topbar {
-    display: flex ;
-    flex-direction: row ;
-    flex-wrap: nowrap ;
-    align-items: center ;
-    justify-content: flex-start ;
-    height: 60px ;
-    width: 100% ;
-    padding: 0 15px ;
-    position: sticky ;
-    top: 0;
-    overflow: visible ;
-    background: #1a1a1a ;
-  }
-
   /* Make PC Calendar Full Screen */
   #panel-calendar .card, #cal-grid-container .card {
     max-width: 100% ;
@@ -724,13 +683,7 @@ body, html {
 /* ============================================================
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
-@media screen and (max-width: 768px) {
-  html, body {
-    height: 100vh ;
-    overflow: hidden ;
-    position: fixed;
-    width: 100%;
-  }
+
 
   /* Shrink Calendar for Mobile (The "Mini-Map" look) */
   #panel-calendar .card, #cal-grid-container .card {
@@ -799,13 +752,6 @@ body, html {
   .chat-mobile-menu-item.active { background: #f0f4f8 ; color: #007bff ; font-weight: 700 ; }
 } /* END MOBILE BLOCK */
 
-.pin-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #555;
-    transition: background 0.1s;
-}
 
 .pin-dot {
     width: 14px;
@@ -1433,3 +1379,30 @@ select.form-select:focus {
     transform: translate(-50%, -50%) scale(1.2);
     background: #fff;
 }
+  /* ============================================================
+   2. DESKTOP ONLY (min-width: 769px)
+   ============================================================ */
+@media screen and (min-width: 769px) {
+  .topbar {
+    display: flex ;
+    flex-direction: row ;
+    flex-wrap: nowrap ;
+    align-items: center ;
+    justify-content: flex-start ;
+    height: 60px ;
+    width: 100% ;
+    padding: 0 15px ;
+    position: sticky ;
+    top: 0;
+    overflow: visible ;
+    background: #1a1a1a ;
+  }
+
+@media screen and (max-width: 768px) {
+  html, body {
+    height: 100vh ;
+    overflow: hidden ;
+    position: fixed;
+    width: 100%;
+  }
+   .chat-mobile-menu-item.active { background: #f0f4f8 ; color: #007bff ; font-weight: 700 ; }
