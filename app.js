@@ -7541,39 +7541,31 @@ async function saveWishRequest() {
 
     if (!rawName || !reason) return alert("Fill in name and reason.");
 
+    // FIND THE ORIGINAL ITEM (if editing)
+    const existing = editId ? state.tools.find(t => t.id === editId) : null;
+
     const req = {
         id: (editId && editId !== "") ? editId : uid(),
         name: rawName,
         tool_name: rawName,
         request_reason: reason, 
-        requested_by: currentUser.full_name || currentUser.username,
-        author_id: String(currentUser.id), 
+        notes: reason,
+        // THE FIX: Only set author if this is a NEW request. If editing, keep the original.
+        requested_by: existing ? existing.requested_by : (currentUser.full_name || currentUser.username),
+        author_id: existing ? existing.author_id : String(currentUser.id), 
         status: 'requested',
-        created_at: new Date().toISOString()
+        created_at: existing ? existing.created_at : new Date().toISOString()
     };
 
     try {
-        // 1. Save to Supabase
         const { error } = await window._mpdb.from('tool_requests').upsert([req]);
         if (error) throw error;
 
-        showToast(editId ? "Updated ✓" : "Suggestion sent ✓");
+        showToast("Saved successfully ✓");
         closeModal('wishlist-modal');
-
-        // 2. THE FORCE FIX: Physically re-download the data from the server
-        console.log("Syncing Wishlist...");
-        const { data: freshTools } = await window._mpdb.from('tool_requests').select('*');
-        
-        // 3. Update both possible global variables
-        if (typeof state !== 'undefined') state.tools = freshTools;
-        window.state.tools = freshTools;
-
-        // 4. Redraw the table
+        await fetchTools();
         renderToolWishlist();
-
-    } catch (e) { 
-        alert("Error: " + e.message); 
-    }
+    } catch (e) { alert("Error: " + e.message); }
 }
 window.deleteWishItem = async function(id) {
     // If no ID passed, try to grab it from the hidden input in the modal
