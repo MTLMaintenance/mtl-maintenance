@@ -519,6 +519,7 @@ body, html {
   padding: 0 ;
   /* Keep the original app background from the primary #app rule above. */
 }
+/* --- TOPBAR MASTER ALIGNMENT --- */
 .topbar {
     display: flex !important;
     flex-direction: row !important;
@@ -531,71 +532,64 @@ body, html {
     box-sizing: border-box !important;
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 1001;
+    overflow: hidden;
 }
 
-/* LEFT: Branding & Search - Shrink to fit content */
+/* LEFT: Locked to the left edge, will not grow or shrink */
 .topbar-left {
     display: flex !important;
-    align-items: center;
+    align-items: center !important;
     gap: 15px;
-    flex: 0 0 auto !important; /* DO NOT GROW, DO NOT STRETCH */
-    white-space: nowrap;
+    flex: 0 0 auto !important; /* This prevents the right side from pushing into it */
+    min-width: fit-content;
 }
 
-.logo {
-    color: #fff !important;
-    font-weight: 800;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-/* CENTER: Navigation - This is the only part that should grow */
+/* CENTER: The Navigation. This is the only part allowed to expand/stretch */
 .nav {
     display: flex !important;
     flex-direction: row !important;
     justify-content: center !important;
-    align-items: center;
-    gap: 5px;
-    flex: 1 1 auto !important; /* GROW TO FILL MIDDLE SPACE */
-    overflow-x: auto; /* Scroll if too many buttons */
-    scrollbar-width: none;
-}
-.nav::-webkit-scrollbar { display: none; }
-
-/* RIGHT: User & Actions - Shrink to fit content */
-.topbar-right {
-    display: flex !important;
-    align-items: center;
-    justify-content: flex-end;
+    align-items: center !important;
     gap: 8px;
-    flex: 0 0 auto !important; /* DO NOT GROW, DO NOT STRETCH LEFT */
+    flex: 1 1 auto !important; /* Takes up all the middle space */
+    overflow-x: auto;
     white-space: nowrap;
 }
 
-/* SEARCH BAR FIX */
+/* RIGHT: Locked to the right edge. Shrinks to fit ONLY the buttons */
+.topbar-right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px;
+    flex: 0 0 auto !important; /* CRITICAL: Prevents stretching to the left */
+    width: auto !important;     /* Forces it to be only as wide as the buttons */
+    min-width: fit-content;
+}
+
+/* Ensure the Logo doesn't disappear */
+.logo {
+    color: #fff !important;
+    font-weight: 800 !important;
+    font-size: 16px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+/* Ensure the search bar stays visible on the left */
 .search-container {
-    width: 160px;
-    flex-shrink: 0;
+    width: 160px !important;
+    flex-shrink: 0 !important;
 }
 
 #global-search {
     width: 100%;
-    height: 30px;
-    padding-left: 30px;
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    padding: 5px 10px 5px 30px;
     border-radius: 6px;
-    color: #fff;
-    font-size: 12px;
-}
-
-.user-chip {
-    display: flex;
-    align-items: center;
-    color: #fff;
-    font-size: 13px;
-    margin-right: 10px;
 }
 /* --- MOBILE RESPONSIVENESS REPAIR --- */
 @media screen and (max-width: 1100px) {
