@@ -7634,22 +7634,18 @@ window.openWishDetailCard = function(id) {
     if (modalTitle) modalTitle.textContent = "✎ Edit Suggestion";
     if (submitBtn) submitBtn.textContent = "Update Suggestion";
 
-    // 5. THE BUTTON FIX: Show delete button if authorized
     const delBtn = document.getElementById('btn-delete-wish');
     if (delBtn) {
         if (isAdmin || isAuthor) {
-            console.log("✅ Showing Delete Button");
+            console.log("🚀 FORCING BUTTON VISIBILITY ATOMICALLY");
+            // This command writes directly to the HTML tag, winning every CSS fight
             delBtn.style.setProperty('display', 'inline-block', 'important');
-            delBtn.style.visibility = 'visible';
-            delBtn.style.opacity = '1';
+            delBtn.style.setProperty('visibility', 'visible', 'important');
+            delBtn.style.setProperty('opacity', '1', 'important');
         } else {
-            console.log("❌ User not authorized to delete this request.");
             delBtn.style.display = 'none';
         }
-    } else {
-        console.warn("⚠️ Button ID 'btn-delete-wish' not found in HTML.");
     }
-};
 window.deleteWishItem = async function() {
     const id = document.getElementById('wish-edit-id').value;
     if (!id) return;
