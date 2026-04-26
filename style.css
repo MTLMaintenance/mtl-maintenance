@@ -519,74 +519,119 @@ body, html {
   padding: 0 ;
   /* Keep the original app background from the primary #app rule above. */
 }
-/* --- MASTER TOPBAR GRID REPAIR --- */
+
+/* --- TOPBAR EDGE-TO-EDGE FIX --- */
 .topbar {
     display: grid !important;
-    /* Column 1: 450px (Logo/Search) | Column 2: Flex (Nav) | Column 3: 450px (Actions) */
-    grid-template-columns: 450px 1fr 450px !important; 
+    /* Use 'max-content' for the ends so they only take what they need */
+    grid-template-columns: max-content 1fr max-content !important; 
     align-items: center;
     height: 60px !important;
-    width: 100vw !important;
+    
+    /* CHANGE: Use 100% instead of 100vw to prevent right-side overflow */
+    width: 100% !important; 
+    max-width: 100% !important;
+    
     background: #000000 !important;
-    padding: 0 20px;
-    box-sizing: border-box;
+    padding: 0 20px !important; /* This gives the buttons a 20px gap from the glass */
+    box-sizing: border-box !important; /* CRITICAL: Includes padding in the width calculation */
+    
     position: sticky;
     top: 0;
     z-index: 1000;
+    gap: 15px;
+    overflow: hidden; /* Prevents any tiny overlaps from creating a scrollbar */
 }
 
-/* LEFT SECTION: Now has a guaranteed 450px wide 'Safe Zone' */
+
+/* --- FORCE TOP LEFT VISIBILITY --- */
+
+/* LEFT: Branding area */
 .topbar-left {
     display: flex !important;
     align-items: center;
     gap: 20px;
-    width: 100%;
-    /* Ensure child elements are visible */
-    visibility: visible !important;
-    opacity: 1 !important;
+    padding-right: 20px; /* Buffer before the nav starts */
 }
 
+/* The Logo Text - Force White & Bold */
 .logo {
-    color: #ffffff !important;
-    font-weight: 800;
-    font-size: 16px;
-    white-space: nowrap;
-    cursor: pointer;
+    display: inline-block !important;
+    color: #ffffff !important; 
+    font-family: inherit !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
 }
 
+/* The Search Container */
 .search-container {
-    position: relative;
-    width: 220px; /* Fixed width for the search bar box */
+    display: block !important;
+    position: relative !important;
+    width: 220px !important;
+    visibility: visible !important;
 }
 
+/* The Actual Search Input */
 #global-search {
+    display: block !important;
     width: 100% !important;
-    height: 32px;
-    background: rgba(255,255,255,0.15) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    border-radius: 6px;
-    color: #fff !important;
-    padding: 0 10px 0 35px;
-    font-size: 13px;
+    height: 32px !important;
+    background: rgba(255, 255, 255, 0.15) !important; /* Semi-transparent white */
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important; /* Force text to white */
+    padding: 0 10px 0 35px !important;
+    font-size: 13px !important;
+    outline: none !important;
 }
 
-/* CENTER NAVIGATION: Occupies only the middle slice */
+/* The Magnifying Glass Icon */
+.search-icon {
+    display: inline-block !important;
+    position: absolute !important;
+    left: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 14px !important;
+    color: #ffffff !important;
+    opacity: 0.8 !important;
+    z-index: 10 !important;
+    pointer-events: none !important;
+}
+
+/* Ensure placeholder text is also visible */
+#global-search::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* CENTER: Navigation */
 .nav {
     display: flex !important;
     flex-direction: row;
-    justify-content: center; /* Buttons stay exactly in the center of the screen */
+    justify-content: center;
     gap: 5px;
-    overflow: hidden;
     white-space: nowrap;
 }
 
-/* RIGHT SECTION: Anchored to the right edge */
+/* RIGHT: Action buttons - THE AREA THAT WAS OVERFLOWING */
 .topbar-right {
     display: flex !important;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     white-space: nowrap;
+    flex-shrink: 0; 
+    margin-left: auto;
+}
+
+/* Ensure no button can grow and push the bar out */
+.topbar .btn {
+    flex-shrink: 0;
 }
 
 /* Search Icon Positioning */
