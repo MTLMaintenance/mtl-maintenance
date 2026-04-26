@@ -77,68 +77,6 @@ input::-webkit-calendar-picker-indicator {
     opacity: 0.8;
 }
 
-
-.view-toggle {
-  margin-bottom: 15px;
-}
-
-.view-toggle .btn,
-.sub-toggle .btn {
-  display: inline-flex ;
-  align-items: center ;
-  justify-content: center;
-  gap: 5px ;
-  padding: 5px 12px ;
-  min-height: 32px ;
-  border: none ;
-  border-radius: var(--radius) ;
-  background: transparent ;
-  color: rgba(26,24,0.72) ;
-  font-size: 12px ;
-  font-weight: 600 ;
-  font-family: inherit ;
-  cursor: pointer;
-  white-space: nowrap ;
-  transition: all 0.15s ease;
-  box-shadow: none ;
-}
-
-.view-toggle .btn:hover,
-:hover,
-.sub-toggle .btn:hover {
-  background: rgba(255,255,255,0.55);
-  color: #1a1a18 ;
-}
-
-.view-toggle .btn.active,
-.active,
-.sub-toggle .btn.active {
-  background: #ffffff ;
-  color: var(--text) ;
-  font-weight: 700 ;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08) ;
-}
-
-#panel-tools ,
-#panel-admin ,
-#panel-equipment .sub-toggle .btn,
-#panel-calendar .view-toggle .btn {
-  color: rgba(255,255,255,0.85) ;
-}
-#panel-tools :hover,
-#panel-admin :hover,
-#panel-equipment .sub-toggle .btn:hover,
-#panel-calendar .view-toggle .btn:hover {
-  color: #ffffff ;
-  background: rgba(255,255,255,0.18) ;
-}
-#panel-tools .active,
-#panel-admin .active,
-#panel-equipment .sub-toggle .btn.active,
-#panel-calendar .view-toggle .btn.active {
-  background: #ffffff ;
-  color: #1a1a18 ;
-}
     /* Observation Severity Colors */
 .badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
 .badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
@@ -196,9 +134,9 @@ input::-webkit-calendar-picker-indicator {
 .modal {
   background: rgba(255, 255, 255, 0.98) ;
   backdrop-filter: blur(16px);
-  border-top: 6px solid var(--accent) 
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3)
-
+  border-top: 6px solid var(--accent);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
 
 /* Adjust Dark Mode to keep the glass effect */
 body.dark-mode .card, 
@@ -301,7 +239,7 @@ body.dark-mode .modal {
     
     #zerk-svg-layer {  
     position: absolute ;
-    top: 0 !;
+    top: 0;
     left: 0 ;
     width: 100% ;
     height: 100% ;
@@ -927,8 +865,7 @@ body, html {
     font-weight: 600 ; cursor: pointer; 
 }
 
-.view-toggle { background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 12px; display: flex; gap: 4px; }
-.btn-primary { background: #000 ; color: #fff; font-weight: 700 !; padding: 8px 16px; border-radius: 8px ; }
+
 
 
 /* ============================================================
@@ -1559,41 +1496,7 @@ select.form-select:focus {
 .modal-backdrop.active #tool-delete-btn {
     display: block ;
 }
-.tab-bar, #parts-subtab-bar {
-    background: rgba(0, 0, 0, 0.45) ;
-    padding: 4px ;
-    border-radius: 12px ;
-    display: inline-flex ;
-    gap: 4px ;
-    border: 1px solid rgba(255, 255, 255, 0.1) ;
-    backdrop-filter: blur(10px) ;
-    height: auto ;
-    width: fit-content ;
-}
 
-.tab-bar .tab, #parts-subtab-bar .tab {
-    background: transparent ;
-    color: rgba(255, 255, 255, 0.7) ;
-    border: none ;
-    min-height: 0 ; /* This fixes the 'Line 82' 32px height bug */
-    padding: 8px 20px ;
-    border-radius: 8px ;
-    font-weight: 600 ;
-    box-shadow: none ;
-}
-
-.tab-bar .tab.active, #parts-subtab-bar .tab.active {
-    background: #ffffff ;
-    color: #000000 ;
-    font-weight: 800 ;
-}
-/* --- MODAL SCROLL FIX --- */
-.modal {
-    max-height: 85vh ;
-    overflow: hidden ; /* Keeps the card fixed */
-    display: flex ;
-    flex-direction: column ;
-}
 
 /* This is the inner area where your inputs and notes sit */
 #tool-tab-content-wrapper, 
