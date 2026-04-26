@@ -7604,28 +7604,40 @@ window.deleteWishItem = async function(id) {
     }
 };
 window.openWishDetailCard = function(id) {
+    console.log("--- DEBUG: Opening Wish Detail ---");
     const item = window.state.tools.find(t => t.id === id);
-    if (!item) return;
+    if (!item) return console.error("Item not found in state.tools");
 
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const isAuthor = String(item.author_id) === String(currentUser.id);
+    const myId = String(currentUser.id);
+    const authorId = String(item.author_id || "");
+    const isAuthor = (myId === authorId);
 
-    // 1. Open the Modal
+    console.log("User Role:", currentUser.role, "| Is Admin:", isAdmin);
+    console.log("My ID:", myId, "| Author ID:", authorId, "| Match:", isAuthor);
+
+    // 1. Open Modal
     openModal('wishlist-modal');
 
-    // 2. FILL THE DATA
+    // 2. Fill Data
     document.getElementById('wish-edit-id').value = item.id;
     document.getElementById('wish-name').value = item.tool_name || item.name || "";
     document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
 
-    // 3. THE FIX: Show the delete button ONLY if authorized
+    // 3. THE FORCE FIX: Show delete button if Admin or Author
     const delBtn = document.getElementById('btn-delete-wish');
     if (delBtn) {
         if (isAdmin || isAuthor) {
+            console.log("✅ Permission Check Passed: Showing Delete Button");
             delBtn.style.setProperty('display', 'block', 'important');
+            delBtn.style.visibility = 'visible';
+            delBtn.style.opacity = '1';
         } else {
+            console.log("❌ Permission Check Failed: Hiding Delete Button");
             delBtn.style.display = 'none';
         }
+    } else {
+        console.error("❌ ERROR: Could not find HTML element with ID 'btn-delete-wish'");
     }
 };
 window.deleteWishItem = async function() {
