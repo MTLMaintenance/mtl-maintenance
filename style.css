@@ -77,60 +77,7 @@ input::-webkit-calendar-picker-indicator {
     opacity: 0.8;
 }
 
-    /* Observation Severity Colors */
-.badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
-.badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
-.badge.obs-critical { background: #FCEBEB; color: #A32D2D; border: 1px solid #E24B4A; }
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-/* Zerk Map UI tweaks */
-#btn-delete-view { margin-top: 10px; display: none; }
-  /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
-
-/* --- TAB CONTRAST FIX --- */
-
-/* Tab styling handled by shared segmented-control rules above. */
-
-
-  /* 1. Main Cards */
-.card {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-top: 4px solid var(--accent); /* Universal Blue Bar */
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  padding: 20px ;
-  transition: transform 0.2s ease;
-}
-
-/* 2. Top Metric Boxes (Equipment, Overdue, etc.) */
-.metric-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-top: 4px solid var(--accent); /* Universal Blue Bar */
-  border-radius: var(--radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* 3. Tables (Equipment Registry, Work Orders, etc.) */
-.table-wrap {
-  background: rgba(255, 255, 255, 0.92) ;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4) ;
-  border-top: 4px solid var(--accent) ; /* Universal Blue Bar */
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) ;
-  overflow: hidden;
-}
-
-/* 4. Modals (Popups) */
+  /* 4. Modals (Popups) */
 .modal {
   background: rgba(255, 255, 255, 0.98) ;
   backdrop-filter: blur(16px);
