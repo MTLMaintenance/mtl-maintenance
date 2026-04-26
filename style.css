@@ -519,89 +519,94 @@ body, html {
   padding: 0 ;
   /* Keep the original app background from the primary #app rule above. */
 }
-/* --- TOPBAR REPAIR: FORCE LEFT VISIBILITY --- */
+/* --- Master Topbar Layout Fix --- */
 .topbar {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
+    display: grid !important;
+    /* Grid defines: [Left: Auto Width] [Center: Remaining Space] [Right: Auto Width] */
+    grid-template-columns: auto 1fr auto; 
+    align-items: center;
     height: 60px !important;
-    width: 100% !important;
+    width: 100vw !important;
     background: #000000 !important;
-    padding: 0 20px !important;
-    box-sizing: border-box !important;
+    padding: 0 20px;
+    box-sizing: border-box;
     position: sticky;
     top: 0;
-    z-index: 2000; /* Higher z-index to ensure visibility */
+    z-index: 1000;
+    gap: 10px;
 }
 
-/* LEFT: Branding & Search - FORCED WIDTH */
+/* LEFT SECTION: Logo and Search stay together */
 .topbar-left {
     display: flex !important;
-    align-items: center !important;
-    gap: 15px !important;
-    flex: 0 0 320px !important; /* Forces this section to be exactly 320px wide */
-    min-width: 320px !important;
-    overflow: visible !important;
+    align-items: center;
+    gap: 20px;
+    white-space: nowrap;
 }
 
 .logo {
-    color: #ffffff !important; /* Bright white */
-    font-weight: 800 !important;
-    font-size: 16px !important;
-    white-space: nowrap !important;
+    color: #fff !important;
+    font-weight: 800;
+    font-size: 16px;
     cursor: pointer;
-    display: block !important;
 }
 
 .search-container {
-    position: relative !important;
-    width: 160px !important;
-    display: block !important;
+    position: relative;
+    width: 200px; /* Force visibility */
 }
 
 #global-search {
     width: 100% !important;
-    height: 30px !important;
-    background: rgba(255,255,255,0.15) !important;
-    border: 1px solid rgba(255,255,255,0.3) !important;
-    border-radius: 6px !important;
-    color: #ffffff !important;
-    padding: 0 10px 0 30px !important;
-    font-size: 12px !important;
+    height: 32px;
+    background: rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 6px;
+    color: #fff !important;
+    padding: 0 10px 0 35px;
+    font-size: 13px;
 }
 
-/* CENTER: Navigation - ALLOW TO SHRINK */
+/* CENTER SECTION: Navigation fills the gap */
 .nav {
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    flex: 1 1 auto !important; /* Shrink and grow as needed */
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    margin: 0 10px !important;
+    flex-direction: row;
+    justify-content: center;
+    gap: 5px;
+    overflow-x: auto;
+    white-space: nowrap;
 }
+.nav::-webkit-scrollbar { display: none; }
 
-/* RIGHT: User & Buttons */
+/* RIGHT SECTION: Pins to the edge, only as wide as its buttons */
 .topbar-right {
     display: flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    gap: 8px !important;
-    flex: 0 0 auto !important;
-    min-width: fit-content !important;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    white-space: nowrap;
 }
 
+/* SEARCH ICON FIX */
 .search-icon {
     position: absolute;
-    left: 10px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 11px;
+    font-size: 14px;
     color: #fff;
-    opacity: 0.7;
+    opacity: 0.6;
     pointer-events: none;
+    z-index: 5;
+}
+
+/* USER CHIP / SYNC DOT */
+.user-chip {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    margin-right: 10px;
+    font-size: 13px;
 }
 /* --- MOBILE RESPONSIVENESS REPAIR --- */
 @media screen and (max-width: 1100px) {
