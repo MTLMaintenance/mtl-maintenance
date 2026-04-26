@@ -7606,72 +7606,40 @@ window.deleteWishItem = async function(id) {
 window.openWishDetailCard = function(id) {
     console.log("--- Opening Wishlist Detail Card ---");
     
-    // 1. Find the item in state
-    const item = window.state.tools.find(t => t.id === id);
-    if (!item) return console.error("Item not found in memory.");
-
-    // 2. Permission Logic
-    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const isAuthor = String(item.author_id) === String(currentUser.id);
-
-    console.log(`Target: ${item.tool_name} | Is Admin: ${isAdmin} | Is Author: ${isAuthor}`);
-
-    // 3. Open the Modal
-    openModal('wishlist-modal');
-
-    // 4. Populate Form Fields (with safety checks)
-    const editIdEl = document.getElementById('wish-edit-id');
-    const nameEl = document.getElementById('wish-name');
-    const reasonEl = document.getElementById('wish-reason');
-    const modalTitle = document.getElementById('wish-modal-title');
-    const submitBtn = document.getElementById('wish-submit-btn');
-
-    if (editIdEl) editIdEl.value = item.id;
-    if (nameEl) nameEl.value = item.tool_name || item.name || "";
-    if (reasonEl) reasonEl.value = item.request_reason || item.notes || "";
-    
-    // Change UI to 'Edit mode'
-    if (modalTitle) modalTitle.textContent = "✎ Edit Suggestion";
-    if (submitBtn) submitBtn.textContent = "Update Suggestion";
-
-    const delBtn = document.getElementById('btn-delete-wish');
-    if (delBtn) {
-        if (isAdmin || isAuthor) {
-            console.log("🚀 FORCING BUTTON VISIBILITY ATOMICALLY");
-            // This command writes directly to the HTML tag, winning every CSS fight
-            delBtn.style.setProperty('display', 'inline-block', 'important');
-            delBtn.style.setProperty('visibility', 'visible', 'important');
-            delBtn.style.setProperty('opacity', '1', 'important');
-        } else {
-            delBtn.style.display = 'none';
-        }
-    }
-window.deleteWishItem = async function() {
-    const id = document.getElementById('wish-edit-id').value;
-    if (!id) return;
-
-    if (!confirm("Are you sure you want to permanently delete this tool suggestion?")) return;
-
     try {
-        // Delete from Database
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .delete()
-            .eq('id', id);
+        const item = window.state.tools.find(t => t.id === id);
+        if (!item) return;
 
-        if (error) throw error;
+        const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+        const isAuthor = String(item.author_id) === String(currentUser.id);
 
-        showToast("Request deleted ✓");
-        closeModal('wishlist-modal');
+        // Open the Modal
+        openModal('wishlist-modal');
 
-        // Update local memory and UI instantly
-        window.state.tools = window.state.tools.filter(t => t.id !== id);
-        renderToolWishlist();
+        // Fill Fields
+        document.getElementById('wish-edit-id').value = item.id;
+        document.getElementById('wish-name').value = item.tool_name || item.name || "";
+        document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
+        
+        // Update Labels
+        document.getElementById('wish-modal-title').textContent = "✎ Edit Suggestion";
+        document.getElementById('wish-submit-btn').textContent = "Update";
 
-    } catch (e) {
-        alert("Delete failed: " + e.message);
+        // THE BUTTON VISIBILITY FIX
+        const delBtn = document.getElementById('btn-delete-wish');
+        if (delBtn) {
+            if (isAdmin || isAuthor) {
+                // We use 'block' and force it visible
+                delBtn.style.setProperty('display', 'block', 'important');
+                delBtn.style.visibility = 'visible';
+            } else {
+                delBtn.style.display = 'none';
+            }
+        } // End of delBtn check
+    } catch (err) {
+        console.error("Crash inside openWishDetailCard:", err);
     }
-};
+}; 
 window.receiveOrderedTool = async function(id) {
     if (!confirm("Confirm this tool has arrived and is now in inventory?")) return;
 
