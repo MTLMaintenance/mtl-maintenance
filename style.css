@@ -410,38 +410,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 .chat-channel-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 .chat-channel-btn.active{background:rgba(255,255,255,0.25);color:#fff;font-weight:600;border-color:rgba(255,255,255,0.3)}
 
-    .topbar {
-    height: auto ;
-    flex-wrap: wrap ;
-    padding: 10px 12px ;
-    gap: 10px ;
-  }
- 
-  .nav-btn {
-    padding: 6px 14px ;
-    background: rgba(255, 255, 255, 0.1) ; 
-    font-size: 13px ;
-  }
 
-  .logo {
-    font-size: 14px ;
-  }
-
-  .user-chip {
-    display: none ; 
-  }
-  
- 
-  .metrics {
-    grid-template-columns: 1fr 1fr ;
-  }
-  
-  
-  .modal {
-    width: 95% ;
-    padding: 15px ;
-  }
-   
 .sync-dot{ 
   width: 7px;
   height: 7px;
@@ -550,36 +519,128 @@ body, html {
   padding: 0 ;
   /* Keep the original app background from the primary #app rule above. */
 }
-
-/* --- THE HEADER: FIXED TO TOP --- */
+/* --- FIXED TOPBAR LAYOUT --- */
 .topbar {
-  display: flex ;
-  flex-direction: column ;
-  flex-shrink: 0 ; /* Header never moves or shrinks */
-  background: rgba(0, 0, 0, 0.85) ;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    background: #000000; /* Solid black */
+    padding: 0 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    gap: 20px;
 }
 
-.topbar-main-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  gap: 12px;
+/* LEFT SECTION: Logo & Search */
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
 }
 
+.logo {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+#global-search {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #fff;
+    font-size: 13px;
+    width: 200px;
+    transition: width 0.3s ease;
+}
+
+#global-search:focus {
+    width: 280px;
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* CENTER SECTION: Navigation Links */
 .nav {
-  display: flex ;
-  flex-direction: row ;
-  flex-wrap: nowrap ;
-  gap: 4px;
-  padding: 0 12px 8px;
-  overflow-x: auto ; /* SWIPEABLE BUTTONS */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+    display: flex;
+    gap: 4px;
+    overflow: visible; /* We want these visible on PC */
 }
-.nav::-webkit-scrollbar { display: none; }
+
+.nav-btn {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.nav-btn.active {
+    color: #fff;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* RIGHT SECTION: Action Buttons */
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Custom button tweaks for topbar */
+.topbar .btn {
+    padding: 5px 10px;
+    height: 32px;
+    font-size: 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+}
+
+.topbar .btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* --- MOBILE RESPONSIVENESS REPAIR --- */
+@media screen and (max-width: 1100px) {
+    .topbar {
+        height: auto;
+        flex-direction: column !important;
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .topbar-left, .topbar-right, .nav {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .nav {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 5px;
+    }
+    
+    #global-search {
+        width: 100%;
+    }
+}
+
 
 /* --- THE CONTENT: FILLS THE GAP --- */
 .panel.active {
