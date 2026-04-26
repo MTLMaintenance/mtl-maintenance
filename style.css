@@ -145,7 +145,7 @@ body.dark-mode .modal {
     /* --- CALENDAR BELLS & WHISTLES --- */
 /* 2. Lower the Calendar layer so it doesn't block popups */
 #panel-calendar.active {
-    z-index: 100 ; /* Lowered from 999 to 100 */
+    z-index: 10 ; 
 }
 
 /* 3. Keep the Topbar in the middle (Above content, below popups) */
@@ -191,7 +191,7 @@ body.dark-mode .modal {
     width: 100% ;
     height: 100% ;
     pointer-events: none ; /* Let clicks pass through to the overlay */
-    z-index: 50 ; /* Sit between the image and the dots */
+    z-index: 20 ; /* Sit between the image and the dots */
     overflow: visible ;
     display: block ;
 }
@@ -233,7 +233,7 @@ body.dark-mode .modal {
 #zerk-dots-overlay {
   position: absolute ;
   inset: 0 ;
-  z-index: 100 ;
+  z-index: 30 ;
   cursor: crosshair ;
   pointer-events: auto ;
 }
@@ -349,7 +349,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   gap: 12px ;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 40;
   backdrop-filter: blur(8px);
 }
  
@@ -528,10 +528,10 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .recur-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .recur-item:last-child{border-bottom:none}
 /* TOAST */
-#toast{position:fixed;bottom:20px;right:20px;background:#1a1a18;color:#fff;border-radius:var(--radius);padding:9px 16px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast{position:fixed;bottom:20px;right:20px;background:#1a1a18;color:#fff;border-radius:var(--radius);padding:9px 16px;font-size:13px;z-index:50;opacity:0;transition:opacity .3s;pointer-events:none}
 #toast.show{opacity:1}
 /* PHOTO VIEWER */
-#photo-viewer{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:none;align-items:center;justify-content:center}
+#photo-viewer{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:60;display:none;align-items:center;justify-content:center}
 #photo-viewer.open{display:flex}
 #photo-viewer img{max-width:92vw;max-height:88vh;border-radius:var(--radius-lg)}
 #pv-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
@@ -621,7 +621,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 }
 #mention-dropdown {
   bottom: 100% ;
-  z-index: 9999 ;
+  z-index: 70 ;
   background: var(--bg) ;
 
   }
@@ -635,10 +635,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     border-radius: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    z-index: 110;
+    z-index: 80;
 }
  #zerk-svg-layer {
-    z-index: 50;
+    z-index: 90;
 }   
     
   }
@@ -717,7 +717,7 @@ body, html {
   flex-shrink: 0 ; /* Header never moves or shrinks */
   background: rgba(0, 0, 0, 0.85) ;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  z-index: 1000;
+  z-index: 100;
   backdrop-filter: blur(10px);
 }
 
@@ -830,7 +830,7 @@ body, html {
     padding: 0 15px ;
     position: sticky ;
     top: 0;
-    z-index: 9999 ; /* Layers it above dashboard */
+    z-index: 110 ; /* Layers it above dashboard */
     overflow: visible ;
     background: #1a1a1a ;
   }
@@ -890,7 +890,7 @@ body, html {
     background: #111 ;
     position: sticky ;
     top: 0;
-    z-index: 9999;
+    z-index: 120;
   }
 
   .logo, #global-search, #global-search ~ span { display: none ; }
@@ -925,7 +925,7 @@ body, html {
 
   /* MOBILE DROPDOWN STYLE */
   #chat-channel-mobile-menu {
-    position: absolute; top: 44px; left: 12px; z-index: 1000;
+    position: absolute; top: 44px; left: 12px; z-index: 130;
     min-width: 220px; background: #fff ;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2) ;
     border-radius: 12px ; padding: 8px ;
@@ -986,7 +986,7 @@ body, html {
     position: fixed ;
     top: 0; left: 0; width: 100vw; height: 100vh;
     opacity: 0;
-    z-index: 999999 ; /* Always stays on top of everything */
+    z-index: 140 ; /* Always stays on top of everything */
 }
 
 /* When '.active' is added via JavaScript */
@@ -1055,7 +1055,7 @@ body, html {
     width: 100vw ;
     height: 100vh ;
     background: rgba(0,0,0,0.85) ;
-    z-index: 1000000 ; /* Top layer */
+    z-index: 150 ; /* Top layer */
     justify-content: center;
     align-items: center;
 }
@@ -1103,7 +1103,7 @@ body, html {
     position: fixed ;
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(0,0,0,0.85);
-    z-index: 2000001 ; /* One layer higher than the action card */
+    z-index: 160 ; /* One layer higher than the action card */
     justify-content: center;
     align-items: center;
 }
@@ -1115,18 +1115,18 @@ body, html {
 }
 /* Ensure the Absence Request form is at the absolute top layer */
 #absence-modal {
-    z-index: 2000005 ; 
+    z-index: 170 ; 
 }
 
 /* Ensure the Day Action card is slightly lower */
 #cal-action-modal {
-    z-index: 2000000 ;
+    z-index: 180 ;
 }
 #calendar-entry-modal {
-    z-index: 2000006 ; 
+    z-index: 190 ; 
 }
 #absence-modal {
-    z-index: 2000005 ;
+    z-index: 200 ;
 }
 /* Safety: If both are open, this keeps them centered correctly */
 .modal-backdrop.active {
@@ -1241,25 +1241,25 @@ body, html {
 }
 select.form-select:focus {
     position: relative;
-    z-index: 10001;
+    z-index: 210;
 #panel-parts.active {
     display: block ;
     position: relative ;
     width: 100% ;
     min-height: 500px;
-    z-index: 1; /* Keeps it on the right layer */
+    z-index: 220; /* Keeps it on the right layer */
 }
 /* 1. Machinery Photo (Bottom layer) */
 #zerk-map-img {
     position: relative ;
-    z-index: 1 ;
+    z-index: 230 ;
 }
 
 /* 2. SVG Lines (Middle layer) */
 #zerk-svg-layer {
     position: absolute ;
     inset: 0 ;
-    z-index: 10 ;
+    z-index: 240 ;
     pointer-events: none ; /* Clicks pass through to dots */
 }
 
@@ -1267,13 +1267,13 @@ select.form-select:focus {
 #zerk-dots-overlay {
     position: absolute ;
     inset: 0 ;
-    z-index: 20 ;
+    z-index: 250 ;
     pointer-events: auto ;
 }
 
 /* 4. The Yellow Dots */
 .zerk-dot {
-    z-index: 100 ;
+    z-index: 260 ;
     background: #ffec00 ;
     color: black ;
     font-weight: 800 ;
@@ -1292,7 +1292,7 @@ select.form-select:focus {
     width: 95% ;
     max-width: 1200px;
     margin: 20px auto ;
-    z-index: 10 ;
+    z-index: 270 ;
     background: rgba(255, 255, 255, 0.95) ; /* Semi-white background to see text */
     padding: 20px ;
     border-radius: 15px;
@@ -1374,7 +1374,7 @@ select.form-select:focus {
     position: fixed ;
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(0,0,0,0.85) ;
-    z-index: 2000010 ; /* Put it on top of everything */
+    z-index: 280 ; /* Put it on top of everything */
     justify-content: center;
     align-items: center;
 }
@@ -1400,7 +1400,7 @@ select.form-select:focus {
     
     /* Ensure it sits on top of the white card */
     position: relative ;
-    z-index: 1000005 ;
+    z-index: 290 ;
     
     /* Layout logic */
     margin: 0 ;
