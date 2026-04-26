@@ -7516,18 +7516,24 @@ window.editWishItem = function(id) {
     const item = state.tools.find(t => t.id === id);
     if (!item) return;
 
+    // 1. Open the Modal
     openModal('wishlist-modal');
-    
-    // Set text to 'Edit mode'
+
+    // 2. THE FIX: Force the Delete button to show for Admin/Author
+    const delBtn = document.getElementById('btn-delete-wish');
+    if (delBtn) {
+        delBtn.style.setProperty('display', 'block', 'important');
+    }
+
+    // 3. Set the text to 'Edit mode'
     document.getElementById('wish-modal-title').textContent = "✎ Edit Suggestion";
     document.getElementById('wish-submit-btn').textContent = "Update Suggestion";
     
-    // Fill the hidden ID and the inputs
+    // 4. Fill the hidden ID and the inputs
     document.getElementById('wish-edit-id').value = item.id;
     document.getElementById('wish-name').value = item.tool_name || item.name || "";
     document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
 };
-
 async function saveWishRequest() {
     const editId = document.getElementById('wish-edit-id').value;
     const rawName = document.getElementById('wish-name').value.trim();
@@ -7570,20 +7576,27 @@ async function saveWishRequest() {
     }
 }
 window.deleteWishItem = async function(id) {
-    if (!confirm("Are you sure you want to delete your tool suggestion?")) return;
+    // If no ID passed, try to grab it from the hidden input in the modal
+    const targetId = id || document.getElementById('wish-edit-id').value;
+    
+    if (!targetId) return;
+
+    if (!confirm("Are you sure you want to delete this tool suggestion?")) return;
 
     try {
         const { error } = await window._mpdb
             .from('tool_requests')
             .delete()
-            .eq('id', id);
+            .eq('id', targetId);
 
         if (error) throw error;
 
-        showToast("Request removed");
+        showToast("Request removed ✓");
+        closeModal('wishlist-modal');
+        closeModal('review-modal');
 
-        // Update memory and UI
-        window.state.tools = window.state.tools.filter(t => t.id !== id);
+        // Sync local memory and UI
+        window.state.tools = window.state.tools.filter(t => t.id !== targetId);
         renderToolWishlist();
 
     } catch (e) {
@@ -7597,17 +7610,14 @@ window.openWishDetailCard = function(id) {
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
     const isAuthor = String(item.author_id) === String(currentUser.id);
 
-    if (isAdmin) {
-        // 1. Managers/Admins always get the "Power User" Card
-        window.openReviewModal(id); 
-    } else if (isAuthor && item.status === 'requested') {
-        // 2. Regular users who wrote it get the "Edit Suggestion" Card
+    // THE FIX: If you are the Admin OR the Author, you get the Edit window
+    if (isAdmin || isAuthor) {
         window.editWishItem(id);
     } else {
-        // 3. Everyone else gets a Read-Only view
+        // Regular users who didn't write it just see the info
         alert(`Tool: ${item.tool_name}\nRequested by: ${item.requested_by}\nReason: ${item.request_reason || 'No details'}`);
     }
-}
+};
 window.deleteWishItem = async function(id) {
     if (!id) return;
     
