@@ -61,7 +61,7 @@ input::-webkit-calendar-picker-indicator {
     opacity: 0.8;
 }
 .view-toggle,
--bar,
+.tab-bar,
 .sub-toggle {
   display: flex;
   gap: 4px;
@@ -78,7 +78,7 @@ input::-webkit-calendar-picker-indicator {
 }
 
 .view-toggle .btn,
-,
+.tab,
 .sub-toggle .btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -100,42 +100,42 @@ input::-webkit-calendar-picker-indicator {
 }
 
 .view-toggle .btn:hover,
-:hover,
+.tab:hover,
 .sub-toggle .btn:hover {
   background: rgba(255,255,255,0.55) !important;
   color: #1a1a18 !important;
 }
 
 .view-toggle .btn.active,
-.active,
+.tab.active,
 .sub-toggle .btn.active {
   background: #ffffff !important;
   color: var(--text) !important;
   font-weight: 700 !important;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
 }
-#panel-tools -bar,
-#panel-admin -bar,
+#panel-tools .tab-bar,
+#panel-admin .tab-bar,
 #panel-equipment .sub-toggle,
 #panel-calendar .view-toggle {
   background: rgba(0,0,0,0.38) !important;
   border-color: rgba(255,255,255,0.22) !important;
 }
-#panel-tools ,
-#panel-admin ,
+#panel-tools .tab,
+#panel-admin .tab,
 #panel-equipment .sub-toggle .btn,
 #panel-calendar .view-toggle .btn {
   color: rgba(255,255,255,0.85) !important;
 }
-#panel-tools :hover,
-#panel-admin :hover,
+#panel-tools .tab:hover,
+#panel-admin .tab:hover,
 #panel-equipment .sub-toggle .btn:hover,
 #panel-calendar .view-toggle .btn:hover {
   color: #ffffff !important;
   background: rgba(255,255,255,0.18) !important;
 }
-#panel-tools .active,
-#panel-admin .active,
+#panel-tools .tab.active,
+#panel-admin .tab.active,
 #panel-equipment .sub-toggle .btn.active,
 #panel-calendar .view-toggle .btn.active {
   background: #ffffff !important;
@@ -434,6 +434,7 @@ body.dark-mode .modal {
 body > .form-row, 
 body > .form-grid, 
 body > .modal,
+body > #invoice-scanning,
 body > #invoice-photo-area {
     display: none !important;
 }
@@ -459,6 +460,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 /* --- GHOST INVOICE CLEANUP --- */
 /* This hides the stray elements sitting at the bottom of your screen */
 #invoice-photo-preview-area,
+#invoice-scanning,
 #invoice-extracted-badge,
 button[onclick="saveInvoice()"] {
     display: none !important;
@@ -466,6 +468,7 @@ button[onclick="saveInvoice()"] {
 
 /* This allows them to show up ONLY when the actual popup (modal) is opened */
 .modal-backdrop.open #invoice-photo-preview-area,
+.modal-backdrop.open #invoice-scanning,
 .modal-backdrop.open #invoice-extracted-badge,
 .modal-backdrop.open button[onclick="saveInvoice()"] {
     display: block !important;
@@ -1460,6 +1463,33 @@ select.form-select:focus {
     display: flex !important;
     flex-direction: column !important;
 }
+
+/* Force the content area to scroll, not the whole window */
+#tool-tab-details, #tool-tab-obs {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 20px !important;
+    min-height: 300px;
+}
+
+/* Ensure the notes textarea doesn't push things out */
+#tool-notes-input {
+    min-height: 80px !important;
+    max-height: 150px !important;
+}
+/* 1. Kill the 'Zombie' boxes globally */
+#tool-tab-obs, #tool-obs-list, #tool-notes-input {
+    display: none !important;
+}
+
+/* 2. Only 'Release' them when the modal is actually open */
+#tool-modal[style*="display: flex"] #tool-tab-obs {
+    display: flex !important;
+}
+
+/* 3. Ensure the list inside is visible */
+#tool-modal[style*="display: flex"] #tool-obs-list {
+    display: block !important;
 }
 /* FORCE TOOL CRIB LAYOUT */
 #panel-tools.active {
@@ -1695,76 +1725,4 @@ div#panel-parts div.tab-bar button.tab.active {
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
-}
-#invoice-photo-preview-area,
-#invoice-scanning,
-#invoice-extracted-badge,
-#tool-tab-obs,
-#tool-obs-list,
-#tool-notes-input,
-#btn-delete-part,
-#btn-delete-wish,
-#btn-delete-consumable,
-#tool-delete-btn {
-    display: none !important;
-}
-
-/* This allows them to show up ONLY when the parent modal is open */
-.modal-backdrop.active #invoice-photo-preview-area,
-.modal-backdrop.active #invoice-scanning,
-.modal-backdrop.active #invoice-extracted-badge,
-.modal-backdrop.active #tool-tab-obs,
-.modal-backdrop.active #tool-obs-list,
-.modal-backdrop.active #tool-notes-input,
-.modal-backdrop.active #btn-delete-part,
-.modal-backdrop.active #btn-delete-wish,
-.modal-backdrop.active #btn-delete-consumable,
-.modal-backdrop.active #tool-delete-btn {
-    display: block !important;
-}
-.tab-bar, #parts-subtab-bar {
-    background: rgba(0, 0, 0, 0.45) !important;
-    padding: 4px !important;
-    border-radius: 12px !important;
-    display: inline-flex !important;
-    gap: 4px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px) !important;
-    height: auto !important;
-    width: fit-content !important;
-}
-
-.tab-bar .tab, #parts-subtab-bar .tab {
-    background: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important;
-    border: none !important;
-    min-height: 0 !important; /* This fixes the 'Line 82' 32px height bug */
-    padding: 8px 20px !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    box-shadow: none !important;
-}
-
-.tab-bar .tab.active, #parts-subtab-bar .tab.active {
-    background: #ffffff !important;
-    color: #000000 !important;
-    font-weight: 800 !important;
-}
-/* --- MODAL SCROLL FIX --- */
-.modal {
-    max-height: 85vh !important;
-    overflow: hidden !important; /* Keeps the card fixed */
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* This is the inner area where your inputs and notes sit */
-#tool-tab-content-wrapper, 
-#tool-tab-details, 
-#tool-tab-obs, 
-#part-modal .modal > div:nth-child(3) {
-    flex: 1 !important;
-    overflow-y: auto !important; /* Allows ONLY the inside to scroll */
-    min-height: 300px;
-    padding: 20px !important;
 }
