@@ -110,16 +110,20 @@ body.dark-mode .modal {
   border-top: 4px solid var(--accent);
   color: #e8e6de;
 }
-    /* --- ANALYTICS LOOK & FEEL POLISH --- */
+    
+/* --- ANALYTICS PANEL --- */
 #panel-analytics .metric-card {
-    border-top: 4px solid var(--accent); /* Adds a blue bar to the top */
-    background: rgba(255, 255, 255, 0.98); /* Slightly more solid for readability */
+    border-top: 4px solid var(--accent);
+    background: rgba(255, 255, 255, 0.98);
+    border-bottom: 3px solid var(--accent); /* Merged from your other snippet */
 }
 
 #panel-analytics .card {
     background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(10px); /* Blurs the background image behind the card */
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s;
 }
 
 #panel-analytics .card-title {
@@ -127,7 +131,6 @@ body.dark-mode .modal {
     font-size: 11px;
     letter-spacing: 1px;
 }
-
 .empty-state {
     color: var(--text3);
     font-size: 12px;
@@ -135,19 +138,6 @@ body.dark-mode .modal {
     padding: 20px;
     font-style: italic;
 }
-    #panel-analytics .card {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0,0,0,0.05);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    transition: transform 0.2s;
-}
-
-#panel-analytics .metric-card {
-    background: #ffffff;
-    border-bottom: 3px solid var(--accent);
-}
-/* 3. Keep the Topbar in the middle (Above content, below popups) */
-
     .cal-event {
     font-size: 10px;
     padding: 2px 6px;
@@ -1358,6 +1348,7 @@ select.form-select:focus {
 /* 4. THE INDIVIDUAL DOTS (Actual buttons) */
 .zerk-dot {
     position: absolute;
+  z-index:10;
     width: 24px;
     height: 24px;
     background: #ffec00; /* Bright Yellow */
@@ -1379,30 +1370,54 @@ select.form-select:focus {
     transform: translate(-50%, -50%) scale(1.2);
     background: #fff;
 }
-  /* ============================================================
-   2. DESKTOP ONLY (min-width: 769px)
+ /* ============================================================
+   10. RESPONSIVE ENGINE
    ============================================================ */
+
+/* --- DESKTOP ONLY --- */
 @media screen and (min-width: 769px) {
   .topbar {
-    display: flex ;
-    flex-direction: row ;
-    flex-wrap: nowrap ;
-    align-items: center ;
-    justify-content: flex-start ;
-    height: 60px ;
-    width: 100% ;
-    padding: 0 15px ;
-    position: sticky ;
+    display: flex;
+    flex-direction: row;
+    height: 60px;
+    padding: 0 15px;
+    position: sticky;
     top: 0;
-    overflow: visible ;
-    background: #1a1a1a ;
+    background: #1a1a1a;
   }
+} /* Closing Desktop */
 
+/* --- MOBILE ONLY --- */
 @media screen and (max-width: 768px) {
   html, body {
-    height: 100vh ;
-    overflow: hidden ;
+    height: 100vh;
+    overflow: hidden;
     position: fixed;
-    width: 100%;
   }
-   .chat-mobile-menu-item.active { background: #f0f4f8 ; color: #007bff ; font-weight: 700 ; }
+
+  /* Shrink Calendar so it fits on screen */
+  #panel-calendar .cal-day {
+    min-height: 60px;
+    padding: 2px;
+  }
+
+  /* Stack Topbar for thumb-reach */
+  .topbar {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    background: #111;
+  }
+
+  /* Make panels scroll internally */
+  .panel.active {
+    height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+
+  .chat-mobile-menu-item.active { 
+    background: #f0f4f8; 
+    color: #007bff; 
+    font-weight: 700; 
+  }
+} /* Closing Mobile */
