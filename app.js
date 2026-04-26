@@ -4093,8 +4093,15 @@ function openModal(id) {
 }
 async function enterApp(){
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  
+  // --- NECESSARY CHANGES START ---
   document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  const appContainer = document.getElementById('app');
+  appContainer.style.display = 'block'; 
+  appContainer.style.width = '100%';    
+  appContainer.style.margin = '0';      
+ 
+
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
   const nav = document.getElementById('main-nav');
@@ -4141,8 +4148,8 @@ async function enterApp(){
   }
 
   // 4. Data Logic
-   await fetchTools();
- await loadState();
+  await fetchTools();
+  await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
   showPanel('dashboard');
