@@ -1159,12 +1159,11 @@ function closeModal(id) {
 
     if (el) {
         el.style.display = 'none';
-        el.classList.remove('open');
         el.classList.remove('active');
     }
 
-    // Only hide backdrop if NO other modals are open
-    const openModals = document.querySelectorAll('.modal.open, .modal.active');
+    // Hide backdrop only if no other modals are open
+    const openModals = document.querySelectorAll('[id$="-modal"][style*="display: flex"]');
     if (openModals.length === 0 && backdrop) {
         backdrop.style.display = 'none';
         backdrop.classList.remove('active');
@@ -4076,28 +4075,23 @@ function openModal(id) {
     const backdrop = document.querySelector('.modal-backdrop');
 
     if (el) {
-        // 1. TELEPORT: Move the modal to the body so it's not trapped in a tab
-        if (el.parentElement !== document.body) {
-            document.body.appendChild(el);
-        }
+        // 1. Move the modal to the very top level of the HTML so it's not "trapped"
+        document.body.appendChild(el);
 
-        // 2. SHOW MODAL
+        // 2. Show the modal
         el.style.display = 'flex';
-        el.classList.add('open');
-        el.classList.add('active'); // Added to match your CSS
+        el.classList.add('active');
 
-        // 3. SHOW BACKDROP
+        // 3. Show the dark backdrop
         if (backdrop) {
             backdrop.style.display = 'flex';
             backdrop.classList.add('active');
         }
 
-        // Fill dropdowns if needed
+        // Fill dropdowns for specific modals
         if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            setTimeout(populateSelects, 10); // Tiny delay ensures modal is ready
+            setTimeout(populateSelects, 10);
         }
-    } else {
-        console.error("Modal not found:", id);
     }
 }
 async function enterApp(){
