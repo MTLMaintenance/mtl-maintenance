@@ -1411,18 +1411,30 @@
    <div style="padding: 20px; display: flex !important; justify-content: space-between !important; align-items: center !important; border-top: 1px solid #eee; background: #fafafa; border-radius: 0 0 20px 20px; width: 100% !important;">
     
 <!-- THE FINAL WISHLIST FOOTER -->
-<div style="padding: 15px 20px; display: flex !important; justify-content: space-between !important; align-items: center !important; border-top: 1px solid #eee; background: #fafafa; border-radius: 0 0 20px 20px; width: 100% !important; flex-wrap: wrap !important; gap: 10px !important;">
+<div style="padding: 15px 20px; display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; align-items: center !important; border-top: 1px solid #eee; background: #fafafa; border-radius: 0 0 20px 20px; width: 100% !important; gap: 10px !important;">
     
-    <!-- THE DELETE BUTTON (Locked with min-width so it can't be crushed) -->
-    <button id="btn-delete-wish" type="button" onclick="window.deleteWishItem()" 
-            style="background: #dc3545 !important; color: #fff !important; border: none !important; padding: 10px 15px !important; border-radius: 8px !important; cursor: pointer !important; font-size: 12px !important; font-weight: 800 !important; display: none; min-width: 120px !important;">
-        🗑️ Delete Request
-    </button>
+    <!-- LEFT COLUMN: Delete -->
+    <div style="text-align: left;">
+        <button id="btn-delete-wish" type="button" onclick="window.deleteWishItem()" 
+                style="background: #dc3545 !important; color: #fff !important; border: none !important; padding: 8px 12px !important; border-radius: 8px !important; cursor: pointer !important; font-size: 11px !important; font-weight: 800 !important; display: none; white-space: nowrap !important;">
+            🗑️ Delete
+        </button>
+    </div>
+
+    <!-- MIDDLE COLUMN: Cancel -->
+    <div style="text-align: center;">
+        <button type="button" onclick="closeModal('wishlist-modal')" 
+                style="background: #eee !important; color: #333 !important; padding: 8px 15px !important; border-radius: 8px !important; border: none !important; cursor: pointer !important; font-size: 11px !important; white-space: nowrap !important;">
+            Cancel
+        </button>
+    </div>
       
-    <!-- ACTION BUTTONS -->
-    <div style="display: flex; gap: 8px; flex-shrink: 0; margin-left: auto;">
-        <button type="button" onclick="closeModal('wishlist-modal')" style="background:#eee; color:#333; padding:8px 15px; border-radius:8px; border:none; cursor:pointer; font-size: 13px;">Cancel</button>
-        <button type="button" id="wish-submit-btn" onclick="saveWishRequest()" style="background:#000 !important; color:#fff !important; border:none; padding:8px 20px; border-radius:8px; font-weight:700; cursor:pointer; font-size: 13px;">Update</button>
+    <!-- RIGHT COLUMN: Update -->
+    <div style="text-align: right;">
+        <button type="button" id="wish-submit-btn" onclick="saveWishRequest()" 
+                style="background: #000 !important; color: #fff !important; border: none !important; padding: 8px 15px !important; border-radius: 8px !important; font-weight: 700 !important; cursor: pointer !important; font-size: 11px !important; white-space: nowrap !important;">
+            Update
+        </button>
     </div>
 </div>
     <!-- 2. MANAGER REVIEW MODAL -->
