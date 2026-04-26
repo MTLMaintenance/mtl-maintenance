@@ -1696,3 +1696,33 @@ div#panel-parts div.tab-bar button.tab.active {
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     min-width: 320px;
 }
+#wishlist-modal #btn-delete-wish {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    
+    /* Force size and color so it's not transparent or tiny */
+    min-width: 120px !important;
+    min-height: 40px !important;
+    background-color: #dc3545 !important; /* Solid Red */
+    color: #ffffff !important;           /* Solid White Text */
+    
+    /* Ensure it sits on top of the white card */
+    position: relative !important;
+    z-index: 1000005 !important;
+    
+    /* Layout logic */
+    margin: 0 !important;
+    padding: 10px 15px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    cursor: pointer !important;
+}
+
+/* Ensure the footer container isn't squishing the button */
+#wishlist-modal .modal div:last-child {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+}
