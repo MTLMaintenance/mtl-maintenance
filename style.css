@@ -44,33 +44,6 @@ button[onclick="saveInvoice()"] {
     border-color: #007bff;
     font-weight: 700;
 }
-.modal-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #888;
-    margin-bottom: 8px;
-}
-
-.modal-input {
-    width: 100%;
-    background: var(--bg) ;
-    border: 1px solid #444 ;
-    color: #fff ;
-    padding: 12px ;
-    border-radius: 10px ;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.modal-input:focus {
-    border-color: #28a745 ;
-    background: #333 ;
-}
-
 /* Custom styling for the datetime icon on dark backgrounds */
 input::-webkit-calendar-picker-indicator {
     filter: invert(1);
@@ -92,25 +65,8 @@ input::-webkit-calendar-picker-indicator {
     opacity: 0.8;
 }
 
-  /* 4. Modals (Popups) */
-.modal {
-  background: rgba(255, 255, 255, 0.98) ;
-  backdrop-filter: blur(16px);
-  border-top: 6px solid var(--accent);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
-}
 
-/* Adjust Dark Mode to keep the glass effect */
-body.dark-mode .card, 
-body.dark-mode .metric-card, 
-body.dark-mode .table-wrap, 
-body.dark-mode .modal {
-  background: rgba(30, 30, 28, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-top: 4px solid var(--accent);
-  color: #e8e6de;
-}
-    
+
 /* --- ANALYTICS PANEL --- */
 #panel-analytics .metric-card {
     border-top: 4px solid var(--accent);
@@ -247,9 +203,6 @@ body.dark-mode .modal {
 /* 2. Hide any stray form rows or grids that might be loose at the bottom */
 body > .form-row, 
 body > .form-grid, 
-body > .modal,
-body > #invoice-photo-area {
-    display: none ;
 }
 
 /* AUTH */
@@ -355,12 +308,6 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .doc-info{flex:1}
 .doc-name{font-weight:500}
 .doc-meta{font-size:11px;color:var(--text2)}
-/* MODAL */
-.modal{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.modal-title{font-size:16px;font-weight:600}
-.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text2);padding:2px 6px;border-radius:var(--radius)}
-.modal-close:hover{background:var(--bg2)}
 /* PARTS ROW */
 .parts-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
 .parts-row:last-child{border-bottom:none}
@@ -395,17 +342,6 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 #pv-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
 #offline-banner{display:none;background:var(--warning-bg);color:var(--warning-text);border-bottom:1px solid var(--warning);padding:7px 16px;font-size:12px;text-align:center}
 #offline-queue-banner{display:none;background:var(--accent-bg);color:var(--accent-text);border-bottom:1px solid var(--accent);padding:7px 16px;font-size:12px;text-align:center;cursor:pointer}
-body.dark-mode{--bg: #1a1a18;
-  --text: #e8e6de;
-  --border: rgba(255,255,255,0.1);}
-body.dark-mode .card,body.dark-mode .table-wrap,body.dark-mode .metric-card{background:rgba(30,30,28,0.95);color:#e8e6de}
-body.dark-mode th{background:rgba(20,20,18,0.95);color:#9c9a92}
-body.dark-mode td{color:#e8e6de}
-body.dark-mode .form-input,body.dark-mode .form-select,body.dark-mode .form-textarea{background:#2c2c2a;color:#e8e6de;border-color:#444}
-body.dark-mode .modal{background:#1c1c1a;color:#e8e6de}
-body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
-
-
 .chat-channel-btn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--radius);font-size:13px;cursor:pointer;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);border:1px solid transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s}
 .chat-channel-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 .chat-channel-btn.active{background:rgba(255,255,255,0.25);color:#fff;font-weight:600;border-color:rgba(255,255,255,0.3)}
@@ -495,10 +431,6 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 .spec-row:hover {
     background: rgba(255, 255, 255, 0.5);
-}
-
-body.dark-mode .spec-row:hover {
-    background: rgba(255, 255, 255, 0.1);
 }
 /* --- UNIVERSAL MASTER LAYOUT --- */
 body, html {
@@ -949,24 +881,6 @@ body, html {
     color: white ;
     border: none ;
 }
-/* Ensure the darkening backdrop fills the screen */
-.modal-backdrop {
-    display: none; 
-    position: fixed ;
-    top: 0; left: 0; right: 0; bottom: 0;
-    width: 100vw ;
-    height: 100vh ;
-    background: rgba(0,0,0,0.85) ;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Force the Modal Backdrop to show when active */
-.modal-backdrop.active {
-    display: flex ;
-    pointer-events: auto ;
-}
-
 /* The actual Card styling */
 .modal-card {
     position: relative ;
@@ -1024,12 +938,7 @@ body, html {
 }
 #absence-modal {
 }
-/* Safety: If both are open, this keeps them centered correctly */
-.modal-backdrop.active {
-    display: flex ;
-    justify-content: center ;
-    align-items: center ;
-}
+
 /* --- SMALL HIGH-CONTRAST SCHEDULE ITEM --- */
 .sched-item {
     display: flex ; /* Forces items side-by-side */
@@ -1292,22 +1201,6 @@ select.form-select:focus {
 #tool-delete-btn {
     display: none ;
 }
-
-/* This allows them to show up ONLY when the parent modal is open */
-.modal-backdrop.active #invoice-photo-preview-area,
-.modal-backdrop.active #invoice-scanning,
-.modal-backdrop.active #invoice-extracted-badge,
-.modal-backdrop.active #tool-tab-obs,
-.modal-backdrop.active #tool-obs-list,
-.modal-backdrop.active #tool-notes-input,
-.modal-backdrop.active #btn-delete-part,
-.modal-backdrop.active #btn-delete-wish,
-.modal-backdrop.active #btn-delete-consumable,
-.modal-backdrop.active #tool-delete-btn {
-    display: block ;
-}
-
-
 /* This is the inner area where your inputs and notes sit */
 #tool-tab-content-wrapper, 
 #tool-tab-details, 
@@ -1596,18 +1489,21 @@ select.form-select:focus {
 }
 
 /* Fix for the backdrop to make sure it covers the whole screen */
+/* --- 1. THE CURTAIN (Backdrop) --- */
 .modal-backdrop {
-    z-index: 9000 !important;
+    display: none; 
     position: fixed !important;
-    display: none;;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    z-index: 9000 !important;
+    pointer-events: auto;
 }
 
-/* 3. Dark mode support for modals */
-body.dark-mode [id$="-modal"] {
-    background: #1e1e1c;
-    color: #e8e6de;
-    border: 1px solid rgba(255,255,255,0.1);
-}
+
+
 
 /* 4. Fix for the "Save" and "Cancel" button rows inside modals */
 .modal-footer, .form-row {
@@ -1617,4 +1513,108 @@ body.dark-mode [id$="-modal"] {
     margin-top: 20px;
     padding-top: 15px;
     border-top: 1px solid rgba(0,0,0,0.05);
+}
+/* ==========================================
+   UNIFIED MODAL SYSTEM 
+   ========================================== */
+
+/* 1. THE OVERLAY (Backdrop) */
+.modal-backdrop {
+    display: none; 
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.85) !important;
+    z-index: 9000 !important;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+}
+
+/* 2. THE CARD (Positioning & Layout) */
+.modal, [id$="-modal"] {
+    display: none; /* Controlled by JS */
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9001 !important;
+    
+    width: 95% !important;
+    max-width: 600px !important;
+    max-height: 90vh !important;
+    background: var(--bg) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3) !important;
+    
+    padding: 0; /* Let the header and body handle padding */
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-direction: column;
+}
+
+/* 3. INTERNAL UI (Keeping your specific styles) */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--text2);
+    padding: 2px 6px;
+    border-radius: var(--radius);
+}
+
+.modal-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.modal-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.modal-input:focus {
+    border-color: var(--accent);
+}
+
+/* 4. VISIBILITY LOGIC */
+.modal-backdrop.active, 
+.modal.active, 
+.modal.open {
+    display: flex !important;
+}
+
+/* 5. DARK MODE (Unified) */
+body.dark-mode .modal, 
+body.dark-mode [id$="-modal"] {
+    background: #1c1c1a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-top: 4px solid var(--accent) !important;
+    color: #e8e6de !important;
 }
