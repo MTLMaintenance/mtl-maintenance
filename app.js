@@ -4098,8 +4098,9 @@ async function enterApp(){
   document.getElementById('auth-screen').style.display = 'none';
   const appContainer = document.getElementById('app');
   appContainer.style.display = 'block'; 
-  appContainer.style.width = '100vw';   // Force viewport width
-      appContainer.style.overflowX = 'hidden';     
+  appContainer.style.width = '100%';   // Force viewport width
+  appContainer.style.maxWidth = '100%';    
+ appContainer.style.overflowX = 'hidden';     
 
 
   document.getElementById('user-chip-name').textContent = currentUser.name;
