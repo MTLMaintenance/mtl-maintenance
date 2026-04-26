@@ -803,11 +803,10 @@
   <img id="pv-img" src="" alt=""/>
 </div>
     <div id="toast"></div>
-    <!-- THE SUGGESTION CARD -->
+  <!-- THE SUGGESTION CARD (Final Version) -->
 <div class="modal-backdrop" id="wishlist-modal" style="display:none; position:fixed; z-index:1000000 !important; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; backdrop-filter:blur(5px);">
   <div class="modal" style="max-width:420px; background: white !important; color: black !important; border-radius: 20px; padding: 30px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: visible !important;">
     
-    <!-- THE FIX: Hidden ID field -->
     <input type="hidden" id="wish-edit-id">
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -822,12 +821,36 @@
 
     <div style="margin-bottom:25px">
       <label style="display:block; font-size:11px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:5px;">Why is this needed? *</label>
-      <textarea id="wish-reason" placeholder="e.g. Current drill is smoking, this one is cordless..." style="width:100%; height:120px; padding:12px; border:1px solid #ddd; border-radius:10px; color:black; resize:none; font-size:13px;"></textarea>
+      <textarea id="wish-reason" placeholder="e.g. Current drill is smoking..." style="width:100%; height:120px; padding:12px; border:1px solid #ddd; border-radius:10px; color:black; resize:none; font-size:13px;"></textarea>
     </div>
 
-    <div style="display:flex; gap:12px;">
-      <button class="btn" onclick="closeModal('wishlist-modal')" style="flex:1; background:#eee; border:none; padding:12px; border-radius:10px; cursor:pointer; color:#333; font-weight:600;">Cancel</button>
-      <button class="btn" id="wish-submit-btn" onclick="saveWishRequest()" style="flex:2; background:#000 !important; color:#fff !important; border:none; padding:12px; border-radius:10px; font-weight:700; cursor:pointer;">Submit Request</button>
+    <!-- THE FOOTER: 3-Column Layout (Delete - Left, Cancel - Middle, Update - Right) -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: center; border-top: 1px solid #eee; padding-top: 20px;">
+      
+      <!-- 1. LEFT: Delete button (Initially hidden) -->
+      <div style="text-align: left;">
+        <button id="btn-delete-wish" type="button" onclick="window.deleteWishItem()" 
+                style="background:#dc3545 !important; color:#fff !important; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size: 11px; font-weight:800; display:none; white-space:nowrap;">
+            🗑️ Delete
+        </button>
+      </div>
+
+      <!-- 2. MIDDLE: Cancel button -->
+      <div style="text-align: center;">
+        <button type="button" class="btn" onclick="closeModal('wishlist-modal')" 
+                style="background:#eee; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; color:#333; font-size:12px; font-weight:600; width: 100%;">
+            Cancel
+        </button>
+      </div>
+
+      <!-- 3. RIGHT: Update button -->
+      <div style="text-align: right;">
+        <button type="button" class="btn" id="wish-submit-btn" onclick="saveWishRequest()" 
+                style="background:#000 !important; color:#fff !important; border:none; padding:8px 12px; border-radius:8px; font-weight:700; cursor:pointer; font-size:12px; width: 100%;">
+            Submit
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
