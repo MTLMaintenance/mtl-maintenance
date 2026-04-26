@@ -1153,20 +1153,27 @@ function closePhotoViewer(){ document.getElementById('photo-viewer').classList.r
 
 // MODALS
 // ============================================================
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        el.classList.add('open');
+
+        // Fill dropdowns if the modal needs them
+        if (id === 'task-modal' || id === 'calendar-entry-modal') {
+            populateSelects();
+        }
+    } else {
+        console.error("Modal not found:", id);
+    }
+}
+
 function closeModal(id) {
     const el = document.getElementById(id);
-    const backdrop = document.querySelector('.modal-backdrop');
-
     if (el) {
         el.style.display = 'none';
-        el.classList.remove('active');
-    }
-
-    // Hide backdrop only if no other modals are open
-    const openModals = document.querySelectorAll('[id$="-modal"][style*="display: flex"]');
-    if (openModals.length === 0 && backdrop) {
-        backdrop.style.display = 'none';
-        backdrop.classList.remove('active');
+        el.classList.remove('active'); // THE FIX: Removes the class so it's unclickable
+        el.classList.remove('open');
     }
 }
 // --- THE DROPDOWN PAINTER ---
@@ -4072,40 +4079,22 @@ function renderAlerts(){
 // ── OVERRIDDEN openModal ──────────────────────────────────────
 function openModal(id) {
     const el = document.getElementById(id);
-    const backdrop = document.querySelector('.modal-backdrop');
-
     if (el) {
-        // 1. Move the modal to the very top level of the HTML so it's not "trapped"
-        document.body.appendChild(el);
-
-        // 2. Show the modal
         el.style.display = 'flex';
-        el.classList.add('active');
+        el.classList.add('open');
 
-        // 3. Show the dark backdrop
-        if (backdrop) {
-            backdrop.style.display = 'flex';
-            backdrop.classList.add('active');
-        }
-
-        // Fill dropdowns for specific modals
+        // Fill dropdowns if the modal needs them
         if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            setTimeout(populateSelects, 10);
+            populateSelects();
         }
+    } else {
+        console.error("Modal not found:", id);
     }
 }
 async function enterApp(){
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
-  
-  // --- NECESSARY CHANGES START ---
   document.getElementById('auth-screen').style.display = 'none';
-  const appContainer = document.getElementById('app');
-  appContainer.style.display = 'block'; 
-  appContainer.style.width = '100%';   // Force viewport width
-  appContainer.style.maxWidth = '100%';    
- appContainer.style.overflowX = 'hidden';     
-
-
+  document.getElementById('app').style.display = 'flex';
   document.getElementById('user-chip-name').textContent = currentUser.name;
 
   const nav = document.getElementById('main-nav');
@@ -4152,8 +4141,8 @@ async function enterApp(){
   }
 
   // 4. Data Logic
-  await fetchTools();
-  await loadState();
+   await fetchTools();
+ await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
   showPanel('dashboard');
