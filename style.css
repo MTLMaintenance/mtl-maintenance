@@ -6,7 +6,7 @@
   --danger:#E24B4A;--danger-bg:#FCEBEB;--danger-text:#A32D2D;
   --warning:#BA7517;--warning-bg:#FAEEDA;--warning-text:#854F0B;
   --success:#3B6D11;--success-bg:#EAF3DE;--success-text:#27500A;
-  --radius:8px;--radius-lg:12px;
+  --radius:8px;--radius-lg:12px;}
 /* --- GHOST INVOICE CLEANUP --- */
 /* This hides the stray elements sitting at the bottom of your screen */
 #invoice-photo-preview-area,
@@ -154,7 +154,7 @@ body.dark-mode .modal {
     /* --- CALENDAR BELLS & WHISTLES --- */
 /* 2. Lower the Calendar layer so it doesn't block popups */
 #panel-calendar.active {
-    z-index: 1 ; 
+    z-index: 105 ; 
 }
 
 /* 3. Keep the Topbar in the middle (Above content, below popups) */
@@ -512,7 +512,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   .modal {
     width: 95% ;
     padding: 15px ;
- .sync-dot 
+  }
+    .sync-dot 
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -1158,7 +1159,7 @@ body, html {
 }
 select.form-select:focus {
     position: relative;
-    z-index: 21;
+    z-index: 21; }
 #panel-parts.active {
     display: block ;
     position: relative ;
@@ -1166,6 +1167,7 @@ select.form-select:focus {
     min-height: 500px;
     z-index: 22; /* Keeps it on the right layer */
 }
+
 /* 1. Machinery Photo (Bottom layer) */
 #zerk-map-img {
     position: relative ;
@@ -1201,7 +1203,7 @@ select.form-select:focus {
     display: flex ;
     flex-direction: column ;
 }
-}
+
 /* FORCE TOOL CRIB LAYOUT */
 #panel-tools.active {
     display: block ;
@@ -1210,10 +1212,10 @@ select.form-select:focus {
     max-width: 1200px;
     margin: 20px auto ;
     z-index: 27;
-    background: rgba(255, 255, 255, 0.95) ; /* Semi-white background to see text */
+   background: var(--bg); /* Semi-white background to see text */
     padding: 20px ;
     border-radius: 15px;
-    color: #000 ; /* Force black text on the white card */
+   color: var(--text);
     min-height: 400px;
 }
 
@@ -1232,11 +1234,8 @@ select.form-select:focus {
 }
 
 /* Make sure the rows actually have height */
-#tools-table-body tr {
-    height: 45px ;
-    border-bottom: 1px solid #ddd ;
-}
-/* Styling for each individual note in the list */
+#tools-table-body table { border-collapse: collapse; }
+
 .obs-note-card {
     background: #ffffff;
     border: 1px solid #ebebeb;
