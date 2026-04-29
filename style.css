@@ -1038,27 +1038,54 @@ body, html {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
+  /* 1. FIX SCROLLING: Allow the page to scroll naturally */
   html, body {
-    height: 100vh !important;
-    overflow: hidden !important;
-    position: fixed;
+    height: auto !important;
+    overflow: auto !important; /* Changed from hidden */
+    position: relative !important; /* Changed from fixed */
     width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Shrink Calendar for Mobile (The "Mini-Map" look) */
+  /* 2. FIX BOX OVERFLOW: Ensure all elements stay inside their parents */
+  * {
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure the Modal/Card doesn't go off screen */
+  .modal-content, .card, [role="dialog"] {
+    width: 95% !important;
+    max-width: 95vw !important;
+    margin: 10px auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Force form rows to stack instead of sitting side-by-side */
+  .row, .flex, .form-row {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  /* Force all inputs to stay within bounds */
+  input, select, textarea, .form-control {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+  }
+
+  /* Shrink Calendar for Mobile */
   #panel-calendar .card, #cal-grid-container .card {
     height: auto !important;
-    min-height: 0 !important; /* FIX: Removes the big empty white space */
+    min-height: 0 !important;
     width: 100% !important;
   }
 
   #panel-calendar .cal-day {
-    min-height: 65px !important; /* Shorter cells for mobile */
+    min-height: 65px !important;
     padding: 2px !important;
   }
-
-  #panel-calendar .cal-day-num { font-size: 10px !important; }
-  #panel-calendar .cal-event { font-size: 8px !important; padding: 1px 2px !important; }
 
   /* TOPBAR: Stack rows on phone */
   .topbar {
@@ -1079,6 +1106,7 @@ body, html {
     overflow-x: auto !important;
     width: 100% !important;
     padding: 4px 10px !important;
+    white-space: nowrap; /* Allows horizontal swipe for nav items */
   }
 
   .topbar-right {
@@ -1088,29 +1116,18 @@ body, html {
     justify-content: flex-start !important;
   }
 
+  /* Allow panels to scroll vertically */
   .panel.active {
-    height: calc(100vh - 110px) !important;
-    overflow-y: auto !important;
+    height: auto !important;
+    min-height: calc(100vh - 110px);
+    overflow-y: visible !important; 
     padding: 10px !important;
   }
 
-  #panel-chat.active, #panel-admin.active, #panel-calendar.active {
-    overflow-y: hidden !important;
-  }
-
   /* CHAT ADJUSTMENTS */
-  #panel-chat .chat-layout { height: calc(100vh - 220px) !important; }
+  #panel-chat .chat-layout { height: 70vh !important; }
   #panel-chat #chat-messages { flex: 1; overflow-y: auto !important; padding: 14px !important; }
 
-  /* MOBILE DROPDOWN STYLE */
-  #chat-channel-mobile-menu {
-    position: absolute; top: 44px; left: 12px; z-index: 1000;
-    min-width: 220px; background: #fff !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
-    border-radius: 12px !important; padding: 8px !important;
-  }
-
-  .chat-mobile-menu-item.active { background: #f0f4f8 !important; color: #007bff !important; font-weight: 700 !important; }
 } /* END MOBILE BLOCK */
 
 .pin-dot {
