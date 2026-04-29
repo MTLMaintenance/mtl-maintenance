@@ -1038,98 +1038,92 @@ body, html {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. FIX SCROLLING: Allow the page to scroll naturally */
-  html, body {
+  /* 1. STABILIZE BACKGROUND: 
+     This prevents the "stretching" look. We put the background 
+     on a fixed pseudo-element so it doesn't move when you scroll. */
+  body {
     height: auto !important;
-    overflow: auto !important; /* Changed from hidden */
-    position: relative !important; /* Changed from fixed */
-    width: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto !important; /* Single scroll source */
+    position: relative !important;
+    background-attachment: scroll !important; /* Fixed is buggy on mobile */
+  }
+
+  /* 2. SMOOTH SCROLLING: Added for that 'iPhone-like' momentum */
+  html {
+    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* 2. FIX BOX OVERFLOW: Ensure all elements stay inside their parents */
-  * {
-    box-sizing: border-box !important;
+  /* 3. FIX DOUBLE SCROLL: 
+     We remove the scrollbars from internal panels so they just 
+     expand to their full height. The 'Body' will handle the scrolling. */
+  .panel.active, 
+  #panel-chat.active, 
+  #panel-admin.active, 
+  #panel-calendar.active {
+    height: auto !important; 
+    overflow: visible !important; 
+    min-height: 100vh;
   }
 
-  /* Ensure the Modal/Card doesn't go off screen */
-  .modal-content, .card, [role="dialog"] {
-    width: 95% !important;
-    max-width: 95vw !important;
+  /* 4. FIX MODAL/CARD OVERFLOW (The "Add Equipment" window) */
+  .modal-content, .card {
+    width: 96% !important;
     margin: 10px auto !important;
-    overflow-x: hidden !important;
+    display: block !important;
+    overflow: hidden !important; /* Keep internal stuff contained */
   }
 
-  /* Force form rows to stack instead of sitting side-by-side */
-  .row, .flex, .form-row {
+  /* Force all rows/inputs to stack so they don't poke out the right side */
+  .row, .flex, .form-row, .grid {
     display: flex !important;
     flex-direction: column !important;
+    gap: 10px;
     width: 100% !important;
   }
 
-  /* Force all inputs to stay within bounds */
   input, select, textarea, .form-control {
     width: 100% !important;
     max-width: 100% !important;
-    box-sizing: border-box !important;
-    display: block !important;
+    font-size: 16px !important; /* Prevents iOS from zooming in on tap */
   }
 
-  /* Shrink Calendar for Mobile */
-  #panel-calendar .card, #cal-grid-container .card {
-    height: auto !important;
-    min-height: 0 !important;
-    width: 100% !important;
-  }
-
-  #panel-calendar .cal-day {
-    min-height: 65px !important;
-    padding: 2px !important;
-  }
-
-  /* TOPBAR: Stack rows on phone */
+  /* 5. TOPBAR: Keep it stuck at the top while you scroll */
   .topbar {
-    display: flex !important;
-    flex-direction: column !important;
-    height: auto !important;
-    padding: 4px 0 !important;
-    background: #111 !important;
     position: sticky !important;
     top: 0;
-    z-index: 9999;
+    z-index: 1000;
+    flex-shrink: 0;
   }
 
-  .logo, #global-search, #global-search ~ span { display: none !important; }
+  /* CHAT SPECIFIC: Chat usually needs its own scroll, 
+     but we'll limit its height so it doesn't break the page */
+  #panel-chat .chat-layout { 
+    height: 60vh !important; 
+    overflow: hidden; 
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 
-  .topbar-main-row, #main-nav {
+  /* NAV BAR: Allow horizontal swiping for menu items */
+  #main-nav {
     display: flex !important;
     overflow-x: auto !important;
-    width: 100% !important;
-    padding: 4px 10px !important;
-    white-space: nowrap; /* Allows horizontal swipe for nav items */
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
   }
-
-  .topbar-right {
-    display: flex !important;
-    width: 100% !important;
-    padding: 0 10px 4px !important;
-    justify-content: flex-start !important;
-  }
-
-  /* Allow panels to scroll vertically */
-  .panel.active {
-    height: auto !important;
-    min-height: calc(100vh - 110px);
-    overflow-y: visible !important; 
-    padding: 10px !important;
-  }
-
-  /* CHAT ADJUSTMENTS */
-  #panel-chat .chat-layout { height: 70vh !important; }
-  #panel-chat #chat-messages { flex: 1; overflow-y: auto !important; padding: 14px !important; }
+  
+  #main-nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for cleaner look */
 
 } /* END MOBILE BLOCK */
-
 .pin-dot {
     width: 20px;
     height: 20px;
