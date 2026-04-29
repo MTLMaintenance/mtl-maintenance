@@ -997,7 +997,7 @@ body, html {
 /* ============================================================
    2. DESKTOP ONLY (min-width: 769px)
    ============================================================ */
- screen and (min-width: 769px) {
+@media screen and (min-width: 769px) {
   .topbar {
     display: flex !important;
     flex-direction: row !important;
@@ -1038,101 +1038,90 @@ body, html {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. BACKGROUND FIX:
-     Apply the background to HTML instead of body to prevent 
-     the "black bar" and "stretching" glitch during scrolling. */
-  html {
-    background: url('your-background-image.jpg') no-repeat center center fixed !important;
-    background-size: cover !important;
-    height: 100%;
-  }
-
-  body {
-    background: transparent !important;
+  /* 1. CLEAN BACKGROUND: No more stretching or black bars */
+  html, body {
+    background-color: #001f3f !important; /* Professional Navy Blue */
+    background-image: none !important;
     height: auto !important;
     min-height: 100vh;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     margin: 0;
-    padding: 0;
   }
 
-  /* 2. TOPBAR: FIX ALIGNMENT & SCROLLING */
+  /* 2. TOPBAR: Force Left Alignment & Horizontal Scroll */
   .topbar {
-    position: sticky !important;
-    top: 0;
-    z-index: 9999;
-    width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
+    position: sticky !important;
+    top: 0;
+    z-index: 1000;
     background: #111 !important;
+    width: 100% !important;
     padding: 0 !important;
   }
 
-  /* Force the rows to start at the LEFT and allow scrolling */
+  /* Fix: Force rows to start at the left and not wrap */
   .topbar-main-row, #main-nav, .topbar-right {
     display: flex !important;
-    flex-direction: row !important; /* Keep horizontal */
-    flex-wrap: nowrap !important;   /* Don't wrap to new line */
-    justify-content: flex-start !important; /* FORCE START AT LEFT */
+    justify-content: flex-start !important; /* FIX: Starts on the left */
     align-items: center !important;
-    overflow-x: auto !important;    /* Enable scrolling */
-    overflow-y: hidden !important;
+    flex-wrap: nowrap !important;           /* FIX: Prevents jumping to new lines */
+    overflow-x: auto !important;            /* FIX: Enables horizontal swipe */
     width: 100% !important;
-    padding: 10px !important;
+    padding: 8px 12px !important;
     -webkit-overflow-scrolling: touch;
-    text-align: left !important;
   }
 
-  /* Stops items from shrinking - this is why it wouldn't scroll before */
-  .topbar-main-row a, 
-  #main-nav a, 
-  .nav-item, 
-  .topbar-right > * {
+  /* Stops the text links from shrinking so they can scroll */
+  .topbar-main-row a, #main-nav a, .nav-item, .topbar-right > * {
     flex: 0 0 auto !important; 
-    margin-right: 15px !important;
-    margin-left: 0 !important; /* Remove any desktop centering/right-align */
-    display: inline-block !important;
+    margin-right: 20px !important;
+    margin-left: 0 !important;
+    color: white !important;
     white-space: nowrap !important;
+    font-size: 14px !important;
   }
 
-  /* Hide scrollbars for a clean app look */
+  /* Hide scrollbars for the top nav */
   .topbar-main-row::-webkit-scrollbar, #main-nav::-webkit-scrollbar {
     display: none;
   }
 
-  /* 3. FIX MODAL/CARD BOX OVERFLOW */
-  /* This prevents the inputs from poking out of the white card */
+  /* 3. FIX CARD OVERFLOW (The 'Add Equipment' fix) */
   .modal-content, .card {
-    width: 95% !important;
-    max-width: 95% !important;
+    width: 92% !important;
+    max-width: 92vw !important;
     margin: 15px auto !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    overflow: hidden !important; /* Keeps internal parts contained */
+    display: block !important;
   }
 
-  /* Stack "Type" and "Manufacturer" vertically so they fit */
+  /* Stack inputs vertically so they don't poke out the side */
   .row, .flex, .form-row, .grid {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     padding: 0 !important;
-    margin: 0 !important;
+    gap: 0 !important;
   }
 
+  /* Force boxes to stay INSIDE the card */
   input, select, textarea, .form-control {
     width: 100% !important;
     max-width: 100% !important;
-    box-sizing: border-box !important; /* Includes padding in the width */
-    font-size: 16px !important;       /* Stops zoom-glitch */
-    margin-bottom: 10px !important;
+    box-sizing: border-box !important; /* Critical: includes padding in width */
+    font-size: 16px !important;       /* Stops iPhone zoom-jump */
+    margin-bottom: 12px !important;
   }
 
-  /* 4. SMOOTH PAGE SCROLLING */
+  /* 4. SMOOTH SCROLLING CONTENT */
   .panel.active {
     height: auto !important;
     overflow: visible !important;
-    padding: 15px !important;
+    padding: 10px !important;
+    background: transparent !important;
   }
 
 } /* END MOBILE BLOCK */
