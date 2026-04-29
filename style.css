@@ -493,7 +493,7 @@ button[onclick="saveInvoice()"] {
 .auth-switch a{color:#85B7EB;cursor:pointer}
 .auth-divider{border:none;border-top:1px solid rgba(255,255,255,0.15);margin:16px 0}
 /* APP */
-#app{display:flex;flex-direction:column;min-height:100vh;background-color:#001f3f
+#app{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
 
      .topbar {
   display: flex !important;
