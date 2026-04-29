@@ -997,7 +997,7 @@ body, html {
 /* ============================================================
    2. DESKTOP ONLY (min-width: 769px)
    ============================================================ */
-@media screen and (min-width: 769px) {
+ screen and (min-width: 769px) {
   .topbar {
     display: flex !important;
     flex-direction: row !important;
@@ -1038,91 +1038,101 @@ body, html {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. THE "APP-LIKE" BACKGROUND FIX */
-  /* This creates a layer that stays stuck to the glass of the phone */
-  body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+  /* 1. BACKGROUND FIX:
+     Apply the background to HTML instead of body to prevent 
+     the "black bar" and "stretching" glitch during scrolling. */
+  html {
+    background: url('your-background-image.jpg') no-repeat center center fixed !important;
+    background-size: cover !important;
     height: 100%;
-    /* Replace the URL below with your actual background image path */
-    background: url('your-background-image.jpg') no-repeat center center;
-    background-size: cover;
-    z-index: -1; /* Puts it behind everything */
-    will-change: transform; /* Helps mobile performance */
   }
 
   body {
-    background: none !important; /* Remove background from body so it doesn't double up */
+    background: transparent !important;
     height: auto !important;
+    min-height: 100vh;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    padding: 0;
   }
 
-  /* 2. TOPBAR HORIZONTAL SCROLLING */
+  /* 2. TOPBAR: FIX ALIGNMENT & SCROLLING */
   .topbar {
     position: sticky !important;
     top: 0;
-    z-index: 1000;
-    background: rgba(17, 17, 17, 0.95) !important; /* Slightly transparent for 'glass' effect */
+    z-index: 9999;
+    width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
+    background: #111 !important;
+    padding: 0 !important;
   }
 
-  /* This allows "Checklists, Dashboard, etc" to swipe left/right */
-  .topbar-main-row, #main-nav {
+  /* Force the rows to start at the LEFT and allow scrolling */
+  .topbar-main-row, #main-nav, .topbar-right {
     display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
+    flex-direction: row !important; /* Keep horizontal */
+    flex-wrap: nowrap !important;   /* Don't wrap to new line */
+    justify-content: flex-start !important; /* FORCE START AT LEFT */
+    align-items: center !important;
+    overflow-x: auto !important;    /* Enable scrolling */
+    overflow-y: hidden !important;
+    width: 100% !important;
     padding: 10px !important;
-    gap: 15px;
+    -webkit-overflow-scrolling: touch;
+    text-align: left !important;
   }
 
-  .topbar-main-row a, #main-nav a, .nav-item {
-    flex: 0 0 auto !important; /* STOPS text from shrinking */
+  /* Stops items from shrinking - this is why it wouldn't scroll before */
+  .topbar-main-row a, 
+  #main-nav a, 
+  .nav-item, 
+  .topbar-right > * {
+    flex: 0 0 auto !important; 
+    margin-right: 15px !important;
+    margin-left: 0 !important; /* Remove any desktop centering/right-align */
+    display: inline-block !important;
     white-space: nowrap !important;
   }
 
-  /* 3. FIX CARD/MODAL OVERFLOW (The 'Add Equipment' fix) */
-  .modal-content, .card {
-    width: 94% !important;
-    max-width: 94vw !important;
-    margin: 15px auto !important;
-    border-radius: 12px !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
+  /* Hide scrollbars for a clean app look */
+  .topbar-main-row::-webkit-scrollbar, #main-nav::-webkit-scrollbar {
+    display: none;
   }
 
-  /* Forces form inputs to stack and stay inside the card */
-  .row, .flex, .form-row {
+  /* 3. FIX MODAL/CARD BOX OVERFLOW */
+  /* This prevents the inputs from poking out of the white card */
+  .modal-content, .card {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 15px auto !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  /* Stack "Type" and "Manufacturer" vertically so they fit */
+  .row, .flex, .form-row, .grid {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
+    padding: 0 !important;
     margin: 0 !important;
   }
 
-  input, select, textarea {
+  input, select, textarea, .form-control {
     width: 100% !important;
     max-width: 100% !important;
-    box-sizing: border-box !important;
-    font-size: 16px !important; /* Prevents iPhone 'Auto-Zoom' glitch */
+    box-sizing: border-box !important; /* Includes padding in the width */
+    font-size: 16px !important;       /* Stops zoom-glitch */
     margin-bottom: 10px !important;
   }
 
   /* 4. SMOOTH PAGE SCROLLING */
   .panel.active {
     height: auto !important;
-    overflow: visible !important; /* Content "grows" the page height */
-    padding-bottom: 50px !important; /* Extra space at bottom so it doesn't feel cramped */
-  }
-
-  /* Hide scrollbar on the menu for a cleaner look */
-  .topbar-main-row::-webkit-scrollbar {
-    display: none;
+    overflow: visible !important;
+    padding: 15px !important;
   }
 
 } /* END MOBILE BLOCK */
