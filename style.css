@@ -1038,90 +1038,92 @@ body, html {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. STABILIZE BACKGROUND: 
-     This prevents the "stretching" look. We put the background 
-     on a fixed pseudo-element so it doesn't move when you scroll. */
+  /* 1. THE "APP-LIKE" BACKGROUND FIX */
+  /* This creates a layer that stays stuck to the glass of the phone */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Replace the URL below with your actual background image path */
+    background: url('your-background-image.jpg') no-repeat center center;
+    background-size: cover;
+    z-index: -1; /* Puts it behind everything */
+    will-change: transform; /* Helps mobile performance */
+  }
+
   body {
+    background: none !important; /* Remove background from body so it doesn't double up */
     height: auto !important;
     overflow-x: hidden !important;
-    overflow-y: auto !important; /* Single scroll source */
-    position: relative !important;
-    background-attachment: scroll !important; /* Fixed is buggy on mobile */
-  }
-
-  /* 2. SMOOTH SCROLLING: Added for that 'iPhone-like' momentum */
-  html {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* 3. FIX DOUBLE SCROLL: 
-     We remove the scrollbars from internal panels so they just 
-     expand to their full height. The 'Body' will handle the scrolling. */
-  .panel.active, 
-  #panel-chat.active, 
-  #panel-admin.active, 
-  #panel-calendar.active {
-    height: auto !important; 
-    overflow: visible !important; 
-    min-height: 100vh;
-  }
-
-  /* 4. FIX MODAL/CARD OVERFLOW (The "Add Equipment" window) */
-  .modal-content, .card {
-    width: 96% !important;
-    margin: 10px auto !important;
-    display: block !important;
-    overflow: hidden !important; /* Keep internal stuff contained */
-  }
-
-  /* Force all rows/inputs to stack so they don't poke out the right side */
-  .row, .flex, .form-row, .grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px;
-    width: 100% !important;
-  }
-
-  input, select, textarea, .form-control {
-    width: 100% !important;
-    max-width: 100% !important;
-    font-size: 16px !important; /* Prevents iOS from zooming in on tap */
-  }
-
-  /* 5. TOPBAR: Keep it stuck at the top while you scroll */
-  .topbar {
-    position: sticky !important;
-    top: 0;
-    z-index: 1000;
-    flex-shrink: 0;
-  }
-
-  /* CHAT SPECIFIC: Chat usually needs its own scroll, 
-     but we'll limit its height so it doesn't break the page */
-  #panel-chat .chat-layout { 
-    height: 60vh !important; 
-    overflow: hidden; 
-    display: flex;
-    flex-direction: column;
-  }
-  
-  #chat-messages {
-    flex: 1;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* NAV BAR: Allow horizontal swiping for menu items */
-  #main-nav {
+  /* 2. TOPBAR HORIZONTAL SCROLLING */
+  .topbar {
+    position: sticky !important;
+    top: 0;
+    z-index: 1000;
+    background: rgba(17, 17, 17, 0.95) !important; /* Slightly transparent for 'glass' effect */
     display: flex !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 5px;
+    flex-direction: column !important;
   }
-  
-  #main-nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for cleaner look */
+
+  /* This allows "Checklists, Dashboard, etc" to swipe left/right */
+  .topbar-main-row, #main-nav {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px !important;
+    gap: 15px;
+  }
+
+  .topbar-main-row a, #main-nav a, .nav-item {
+    flex: 0 0 auto !important; /* STOPS text from shrinking */
+    white-space: nowrap !important;
+  }
+
+  /* 3. FIX CARD/MODAL OVERFLOW (The 'Add Equipment' fix) */
+  .modal-content, .card {
+    width: 94% !important;
+    max-width: 94vw !important;
+    margin: 15px auto !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Forces form inputs to stack and stay inside the card */
+  .row, .flex, .form-row {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  input, select, textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; /* Prevents iPhone 'Auto-Zoom' glitch */
+    margin-bottom: 10px !important;
+  }
+
+  /* 4. SMOOTH PAGE SCROLLING */
+  .panel.active {
+    height: auto !important;
+    overflow: visible !important; /* Content "grows" the page height */
+    padding-bottom: 50px !important; /* Extra space at bottom so it doesn't feel cramped */
+  }
+
+  /* Hide scrollbar on the menu for a cleaner look */
+  .topbar-main-row::-webkit-scrollbar {
+    display: none;
+  }
 
 } /* END MOBILE BLOCK */
 .pin-dot {
