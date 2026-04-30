@@ -988,7 +988,7 @@ async function loadState() {
         console.warn("Observations failed to load", e);
     }
 }
-}}async function loadState() {
+async function loadState() {
     if (isLoadingState) return;
     isLoadingState = true;
     setSyncStatus('syncing');
