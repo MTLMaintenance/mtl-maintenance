@@ -1738,3 +1738,13 @@ div#panel-parts div.tab-bar button.tab.active {
     align-items: center !important;
     width: 100% !important;
 }
+.doc-item {
+    transition: background 0.2s;
+}
+.doc-item:hover {
+    background: var(--hover-bg) !important;
+}
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+}
