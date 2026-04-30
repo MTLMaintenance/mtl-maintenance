@@ -1748,3 +1748,11 @@ div#panel-parts div.tab-bar button.tab.active {
     padding: 4px 10px;
     font-size: 12px;
 }
+#doc-modal {
+  z-index: 9999 !important;
+}
+
+/* If you have a general modal class, make sure backdrops are high */
+.modal-backdrop {
+  z-index: 9000;
+}
