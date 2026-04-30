@@ -4375,23 +4375,34 @@ async function sendCriticalObsEmail(obs, equipId) {
 }
 
 // ── INVOICES ─────────────────────────────────────────────────
-let _currentInvoiceEquipId = null;
-let _invoicePhotoData = null;
-
 function openAddInvoice() {
   _invoicePhotoData = null;
   _currentInvoiceEquipId = window._currentDetailEquipId;
+
   // Reset form
   ['inv-supplier','inv-number','inv-date','inv-amount','inv-notes'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  document.getElementById('invoice-scanning').style.display='none';
-  document.getElementById('invoice-extracted-badge').style.display='none';
-  document.getElementById('inv-clear-photo-wrap').style.display='none';
-  document.getElementById('invoice-photo-preview-area').innerHTML=`
-    <div style="font-size:32px;margin-bottom:8px">📄</div>
-    <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>`;
+
+  // Helper function to safely hide elements
+  const hide = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+    else console.warn(`Element with ID "${id}" was not found in the DOM.`);
+  };
+
+  hide('invoice-scanning');
+  hide('invoice-extracted-badge');
+  hide('inv-clear-photo-wrap');
+
+  const previewArea = document.getElementById('invoice-photo-preview-area');
+  if (previewArea) {
+    previewArea.innerHTML = `
+      <div style="font-size:32px;margin-bottom:8px">📄</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>`;
+  }
+
   openModal('invoice-modal');
 }
 
