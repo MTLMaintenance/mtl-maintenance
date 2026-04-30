@@ -6068,6 +6068,35 @@ function editDocName(docId) {
         renderDocsList(window._currentDetailEquipId); 
     }
 }
+
+function openAddDocModal() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,image/*,.doc,.docx';
+    
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const newDoc = {
+                id: 'doc-' + Date.now(),
+                equip_id: window._currentDetailEquipId,
+                name: file.name,
+                type: file.type || 'Unknown',
+                file_data: event.target.result,
+                date_added: new Date().toISOString()
+            };
+
+            state.documents.push(newDoc);
+            renderDocsList(window._currentDetailEquipId);
+        };
+        reader.readAsDataURL(file);
+    };
+    
+    input.click();
+}
 async function getAdaptivePrediction(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if (!e || e.status === 'Down') return { status: 'PAUSED' };
