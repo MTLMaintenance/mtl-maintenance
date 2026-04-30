@@ -2802,7 +2802,7 @@ async function markComplete(taskId) {
         }
       }
     }
-  
+  }
 
   // 2. Set status to Completed
   t.status = 'Completed';
@@ -2841,7 +2841,7 @@ if (equip && meterReadingToLog !== null) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
-}
+
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
 const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
