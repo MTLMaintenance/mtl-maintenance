@@ -1941,19 +1941,22 @@ function renderDocuments() {
 async function deleteDoc(id) {
     if (!confirm("Are you sure you want to delete this document?")) return;
 
-    // 1. Remove from local state
+    // 1. Update the local state (so the UI updates immediately)
     state.documents = state.documents.filter(d => d.id !== id);
 
-    // 2. Remove from database
-    await persist('documents', 'delete', { id });
-
-    // 3. Refresh BOTH views
-    renderDocuments(); // Refresh Main Tab
-    if (window._currentDetailEquipId) {
-        renderDocsList(window._currentDetailEquipId); // Refresh Equipment Tab
+    // 2. Call persist with an OBJECT containing the id
+    // We pass { id: id } because your persist function looks for record.id
+    try {
+        await persist('documents', 'delete', { id: id });
+    } catch (err) {
+        console.error("Database deletion failed:", err);
     }
-    
-    showToast("Document deleted");
+
+    // 3. Refresh the UI views
+    renderDocuments(); 
+    if (window._currentDetailEquipId) {
+        renderDocsList(window._currentDetailEquipId);
+    }
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
