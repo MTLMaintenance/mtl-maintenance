@@ -5248,7 +5248,6 @@ const tool = state.tools.find(t => t.id === id);
 
     // Find the name locally for the confirmation message
     const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
-    const tool = localList.find(t => t.id === id);
     const toolName = tool ? (tool.tool_name || tool.name) : 'this tool';
 
     if(!confirm(`Are you sure you want to permanently delete "${toolName}"?`)) return;
