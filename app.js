@@ -1938,8 +1938,23 @@ function renderDocuments() {
   document.getElementById('warranty-list').innerHTML = warranties.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No warranties added</div>';
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
-async function deleteDoc(id){ if(!confirm('Delete this document?'))return; state.documents=state.documents.filter(d=>d.id!==id); await persist('documents','delete',{id}); renderDocuments(); }
+async function deleteDoc(id) {
+    if (!confirm("Are you sure you want to delete this document?")) return;
 
+    // 1. Remove from local state
+    state.documents = state.documents.filter(d => d.id !== id);
+
+    // 2. Remove from database
+    await persist('documents', 'delete', { id });
+
+    // 3. Refresh BOTH views
+    renderDocuments(); // Refresh Main Tab
+    if (window._currentDetailEquipId) {
+        renderDocsList(window._currentDetailEquipId); // Refresh Equipment Tab
+    }
+    
+    showToast("Document deleted");
+}
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
   
@@ -6076,23 +6091,31 @@ function updateCalEntryTypeButtons(type) {
     const container = document.getElementById('docs-list');
     if(!container) return;
     
+    // Get documents for THIS machine
     const docs = state.documents.filter(d => d.equip_id === equipId);
 
+    // Create the HTML
     container.innerHTML = `
         <div style="margin-bottom:15px; display:flex; justify-content:flex-end">
-            <button class="btn btn-primary btn-sm" onclick="openDocModal()">+ Add Document</button>
+            <button class="btn btn-primary btn-sm" onclick="openEditDocModal()">+ Add Document</button>
         </div>
-        ${docs.map(d => `
-            <div class="doc-item" style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border)">
-                <div><b>${d.name}</b><div style="font-size:11px">${d.type}</div></div>
-                <div>
-                    <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
-                    <button class="btn btn-secondary btn-sm" onclick="openDocModal('${d.id}')">Edit</button>
-                </div>
-            </div>`).join('') || 'No documents found'}
+        <div class="docs-scroll-area">
+            ${docs.map(d => `
+                <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border); background:var(--bg2); margin-bottom:4px; border-radius:var(--radius)">
+                    <div class="doc-info" onclick="openDocDetail('${d.id}')" style="cursor:pointer; flex:1">
+                        <b style="display:block">${d.name}</b>
+                        <span style="font-size:11px; color:var(--text2)">${d.type}</span>
+                    </div>
+                    <div class="doc-actions" style="display:flex; gap:5px">
+                        <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
+                        <button class="btn btn-secondary btn-sm" onclick="openEditDocModal('${d.id}')">Edit</button>
+                        <button class="btn btn-sm" style="background:#ff4444; color:white; border:none; padding:4px 8px" 
+                                onclick="event.stopPropagation(); deleteDoc('${d.id}')">Del</button>
+                    </div>
+                </div>`).join('') || '<div style="color:var(--text3); padding:20px; text-align:center">No documents found</div>'}
+        </div>
     `;
 }
-
 function openDocModal(docId = null) {
   _currentDocEditId = docId;
   _tempFileData = null;
@@ -6132,16 +6155,34 @@ function deleteDoc(docId) {
 // Opens a simple file picker
 function openDocDetail(docId) {
     const doc = state.documents.find(d => d.id === docId);
-    if (!doc || !doc.file_data) return;
+    if (!doc) return;
 
-    // Create a new window/tab and display the file
+    if (!doc.file_data) {
+        alert("No file attached to this document.");
+        return;
+    }
+
+    // Create a temporary link to view the file
     const newWindow = window.open();
-    newWindow.document.write(`
-        <title>${doc.name}</title>
-        <body style="margin:0; display:flex; align-items:center; justify-content:center; background:#333">
-            <embed src="${doc.file_data}" width="100%" height="100%" type="${doc.type}">
-        </body>
-    `);
+    
+    // If it's a PDF
+    if (doc.file_data.includes('application/pdf') || doc.file_type === 'application/pdf') {
+        newWindow.document.write(`
+            <title>${doc.name}</title>
+            <body style="margin:0">
+                <embed src="${doc.file_data}" width="100%" height="100%" type="application/pdf">
+            </body>
+        `);
+    } 
+    // If it's an image
+    else {
+        newWindow.document.write(`
+            <title>${doc.name}</title>
+            <body style="margin:0; background:#222; display:flex; align-items:center; justify-content:center">
+                <img src="${doc.file_data}" style="max-width:100%; max-height:100%; object-fit:contain">
+            </body>
+        `);
+    }
 }
 function editDocName(docId) {
     // Find the document in the state
