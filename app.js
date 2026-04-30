@@ -15,8 +15,9 @@ let tempZerkCoords = { x: 0, y: 0 };
 let calDate = new Date();
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
  let currentCalEntryType = 'one-time';   
-    // CONFIG
-// ============================================================
+let _currentDocEditId = null; 
+let _tempFileData = null; 
+// CONFIG// ============================================================
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
     
@@ -1898,34 +1899,81 @@ async function deleteSupplier(id){ if(!confirm('Delete this supplier?'))return; 
 // ============================================================
 // DOCUMENTS
 // ============================================================
-function renderDocuments(){
-  const now=new Date(); const soon=new Date(now.getTime()+30*24*60*60*1000);
-  const expiring=state.documents.filter(d=>d.expiry_date&&new Date(d.expiry_date)<=soon);
-  document.getElementById('doc-expiry-alerts').innerHTML=expiring.map(d=>
-    `<div class="alert ${new Date(d.expiry_date)<now?'alert-d':'alert-w'}">
-      ${new Date(d.expiry_date)<now?'⚠ EXPIRED:':'📅 Expiring soon:'} <b>${d.name}</b> — ${fmtDate(d.expiry_date)}
+function renderDocuments() {
+  const now = new Date(); 
+  const soon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  
+  // Alert logic remains the same
+  const expiring = state.documents.filter(d => d.expiry_date && new Date(d.expiry_date) <= soon);
+  document.getElementById('doc-expiry-alerts').innerHTML = expiring.map(d =>
+    `<div class="alert ${new Date(d.expiry_date) < now ? 'alert-d' : 'alert-w'}">
+      ${new Date(d.expiry_date) < now ? '⚠ EXPIRED:' : '📅 Expiring soon:'} <b>${d.name}</b> — ${fmtDate(d.expiry_date)}
     </div>`
   ).join('');
-  const warranties=state.documents.filter(d=>d.type==='warranty');
-  const others=state.documents.filter(d=>d.type!=='warranty');
-  const mkDoc=d=>{
-    const equip=d.equip_id?equipName(d.equip_id):'';
-    const expired=d.expiry_date&&new Date(d.expiry_date)<now;
-    return `<div class="doc-item" onclick="openDocDetail('${d.id}')">
-      <div class="doc-icon">${d.type==='warranty'?'🛡':d.type==='certificate'?'📜':d.type==='manual'?'📖':'📄'}</div>
+
+  const warranties = state.documents.filter(d => d.type === 'warranty');
+  const others = state.documents.filter(d => d.type !== 'warranty');
+
+  const mkDoc = d => {
+    const equip = d.equip_id ? (typeof equipName === 'function' ? equipName(d.equip_id) : d.equip_id) : '';
+    const expired = d.expiry_date && new Date(d.expiry_date) < now;
+    
+    return `
+    <div class="doc-item" onclick="openDocDetail('${d.id}')">
+      <div class="doc-icon">${d.type === 'warranty' ? '🛡' : d.type === 'certificate' ? '📜' : d.type === 'manual' ? '📖' : '📄'}</div>
       <div class="doc-info">
         <div class="doc-name">${d.name}</div>
-        <div class="doc-meta">${equip?equip+' · ':''}${d.expiry_date?'Expires: '+fmtDate(d.expiry_date):'No expiry'}</div>
+        <div class="doc-meta">${equip ? equip + ' · ' : ''}${d.expiry_date ? 'Expires: ' + fmtDate(d.expiry_date) : 'No expiry'}</div>
       </div>
-      ${expired?'<span class="badge bd">Expired</span>':d.expiry_date&&new Date(d.expiry_date)<=soon?'<span class="badge bw">Expiring</span>':''}
-      <button class="btn btn-danger" onclick="event.stopPropagation();deleteDoc('${d.id}')">Del</button>
+      ${expired ? '<span class="badge bd">Expired</span>' : d.expiry_date && new Date(d.expiry_date) <= soon ? '<span class="badge bw">Expiring</span>' : ''}
+      
+      <!-- ACTION BUTTONS -->
+      <div style="display:flex; gap:4px">
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openEditDocModal('${d.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteDoc('${d.id}')">Del</button>
+      </div>
     </div>`;
   };
-  document.getElementById('warranty-list').innerHTML=warranties.map(mkDoc).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No warranties added</div>';
-  document.getElementById('doc-list').innerHTML=others.map(mkDoc).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
+
+  document.getElementById('warranty-list').innerHTML = warranties.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No warranties added</div>';
+  document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id){ if(!confirm('Delete this document?'))return; state.documents=state.documents.filter(d=>d.id!==id); await persist('documents','delete',{id}); renderDocuments(); }
 
+function openEditDocModal(docId = null) {
+  _currentDocEditId = docId;
+  
+  // 1. Fill the "Linked Equipment" dropdown
+  const equipSelect = document.getElementById('d-equip');
+  if (equipSelect) {
+      equipSelect.innerHTML = '<option value="">— None —</option>' + 
+        state.equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+  }
+
+  if (docId) {
+    // EDIT MODE: Find doc and fill modal
+    const doc = state.documents.find(d => d.id === docId);
+    if (!doc) return;
+    
+    document.getElementById('d-name').value = doc.name;
+    document.getElementById('d-type').value = doc.type;
+    document.getElementById('d-equip').value = doc.equip_id || '';
+    document.getElementById('d-expiry').value = doc.expiry_date || '';
+    document.getElementById('d-notes').value = doc.notes || '';
+    document.getElementById('doc-file-preview').textContent = "Current file attached";
+  } else {
+    // ADD MODE: Clear modal
+    ['d-name','d-expiry','d-notes'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.value = '';
+    });
+    // If we're inside a machine's detail view, auto-select it!
+    if (window._currentDetailEquipId) {
+        document.getElementById('d-equip').value = window._currentDetailEquipId;
+    }
+  }
+
+  openModal('doc-modal');
+}
 // ============================================================
 // ANALYTICS
 // ============================================================
@@ -2425,23 +2473,51 @@ async function saveSupplier(){
   ['sup-name','sup-contact','sup-email','sup-phone','sup-website','sup-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
-async function saveDoc(){
-  const name=document.getElementById('d-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const record={
-    id:uid(), name,
+async function saveDoc() {
+  const name = document.getElementById('d-name').value.trim(); 
+  if (!name) { showToast('Please enter a name'); return; }
+
+  // Use the existing ID if editing, otherwise generate a new one
+  const docId = _currentDocEditId || uid();
+
+  const record = {
+    id: docId, 
+    name,
     type:        document.getElementById('d-type').value,
-    equip_id:    document.getElementById('d-equip').value||null,
-    expiry_date: document.getElementById('d-expiry').value||null,
+    equip_id:    document.getElementById('d-equip').value || null,
+    expiry_date: document.getElementById('d-expiry').value || null,
     notes:       document.getElementById('d-notes').value,
-    file_data:   pendingDocFile?.data||null,
-    file_type:   pendingDocFile?.type||null,
+    file_data:   pendingDocFile?.data || null,
+    file_type:   pendingDocFile?.type || null,
   };
-  state.documents.push(record);
-  await persist('documents','upsert',record);
-  pendingDocFile=null;
-  closeModal('doc-modal'); renderDocuments();
-  ['d-name','d-expiry','d-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('doc-file-preview').textContent='';
+
+  if (_currentDocEditId) {
+    // EDIT: Find and update existing doc in the state array
+    const idx = state.documents.findIndex(d => d.id === _currentDocEditId);
+    if (idx !== -1) {
+        // Keep old file data if a new one wasn't uploaded during this edit
+        if (!record.file_data) {
+            record.file_data = state.documents[idx].file_data;
+            record.file_type = state.documents[idx].file_type;
+        }
+        state.documents[idx] = record;
+    }
+  } else {
+    state.documents.push(record);
+  }
+
+  await persist('documents', 'upsert', record);
+  _currentDocEditId = null;
+  pendingDocFile = null;
+  closeModal('doc-modal'); 
+  renderDocuments(); 
+  if (window._currentDetailEquipId) {
+      renderDocsList(window._currentDetailEquipId); 
+  }
+  ['d-name','d-expiry','d-notes'].forEach(id => { 
+    const el = document.getElementById(id); if(el) el.value = ''; 
+  });
+  document.getElementById('doc-file-preview').textContent = '';
 }
 
 function convertToTask(schedId){
@@ -2457,12 +2533,6 @@ function convertToTask(schedId){
   },50);
   openModal('task-modal');
 }
-  
-
-
-
-
-
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -6002,35 +6072,56 @@ function updateCalEntryTypeButtons(type) {
             ${badge(t.status)}
         </div>`).join('') || '<div style="color:var(--text3); padding:20px">No history recorded</div>';
 } 
-    function renderDocsList(equipId) {
+   function renderDocsList(equipId) {
     const container = document.getElementById('docs-list');
     if(!container) return;
     
     const docs = state.documents.filter(d => d.equip_id === equipId);
 
-    const listHtml = docs.length > 0 
-        ? docs.map(d => `
-            <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid var(--border); background:var(--bg2); margin-bottom:6px; border-radius:var(--radius)">
-                <div class="doc-info" style="flex:1">
-                    <b style="display:block; font-size:14px">${d.name}</b>
-                    <span style="font-size:11px; color:var(--text2)">${d.type}</span>
-                </div>
-                <div class="doc-actions" style="display:flex; gap:8px">
-                    ${d.file_data ? `<button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>` : ''}
-                    <button class="btn btn-secondary btn-sm" onclick="editDocName('${d.id}')">Edit</button>
-                    <button class="btn btn-sm" style="background:#ff4444; color:white; border:none" onclick="deleteDoc('${d.id}')">Delete</button>
-                </div>
-            </div>`).join('')
-        : '<div style="color:var(--text3); padding:40px; text-align:center">No documents found</div>';
-
     container.innerHTML = `
         <div style="margin-bottom:15px; display:flex; justify-content:flex-end">
-            <button class="btn btn-primary btn-sm" onclick="openAddDocModal()">+ Add Document</button>
+            <button class="btn btn-primary btn-sm" onclick="openDocModal()">+ Add Document</button>
         </div>
-        <div class="docs-scroll-area">
-            ${listHtml}
-        </div>
+        ${docs.map(d => `
+            <div class="doc-item" style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border)">
+                <div><b>${d.name}</b><div style="font-size:11px">${d.type}</div></div>
+                <div>
+                    <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
+                    <button class="btn btn-secondary btn-sm" onclick="openDocModal('${d.id}')">Edit</button>
+                </div>
+            </div>`).join('') || 'No documents found'}
     `;
+}
+
+function openDocModal(docId = null) {
+  _currentDocEditId = docId;
+  _tempFileData = null;
+  
+  // 1. Populate the "Linked Equipment" dropdown
+  const equipSelect = document.getElementById('d-equip');
+  equipSelect.innerHTML = '<option value="">— None —</option>' + 
+    state.equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+
+  // 2. Clear form
+  document.getElementById('d-name').value = '';
+  document.getElementById('d-expiry').value = '';
+  document.getElementById('d-notes').value = '';
+  document.getElementById('doc-file-preview').innerText = '';
+
+  if (docId) {
+    // EDIT MODE: Fill data
+    const doc = state.documents.find(d => d.id === docId);
+    document.getElementById('d-name').value = doc.name;
+    document.getElementById('d-type').value = doc.type;
+    document.getElementById('d-equip').value = doc.equip_id;
+    document.getElementById('d-expiry').value = doc.expiry;
+    document.getElementById('d-notes').value = doc.notes;
+  } else if (window._currentDetailEquipId) {
+    // NEW DOC from Equipment Tab: Auto-select current machine
+    document.getElementById('d-equip').value = window._currentDetailEquipId;
+  }
+
+  openModal('doc-modal');
 }
 function deleteDoc(docId) {
     if (!confirm("Are you sure you want to delete this document?")) return;
