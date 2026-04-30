@@ -1870,7 +1870,9 @@ function renderTasks(){
 }
 async function deleteTask(id){
   if(!confirm('Delete this work order?'))return;
-  // THE LOG (Do this BEFORE deleting so we still have the name)
+ const task = state.tasks.find(t=>t.id===id);
+  if(!task) return; 
+ // THE LOG (Do this BEFORE deleting so we still have the name)
   logAuditAction("Deleted WO", `Removed "${task.name}" for ${equipName(task.equipId)}`);
   // Delete linked observation - try obs_id first, then fallback to name matching
   if(task && task.notes && task.notes.startsWith('Auto-created from critical obs')) {
@@ -2126,7 +2128,11 @@ function switchDetailTab(tab, btn){
     if(section) section.style.display = 'none';
   });
 
-  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+ const target = document.getElementById(tab);
+  if(target) target.style.display = 'block';
+ 
+ modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+ 
  if(btn) btn.classList.add('active');
 
 
@@ -2796,7 +2802,7 @@ async function markComplete(taskId) {
         }
       }
     }
-  }
+  
 
   // 2. Set status to Completed
   t.status = 'Completed';
