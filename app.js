@@ -1161,7 +1161,6 @@ function badge(s) {
     'Waiting for Parts': 'b-parts'
   };
   return `<span class="badge ${m[s] || 'bg'}">${s}</span>`;
-}
 function calcHealth(equipId){
   const tasks=state.tasks.filter(t=>t.equipId===equipId);
   const overdue=tasks.filter(t=>t.status==='Overdue').length;
@@ -2734,7 +2733,8 @@ async function persist(table, action, record) {
       showToast('Someone else updated this item first. Loading latest data...');
       await syncStateIfNeeded(true);
       return; 
-   offlineQueue.push({ table, action, record, ts: Date.now() });
+    }
+     offlineQueue.push({ table, action, record, ts: Date.now() });
     saveOfflineQueue();
     setSyncStatus('offline'); showToast('Saved locally — will sync when online');
   }
@@ -3225,7 +3225,6 @@ function previewTemplate(id){
   document.getElementById('detail-title').textContent=tpl.name;
   document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
   openModal('detail-modal');
-}
 function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}renderChecklistTemplates();showToast('Template deleted');}
 function applyTemplate(){
   const tplId=document.getElementById('tpl-selector')?.value;if(!tplId){showToast('Select a template first');return;}
