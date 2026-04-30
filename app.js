@@ -1939,24 +1939,28 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-    if (!confirm("Are you sure you want to delete this document?")) return;
+  if (!confirm("Are you sure?")) return;
 
-    // 1. Update the local state (so the UI updates immediately)
-    state.documents = state.documents.filter(d => d.id !== id);
+  console.log("1. Starting delete for ID:", id);
 
-    // 2. Call persist with an OBJECT containing the id
-    // We pass { id: id } because your persist function looks for record.id
-    try {
-        await persist('documents', 'delete', { id: id });
-    } catch (err) {
-        console.error("Database deletion failed:", err);
-    }
+  // Update local state
+  state.documents = state.documents.filter(d => d.id !== id);
+  renderDocuments();
+  if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-    // 3. Refresh the UI views
-    renderDocuments(); 
-    if (window._currentDetailEquipId) {
-        renderDocsList(window._currentDetailEquipId);
-    }
+  try {
+    console.log("2. Sending request to persist...");
+    
+    // Check if ID is a string or number (Supabase is picky)
+    // If your IDs are purely numbers in the DB, we might need: Number(id)
+    const recordToDelete = { id: id };
+    
+    await persist('documents', 'delete', recordToDelete);
+    
+    console.log("3. Persist function finished execution");
+  } catch (e) {
+    console.error("DELETE ERROR:", e);
+  }
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
