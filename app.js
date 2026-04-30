@@ -6007,19 +6007,22 @@ function updateCalEntryTypeButtons(type) {
     if(!container) return;
     
     const docs = state.documents.filter(d => d.equip_id === equipId);
-// Create the HTML for the list or the empty message
+
     const listHtml = docs.length > 0 
         ? docs.map(d => `
-            <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border); background:var(--bg2); margin-bottom:4px; border-radius:var(--radius)">
-                <div class="doc-info">
-                    <b style="display:block">${d.name}</b>
+            <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid var(--border); background:var(--bg2); margin-bottom:6px; border-radius:var(--radius)">
+                <div class="doc-info" style="flex:1">
+                    <b style="display:block; font-size:14px">${d.name}</b>
                     <span style="font-size:11px; color:var(--text2)">${d.type}</span>
                 </div>
-                ${d.file_data ? `<button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>` : ''}
+                <div class="doc-actions" style="display:flex; gap:8px">
+                    ${d.file_data ? `<button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>` : ''}
+                    <button class="btn btn-secondary btn-sm" onclick="editDocName('${d.id}')">Edit</button>
+                    <button class="btn btn-sm" style="background:#ff4444; color:white; border:none" onclick="deleteDoc('${d.id}')">Delete</button>
+                </div>
             </div>`).join('')
         : '<div style="color:var(--text3); padding:40px; text-align:center">No documents found</div>';
 
-    // Set the container HTML: Header button + the list
     container.innerHTML = `
         <div style="margin-bottom:15px; display:flex; justify-content:flex-end">
             <button class="btn btn-primary btn-sm" onclick="openAddDocModal()">+ Add Document</button>
@@ -6029,41 +6032,41 @@ function updateCalEntryTypeButtons(type) {
         </div>
     `;
 }
+function deleteDoc(docId) {
+    if (!confirm("Are you sure you want to delete this document?")) return;
 
+    state.documents = state.documents.filter(d => d.id !== docId);
+    renderDocsList(window._currentDetailEquipId);
+}
 // Opens a simple file picker
-function openAddDocModal() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,image/*,.doc,.docx';
-    
-    input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
+function openDocDetail(docId) {
+    const doc = state.documents.find(d => d.id === docId);
+    if (!doc || !doc.file_data) return;
 
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const newDoc = {
-                id: 'doc-' + Date.now(),
-                equip_id: window._currentDetailEquipId, // Assumes you track which equip is open
-                name: file.name,
-                type: file.type || 'Unknown',
-                file_data: event.target.result, // Base64 string
-                date_added: new Date().toISOString()
-            };
+    // Create a new window/tab and display the file
+    const newWindow = window.open();
+    newWindow.document.write(`
+        <title>${doc.name}</title>
+        <body style="margin:0; display:flex; align-items:center; justify-content:center; background:#333">
+            <embed src="${doc.file_data}" width="100%" height="100%" type="${doc.type}">
+        </body>
+    `);
+}
+function editDocName(docId) {
+    // Find the document in the state
+    const doc = state.documents.find(d => d.id === docId);
+    if (!doc) return;
 
-            // Add to your app's state
-            state.documents.push(newDoc);
-            
-            // Re-render the list immediately
-            renderDocsList(window._currentDetailEquipId);
-            
-            // Optional: Save to LocalStorage if you use it
-            // saveState(); 
-        };
-        reader.readAsDataURL(file);
-    };
+    // Ask user for new name
+    const newName = prompt("Enter new document name:", doc.name);
     
-    input.click();
+    // If user didn't cancel and name isn't empty
+    if (newName && newName.trim() !== "") {
+        doc.name = newName.trim();
+        
+        // Refresh the list
+        renderDocsList(window._currentDetailEquipId); 
+    }
 }
 async function getAdaptivePrediction(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
