@@ -744,7 +744,7 @@ async function doLogin() {
       await window._mpdb.from('profiles').update(updateData).eq('username', username);
       btn.textContent='Sign In'; btn.disabled=false; return;
     }
-
+  
     // Success — reset attempts
     await window._mpdb.from('profiles').update({ login_attempts: 0, locked_until: null }).eq('username', username);
 
@@ -914,82 +914,154 @@ let realtimeSyncDebounceTimer = null;
 const AUTO_SYNC_MS = 30000;
 
 async function loadState() {
-  if (isLoadingState) return;
-  isLoadingState = true; 
- setSyncStatus('syncing');
-  try {
-    // 1. Fetch all 10 main tables (Matches the order in state)
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
-      window._mpdb.from('equipment').select('*'),
-      window._mpdb.from('tasks').select('*'),
-      window._mpdb.from('schedules').select('*'),
-      window._mpdb.from('parts').select('*'),
-      window._mpdb.from('suppliers').select('*'),
-      window._mpdb.from('documents').select('*'),
-      window._mpdb.from('part_usage').select('*'),
-      window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('shop_tools').select('*'),
-      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
-    ]);
+    if (isLoadingState) return;
+    isLoadingState = true;
+    setSyncStatus('syncing');
 
-    state.equipment       = eq.data||[];
-    state.tasks           = tk.data||[];
-    state.schedules       = sc.data||[];
-    state.parts           = pt.data||[];
-    state.suppliers       = sup.data||[];
-    state.documents       = docs.data||[];
-    state.partUsage       = pu.data||[];
-    state.recurrenceRules = rr.data||[];
-    state.tools           = tl.data||[];
-    state.wishlist        = wl.data||[];
-    
-    // 2. Load Profiles (Added 'show_sensitive_metrics' to the selection)
-    const { data: profiles } = await window._mpdb.from('profiles')
-        .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
-        .eq('status', 'approved');
-    state.users_list_cache = profiles || [];
+    try {
+        // 1. Fetch all 10 main tables
+        const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
+            window._mpdb.from('equipment').select('*'),
+            window._mpdb.from('tasks').select('*'),
+            window._mpdb.from('schedules').select('*'),
+            window._mpdb.from('parts').select('*'),
+            window._mpdb.from('suppliers').select('*'),
+            window._mpdb.from('documents').select('*'),
+            window._mpdb.from('part_usage').select('*'),
+            window._mpdb.from('recurrence_rules').select('*'),
+            window._mpdb.from('shop_tools').select('*'),
+            window._mpdb.from('tool_requests').select('*').order('created_at', { ascending: false })
+        ]);
 
-    // --- DASHBOARD PRIVACY SYNC ---
-    // Find the current user in the profile list to get their preference
-    const myProfile = state.users_list_cache.find(p => p.username === currentUser.username);
-    if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
-        currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
-    }
-    // Apply the filter immediately so the UI knows what to hide
-    if (typeof applyPrivacyFilters === 'function') {
+        state.equipment = eq.data || [];
+        state.tasks = tk.data || [];
+        state.schedules = sc.data || [];
+        state.parts = pt.data || [];
+        state.suppliers = sup.data || [];
+        state.documents = docs.data || [];
+        state.partUsage = pu.data || [];
+        state.recurrenceRules = rr.data || [];
+        state.tools = tl.data || [];
+        state.wishlist = wl.data || [];
+
+        // 2. Load Profiles
+        const { data: profiles } = await window._mpdb.from('profiles')
+            .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
+            .eq('status', 'approved');
         
+        state.users_list_cache = profiles || [];
+
+        // --- DASHBOARD PRIVACY SYNC ---
+        const myProfile = state.users_list_cache.find(p => p.username === currentUser?.username);
+        if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
+            currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
+        }
+
+        // Apply the filter immediately
+        if (typeof applyPrivacyFilters === 'function') {
+            applyPrivacyFilters(); // Added call here
+        }
+
+        // 3. Checklist Templates
+        const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
+        if (templates && templates.length > 0) {
+            state.checklistTemplates = templates;
+        }
+
+        // 4. Calculate metrics
+        state.monthlyCosts = computeMonthlyCosts();
+        lastStateSyncAt = Date.now();
+        setSyncStatus('online');
+
+    } catch (e) {
+        console.error('Load error:', e);
+        setSyncStatus('offline');
+    } finally {
+        isLoadingState = false;
     }
-    // ------------------------------
-const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
-if(templates && templates.length > 0) {
-    state.checklistTemplates = templates;
-}
-    // 3. Calculate metrics
-    state.monthlyCosts = computeMonthlyCosts();
-    lastStateSyncAt = Date.now(); 
-   setSyncStatus('online');
 
-  } catch(e) { 
-    console.error('Load error:', e); 
-    setSyncStatus('offline'); 
-  } finally {
-    isLoadingState = false;
-  }
-
-  // 4. Load observations (kept separate for better performance)
-  try {
-    const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
-    state.observations = obs || [];
-  } catch(e) {}
+    // 5. Load observations (kept separate for better performance)
+    try {
+        const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at', { ascending: false });
+        state.observations = obs || [];
+    } catch (e) {
+        console.warn("Observations failed to load", e);
+    }
 }
-async function syncStateIfNeeded(force = false) {
-  if (!currentUser || !window._mpdb || !navigator.onLine) return;
-  if (!force && (Date.now() - lastStateSyncAt) < AUTO_SYNC_MS) return;
-  await loadState();
-  applyUserGroupFilter();
-  if (typeof renderChat === 'function' && document.getElementById('panel-chat')?.classList.contains('active')) {
-    renderChat();
-  }
+}}async function loadState() {
+    if (isLoadingState) return;
+    isLoadingState = true;
+    setSyncStatus('syncing');
+
+    try {
+        // 1. Fetch all 10 main tables
+        const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
+            window._mpdb.from('equipment').select('*'),
+            window._mpdb.from('tasks').select('*'),
+            window._mpdb.from('schedules').select('*'),
+            window._mpdb.from('parts').select('*'),
+            window._mpdb.from('suppliers').select('*'),
+            window._mpdb.from('documents').select('*'),
+            window._mpdb.from('part_usage').select('*'),
+            window._mpdb.from('recurrence_rules').select('*'),
+            window._mpdb.from('shop_tools').select('*'),
+            window._mpdb.from('tool_requests').select('*').order('created_at', { ascending: false })
+        ]);
+
+        state.equipment = eq.data || [];
+        state.tasks = tk.data || [];
+        state.schedules = sc.data || [];
+        state.parts = pt.data || [];
+        state.suppliers = sup.data || [];
+        state.documents = docs.data || [];
+        state.partUsage = pu.data || [];
+        state.recurrenceRules = rr.data || [];
+        state.tools = tl.data || [];
+        state.wishlist = wl.data || [];
+    
+        // 2. Load Profiles
+        const { data: profiles } = await window._mpdb.from('profiles')
+            .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
+            .eq('status', 'approved');
+        
+        state.users_list_cache = profiles || [];
+
+        // --- DASHBOARD PRIVACY SYNC ---
+        const myProfile = state.users_list_cache.find(p => p.username === currentUser?.username);
+        if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
+            currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
+        }
+
+        // Apply the filter immediately
+        if (typeof applyPrivacyFilters === 'function') {
+            applyPrivacyFilters(); // Added call here
+        }
+
+        // 3. Checklist Templates
+        const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
+        if (templates && templates.length > 0) {
+            state.checklistTemplates = templates;
+        }
+
+        // 4. Calculate metrics
+        state.monthlyCosts = computeMonthlyCosts();
+        lastStateSyncAt = Date.now();
+        setSyncStatus('online');
+
+    } catch (e) {
+        console.error('Load error:', e);
+        setSyncStatus('offline');
+    } finally {
+        isLoadingState = false;
+    }
+
+    // 5. Load observations (kept separate for better performance)
+    try {
+        const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at', { ascending: false });
+        state.observations = obs || [];
+    } catch (e) {
+        console.warn("Observations failed to load", e);
+    }
 }
 
 function startAutoSync() {
@@ -2841,7 +2913,7 @@ if (equip && meterReadingToLog !== null) {
     console.error("Completion error:", e);
     showToast("Failed to save. Check connection.");
   }
-
+}
 // OVERDUE EMAIL (weekly, one email per batch)
 // ============================================================
 const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
@@ -3232,7 +3304,7 @@ function previewTemplate(id){
   const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;
   document.getElementById('detail-title').textContent=tpl.name;
   document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
-  openModal('detail-modal');
+  openModal('detail-modal'); }
 function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}renderChecklistTemplates();showToast('Template deleted');}
 function applyTemplate(){
   const tplId=document.getElementById('tpl-selector')?.value;if(!tplId){showToast('Select a template first');return;}
@@ -5603,24 +5675,12 @@ async function showPanel(id) {
     if (id === 'chat') {
         requestAnimationFrame(() => { if (typeof applyDesktopChatHeight === 'function') applyDesktopChatHeight(); });
     }
-    
+
     if (id !== 'calendar') {
         const calPanel = document.getElementById('panel-calendar');
         if (calPanel) calPanel.style.overflowY = '';
-    }
-} // <--- This closing bracket was likely missing or misplaced
-
-// Function to send a log to the database
-async function logAuditAction(action, details) {
-  try {
-    await window._mpdb.from('audit_logs').insert({
-      user_name: currentUser?.name || 'System',
-      action: action,
-      details: details,
-      created_at: new Date().toISOString()
-    });
-  } catch(e) { console.warn("Logging failed"); }
-}
+       }
+} 
 
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
@@ -6211,7 +6271,7 @@ async function saveTpl() {
   try {
     // Save to Supabase
     await safeUpsert('checklist_templates', record);
-
+await safeUpsert('shop_tools', tool);
     // Update local memory
     const idx = state.checklistTemplates.findIndex(t => t.id === record.id);
     if(idx > -1) state.checklistTemplates[idx] = record;
