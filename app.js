@@ -1941,25 +1941,29 @@ function renderDocuments() {
 async function deleteDoc(id) {
   if (!confirm("Are you sure?")) return;
 
-  console.log("1. Starting delete for ID:", id);
-
-  // Update local state
+  // 1. UI Update
   state.documents = state.documents.filter(d => d.id !== id);
   renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
+  // 2. Direct DB Call
   try {
-    console.log("2. Sending request to persist...");
-    
-    // Check if ID is a string or number (Supabase is picky)
-    // If your IDs are purely numbers in the DB, we might need: Number(id)
-    const recordToDelete = { id: id };
-    
-    await persist('documents', 'delete', recordToDelete);
-    
-    console.log("3. Persist function finished execution");
-  } catch (e) {
-    console.error("DELETE ERROR:", e);
+    const { error, count } = await window._mpdb
+      .from('documents')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    if (count === 0) {
+      console.error("No record found in DB to delete. Check RLS policies.");
+      showToast("Delete failed on server (RLS?)");
+    } else {
+      showToast("Deleted successfully ✓");
+    }
+  } catch (err) {
+    console.error("Delete failed:", err);
+    showToast("Error: " + err.message);
   }
 }
 function openEditDocModal(docId = null) {
