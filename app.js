@@ -2125,13 +2125,6 @@ function switchDetailTab(tab, btn){
     if(section) section.style.display = 'none';
   });
 
-   // Support both task-detail tabs (dt-*) and equipment-detail tabs (eq-*)
-  const allTabIds = ['dt-info','dt-checklist','dt-parts','dt-comments','dt-photos','eq-overview','eq-zerks','eq-history','eq-obs','eq-invoices','eq-docs'];
-  allTabIds.forEach(id => {
-    const section = document.getElementById(id);
-    if(section) section.style.display = 'none';
-  });
-
   modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
  if(btn) btn.classList.add('active');
 
