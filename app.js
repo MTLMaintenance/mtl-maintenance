@@ -1939,31 +1939,49 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  if (!confirm("Are you sure?")) return;
+  if (!confirm("Are you sure? This will delete the document from the server permanently.")) return;
 
-  // 1. UI Update
+  // 1. IMMEDIATELY update Local State
   state.documents = state.documents.filter(d => d.id !== id);
+  
+  // 2. IMMEDIATELY update Offline Queue
+  // This prevents the app from "re-saving" the doc later from a pending sync
+  if (window.offlineQueue) {
+    const startLen = offlineQueue.length;
+    offlineQueue = offlineQueue.filter(q => !(q.table === 'documents' && q.record && q.record.id === id));
+    if (offlineQueue.length !== startLen) {
+      console.log("Removed ghost document from offline sync queue");
+      if (typeof saveOfflineQueue === 'function') saveOfflineQueue();
+    }
+  }
+
+  // 3. Update UI
   renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 2. Direct DB Call
+  // 4. DIRECT DATABASE COMMAND
+  console.log("Sending delete command to Supabase for ID:", id);
   try {
     const { error, count } = await window._mpdb
       .from('documents')
-      .delete({ count: 'exact' })
+      .delete({ count: 'exact' }) // This forces Supabase to tell us if it actually did something
       .eq('id', id);
 
-    if (error) throw error;
-
-    if (count === 0) {
-      console.error("No record found in DB to delete. Check RLS policies.");
-      showToast("Delete failed on server (RLS?)");
+    if (error) {
+      console.error("Supabase Error:", error.message);
+      showToast("Server Error: " + error.message);
+      // If server is down, we might want to re-add to queue here, 
+      // but let's focus on fixing the "coming back" issue first.
+    } else if (count === 0) {
+      console.warn("Server responded SUCCESS, but 0 rows were deleted.");
+      console.log("Check your Supabase RLS policies for the 'documents' table.");
+      showToast("Permission Denied (Check RLS)");
     } else {
-      showToast("Deleted successfully ✓");
+      console.log("Successfully deleted from database. Count:", count);
+      showToast("Deleted from server ✓");
     }
   } catch (err) {
-    console.error("Delete failed:", err);
-    showToast("Error: " + err.message);
+    console.error("Critical Delete Failure:", err);
   }
 }
 function openEditDocModal(docId = null) {
