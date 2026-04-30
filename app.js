@@ -912,6 +912,7 @@ let syncListenersBound = false;
 let realtimeSyncChannel = null;
 let realtimeSyncDebounceTimer = null;
 const AUTO_SYNC_MS = 30000;
+
 async function loadState() {
   if (isLoadingState) return;
   isLoadingState = true; 
@@ -1161,7 +1162,8 @@ function badge(s) {
     'Waiting for Parts': 'b-parts'
   };
   return `<span class="badge ${m[s] || 'bg'}">${s}</span>`;
-function calcHealth(equipId){
+}
+ function calcHealth(equipId){
   const tasks=state.tasks.filter(t=>t.equipId===equipId);
   const overdue=tasks.filter(t=>t.status==='Overdue').length;
   const open=tasks.filter(t=>t.status==='Open').length;
