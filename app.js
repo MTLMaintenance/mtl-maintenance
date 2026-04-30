@@ -6005,14 +6005,66 @@ function updateCalEntryTypeButtons(type) {
     function renderDocsList(equipId) {
     const container = document.getElementById('docs-list');
     if(!container) return;
+    
     const docs = state.documents.filter(d => d.equip_id === equipId);
-    container.innerHTML = docs.map(d => `
-        <div class="doc-item">
-            <div class="doc-info"><b>${d.name}</b><div style="font-size:11px">${d.type}</div></div>
-            ${d.file_data ? `<button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>` : ''}
-        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No documents found</div>';
+// Create the HTML for the list or the empty message
+    const listHtml = docs.length > 0 
+        ? docs.map(d => `
+            <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border); background:var(--bg2); margin-bottom:4px; border-radius:var(--radius)">
+                <div class="doc-info">
+                    <b style="display:block">${d.name}</b>
+                    <span style="font-size:11px; color:var(--text2)">${d.type}</span>
+                </div>
+                ${d.file_data ? `<button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>` : ''}
+            </div>`).join('')
+        : '<div style="color:var(--text3); padding:40px; text-align:center">No documents found</div>';
 
-    }
+    // Set the container HTML: Header button + the list
+    container.innerHTML = `
+        <div style="margin-bottom:15px; display:flex; justify-content:flex-end">
+            <button class="btn btn-primary btn-sm" onclick="openAddDocModal()">+ Add Document</button>
+        </div>
+        <div class="docs-scroll-area">
+            ${listHtml}
+        </div>
+    `;
+}
+
+// Opens a simple file picker
+function openAddDocModal() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,image/*,.doc,.docx';
+    
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const newDoc = {
+                id: 'doc-' + Date.now(),
+                equip_id: window._currentDetailEquipId, // Assumes you track which equip is open
+                name: file.name,
+                type: file.type || 'Unknown',
+                file_data: event.target.result, // Base64 string
+                date_added: new Date().toISOString()
+            };
+
+            // Add to your app's state
+            state.documents.push(newDoc);
+            
+            // Re-render the list immediately
+            renderDocsList(window._currentDetailEquipId);
+            
+            // Optional: Save to LocalStorage if you use it
+            // saveState(); 
+        };
+        reader.readAsDataURL(file);
+    };
+    
+    input.click();
+}
 async function getAdaptivePrediction(equipId) {
     const e = state.equipment.find(x => x.id === equipId);
     if (!e || e.status === 'Down') return { status: 'PAUSED' };
