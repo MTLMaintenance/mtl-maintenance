@@ -29,21 +29,21 @@ async function refreshAllDropdowns() {
         ]);
 
         // 2. Map the data into HTML strings
-        const supHTML = '<option value="">— Select Supplier —</option>' + 
-            supRes.data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-            
-        const equipHTML = '<option value="">— Select Equipment —</option>' + 
-            equipRes.data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-
-        const userHTML = '<option value="">— Select User —</option>' + 
-            userRes.data.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
-
+       const suppliers = supRes.data || [];
+        const equipment = equipRes.data || [];
+        const users = userRes.data || [];
+ suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+      equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+users.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
         // 3. Find EVERY dropdown in the app and fill them NOW
         // (Use the IDs from your 8,000 lines here)
         const selectors = {
             'p-supplier-select': supHTML,
-            'task-equip-select': equipHTML,
-            'task-assign-select': userHTML,
+            't-equip': equipHTML,
+            'ce-equip': equipHTML,
+            'task-equip-filter': '<option value="all">All Equipment</option>'+equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join(''),
+            't-assign': '<option value="">— Unassigned —</option>'+users.map(u => `<option value="${u.full_name || u.username}">${u.full_name || u.username}</option>`).join(''),
+            'ce-assign': '<option value="">— Unassigned —</option>'+users.map(u => `<option value="${u.full_name || u.username}">${u.full_name || u.username}</option>`).join(''),
             'role-user-select': userHTML
         };
 
@@ -86,81 +86,6 @@ async function populateSupplierDropdown() {
         console.error("❌ Supplier Load Error:", e.message);
     }
 }
-async function deleteGeneralItem(id, tableType) {
-    console.log("🗑️ Delete attempt initiated...");
-    console.log("ID:", id, "Type:", tableType);
-
-    // 1. Table Map - Make sure these match your Supabase table names!
-    const tableMap = {
-        'tasks': 'tasks',          // Is your work order table named 'tasks'?
-        'schedules': 'schedules',  // Is your calendar table named 'schedules'?
-        'absences': 'staff_absences'
-    };
-    
-    const tableName = tableMap[tableType];
-    
-    if (!tableName) {
-        console.error("❌ Error: Could not find a table for type:", tableType);
-        return;
-    }
-
-    // 2. Confirmation
-    if (!confirm("Are you sure you want to permanently delete this item?")) {
-        console.log("Delete cancelled by user.");
-        return;
-    }
-
-    try {
-        // 3. Talk to Supabase
-        const { error } = await window._mpdb
-            .from(tableName)
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error("❌ Supabase Error:", error.message);
-            alert("Delete failed: " + error.message);
-            return;
-        }
-
-        console.log("✅ Successfully deleted from Database.");
-
-        // 4. Update local memory so it disappears from the screen instantly
-        // This removes the item from the lists your app is currently looking at
-        if (tableType === 'tasks' && typeof state !== 'undefined' && state.tasks) {
-            state.tasks = state.tasks.filter(t => t.id !== id);
-        }
-        if (tableType === 'schedules' && typeof state !== 'undefined' && state.schedules) {
-            state.schedules = state.schedules.filter(s => s.id !== id);
-        }
-        if (tableType === 'absences' && typeof staffAbsences !== 'undefined') {
-            staffAbsences = staffAbsences.filter(a => a.id !== id);
-        }
-
-        // 5. Refresh UI
-        alert("Item deleted successfully.");
-        closeModal('cal-action-modal'); // Close the popup
-        
-        if (typeof renderCalendar === 'function') {
-            renderCalendar(); // Redraw the calendar background
-        }
-
-    } catch (e) {
-        console.error("❌ Critical JS Error during delete:", e);
-        alert("An unexpected error occurred. Check the console.");
-    }
-  try {
-        const { data: suppliers } = await window._mpdb
-            .from('suppliers').select('id, name').order('name');
-
-        const dropdown = document.getElementById('p-supplier-select');
-        if (dropdown && suppliers) {
-            let html = '<option value="">— Select Supplier —</option>';
-            suppliers.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
-            dropdown.innerHTML = html;
-        }
-    } catch (e) { console.error(e); }
-}
 
 async function deleteGeneralItem(id, tableType) {
     const tableMap = {
@@ -190,8 +115,6 @@ async function deleteGeneralItem(id, tableType) {
 
         console.log("✅ Database delete successful. Now clearing local memory...");
 
-        // --- CRITICAL: CLEAR LOCAL MEMORY ---
-        // We search through 'state' and 'staffAbsences' to remove the item manually
         if (typeof state !== 'undefined') {
             if (state.tasks) state.tasks = state.tasks.filter(item => item.id !== id);
             if (state.schedules) state.schedules = state.schedules.filter(item => item.id !== id);
@@ -236,13 +159,14 @@ async function promptResetPin(userId) {
 async function showPinLogin() {
     try {
         console.log('Switching to PIN Login UI...');
-        var oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
-        if (oldLogin) oldLogin.style.display = 'none';
+       const loginView = document.getElementById('login-view');
+        const namesStage = document.getElementById('login-stage-names');
+        const pinStage = document.getElementById('login-stage-pin');
+        if (loginView) loginView.style.display = 'block';
+        if (namesStage) namesStage.style.display = 'block';
+        if (pinStage) pinStage.style.display = 'none';
 
-        var pinUI = document.getElementById('pin-login-container');
-        if (pinUI) pinUI.style.display = 'block';
-
-        var userResult = await window._mpdb
+        const userResult = await window._mpdb
             .from('profiles')
             .select('id, username, full_name')
             .eq('status', 'approved')
@@ -253,14 +177,16 @@ async function showPinLogin() {
             return;
         }
 
-        var list = document.getElementById('user-name-list');
+        const list = document.getElementById('user-name-list');
         if (list && userResult.data) {
             list.innerHTML = '';
             userResult.data.forEach(function(user) {
-                var btn = document.createElement('button');
-                btn.className = 'user-select-btn';
+               const btn = document.createElement('button');
+                btn.className = 'pin-btn';
                 btn.textContent = user.full_name || user.username;
-                btn.onclick = function() { selectUserForLogin(user); };
+             btn.style.height = 'auto';
+                btn.style.padding = '10px 8px';   
+             btn.onclick = function() { selectUserForLogin(user); };
                 list.appendChild(btn);
             });
         }
