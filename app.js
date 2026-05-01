@@ -1939,49 +1939,54 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  if (!confirm("Are you sure? This will delete the document from the server permanently.")) return;
+  if (!confirm("Are you sure you want to permanently delete this document?")) return;
 
-  // 1. IMMEDIATELY update Local State
+  console.log("Nuclear Delete initiated for ID:", id);
+
+  // 1. Remove from Local State immediately
   state.documents = state.documents.filter(d => d.id !== id);
-  
-  // 2. IMMEDIATELY update Offline Queue
-  // This prevents the app from "re-saving" the doc later from a pending sync
-  if (window.offlineQueue) {
-    const startLen = offlineQueue.length;
-    offlineQueue = offlineQueue.filter(q => !(q.table === 'documents' && q.record && q.record.id === id));
-    if (offlineQueue.length !== startLen) {
-      console.log("Removed ghost document from offline sync queue");
+
+  // 2. CRITICAL: Wipe this ID from the Offline Queue
+  // This prevents an old "Save" command from bringing the doc back to life
+  if (window.offlineQueue && Array.isArray(window.offlineQueue)) {
+    const initialLen = offlineQueue.length;
+    // Remove ANY action (upsert or delete) related to this specific document ID
+    offlineQueue = offlineQueue.filter(item => {
+      const isMatch = (item.table === 'documents' && item.record && item.record.id === id);
+      return !isMatch;
+    });
+    
+    if (offlineQueue.length !== initialLen) {
+      console.log(`Removed ${initialLen - offlineQueue.length} pending actions for this doc from queue.`);
       if (typeof saveOfflineQueue === 'function') saveOfflineQueue();
     }
   }
 
-  // 3. Update UI
+  // 3. Update the UI
   renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 4. DIRECT DATABASE COMMAND
-  console.log("Sending delete command to Supabase for ID:", id);
+  // 4. Force a Direct Database Delete (Bypassing the queue logic)
   try {
     const { error, count } = await window._mpdb
       .from('documents')
-      .delete({ count: 'exact' }) // This forces Supabase to tell us if it actually did something
+      .delete({ count: 'exact' })
       .eq('id', id);
 
-    if (error) {
-      console.error("Supabase Error:", error.message);
-      showToast("Server Error: " + error.message);
-      // If server is down, we might want to re-add to queue here, 
-      // but let's focus on fixing the "coming back" issue first.
-    } else if (count === 0) {
-      console.warn("Server responded SUCCESS, but 0 rows were deleted.");
-      console.log("Check your Supabase RLS policies for the 'documents' table.");
-      showToast("Permission Denied (Check RLS)");
+    if (error) throw error;
+
+    if (count > 0) {
+        showToast("Deleted from server ✓");
     } else {
-      console.log("Successfully deleted from database. Count:", count);
-      showToast("Deleted from server ✓");
+        console.warn("Server returned success but 0 rows deleted. (Doc might not have been synced yet)");
+        showToast("Removed from local sync");
     }
-  } catch (err) {
-    console.error("Critical Delete Failure:", err);
+  } catch (e) {
+    console.error("Server delete failed. Putting delete request in queue.", e);
+    // If the server is truly unreachable, put a clean delete request in the queue
+    if (typeof persist === 'function') {
+        persist('documents', 'delete', { id: id });
+    }
   }
 }
 function openEditDocModal(docId = null) {
