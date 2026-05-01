@@ -1939,41 +1939,48 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  // 1. Force the function to talk even if it's being shy
-  console.log("Attempting to delete ID:", id);
-  if (!confirm("Permanently delete this document from the server?")) return;
+  if (!confirm("Are you sure?")) return;
 
-  // 2. Local State Update
+  // 1. WIPE FROM MEMORY (Variable)
   state.documents = state.documents.filter(d => d.id !== id);
-  renderDocuments();
-  if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 3. WIPE the Offline Queue 
-  // This is the most important part to stop them from coming back!
+  // 2. WIPE FROM LOCALSTORAGE (Browser Hard Drive)
+  // We need to update the saved state so it doesn't reload on refresh
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      try {
+        let val = JSON.parse(localStorage.getItem(key));
+        if (val && val.documents) {
+          val.documents = val.documents.filter(d => d.id !== id);
+          localStorage.setItem(key, JSON.stringify(val));
+          console.log("Cleaned LocalStorage key:", key);
+        }
+      } catch(e) {} // Not JSON, ignore
+    }
+  }
+
+  // 3. WIPE FROM OFFLINE QUEUE
   if (window.offlineQueue) {
-    offlineQueue = offlineQueue.filter(item => {
-      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
-      return !(item.table === 'documents' && recordId === id);
+    offlineQueue = offlineQueue.filter(q => {
+      const qId = (typeof q.record === 'object') ? q.record.id : q.record;
+      return qId !== id;
     });
     saveOfflineQueue();
   }
 
-  // 4. Direct Database Call
-  try {
-    const { error, count } = await window._mpdb
-      .from('documents')
-      .delete({ count: 'exact' })
-      .eq('id', id);
+  // 4. UPDATE UI
+  renderDocuments();
+  if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-    if (error) {
-      alert("Database Error: " + error.message);
-    } else if (count === 0) {
-      alert("Server found 0 rows to delete. Check if the ID matches Supabase exactly.");
-    } else {
-      showToast("Deleted from server ✓");
-    }
+  // 5. WIPE FROM DATABASE
+  try {
+    const { error } = await window._mpdb.from('documents').delete().eq('id', id);
+    if (error) throw error;
+    showToast("Deleted from server ✓");
   } catch (e) {
-    console.error("Delete failed:", e);
+    console.error("Server delete failed, adding to queue", e);
+    // If it fails, we put it in the queue to try again later
+    persist('documents', 'delete', id);
   }
 }
 function openEditDocModal(docId = null) {
