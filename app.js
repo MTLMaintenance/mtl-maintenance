@@ -1939,26 +1939,30 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  if (!confirm("Are you sure?")) return;
+  if (!confirm("Are you sure you want to permanently delete this?")) return;
 
-  // 1. Remove from local memory
+  // 1. Remove from local memory immediately
   state.documents = state.documents.filter(d => d.id !== id);
 
-  // 2. CLEAN THE OFFLINE QUEUE
-  // If there's an 'upsert' for this ID waiting, remove it. 
-  // We don't want to save it and then delete it; we just want it gone.
-  offlineQueue = offlineQueue.filter(item => 
-    !(item.table === 'documents' && (item.record?.id === id || item.record === id))
-  );
-  saveOfflineQueue();
+  // 2. WIPE THE QUEUE for this ID
+  // This removes any "upsert" instructions currently waiting to be sent.
+  // This is what stops the "coming back" bug.
+  if (window.offlineQueue) {
+    offlineQueue = offlineQueue.filter(item => {
+      const itemId = (typeof item.record === 'object') ? item.record.id : item.record;
+      // If it's a doc action and the ID matches, remove it from the queue
+      return !(item.table === 'documents' && itemId === id);
+    });
+    saveOfflineQueue();
+  }
 
-  // 3. UI Update
-  renderDocuments();
+  // 3. Update the UI
+  renderDocuments(); 
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 4. Call Persist with an OBJECT
-  // Passing {id} ensures item.record.id works in your sync function
-  await persist('documents', 'delete', { id: id });
+  // 4. Send the delete request
+  // Passing just 'id' is fine now because our new sync function handles strings
+  await persist('documents', 'delete', id);
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
@@ -2693,9 +2697,10 @@ function saveOfflineQueue() {
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
 
-// Override persist to queue when offline
-const _origPersist = persist;
 async function persist(table, action, record) {
+  // Determine the actual ID string safely
+  const recordId = (typeof record === 'object' && record !== null) ? record.id : record;
+
   if(!navigator.onLine) {
     offlineQueue.push({ table, action, record, ts: Date.now() });
     saveOfflineQueue();
@@ -2703,10 +2708,21 @@ async function persist(table, action, record) {
     return;
   }
   try {
-    if(action==='upsert') await window._mpdb.from(table).upsert(record);
-    if(action==='delete') await window._mpdb.from(table).delete().eq('id', record.id);
+    if(action==='upsert') {
+        await window._mpdb.from(table).upsert(record);
+    }
+    if(action==='delete') {
+        // Use recordId here instead of record.id
+        const { error, count } = await window._mpdb
+          .from(table)
+          .delete({ count: 'exact' })
+          .eq('id', recordId);
+        
+        console.log(`Deleted ${count} rows from ${table}`);
+    }
     setSyncStatus('online'); showToast('Saved & synced ✓');
   } catch(e) {
+    console.error("Persist error:", e);
     offlineQueue.push({ table, action, record, ts: Date.now() });
     saveOfflineQueue();
     setSyncStatus('offline'); showToast('Saved locally — will sync when online');
@@ -2714,27 +2730,37 @@ async function persist(table, action, record) {
 }
 
 async function syncOfflineQueue() {
-  if(!offlineQueue.length) return;
+  if (!offlineQueue || !offlineQueue.length) {
+    const banner = document.getElementById('offline-queue-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
   
+  showToast(`Syncing ${offlineQueue.length} changes...`);
   const failed = [];
-  for(const item of offlineQueue) {
+
+  for (const item of offlineQueue) {
     try {
-      // Determine the ID correctly whether item.record is an object or a string
+      // Safety: Skip if item or record is missing
+      if (!item || !item.record) continue;
+
+      // Extract ID correctly
       const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
 
-      if(item.action === 'upsert') {
+      if (item.action === 'upsert') {
         await window._mpdb.from(item.table).upsert(item.record);
+        console.log(`Sync Upsert for ${item.table}: ${recordId} SUCCESS`);
       } 
-      else if(item.action === 'delete') {
-        // Use the recordId we just calculated
+      else if (item.action === 'delete') {
         const { error, count } = await window._mpdb
           .from(item.table)
           .delete({ count: 'exact' })
           .eq('id', recordId);
         
-        console.log(`Sync Delete for ${recordId}: ${count} rows removed`);
+        if (error) throw error;
+        console.log(`Sync Delete for ${item.table}: ${recordId} - ${count} rows removed`);
       }
-    } catch(e) { 
+    } catch (e) { 
       console.error("Sync failed for item:", item, e);
       failed.push(item); 
     }
@@ -2743,14 +2769,15 @@ async function syncOfflineQueue() {
   offlineQueue = failed;
   saveOfflineQueue();
   
-  if(!failed.length) {
+  if (failed.length === 0) {
     setSyncStatus('online');
-    // Hide banner if you have one
+    showToast('All changes synced ✓');
     const banner = document.getElementById('offline-queue-banner');
-    if(banner) banner.style.display = 'none';
+    if (banner) banner.style.display = 'none';
+  } else {
+    showToast(`${failed.length} items failed to sync`);
   }
 }
-
 // ============================================================
 // HOURS AUTO-TRACKER
 // ============================================================
