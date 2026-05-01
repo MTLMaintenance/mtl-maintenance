@@ -1939,30 +1939,35 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  if (!confirm("Are you sure you want to permanently delete this?")) return;
+  if (!confirm("Are you sure?")) return;
 
-  // 1. Remove from local memory immediately
+  // Local UI Update
   state.documents = state.documents.filter(d => d.id !== id);
-
-  // 2. WIPE THE QUEUE for this ID
-  // This removes any "upsert" instructions currently waiting to be sent.
-  // This is what stops the "coming back" bug.
-  if (window.offlineQueue) {
-    offlineQueue = offlineQueue.filter(item => {
-      const itemId = (typeof item.record === 'object') ? item.record.id : item.record;
-      // If it's a doc action and the ID matches, remove it from the queue
-      return !(item.table === 'documents' && itemId === id);
-    });
-    saveOfflineQueue();
-  }
-
-  // 3. Update the UI
-  renderDocuments(); 
+  renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 4. Send the delete request
-  // Passing just 'id' is fine now because our new sync function handles strings
-  await persist('documents', 'delete', id);
+  try {
+    // Talk to Supabase
+    const { error, count } = await window._mpdb
+      .from('documents')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+
+    if (error) {
+      // THIS WILL TELL US IF IT IS A PERMISSION ISSUE
+      console.error("Supabase Error:", error.message);
+      alert("Database Error: " + error.message);
+      return;
+    }
+
+    if (count === 0) {
+      alert("The server found the document but refused to delete it. This is usually an RLS Policy issue.");
+    } else {
+      showToast("Deleted from server ✓");
+    }
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
