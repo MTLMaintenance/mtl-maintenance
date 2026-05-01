@@ -1930,7 +1930,7 @@ function renderDocuments() {
       <!-- ACTION BUTTONS -->
       <div style="display:flex; gap:4px">
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openEditDocModal('${d.id}')">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteDoc('${d.id}')">Del</button>
+          <button class="btn btn-danger" onclick="event.stopPropagation(); window.deleteDoc('${d.id}')">Del</button>
       </div>
     </div>`;
   };
@@ -7727,3 +7727,49 @@ window.deleteDoc = deleteDoc;
 window.openEditDocModal = openEditDocModal;
 window.saveDoc = saveDoc;
 window.openDocDetail = openDocDetail;
+// FORCE THE FUNCTION TO BE GLOBAL SO HTML CAN SEE IT
+window.deleteDoc = async function(id) {
+  // 1. CONFIRMATION ALERT (If this doesn't show up, the button is broken)
+  if (!confirm("Are you sure you want to permanently delete this document?")) return;
+
+  console.log("Delete triggered for ID:", id);
+
+  // 2. WIPE FROM LOCAL STATE (MEMORY)
+  state.documents = state.documents.filter(d => d.id !== id);
+
+  // 3. WIPE FROM OFFLINE QUEUE (The "Ghost" Fix)
+  // We remove any pending SAVES for this document so it doesn't re-upload
+  if (window.offlineQueue) {
+    offlineQueue = offlineQueue.filter(item => {
+        const itemId = (typeof item.record === 'object') ? item.record.id : item.record;
+        return !(item.table === 'documents' && itemId === id);
+    });
+    saveOfflineQueue();
+  }
+
+  // 4. UPDATE THE UI IMMEDIATELY
+  renderDocuments();
+  if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
+
+  // 5. DELETE FROM SUPABASE
+  try {
+    // IMPORTANT: We pass an object {id: id} because your 'persist' function 
+    // uses 'record.id' to find the row.
+    const { error, count } = await window._mpdb
+      .from('documents')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+
+    if (error) {
+      console.error("Supabase Error:", error.message);
+      alert("Database error: " + error.message);
+    } else if (count === 0) {
+      console.warn("Deleted locally, but 0 rows removed from server. Check RLS policies.");
+    } else {
+      console.log("Successfully deleted from server. Rows affected:", count);
+      showToast("Deleted from server ✓");
+    }
+  } catch (err) {
+    console.error("Delete execution failed:", err);
+  }
+};
