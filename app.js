@@ -1939,58 +1939,42 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  if (!confirm("Are you sure?")) return;
+  // 1. Force the function to talk even if it's being shy
+  console.log("Attempting to delete ID:", id);
+  if (!confirm("Permanently delete this document from the server?")) return;
 
-  console.log("%c--- DELETE START ---", "color: orange; font-weight: bold;");
-  console.log("ID received from button:", id);
-
-  // 1. Wipe this ID from the offline queue immediately
-  // If we don't do this, an old 'save' command might re-upload the doc
-  if (window.offlineQueue) {
-    const oldLen = offlineQueue.length;
-    offlineQueue = offlineQueue.filter(q => {
-        const qId = (typeof q.record === 'object') ? q.record.id : q.record;
-        return qId !== id;
-    });
-    if (offlineQueue.length !== oldLen) {
-        console.log("Cleaned ghost saves from offline queue");
-        saveOfflineQueue();
-    }
-  }
-
-  // 2. Update local UI
+  // 2. Local State Update
   state.documents = state.documents.filter(d => d.id !== id);
   renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 3. Talk directly to Supabase
+  // 3. WIPE the Offline Queue 
+  // This is the most important part to stop them from coming back!
+  if (window.offlineQueue) {
+    offlineQueue = offlineQueue.filter(item => {
+      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
+      return !(item.table === 'documents' && recordId === id);
+    });
+    saveOfflineQueue();
+  }
+
+  // 4. Direct Database Call
   try {
-    console.log("Sending DELETE to Supabase for ID:", id);
-    
     const { error, count } = await window._mpdb
       .from('documents')
       .delete({ count: 'exact' })
       .eq('id', id);
 
     if (error) {
-      console.error("Supabase Error:", error.message);
       alert("Database Error: " + error.message);
+    } else if (count === 0) {
+      alert("Server found 0 rows to delete. Check if the ID matches Supabase exactly.");
     } else {
-      console.log("Supabase Response - Rows Deleted:", count);
-      
-      if (count === 0) {
-        console.error("%cFAILURE: The server found 0 rows to delete.", "color: red; font-weight: bold;");
-        console.log("This means the ID '" + id + "' does not exist exactly like that in the DB.");
-        alert("Delete failed: ID not found in database.");
-      } else {
-        console.log("%cSUCCESS: Document removed from server.", "color: green; font-weight: bold;");
-        showToast("Deleted from server ✓");
-      }
+      showToast("Deleted from server ✓");
     }
-  } catch (err) {
-    console.error("Execution error:", err);
+  } catch (e) {
+    console.error("Delete failed:", e);
   }
-  console.log("%c--- DELETE END ---", "color: orange; font-weight: bold;");
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
@@ -7733,3 +7717,6 @@ window.receiveOrderedTool = async function(id) {
     showToast("Tool checked in ✓");
 }
 window.deleteDoc = deleteDoc;
+window.openEditDocModal = openEditDocModal;
+window.saveDoc = saveDoc;
+window.openDocDetail = openDocDetail;
