@@ -7732,3 +7732,4 @@ window.receiveOrderedTool = async function(id) {
     renderToolWishlist();
     showToast("Tool checked in ✓");
 }
+window.deleteDoc = deleteDoc;
