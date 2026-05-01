@@ -1941,33 +1941,56 @@ function renderDocuments() {
 async function deleteDoc(id) {
   if (!confirm("Are you sure?")) return;
 
-  // Local UI Update
+  console.log("%c--- DELETE START ---", "color: orange; font-weight: bold;");
+  console.log("ID received from button:", id);
+
+  // 1. Wipe this ID from the offline queue immediately
+  // If we don't do this, an old 'save' command might re-upload the doc
+  if (window.offlineQueue) {
+    const oldLen = offlineQueue.length;
+    offlineQueue = offlineQueue.filter(q => {
+        const qId = (typeof q.record === 'object') ? q.record.id : q.record;
+        return qId !== id;
+    });
+    if (offlineQueue.length !== oldLen) {
+        console.log("Cleaned ghost saves from offline queue");
+        saveOfflineQueue();
+    }
+  }
+
+  // 2. Update local UI
   state.documents = state.documents.filter(d => d.id !== id);
   renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
+  // 3. Talk directly to Supabase
   try {
-    // Talk to Supabase
+    console.log("Sending DELETE to Supabase for ID:", id);
+    
     const { error, count } = await window._mpdb
       .from('documents')
       .delete({ count: 'exact' })
       .eq('id', id);
 
     if (error) {
-      // THIS WILL TELL US IF IT IS A PERMISSION ISSUE
       console.error("Supabase Error:", error.message);
       alert("Database Error: " + error.message);
-      return;
-    }
-
-    if (count === 0) {
-      alert("The server found the document but refused to delete it. This is usually an RLS Policy issue.");
     } else {
-      showToast("Deleted from server ✓");
+      console.log("Supabase Response - Rows Deleted:", count);
+      
+      if (count === 0) {
+        console.error("%cFAILURE: The server found 0 rows to delete.", "color: red; font-weight: bold;");
+        console.log("This means the ID '" + id + "' does not exist exactly like that in the DB.");
+        alert("Delete failed: ID not found in database.");
+      } else {
+        console.log("%cSUCCESS: Document removed from server.", "color: green; font-weight: bold;");
+        showToast("Deleted from server ✓");
+      }
     }
   } catch (err) {
-    console.error("Delete failed:", err);
+    console.error("Execution error:", err);
   }
+  console.log("%c--- DELETE END ---", "color: orange; font-weight: bold;");
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
