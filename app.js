@@ -1939,55 +1939,26 @@ function renderDocuments() {
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
 async function deleteDoc(id) {
-  if (!confirm("Are you sure you want to permanently delete this document?")) return;
+  if (!confirm("Are you sure?")) return;
 
-  console.log("Nuclear Delete initiated for ID:", id);
-
-  // 1. Remove from Local State immediately
+  // 1. Remove from local memory
   state.documents = state.documents.filter(d => d.id !== id);
 
-  // 2. CRITICAL: Wipe this ID from the Offline Queue
-  // This prevents an old "Save" command from bringing the doc back to life
-  if (window.offlineQueue && Array.isArray(window.offlineQueue)) {
-    const initialLen = offlineQueue.length;
-    // Remove ANY action (upsert or delete) related to this specific document ID
-    offlineQueue = offlineQueue.filter(item => {
-      const isMatch = (item.table === 'documents' && item.record && item.record.id === id);
-      return !isMatch;
-    });
-    
-    if (offlineQueue.length !== initialLen) {
-      console.log(`Removed ${initialLen - offlineQueue.length} pending actions for this doc from queue.`);
-      if (typeof saveOfflineQueue === 'function') saveOfflineQueue();
-    }
-  }
+  // 2. CLEAN THE OFFLINE QUEUE
+  // If there's an 'upsert' for this ID waiting, remove it. 
+  // We don't want to save it and then delete it; we just want it gone.
+  offlineQueue = offlineQueue.filter(item => 
+    !(item.table === 'documents' && (item.record?.id === id || item.record === id))
+  );
+  saveOfflineQueue();
 
-  // 3. Update the UI
+  // 3. UI Update
   renderDocuments();
   if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
 
-  // 4. Force a Direct Database Delete (Bypassing the queue logic)
-  try {
-    const { error, count } = await window._mpdb
-      .from('documents')
-      .delete({ count: 'exact' })
-      .eq('id', id);
-
-    if (error) throw error;
-
-    if (count > 0) {
-        showToast("Deleted from server ✓");
-    } else {
-        console.warn("Server returned success but 0 rows deleted. (Doc might not have been synced yet)");
-        showToast("Removed from local sync");
-    }
-  } catch (e) {
-    console.error("Server delete failed. Putting delete request in queue.", e);
-    // If the server is truly unreachable, put a clean delete request in the queue
-    if (typeof persist === 'function') {
-        persist('documents', 'delete', { id: id });
-    }
-  }
+  // 4. Call Persist with an OBJECT
+  // Passing {id} ensures item.record.id works in your sync function
+  await persist('documents', 'delete', { id: id });
 }
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
@@ -2743,26 +2714,42 @@ async function persist(table, action, record) {
 }
 
 async function syncOfflineQueue() {
-  if(!offlineQueue.length) { showToast('Nothing to sync'); return; }
-  showToast('Syncing ' + offlineQueue.length + ' change(s)...');
+  if(!offlineQueue.length) return;
+  
   const failed = [];
   for(const item of offlineQueue) {
     try {
-      if(item.action==='upsert') await window._mpdb.from(item.table).upsert(item.record);
-      if(item.action==='delete') await window._mpdb.from(item.table).delete().eq('id', item.record.id);
-    } catch(e) { failed.push(item); }
+      // Determine the ID correctly whether item.record is an object or a string
+      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
+
+      if(item.action === 'upsert') {
+        await window._mpdb.from(item.table).upsert(item.record);
+      } 
+      else if(item.action === 'delete') {
+        // Use the recordId we just calculated
+        const { error, count } = await window._mpdb
+          .from(item.table)
+          .delete({ count: 'exact' })
+          .eq('id', recordId);
+        
+        console.log(`Sync Delete for ${recordId}: ${count} rows removed`);
+      }
+    } catch(e) { 
+      console.error("Sync failed for item:", item, e);
+      failed.push(item); 
+    }
   }
+  
   offlineQueue = failed;
   saveOfflineQueue();
-  if(failed.length) { showToast(failed.length + ' items failed to sync'); }
-  else { showToast('All changes synced ✓'); setSyncStatus('online'); }
+  
+  if(!failed.length) {
+    setSyncStatus('online');
+    // Hide banner if you have one
+    const banner = document.getElementById('offline-queue-banner');
+    if(banner) banner.style.display = 'none';
+  }
 }
-
-// Auto-sync when coming back online
-window.addEventListener('online', () => { if(offlineQueue.length) syncOfflineQueue(); });
-
-// Show queue banner on load if items pending
-if(offlineQueue.length) document.getElementById('offline-queue-banner').style.display = 'block';
 
 // ============================================================
 // HOURS AUTO-TRACKER
