@@ -215,22 +215,42 @@
       <tbody id="equip-table-body"></tbody>
     </table></div>
   </div>
+>
+ <!-- WORK ORDERS -->
+<div class="panel" id="panel-tasks">
+  <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <span class="section-title">Work Orders</span>
+    
+    <!-- FIX: Changed wrap to nowrap and ensured items stay in a single line -->
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:nowrap">
+      
+      <!-- Dropdown 1: Forced width to auto and removed bottom margin -->
+      <select class="form-select" id="task-filter" onchange="renderTasks()" 
+              style="font-size:12px; padding:5px 8px; width:auto; min-width:100px; margin:0">
+        <option value="all">All</option>
+        <option value="overdue">Overdue</option>
+        <option value="open">Open</option>
+        <option value="completed">Completed</option>
+      </select>
 
-  <!-- WORK ORDERS -->
-  <div class="panel" id="panel-tasks">
-    <div class="section-header">
-      <span class="section-title">Work Orders</span>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <select class="form-select" id="task-filter" onchange="renderTasks()" style="font-size:12px;padding:5px 8px">
-          <option value="all">All</option><option value="overdue">Overdue</option><option value="open">Open</option><option value="completed">Completed</option>
-        </select>
-        <select class="form-select" id="task-equip-filter" onchange="renderTasks()" style="font-size:12px;padding:5px 8px">
-          <option value="all">All Equipment</option>
-        </select>
-        <button class="btn btn-secondary" onclick="toggleBulkWO()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">+ Bulk WO</button>
-        <button class="btn btn-primary" onclick="openModal('task-modal')">+ New Work Order</button>
-      </div>
+      <!-- Dropdown 2: Forced width to auto and removed bottom margin -->
+      <select class="form-select" id="task-equip-filter" onchange="renderTasks()" 
+              style="font-size:12px; padding:5px 8px; width:auto; min-width:140px; margin:0">
+        <option value="all">All Equipment</option>
+      </select>
+
+      <!-- Buttons: Added white-space:nowrap to prevent text jumping to 2 lines -->
+      <button class="btn btn-secondary" onclick="toggleBulkWO()" 
+              style="color:#fff; border-color:rgba(255,255,255,0.5); background:rgba(0,0,0,0.5); white-space:nowrap; margin:0">
+        + Bulk WO
+      </button>
+      
+      <button class="btn btn-primary" onclick="openModal('task-modal')" 
+              style="white-space:nowrap; margin:0">
+        + New Work Order
+      </button>
     </div>
+  </div>
     <div class="card" id="bulk-wo-card" style="display:none">
       <div class="card-header"><span class="card-title">Bulk Work Order</span><button class="btn btn-secondary btn-sm" onclick="document.getElementById('bulk-wo-card').style.display='none'">✕</button></div>
       <div class="form-grid">
