@@ -1736,41 +1736,51 @@ function renderAssignUsers(){
 // ============================================================
 // WORK ORDERS
 // ============================================================
-function renderTasks(){
-  // We check the filter. If no filter is selected yet, we'll default to 'active'
+function renderTasks() {
+  const container = document.getElementById('tasks-table-body');
+  
+  // FIX 1: If the table doesn't exist yet, don't crash.
+  if (!container) return; 
+
   const f = document.getElementById('task-filter')?.value || 'active';
   const ef = document.getElementById('task-equip-filter')?.value || 'all';
   
   let tasks = [...state.tasks];
 
-  // Logic: If 'all' or no filter is selected, HIDE completed tasks
-  if(f === 'all' || f === 'active') {
+  // Logic: Filters
+  if (f === 'all' || f === 'active') {
     tasks = tasks.filter(t => t.status !== 'Completed');
-  } else if(f === 'overdue') {
+  } else if (f === 'overdue') {
     tasks = tasks.filter(t => t.status === 'Overdue' || (isOverdue(t.due) && t.status !== 'Completed'));
-  } else if(f === 'open') {
+  } else if (f === 'open') {
     tasks = tasks.filter(t => t.status === 'Open');
-  } else if(f === 'completed') {
+  } else if (f === 'completed') {
     tasks = tasks.filter(t => t.status === 'Completed');
   }
 
-  if(ef !== 'all') {
-    tasks = tasks.filter(t => t.equipId === ef);
+  // FIX 2: Check for equip_id (with underscore)
+  if (ef !== 'all') {
+    tasks = tasks.filter(t => (t.equip_id === ef || t.equipId === ef));
   }
 
-  // Sort: Overdue at top, then Open, then alphabetical
-  tasks.sort((a,b) => {
+  // Sort
+  tasks.sort((a, b) => {
     const o = { Overdue: 0, Open: 1, Completed: 2 };
     return (o[a.status] || 1) - (o[b.status] || 1);
   });
 
-  document.getElementById('tasks-table-body').innerHTML = tasks.map(t => {
-    const partsUsed = state.partUsage.filter(p => p.task_id === t.id).reduce((a, p) => a + p.qty_used, 0);
+  // Render to Table
+  container.innerHTML = tasks.map(t => {
+    const partsUsed = state.partUsage ? state.partUsage.filter(p => p.task_id === t.id).reduce((a, p) => a + p.qty_used, 0) : 0;
     const isActuallyOverdue = isOverdue(t.due) && t.status !== 'Completed';
     
-    return `<tr onclick="openTaskDetail('${t.id}')">
+    // Use t.equip_id or t.equipId just to be safe
+    const eId = t.equip_id || t.equipId;
+
+    return `
+    <tr onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
       <td><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${t.meter || ''}</div></td>
-      <td style="font-size:12px">${equipName(t.equipId)}</td>
+      <td style="font-size:12px">${typeof equipName === 'function' ? equipName(eId) : eId}</td>
       <td>${badge(t.priority)}</td>
       <td style="color:var(--text2)">${t.assign || '—'}</td>
       <td style="color:${isActuallyOverdue ? 'var(--danger)' : 'inherit'};font-size:12px">${fmtDate(t.due)}</td>
