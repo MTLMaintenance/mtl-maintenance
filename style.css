@@ -997,174 +997,171 @@ body, html {
 /* ============================================================
    2. DESKTOP ONLY (min-width: 769px)
    ============================================================ */
+/* ============================================================
+   1. GLOBAL SAFETY RESET (The "Don't Break" Rules)
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box; /* Ensures padding doesn't push width past 100% */
+  -webkit-tap-highlight-color: transparent; /* Removes the ugly blue box on mobile tap */
+}
+
+html, body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* Support for notches on iPhone X/13/15 */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden; /* Prevents side-scrolling the whole page */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ============================================================
+   2. PC / TABLET LANDSCAPE (769px and up)
+   ============================================================ */
 @media screen and (min-width: 769px) {
   .topbar {
     display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    height: 60px !important;
-    width: 100% !important;
-    padding: 0 15px !important;
-    position: sticky !important;
+    align-items: center;
+    justify-content: flex-start;
+    height: 60px;
+    width: 100%;
+    padding: 0 20px;
+    position: sticky;
     top: 0;
-    z-index: 9999 !important; /* Layers it above dashboard */
-    overflow: visible !important;
-    background: #1a1a1a !important;
+    z-index: 9999;
+    background: #1a1a1a;
   }
 
-  /* Make PC Calendar Full Screen */
   #panel-calendar .card, #cal-grid-container .card {
-    max-width: 100% !important;
     width: 98% !important;
-    margin: 0 auto !important;
-    min-height: calc(100vh - 180px) !important; 
+    margin: 10px auto !important;
+    /* Uses dynamic viewport height minus topbar */
+    min-height: calc(100vh - 100px) !important; 
   }
 
   #cal-days .cal-day {
-    min-height: 120px !important; /* Tall cells for PC */
+    min-height: 120px !important;
   }
 
-  #main-nav, .topbar-main-row { display: flex !important; gap: 8px !important; }
-  .topbar-right { margin-left: auto !important; display: flex !important; gap: 8px !important; }
-  .logo, #global-search { display: block !important; }
-  
-  .panel.active { margin-top: 15px !important; }
-} /* END PC BLOCK */
-
+  #main-nav, .topbar-main-row { display: flex !important; gap: 12px; }
+  .topbar-right { margin-left: auto; display: flex; gap: 12px; }
+}
 
 /* ============================================================
-   3. MOBILE ONLY (max-width: 768px)
+   3. MOBILE / TABLET PORTRAIT (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. CLEAN BACKGROUND: No more stretching or black bars */
   html, body {
-    background-color: #001f3f !important; /* Professional Navy Blue */
+    background-color: #001f3f !important;
     background-image: none !important;
-    height: auto !important;
-    min-height: 100vh;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    margin: 0;
   }
 
-  /* 2. TOPBAR: Force Left Alignment & Horizontal Scroll */
   .topbar {
     display: flex !important;
     flex-direction: column !important;
-    position: sticky !important;
+    position: sticky;
     top: 0;
     z-index: 1000;
     background: #111 !important;
-    width: 100% !important;
-    padding: 0 !important;
+    width: 100%;
   }
 
-  /* Fix: Force rows to start at the left and not wrap */
+  /* Swipable Nav Row */
   .topbar-main-row, #main-nav, .topbar-right {
     display: flex !important;
-    justify-content: flex-start !important; /* FIX: Starts on the left */
+    justify-content: flex-start !important;
     align-items: center !important;
-    flex-wrap: nowrap !important;           /* FIX: Prevents jumping to new lines */
-    overflow-x: auto !important;            /* FIX: Enables horizontal swipe */
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
     width: 100% !important;
-    padding: 8px 12px !important;
+    padding: 10px 15px !important;
+    /* Smooth swipe on mobile */
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
 
-  /* Stops the text links from shrinking so they can scroll */
-  .topbar-main-row a, #main-nav a, .nav-item, .topbar-right > * {
-    flex: 0 0 auto !important; 
-    margin-right: 20px !important;
-    margin-left: 0 !important;
-    color: white !important;
-    white-space: nowrap !important;
-    font-size: 14px !important;
-  }
-
-  /* Hide scrollbars for the top nav */
+  /* Hide Scrollbars but keep scrolling functional */
   .topbar-main-row::-webkit-scrollbar, #main-nav::-webkit-scrollbar {
     display: none;
   }
-
-  /* 3. FIX CARD OVERFLOW (The 'Add Equipment' fix) */
-  .modal-content, .card {
-    width: 92% !important;
-    max-width: 92vw !important;
-    margin: 15px auto !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important; /* Keeps internal parts contained */
-    display: block !important;
+  .topbar-main-row, #main-nav {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 
-  /* Stack inputs vertically so they don't poke out the side */
-  .row, .flex, .form-row, .grid {
-    display: flex !important;
-    flex-direction: column !important;
+  .nav-item, .topbar-main-row a {
+    flex: 0 0 auto !important;
+    margin-right: 15px !important;
+    white-space: nowrap !important;
+    font-size: 14px;
+    scroll-snap-align: start;
+  }
+
+  /* 4. MODAL & CARD FIXES */
+  .modal, .card {
+    width: 95% !important;
+    max-width: 540px !important; /* Limits width on larger tablets */
+    margin: 10px auto !important;
+    border-radius: 12px;
+  }
+
+  /* Stack columns into rows on mobile */
+  .form-grid, .grid-2, .row {
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* Force 1 column */
+    gap: 10px !important;
     width: 100% !important;
-    padding: 0 !important;
-    gap: 0 !important;
   }
 
-  /* Force boxes to stay INSIDE the card */
-  input, select, textarea, .form-control {
+  input, select, textarea {
     width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important; /* Critical: includes padding in width */
-    font-size: 16px !important;       /* Stops iPhone zoom-jump */
-    margin-bottom: 12px !important;
-  }
-
-  /* 4. SMOOTH SCROLLING CONTENT */
-  .panel.active {
+    font-size: 16px !important; /* Critical: Prevents iOS Zoom */
+    padding: 12px !important;
     height: auto !important;
-    overflow: visible !important;
-    padding: 10px !important;
-    background: transparent !important;
   }
-
-} /* END MOBILE BLOCK */
-.pin-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #555;
-    transition: background 0.1s;
 }
 
+/* ============================================================
+   4. UI COMPONENTS (Shared)
+   ============================================================ */
 .pin-dot {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.2);
+    flex-shrink: 0; /* Prevents dot from squishing on small screens */
 }
+
 .pin-dot.filled {
     background: #28a745;
     border-color: #28a745;
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
 }
+
 .pin-btn {
-    height: 60px !important;
-    font-size: 20px !important;
-    font-weight: bold !important;
-    border-radius: 12px !important;
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    justify-content: center !important;
+    min-height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    cursor: pointer;
 }
+
 .user-select-btn {
-    padding: 12px;
+    padding: 14px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     color: #fff;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
+    border-radius: 10px;
     text-align: center;
-    transition: background 0.2s;
+    width: 100%;
 }
-.user-select-btn:hover { background: rgba(255,255,255,0.15); }
 /* This forces the backdrop to actually fill the screen */
 /* 1. Make the Card White and the Main Text Black */
 /* ==========================================
