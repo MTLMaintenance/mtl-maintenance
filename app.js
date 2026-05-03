@@ -7773,3 +7773,31 @@ window.deleteDoc = async function(id) {
     console.error("Delete execution failed:", err);
   }
 };
+function forcePopulateWorkOrderFilter() {
+  const select = document.getElementById('task-equip-filter');
+  
+  if (!select) {
+    console.error("DEBUG: Could not find the element 'task-equip-filter' in the HTML.");
+    return;
+  }
+
+  if (!state.equipment || state.equipment.length === 0) {
+    console.warn("DEBUG: state.equipment is empty. Nothing to put in the dropdown.");
+    return;
+  }
+
+  console.log("DEBUG: Found dropdown. Populating with " + state.equipment.length + " items.");
+
+  let html = '<option value="all">All Equipment</option>';
+  state.equipment.forEach(e => {
+    html += `<option value="${e.id}">${e.name}</option>`;
+  });
+
+  select.innerHTML = html;
+}
+
+// Call it once immediately
+forcePopulateWorkOrderFilter();
+
+// Also call it after a short delay to make sure Supabase data has arrived
+setTimeout(forcePopulateWorkOrderFilter, 2000);
