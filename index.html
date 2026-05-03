@@ -221,11 +221,10 @@
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
     <span class="section-title">Work Orders</span>
     
-    <!-- FIX: Changed wrap to nowrap and ensured items stay in a single line -->
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:nowrap">
       
-      <!-- Dropdown 1: Forced width to auto and removed bottom margin -->
-      <select class="form-select" id="task-equip-filter" onchange="renderTasks()" 
+      <!-- FIX: Changed id to "task-filter" -->
+      <select class="form-select" id="task-filter" onchange="renderTasks()" 
               style="font-size:12px; padding:5px 8px; width:auto; min-width:100px; margin:0">
         <option value="all">All</option>
         <option value="overdue">Overdue</option>
@@ -233,13 +232,12 @@
         <option value="completed">Completed</option>
       </select>
 
-      <!-- Dropdown 2: Forced width to auto and removed bottom margin -->
+      <!-- KEEP: id="task-equip-filter" (This is the one the app fills with equipment) -->
       <select class="form-select" id="task-equip-filter" onchange="renderTasks()" 
               style="font-size:12px; padding:5px 8px; width:auto; min-width:140px; margin:0">
         <option value="all">All Equipment</option>
       </select>
 
-      <!-- Buttons: Added white-space:nowrap to prevent text jumping to 2 lines -->
       <button class="btn btn-secondary" onclick="toggleBulkWO()" 
               style="color:#fff; border-color:rgba(255,255,255,0.5); background:rgba(0,0,0,0.5); white-space:nowrap; margin:0">
         + Bulk WO
@@ -250,24 +248,6 @@
         + New Work Order
       </button>
     </div>
-  </div>
-    <div class="card" id="bulk-wo-card" style="display:none">
-      <div class="card-header"><span class="card-title">Bulk Work Order</span><button class="btn btn-secondary btn-sm" onclick="document.getElementById('bulk-wo-card').style.display='none'">✕</button></div>
-      <div class="form-grid">
-        <div class="form-group full"><label class="form-label">Work Order Name *</label><input class="form-input" id="bulk-name" placeholder="e.g. Monthly Inspection"/></div>
-        <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="bulk-priority"><option>Low</option><option>Medium</option><option selected>High</option><option>Critical</option></select></div>
-        <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="bulk-due" type="date"/></div>
-        <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="bulk-notes" style="min-height:48px"></textarea></div>
-        <div class="form-group full"><label class="form-label">Select Equipment</label>
-          <div id="bulk-equip-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-top:4px"></div>
-        </div>
-      </div>
-      <div class="form-row"><button class="btn btn-primary" onclick="createBulkWO()">Create Work Orders</button></div>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Work Order</th><th>Equipment</th><th>Priority</th><th>Assigned</th><th>Due Date</th><th>Cost</th><th>Parts Used</th><th>Status</th><th></th></tr></thead>
-      <tbody id="tasks-table-body"></tbody>
-    </table></div>
   </div>
 
   
