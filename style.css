@@ -945,222 +945,133 @@ body, html {
   font-weight: 700;
 }
 /* ============================================================
-   1. GLOBAL STYLES (Applies to both PC and Mobile)
+   1. BASE STYLES (MOBILE) 
+   These apply to EVERY device by default.
    ============================================================ */
-#main-nav .nav-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  padding: 4px 9px !important;
-  min-height: 30px !important;
-  border-radius: var(--radius) !important;
-  border: none !important;
-  background: var(--text) !important;
-  color: var(--bg) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  white-space: nowrap !important;
-  line-height: 1.1 !important;
-}
-#main-nav .nav-btn:hover { opacity: 0.88 !important; }
-#main-nav .nav-btn.active {
-  background: #2a2a28 !important;
-  color: #fff !important;
-  font-weight: 700 !important;
-}
-
-/* Ensure only active panels show (Fixes the stacking issue) */
-.panel { display: none !important; }
-.panel.active { display: block !important; }
-#panel-chat.active { display: flex !important; }
-/* ============================================================
-   1. GLOBAL STYLES (Applies to EVERYONE)
-   Keep only colors and small utility classes here.
-   ============================================================ */
-.cal-event-maintenance { background-color: #007bff !important; border-left: 4px solid #0056b3; }
-.cal-event-absence { background-color: #ff9800 !important; border-left: 4px solid #e65100; }
-
-.calendar-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; }
-.toolbar-left { display: flex; align-items: center; gap: 12px; }
-
-.btn-absence-trigger { 
-    background: rgba(0, 0, 0, 0.2) !important; color: #fff !important; border: none !important; 
-    padding: 8px 14px !important; border-radius: 10px !important; font-size: 13px !important; 
-    font-weight: 600 !important; cursor: pointer; 
-}
-
-.view-toggle { background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 12px; display: flex; gap: 4px; }
-.btn-primary { background: #000 !important; color: #fff !important; font-weight: 700 !important; padding: 8px 16px !important; border-radius: 8px !important; }
-
-
-/* ============================================================
-   2. DESKTOP ONLY (min-width: 769px)
-   ============================================================ */
-/* ============================================================
-   1. GLOBAL SAFETY RESET (The "Don't Break" Rules)
-   ============================================================ */
-*, *::before, *::after {
-  box-sizing: border-box; /* Ensures padding doesn't push width past 100% */
-  -webkit-tap-highlight-color: transparent; /* Removes the ugly blue box on mobile tap */
-}
-
 html, body {
-  width: 100%;
+  background-color: #001f3f !important; /* Navy Blue Base */
   margin: 0;
   padding: 0;
-  /* Support for notches on iPhone X/13/15 */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  overflow-x: hidden; /* Prevents side-scrolling the whole page */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  font-family: sans-serif;
+}
+
+/* Base Topbar (Mobile look) */
+.topbar {
+  display: flex !important;
+  flex-direction: column !important;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: #111 !important;
+  width: 100%;
+}
+
+/* Swipable Nav Row */
+.topbar-main-row, #main-nav, .topbar-right {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  width: 100% !important;
+  padding: 8px 12px !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Nav links don't shrink */
+.nav-item, .topbar-main-row a {
+  flex: 0 0 auto !important;
+  margin-right: 20px !important;
+  color: white !important;
+  white-space: nowrap !important;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+/* Mobile Forms / Cards */
+.card, .modal {
+  width: 95% !important;
+  margin: 15px auto !important;
+  display: block;
+}
+
+.form-row, .grid, .flex {
+  display: flex !important;
+  flex-direction: column !important; /* Stacked on mobile */
+  width: 100%;
+}
+
+input, select, textarea {
+  width: 100% !important;
+  font-size: 16px !important; /* Prevents iPhone Zoom */
+  margin-bottom: 10px;
 }
 
 /* ============================================================
-   2. PC / TABLET LANDSCAPE (769px and up)
+   2. PC OVERRIDES (769px and LARGER)
+   This block "talks over" the mobile styles when on PC.
    ============================================================ */
 @media screen and (min-width: 769px) {
-  .topbar {
-    display: flex !important;
-    align-items: center;
-    justify-content: flex-start;
-    height: 60px;
-    width: 100%;
-    padding: 0 20px;
-    position: sticky;
-    top: 0;
-    z-index: 9999;
-    background: #1a1a1a;
-  }
-
-  #panel-calendar .card, #cal-grid-container .card {
-    width: 98% !important;
-    margin: 10px auto !important;
-    /* Uses dynamic viewport height minus topbar */
-    min-height: calc(100vh - 100px) !important; 
-  }
-
-  #cal-days .cal-day {
-    min-height: 120px !important;
-  }
-
-  #main-nav, .topbar-main-row { display: flex !important; gap: 12px; }
-  .topbar-right { margin-left: auto; display: flex; gap: 12px; }
-}
-
-/* ============================================================
-   3. MOBILE / TABLET PORTRAIT (max-width: 768px)
-   ============================================================ */
-@media screen and (max-width: 768px) {
   html, body {
-    background-color: #001f3f !important;
-    background-image: none !important;
+    background-color: #1a1a1a !important; /* Dark Gray/Black for PC */
   }
 
   .topbar {
-    display: flex !important;
-    flex-direction: column !important;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    background: #111 !important;
-    width: 100%;
+    flex-direction: row !important; /* Horizontal bar on PC */
+    height: 60px !important;
+    padding: 0 20px !important;
+    overflow: visible !important;
   }
 
-  /* Swipable Nav Row */
   .topbar-main-row, #main-nav, .topbar-right {
-    display: flex !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    width: 100% !important;
-    padding: 10px 15px !important;
-    /* Smooth swipe on mobile */
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
+    overflow: visible !important; /* No swiping on PC */
+    width: auto !important;
+    padding: 0 !important;
   }
 
-  /* Hide Scrollbars but keep scrolling functional */
-  .topbar-main-row::-webkit-scrollbar, #main-nav::-webkit-scrollbar {
-    display: none;
-  }
-  .topbar-main-row, #main-nav {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+  .topbar-right {
+    margin-left: auto !important; /* Push to right side */
   }
 
-  .nav-item, .topbar-main-row a {
-    flex: 0 0 auto !important;
-    margin-right: 15px !important;
-    white-space: nowrap !important;
-    font-size: 14px;
-    scroll-snap-align: start;
+  /* Form/Grid Overrides for PC */
+  .form-row, .grid, .flex {
+    flex-direction: row !important; /* Side-by-side on PC */
+    gap: 15px !important;
   }
 
-  /* 4. MODAL & CARD FIXES */
-  .modal, .card {
-    width: 95% !important;
-    max-width: 540px !important; /* Limits width on larger tablets */
-    margin: 10px auto !important;
-    border-radius: 12px;
-  }
-
-  /* Stack columns into rows on mobile */
-  .form-grid, .grid-2, .row {
-    display: grid !important;
-    grid-template-columns: 1fr !important; /* Force 1 column */
-    gap: 10px !important;
-    width: 100% !important;
-  }
-
-  input, select, textarea {
-    width: 100% !important;
-    font-size: 16px !important; /* Critical: Prevents iOS Zoom */
-    padding: 12px !important;
-    height: auto !important;
+  /* Calendar Full Screen for PC */
+  #panel-calendar .card {
+    width: 98% !important;
+    min-height: calc(100vh - 120px) !important;
   }
 }
 
 /* ============================================================
-   4. UI COMPONENTS (Shared)
+   3. SHARED COMPONENTS (Dots & Buttons)
    ============================================================ */
 .pin-dot {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.2);
-    flex-shrink: 0; /* Prevents dot from squishing on small screens */
+    display: inline-block;
 }
-
 .pin-dot.filled {
     background: #28a745;
     border-color: #28a745;
-    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
 }
-
 .pin-btn {
-    min-height: 55px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
+    height: 60px;
+    width: 100%;
+    font-size: 20px;
     font-weight: bold;
     border-radius: 12px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     color: white;
     cursor: pointer;
-}
-
-.user-select-btn {
-    padding: 14px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #fff;
-    border-radius: 10px;
-    text-align: center;
-    width: 100%;
 }
 /* This forces the backdrop to actually fill the screen */
 /* 1. Make the Card White and the Main Text Black */
