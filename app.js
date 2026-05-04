@@ -6871,57 +6871,61 @@ async function renderAuditLogs() {
     
     if (!container || !userFilter) return;
 
-    // 1. Remember what the user currently has selected before we refresh the list
+    // 1. Remember current selections
     const selectedUserBeforeRefresh = userFilter.value;
     const dateFilter = dateFilterInput ? dateFilterInput.value : '';
 
     container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
 
     try {
-        // 2. Fetch the logs
-        const { data, error } = await window._mpdb
-            .from('audit_logs')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(200);
+        // 2. FETCH BOTH LOGS AND PROFILES DIRECTLY FROM SUPABASE
+        // This bypasses the 'state' variable entirely to ensure we see the names
+        const [logsResponse, profilesResponse] = await Promise.all([
+            window._mpdb.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
+            window._mpdb.from('profiles').select('full_name, username').eq('status', 'approved')
+        ]);
 
-        if (error) throw error;
+        if (logsResponse.error) throw logsResponse.error;
 
-        // --- 3. DYNAMICALLY REBUILD THE DROPDOWN ---
-        // We do this every time to catch new logins or new profiles
-        
-        // Get names from your system profiles (Tanner, Test, etc.)
-        const profileNames = (state.profiles || state.users || []).map(u => u.full_name || u.username);
-        
-        // Get names that actually appear in logs (in case a user was deleted but logs remain)
-        const logNames = data ? data.map(log => log.user_name) : [];
-        
-        // Combine, remove duplicates, filter out empty strings, and sort
-        const allUniqueNames = [...new Set([...profileNames, ...logNames])]
-            .filter(n => n && n.trim() !== "")
-            .sort();
+        const logs = logsResponse.data || [];
+        const profiles = profilesResponse.data || [];
 
-        // Rebuild the HTML for the dropdown
+        // --- 3. REBUILD THE DROPDOWN ---
+        const nameSet = new Set();
+        
+        // Add names from current approved profiles (Tanner, Test, etc.)
+        profiles.forEach(p => {
+            const name = p.full_name || p.username;
+            if (name) nameSet.add(name);
+        });
+
+        // Add names from logs (in case an old/deleted user did something)
+        logs.forEach(l => {
+            if (l.user_name) nameSet.add(l.user_name);
+        });
+        
+        // Sort alphabetically
+        const sortedNames = [...nameSet].sort();
+
+        // Inject into HTML
         userFilter.innerHTML = '<option value="all">All People</option>';
-        allUniqueNames.forEach(name => {
+        sortedNames.forEach(name => {
             const opt = document.createElement('option');
             opt.value = name;
             opt.textContent = name;
             userFilter.appendChild(opt);
         });
 
-        // Restore the user's selection
+        // Restore what they were looking at
         userFilter.value = selectedUserBeforeRefresh;
 
-        // --- 4. APPLY FILTERS TO THE DATA ---
-        let filtered = data || [];
+        // --- 4. APPLY FILTERS TO THE LOGS ---
+        let filtered = logs;
 
-        // Filter by Person
         if (userFilter.value !== 'all') {
             filtered = filtered.filter(log => log.user_name === userFilter.value);
         }
 
-        // Filter by Date
         if (dateFilter) {
             filtered = filtered.filter(log => {
                 const logDate = new Date(log.created_at).toISOString().split('T')[0];
@@ -6956,7 +6960,7 @@ async function renderAuditLogs() {
         }).join('');
 
     } catch (e) {
-        console.error("Audit Log Error:", e);
+        console.error("Audit Log Failure:", e);
         container.innerHTML = '<div style="padding:20px; color:var(--danger)">Error loading logs</div>';
     }
 }
