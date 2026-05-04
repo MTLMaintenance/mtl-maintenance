@@ -1664,3 +1664,15 @@ div#panel-parts div.tab-bar button.tab.active {
 .modal-backdrop {
   z-index: 9000;
 }
+body {
+    background-color: #001f3f; /* Your Navy Blue */
+    background-attachment: fixed;
+    /* Optional: This subtle gradient makes the screen look less "flat" */
+    background: radial-gradient(circle at top, #003366 0%, #001f3f 100%);
+    color: #ffffff;
+}
+
+/* This prevents that "white flash" when scrolling past the top on iPhone */
+html {
+    background-color: #001f3f;
+}
