@@ -945,68 +945,112 @@ body, html {
   font-weight: 700;
 }
 /* ============================================================
-   1. BASE STYLES (MOBILE) 
-   These apply to EVERY device by default.
+   3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
-html, body {
-  background-color: #001f3f !important; /* Navy Blue Base */
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  font-family: sans-serif;
-}
+@media screen and (max-width: 768px) {
+  
+  /* 1. ENABLE VERTICAL SCROLLING & FIX BACKGROUND */
+  html, body {
+    background-color: #001f3f !important; /* Navy Blue */
+    background-image: none !important;
+    height: auto !important;          /* CRITICAL: Allows vertical scroll */
+    min-height: 100vh;
+    overflow-x: hidden !important;    /* Prevents side-to-side wiggle */
+    overflow-y: auto !important;      /* Forces vertical scroll */
+    margin: 0;
+    padding: 0;
+  }
 
-/* Base Topbar (Mobile look) */
-.topbar {
-  display: flex !important;
-  flex-direction: column !important;
-  position: sticky;
-  top: 0;
-  z-index: 9999;
-  background: #111 !important;
-  width: 100%;
-}
+  /* 2. TOPBAR: Keep the swiping you liked */
+  .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    position: sticky !important;
+    top: 0;
+    z-index: 1000;
+    background: #111 !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
 
-/* Swipable Nav Row */
-.topbar-main-row, #main-nav, .topbar-right {
-  display: flex !important;
-  justify-content: flex-start !important;
-  align-items: center !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  width: 100% !important;
-  padding: 8px 12px !important;
-  -webkit-overflow-scrolling: touch;
-}
+  .topbar-main-row, #main-nav, .topbar-right {
+    display: flex !important;
+    justify-content: flex-start !important; 
+    align-items: center !important;
+    flex-wrap: nowrap !important;           
+    overflow-x: auto !important;            
+    width: 100% !important;
+    padding: 8px 12px !important;
+    -webkit-overflow-scrolling: touch;
+  }
 
-/* Nav links don't shrink */
-.nav-item, .topbar-main-row a {
-  flex: 0 0 auto !important;
-  margin-right: 20px !important;
-  color: white !important;
-  white-space: nowrap !important;
-  text-decoration: none;
-  font-size: 14px;
-}
+  .nav-item, .topbar-main-row a {
+    flex: 0 0 auto !important; 
+    margin-right: 20px !important;
+    color: white !important;
+    white-space: nowrap !important;
+    font-size: 14px !important;
+  }
 
-/* Mobile Forms / Cards */
-.card, .modal {
-  width: 95% !important;
-  margin: 15px auto !important;
-  display: block;
-}
+  /* 3. FIX VERTICAL CUTOFF: Unlock the panels */
+  .panel {
+    height: auto !important;
+    min-height: calc(100vh - 100px);
+    overflow: visible !important;
+    padding: 10px !important;
+    padding-bottom: 100px !important; /* Space for the bottom of the page */
+  }
 
-.form-row, .grid, .flex {
-  display: flex !important;
-  flex-direction: column !important; /* Stacked on mobile */
-  width: 100%;
-}
+  /* 4. FIX "FLOATING OFF SIDE": The Table & Header Fix */
+  .section-header {
+    flex-direction: column !important; /* Stack "Work Orders" above buttons */
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
 
-input, select, textarea {
-  width: 100% !important;
-  font-size: 16px !important; /* Prevents iPhone Zoom */
-  margin-bottom: 10px;
-}
+  .section-header > div {
+    flex-wrap: wrap !important; /* Allow buttons/dropdowns to wrap if needed */
+    width: 100%;
+  }
+
+  /* Force the Table to scroll INSIDE its card */
+  .table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important; 
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05); /* Slight tint for the table area */
+  }
+
+  table {
+    min-width: 700px !important; /* Forces the table to be readable, user swipes it */
+  }
+
+  /* 5. CARD & INPUT FIXES */
+  .modal-content, .card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 10px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Stack form inputs vertically */
+  .form-row, .grid, .flex, .form-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    padding: 0 !important;
+    gap: 10px !important;
+  }
+
+  input, select, textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; /* Stops iOS zoom-jump */
+  }
+
+} /* END MOBILE BLOCK */
 
 /* ============================================================
    2. PC OVERRIDES (769px and LARGER)
