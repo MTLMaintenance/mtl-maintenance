@@ -3124,11 +3124,15 @@ function checkBudgetAlerts() {
 // ============================================================
 const _origSaveEquipment = saveEquipment;
 async function saveEquipment() {
-  const name = document.getElementById('e-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
+  const name = document.getElementById('e-name').value.trim(); 
+  if(!name){ showToast('Please enter a name'); return; }
+  
   const assignInput = document.getElementById('assign-input');
   const assignedUsers = assignInput ? assignInput.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  
   const record = {
-    id:uid(), name,
+    id:uid(), 
+    name,
     type:   document.getElementById('e-type').value,
     serial: document.getElementById('e-serial').value,
     hours:  parseInt(document.getElementById('e-hours').value)||0,
@@ -3144,33 +3148,29 @@ async function saveEquipment() {
     monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
     yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
   };
+
   state.equipment.push(record);
   await persist('equipment','upsert',record);
-  pendingPhotos.equip=[]; customFieldsTemp={};
-  closeModal('equip-modal'); renderEquipmentTable(); updateMetrics();
-  ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+const isEdit = state.equipment.some(e => e.id === record.id);
+await logAuditAction(
+  isEdit ? "Updated Equipment" : "Added New Equipment", 
+  `Machine: "${name}"`
+);
+  pendingPhotos.equip=[]; 
+  customFieldsTemp={};
+  closeModal('equip-modal'); 
+  renderEquipmentTable(); 
+  updateMetrics();
+
+  ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ 
+    const el=document.getElementById(id); 
+    if(el) el.value=''; 
+  });
 }
 
-// ============================================================
-// PATCH: renderDashboard — add budget alerts + push check
-// ============================================================
 const _origRenderDashboard = renderDashboard;
-
-// ============================================================
-// PATCH: enterApp — request push, init push check
-// ============================================================
 const _origEnterApp = enterApp;
-
-// ============================================================
-// PATCH: renderEquipmentTable — add QR button for admin
-// ============================================================
 const _origRenderEquipmentTable = renderEquipmentTable;
-
-
-
-// ============================================================
-// PERMISSIONS
-// ============================================================
 const PERMISSIONS = {
   admin:   {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:true,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
   manager: {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:false,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
@@ -3195,8 +3195,6 @@ state.checklistTemplates=[
 ];
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
-
-// Patch loadState to also load observations
 
 // ── DOWNTIME ─────────────────────────────────────────────────
 function formatDuration(mins){if(!mins)return'0 mins';if(mins<60)return mins+' min'+(mins!==1?'s':'');const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m>0?' '+m+'m':'');}
@@ -4727,7 +4725,7 @@ async function saveInvoice() {
       const byteNumbers = new Array(byteCharacters.length);
       for(let i=0;i<byteCharacters.length;i++) byteNumbers[i]=byteCharacters.charCodeAt(i);
       const blob = new Blob([new Uint8Array(byteNumbers)], {type:'image/jpeg'});
-      
+      await logAuditAction("Added Invoice", `Amount: $${amount} for ${equipName(_currentInvoiceEquipId)}`);
       const { data: uploadData, error: uploadError } = await window._mpdb.storage
         .from('invoices')
         .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
@@ -5076,7 +5074,7 @@ function renderTools() {
     }).join('');
 }
 
-// 2. The Saving Function (THE FIX: Added the missing header and try block)
+
 async function saveTool() {
     console.log("--- SUBMITTING TOOL UPDATE ---");
     try {
@@ -5090,21 +5088,21 @@ async function saveTool() {
         }
 
         const toolName = nameInput.value.trim();
+        // Check if we are editing or creating new
+        const isEdit = (id && id.trim() !== "");
 
-        // 1. Prepare the object for Supabase
         const tool = {
-            id: (id && id.trim() !== "") ? id : uid(),
+            id: isEdit ? id : uid(),
             name: toolName, 
             tool_name: toolName, 
             category: document.getElementById('tool-cat').value,
             location: document.getElementById('tool-loc').value.trim(),
             health: parseInt(document.getElementById('tool-health').value) || 100,
             is_lost: document.getElementById('tool-lost').checked,
-            status: 'available', // This ensures it stays in the Inventory list
+            status: 'available', 
             last_updated: new Date().toISOString()
         };
 
-        // 2. Save to Supabase
         const { error } = await window._mpdb
             .from('tool_requests')
             .upsert([tool]);
@@ -5114,25 +5112,25 @@ async function saveTool() {
             return;
         }
 
-        // 3. LOGGING: Record the update in your audit trail
+        // --- IMPROVED LOGGING FOR ACCOUNTABILITY ---
         if (typeof logAuditAction === 'function') {
-            logAuditAction("Tool Update", `${tool.tool_name}: Health ${tool.health}%, Lost: ${tool.is_lost}`);
+            const actionType = isEdit ? "Updated Tool" : "Added New Tool";
+            const details = `${tool.tool_name} (Health: ${tool.health}%, Status: ${tool.is_lost ? 'LOST' : 'Available'})`;
+            
+            // We use 'await' to make sure the log finishes before the modal closes
+            await logAuditAction(actionType, details);
         }
 
-        // 4. ALERTS: Notify managers if tool is critical or lost
         if(tool.health <= 40 || tool.is_lost) {
             if (typeof notifyManagers === 'function') {
                 await notifyManagers(`⚠️ TOOL ALERT: "${tool.tool_name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
             }
         }
 
-        // --- THE LIVE UPDATE FIX ---
-        // 5. Re-download the full list from the database
         if (typeof fetchTools === 'function') {
             await fetchTools();
         }
-
-        // 6. Refresh the screen and close window
+      
         closeModal('tool-modal'); 
         if (typeof renderTools === 'function') renderTools(); 
         
@@ -7441,7 +7439,6 @@ window.deleteConsumable = async function(id) {
         alert("Delete failed: " + e.message);
     }
 };
-// 1. Logic to show the Wishlist
 // 1. Updated Wishlist Renderer
 function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
@@ -7676,8 +7673,8 @@ async function saveWishRequest() {
 
     if (!rawName || !reason) return alert("Fill in name and reason.");
 
-    // FIND THE ORIGINAL ITEM (if we are editing)
     const existing = editId ? state.tools.find(t => t.id === editId) : null;
+    const isEdit = !!existing;
 
     const req = {
         id: (editId && editId !== "") ? editId : uid(),
@@ -7685,11 +7682,8 @@ async function saveWishRequest() {
         tool_name: rawName,
         request_reason: reason, 
         notes: reason,
-        
-        // THE FIX: If editing, keep the original names. If new, use current user.
         requested_by: existing ? existing.requested_by : (currentUser.full_name || currentUser.username),
         author_id: existing ? existing.author_id : String(currentUser.id), 
-        
         status: 'requested',
         created_at: existing ? existing.created_at : new Date().toISOString()
     };
@@ -7698,17 +7692,27 @@ async function saveWishRequest() {
         const { error } = await window._mpdb.from('tool_requests').upsert([req]);
         if (error) throw error;
 
+        // --- ACCOUNTABILITY LOGGING ---
+        if (typeof logAuditAction === 'function') {
+            const action = isEdit ? "Updated Wishlist Item" : "New Wishlist Request";
+            const details = `Tool: "${req.name}", Reason: "${req.request_reason}" (Requested by: ${req.requested_by})`;
+            
+            await logAuditAction(action, details);
+        }
+        // ------------------------------
+
         showToast("Saved successfully ✓");
         closeModal('wishlist-modal');
         
-        // Refresh memory and UI
         await fetchTools();
         renderToolWishlist();
         
-        // Clear the ID for next time
         document.getElementById('wish-edit-id').value = "";
 
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) { 
+        console.error("Wishlist Error:", e);
+        alert("Error: " + e.message); 
+    }
 }
 window.deleteWishItem = async function(id) {
     // If no ID passed, try to grab it from the hidden input in the modal
@@ -7839,3 +7843,23 @@ window.deleteDoc = async function(id) {
     console.error("Delete execution failed:", err);
   }
 };
+async function logAuditAction(action, details) {
+  try {
+    // 1. Prepare the log entry
+    const logEntry = {
+      action: action,
+      details: details,
+      user_name: currentUser ? currentUser.name : 'Unknown User',
+      created_at: new Date().toISOString()
+    };
+
+    // 2. Save to Supabase
+    await window._mpdb.from('audit_logs').insert(logEntry);
+    
+    // 3. Refresh the log view if it's currently on screen
+    renderAuditLogs();
+    
+  } catch (e) {
+    console.error("Failed to log audit action:", e);
+  }
+}
