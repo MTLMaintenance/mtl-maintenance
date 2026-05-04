@@ -95,13 +95,19 @@
     
     <!-- Search Bar -->
 <div style="position:relative; margin-left:10px; width:200px; flex-shrink:0">
-  <input type="text" 
+  
+  <!-- HONEPOT: This fake input tricks Google into autofilling HERE instead of your search bar -->
+  <input type="text" name="fake_email" style="display:none" aria-hidden="true">
+  <input type="password" name="fake_password" style="display:none" aria-hidden="true">
+
+  <input type="search" 
          id="global-search" 
          class="form-input" 
          placeholder="Search..." 
-         autocomplete="off" 
+         autocomplete="new-password" 
          spellcheck="false"
-         name="mtl-search-field"
+         name="q_search_field"
+         role="presentation"
          style="width:100%; height:28px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; font-size:11px; padding-left:25px" 
          oninput="handleGlobalSearch()"/>
          
@@ -109,7 +115,7 @@
   
   <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
 </div>
-
+<!---- MAIN NAVITIGATION---->
     <nav class="nav" id="main-nav">
       <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
       <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
