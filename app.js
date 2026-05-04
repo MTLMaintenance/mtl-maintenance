@@ -6829,26 +6829,97 @@ function closeMarkupModal() {
   } catch(e) { console.warn("Audit log failed silently"); }
 }
 async function renderAuditLogs() {
-  const container = document.getElementById('audit-log-list');
-  if(!container) return;
-  container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
-  try {
-    const { data } = await window._mpdb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(100);
-    if(!data || !data.length) {
-        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No activity logged yet</div>';
-        return;
+    const container = document.getElementById('audit-log-list');
+    const userFilter = document.getElementById('audit-filter-user');
+    const dateFilter = document.getElementById('audit-filter-date').value;
+    const selectedUser = userFilter.value;
+
+    if (!container) return;
+    container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
+
+    try {
+        // Fetch last 200 items to give room for filtering
+        const { data, error } = await window._mpdb
+            .from('audit_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(200);
+
+        if (error) throw error;
+        if (!data) return;
+
+        // --- 1. DYNAMICALLY FILL USER FILTER ---
+        // Only do this if the dropdown only has the "All" option
+        if (userFilter.options.length <= 1) {
+            const users = [...new Set(data.map(log => log.user_name))].sort();
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.textContent = u;
+                userFilter.appendChild(opt);
+            });
+        }
+
+        // --- 2. APPLY FILTERS ---
+        let filtered = data;
+
+        if (selectedUser !== 'all') {
+            filtered = filtered.filter(log => log.user_name === selectedUser);
+        }
+
+        if (dateFilter) {
+            filtered = filtered.filter(log => {
+                const logDate = new Date(log.created_at).toISOString().split('T')[0];
+                return logDate === dateFilter;
+            });
+        }
+
+        // --- 3. RENDER THE BEAUTIFIED LIST ---
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No matching logs found</div>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(log => {
+            const dateObj = new Date(log.created_at);
+            return `
+            <div style="padding:12px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;">
+                <!-- Time Column -->
+                <div style="font-size:10px; color:var(--text3); white-space:nowrap; text-align:center; width:70px; border-right:1px solid var(--border); padding-right:10px">
+                    <b style="color:var(--text)">${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</b><br>
+                    ${dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'})}
+                </div>
+                
+                <!-- Content Column -->
+                <div style="flex:1">
+                    <div style="font-size:13px; margin-bottom:3px">
+                        <span style="color:var(--accent); font-weight:bold">${log.user_name || 'System'}</span> 
+                        <span style="color:var(--text)">${log.action}</span>
+                    </div>
+                    <div style="font-size:11px; color:var(--text2); line-height:1.4">
+                        ${log.details || ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div style="padding:20px; color:var(--danger)">Error loading logs</div>';
     }
-    container.innerHTML = data.map(log => `
-      <div style="padding:8px 12px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:flex-start">
-        <div style="font-size:10px; color:var(--text3); white-space:nowrap; width:75px">${new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>${new Date(log.created_at).toLocaleDateString()}</div>
-        <div style="flex:1">
-          <div style="font-size:12px"><b>${log.user_name}</b>: ${log.action}</div>
-          <div style="font-size:11px; color:var(--text2)">${log.details}</div>
-        </div>
-      </div>`).join('');
-  } catch(e) { container.innerHTML = 'Error loading logs'; }
 }
- let currentCalendarView = 'grid';
+
+// Helper to clear filters
+function clearAuditFilters() {
+    document.getElementById('audit-filter-user').value = 'all';
+    document.getElementById('audit-filter-date').value = '';
+    renderAuditLogs();
+}
+
+// Make functions global
+window.renderAuditLogs = renderAuditLogs;
+window.clearAuditFilters = clearAuditFilters;
+
 
 function switchCalendarView(view) {
     currentCalendarView = view;
