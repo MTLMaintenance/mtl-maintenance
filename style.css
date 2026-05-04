@@ -1720,3 +1720,50 @@ body {
 html {
     background-color: #001f3f;
 }
+/* Container for the buttons */
+#login-user-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two per row */
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* The User Selection Button */
+.user-select-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px 10px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-select-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent); /* Your primary/accent color */
+  transform: translateY(-2px);
+}
+
+/* The Circle Initial */
+.user-initial {
+  width: 44px;
+  height: 44px;
+  background: var(--accent, #007bff);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+}
