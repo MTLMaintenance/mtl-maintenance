@@ -1084,13 +1084,24 @@ body, html {
     gap: 15px !important;
   }
 
-  /* Calendar Full Screen for PC */
-  #panel-calendar .card {
+ #panel-calendar .card, #cal-grid-container .card {
+    max-width: 100% !important;
     width: 98% !important;
-    min-height: calc(100vh - 120px) !important;
+    margin: 0 auto !important;
+    
+    /* Change from calc(100vh - 180px) to auto */
+    min-height: auto !important; 
+    
+    /* This ensures the card wraps tightly around the calendar grid */
+    height: fit-content !important; 
+    padding-bottom: 20px !important;
+  }
+
+  /* Keep the rows tall, but the card will now stop after the last row */
+  #cal-days .cal-day {
+    min-height: 120px !important; 
   }
 }
-
 /* ============================================================
    3. SHARED COMPONENTS (Dots & Buttons)
    ============================================================ */
