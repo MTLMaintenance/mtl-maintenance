@@ -6867,13 +6867,18 @@ function closeMarkupModal() {
 async function renderAuditLogs() {
     const container = document.getElementById('audit-log-list');
     const userFilter = document.getElementById('audit-filter-user');
-    const dateFilter = document.getElementById('audit-filter-date').value;
-    const selectedUser = userFilter.value;
+    const dateFilterInput = document.getElementById('audit-filter-date');
+    
+    if (!container || !userFilter) return;
 
-    if (!container) return;
+    // 1. Remember what the user currently has selected before we refresh the list
+    const selectedUserBeforeRefresh = userFilter.value;
+    const dateFilter = dateFilterInput ? dateFilterInput.value : '';
+
     container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
 
     try {
+        // 2. Fetch the logs
         const { data, error } = await window._mpdb
             .from('audit_logs')
             .select('*')
@@ -6882,35 +6887,41 @@ async function renderAuditLogs() {
 
         if (error) throw error;
 
-        // --- FIXED: FILL USER FILTER ---
-        // We always check if we need to add names from the data we just fetched
-        if (data && data.length > 0) {
-            // Get every unique name that appears in the logs
-            const logNames = [...new Set(data.map(log => log.user_name))].filter(Boolean).sort();
-            
-            // Get names from state as well (just in case)
-            const stateNames = (state.profiles || state.users || []).map(u => u.full_name || u.username);
-            
-            const allNames = [...new Set([...logNames, ...stateNames])].sort();
+        // --- 3. DYNAMICALLY REBUILD THE DROPDOWN ---
+        // We do this every time to catch new logins or new profiles
+        
+        // Get names from your system profiles (Tanner, Test, etc.)
+        const profileNames = (state.profiles || state.users || []).map(u => u.full_name || u.username);
+        
+        // Get names that actually appear in logs (in case a user was deleted but logs remain)
+        const logNames = data ? data.map(log => log.user_name) : [];
+        
+        // Combine, remove duplicates, filter out empty strings, and sort
+        const allUniqueNames = [...new Set([...profileNames, ...logNames])]
+            .filter(n => n && n.trim() !== "")
+            .sort();
 
-            // Clear and rebuild the dropdown (except for the first "All" option)
-            const currentVal = userFilter.value;
-            userFilter.innerHTML = '<option value="all">All People</option>';
-            
-            allNames.forEach(name => {
-                const opt = document.createElement('option');
-                opt.value = name;
-                opt.textContent = name;
-                userFilter.appendChild(opt);
-            });
-            userFilter.value = currentVal; // Put their selection back
-        }
+        // Rebuild the HTML for the dropdown
+        userFilter.innerHTML = '<option value="all">All People</option>';
+        allUniqueNames.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            userFilter.appendChild(opt);
+        });
 
-        // --- APPLY FILTERS ---
+        // Restore the user's selection
+        userFilter.value = selectedUserBeforeRefresh;
+
+        // --- 4. APPLY FILTERS TO THE DATA ---
         let filtered = data || [];
-        if (selectedUser !== 'all') {
-            filtered = filtered.filter(log => log.user_name === selectedUser);
+
+        // Filter by Person
+        if (userFilter.value !== 'all') {
+            filtered = filtered.filter(log => log.user_name === userFilter.value);
         }
+
+        // Filter by Date
         if (dateFilter) {
             filtered = filtered.filter(log => {
                 const logDate = new Date(log.created_at).toISOString().split('T')[0];
@@ -6918,9 +6929,9 @@ async function renderAuditLogs() {
             });
         }
 
-        // --- RENDER ---
+        // --- 5. RENDER THE LIST ---
         if (filtered.length === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No matching logs found</div>';
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No matching activity found</div>';
             return;
         }
 
@@ -6945,6 +6956,7 @@ async function renderAuditLogs() {
         }).join('');
 
     } catch (e) {
+        console.error("Audit Log Error:", e);
         container.innerHTML = '<div style="padding:20px; color:var(--danger)">Error loading logs</div>';
     }
 }
