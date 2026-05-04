@@ -6882,24 +6882,28 @@ async function renderAuditLogs() {
 
         if (error) throw error;
 
-        // --- FIX: FILL USER FILTER FROM ACTUAL USER LIST ---
-        if (userFilter.options.length <= 1) {
-            // 1. Get everyone currently in the system (Tanner, Test, etc.)
-            // We use state.profiles or state.users depending on your app setup
-            const systemUsers = (state.profiles || state.users || []).map(u => u.full_name || u.username);
+        // --- FIXED: FILL USER FILTER ---
+        // We always check if we need to add names from the data we just fetched
+        if (data && data.length > 0) {
+            // Get every unique name that appears in the logs
+            const logNames = [...new Set(data.map(log => log.user_name))].filter(Boolean).sort();
             
-            // 2. Get any other names found in logs (in case a deleted user did something)
-            const logUsers = data ? data.map(log => log.user_name) : [];
+            // Get names from state as well (just in case)
+            const stateNames = (state.profiles || state.users || []).map(u => u.full_name || u.username);
             
-            // 3. Combine them and remove duplicates
-            const allPossibleUsers = [...new Set([...systemUsers, ...logUsers])].filter(Boolean).sort();
+            const allNames = [...new Set([...logNames, ...stateNames])].sort();
 
-            allPossibleUsers.forEach(u => {
+            // Clear and rebuild the dropdown (except for the first "All" option)
+            const currentVal = userFilter.value;
+            userFilter.innerHTML = '<option value="all">All People</option>';
+            
+            allNames.forEach(name => {
                 const opt = document.createElement('option');
-                opt.value = u;
-                opt.textContent = u;
+                opt.value = name;
+                opt.textContent = name;
                 userFilter.appendChild(opt);
             });
+            userFilter.value = currentVal; // Put their selection back
         }
 
         // --- APPLY FILTERS ---
@@ -6916,7 +6920,7 @@ async function renderAuditLogs() {
 
         // --- RENDER ---
         if (filtered.length === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No activity found</div>';
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No matching logs found</div>';
             return;
         }
 
