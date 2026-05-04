@@ -179,30 +179,56 @@ async function showPinLogin() {
             return;
         }
 
-    var list = document.getElementById('user-name-list');
+  var list = document.getElementById('user-name-list');
+
 if (list && userResult.data) {
     list.innerHTML = ''; // Clear old content
     
+    // FORCE the grid layout on the container via JS
+    list.style.display = 'grid';
+    list.style.gridTemplateColumns = '1fr 1fr';
+    list.style.gap = '15px';
+    list.style.marginTop = '20px';
+    list.style.padding = '10px';
+
     userResult.data.forEach(function(user) {
         var name = user.full_name || user.username;
         var initial = name.charAt(0).toUpperCase();
 
         var card = document.createElement('div');
-        // Use the new UNIQUE class name here
-        card.className = 'modern-login-card'; 
         
-        card.innerHTML = `
-            <div class="modern-avatar-circle">${initial}</div>
-            <p class="modern-user-text">${name}</p>
+        // FORCE all card styles inline
+        card.style.cssText = `
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 12px !important;
+            padding: 20px 10px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: 0.2s !important;
         `;
-        
+
+        // FORCE the Avatar and Name styles inline
+        card.innerHTML = `
+            <div style="width: 48px !important; height: 48px !important; background-color: #3b82f6 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 20px !important; margin-bottom: 10px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;">
+                ${initial}
+            </div>
+            <div style="color: #ffffff !important; font-size: 14px !important; font-weight: 600 !important; text-align: center !important;">
+                ${name}
+            </div>
+        `;
+
         card.onclick = function() { selectUserForLogin(user); };
+        
+        // Add hover effect via JS since we can't do :hover inline
+        card.onmouseenter = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; };
+        card.onmouseleave = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; };
+
         list.appendChild(card);
     });
-}
-    } catch (err) {
-        console.error('Critical error in showPinLogin:', err);
-    }
 }
 function selectUserForLogin(user) {
     selectedLoginUser = user;
