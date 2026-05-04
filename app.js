@@ -179,28 +179,27 @@ async function showPinLogin() {
             return;
         }
 
-      var list = document.getElementById('user-name-list');
-        if (list && userResult.data) {
-            list.innerHTML = ''; // Clear old buttons
-            
-            userResult.data.forEach(function(user) {
-                var name = user.full_name || user.username;
-                var initial = name.charAt(0).toUpperCase();
+    var list = document.getElementById('user-name-list');
+if (list && userResult.data) {
+    list.innerHTML = ''; // Clear old content
+    
+    userResult.data.forEach(function(user) {
+        var name = user.full_name || user.username;
+        var initial = name.charAt(0).toUpperCase();
 
-                // Create the card element
-                var card = document.createElement('div');
-                card.className = 'user-select-btn';
-                
-                // Add the Avatar and the Name inside the card
-                card.innerHTML = `
-                    <div class="user-avatar-circle">${initial}</div>
-                    <div class="user-label-text">${name}</div>
-                `;
-                
-                card.onclick = function() { selectUserForLogin(user); };
-                list.appendChild(card);
-            });
-        }
+        var card = document.createElement('div');
+        // Use the new UNIQUE class name here
+        card.className = 'modern-login-card'; 
+        
+        card.innerHTML = `
+            <div class="modern-avatar-circle">${initial}</div>
+            <p class="modern-user-text">${name}</p>
+        `;
+        
+        card.onclick = function() { selectUserForLogin(user); };
+        list.appendChild(card);
+    });
+}
     } catch (err) {
         console.error('Critical error in showPinLogin:', err);
     }
