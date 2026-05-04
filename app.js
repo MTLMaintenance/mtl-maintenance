@@ -1,3 +1,5 @@
+let chatSub = null;
+let chatChannel = null;
 let currentEditingToolId = null;
 let selectedLoginUser = null;
 let enteredPin = "";
@@ -3690,45 +3692,65 @@ let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoDat
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
-   async function initChat() {
-    // 1. Initial load of existing messages
+  async function initChat() {
+    // --- PART 1: LOAD EXISTING MESSAGES ---
     try {
         const { data } = await window._mpdb.from('chat_messages')
             .select('id, channel, created_at, author, body, author_name')
             .order('created_at', { ascending: false })
             .limit(100);
         state.chatMessages = data || [];
-        updateUnreadBadge();
+        if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
     } catch (e) {
         console.error("Chat load error:", e);
     }
 
-    // 2. Setup Realtime Listener for new messages
+    // --- PART 2: SETUP REALTIME LISTENER ---
     try {
-        window._mpdb.channel('chat').on('postgres_changes', {
+        // FIX: If we already have a subscription, kill it before starting a new one
+        if (chatSub) {
+            window._mpdb.removeChannel(chatSub);
+            chatSub = null;
+        }
+
+        // Create the channel
+        chatSub = window._mpdb.channel('chat-room-updates');
+
+        // Define the logic FIRST (The .on part)
+        chatSub.on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
             table: 'chat_messages'
         }, payload => {
             const msg = payload.new;
+            
+            // Avoid duplicates
+            if (state.chatMessages.some(m => m.id === msg.id)) return;
+            
             state.chatMessages.unshift(msg);
 
-            // Handle @Mentions
-            if (msg.body && msg.body.includes('@' + currentUser.username)) {
+            // Handle @Mentions (Only if currentUser is set)
+            if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
                 showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
             }
 
-            // Update UI if user is looking at the channel
+            // Update UI
             if (msg.channel === currentChannel) {
+                // If it's not my own message, append it to the screen
                 if (msg.author !== currentUser?.username) {
-                    appendChatMessage(msg);
+                    if (typeof appendChatMessage === 'function') appendChatMessage(msg);
                 }
-                markChannelRead(currentChannel);
+                if (typeof markChannelRead === 'function') markChannelRead(currentChannel);
             } else {
-                // Otherwise, update the red notification dots/badges
-                updateUnreadBadge();
+                if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
             }
-        }).subscribe();
+        });
+
+        // NOW call .subscribe() LAST
+        chatSub.subscribe((status) => {
+            if (status === 'SUBSCRIBED') console.log("Realtime Chat Connected ✓");
+        });
+
     } catch (e) {
         console.error("Chat subscription error:", e);
     }
