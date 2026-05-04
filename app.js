@@ -274,32 +274,46 @@ async function verifyUserPin() {
 
     if (data) {
         // 1. Success! Set the current user
-        currentUser = data;
+        // We explicitly add the 'name' property so logAuditAction can find it
+        currentUser = {
+            ...data,
+            name: data.full_name || data.username
+        };
 
         // 2. SAVE THE SESSION so startApp() finds it on refresh
-        // This matches the 'mp_session' check inside your startApp function
         localStorage.setItem('mp_session', JSON.stringify({
             id: data.id,
             username: data.username,
             name: data.full_name || data.username
         }));
 
-        // 3. Create the official session token in Supabase
+        // 3. ACCOUNTABILITY: Log the sign-in event
+        if (typeof logAuditAction === 'function') {
+            // We use 'await' to ensure the log is sent before the screen switches
+            await logAuditAction("Sign In", `Logged into the workspace via PIN.`);
+        }
+
+        // 4. Create the official session token in Supabase
         if (typeof createSession === 'function') {
             await createSession(data.username, data.id);
         }
 
-        // 4. Enter the app
-        await fetchAbsences();
+        // 5. Enter the app
+        if (typeof fetchAbsences === 'function') await fetchAbsences();
+        
         await enterApp(); 
+
+        // Optional: Refresh logs once inside so the login event shows up immediately
+        if (typeof renderAuditLogs === 'function') renderAuditLogs();
 
     } else {
         alert("Incorrect PIN");
         enteredPin = "";
-        updatePinDots();
+        // Safety check for the function name
+        if (typeof updatePinDots === 'function') updatePinDots();
+        else if (typeof updatePinDisplay === 'function') updatePinDisplay();
     }
 }
-
 function updatePinDots() {
     for (let i = 1; i <= 4; i++) {
         document.getElementById(`dot-${i}`).classList.toggle('filled', i <= enteredPin.length);
@@ -6838,7 +6852,6 @@ async function renderAuditLogs() {
     container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
 
     try {
-        // Fetch last 200 items to give room for filtering
         const { data, error } = await window._mpdb
             .from('audit_logs')
             .select('*')
@@ -6846,13 +6859,20 @@ async function renderAuditLogs() {
             .limit(200);
 
         if (error) throw error;
-        if (!data) return;
 
-        // --- 1. DYNAMICALLY FILL USER FILTER ---
-        // Only do this if the dropdown only has the "All" option
+        // --- FIX: FILL USER FILTER FROM ACTUAL USER LIST ---
         if (userFilter.options.length <= 1) {
-            const users = [...new Set(data.map(log => log.user_name))].sort();
-            users.forEach(u => {
+            // 1. Get everyone currently in the system (Tanner, Test, etc.)
+            // We use state.profiles or state.users depending on your app setup
+            const systemUsers = (state.profiles || state.users || []).map(u => u.full_name || u.username);
+            
+            // 2. Get any other names found in logs (in case a deleted user did something)
+            const logUsers = data ? data.map(log => log.user_name) : [];
+            
+            // 3. Combine them and remove duplicates
+            const allPossibleUsers = [...new Set([...systemUsers, ...logUsers])].filter(Boolean).sort();
+
+            allPossibleUsers.forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u;
                 opt.textContent = u;
@@ -6860,13 +6880,11 @@ async function renderAuditLogs() {
             });
         }
 
-        // --- 2. APPLY FILTERS ---
-        let filtered = data;
-
+        // --- APPLY FILTERS ---
+        let filtered = data || [];
         if (selectedUser !== 'all') {
             filtered = filtered.filter(log => log.user_name === selectedUser);
         }
-
         if (dateFilter) {
             filtered = filtered.filter(log => {
                 const logDate = new Date(log.created_at).toISOString().split('T')[0];
@@ -6874,9 +6892,9 @@ async function renderAuditLogs() {
             });
         }
 
-        // --- 3. RENDER THE BEAUTIFIED LIST ---
+        // --- RENDER ---
         if (filtered.length === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No matching logs found</div>';
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No activity found</div>';
             return;
         }
 
@@ -6884,13 +6902,10 @@ async function renderAuditLogs() {
             const dateObj = new Date(log.created_at);
             return `
             <div style="padding:12px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;">
-                <!-- Time Column -->
                 <div style="font-size:10px; color:var(--text3); white-space:nowrap; text-align:center; width:70px; border-right:1px solid var(--border); padding-right:10px">
                     <b style="color:var(--text)">${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</b><br>
                     ${dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'})}
                 </div>
-                
-                <!-- Content Column -->
                 <div style="flex:1">
                     <div style="font-size:13px; margin-bottom:3px">
                         <span style="color:var(--accent); font-weight:bold">${log.user_name || 'System'}</span> 
@@ -6904,11 +6919,9 @@ async function renderAuditLogs() {
         }).join('');
 
     } catch (e) {
-        console.error(e);
         container.innerHTML = '<div style="padding:20px; color:var(--danger)">Error loading logs</div>';
     }
 }
-
 // Helper to clear filters
 function clearAuditFilters() {
     document.getElementById('audit-filter-user').value = 'all';
