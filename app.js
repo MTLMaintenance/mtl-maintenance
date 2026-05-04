@@ -675,7 +675,7 @@ function showRegister() {
     document.getElementById('pending-view').style.display = 'none';
 
     // Show registration
-    document.getElementById('register-view').style.display = 'block';
+    document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 }
 function showPending() {
