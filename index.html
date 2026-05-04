@@ -216,14 +216,14 @@
     </table></div>
   </div>
 >
- <!-- WORK ORDERS -->
+<!-- WORK ORDERS PANEL -->
 <div class="panel" id="panel-tasks">
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
     <span class="section-title">Work Orders</span>
     
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:nowrap">
       
-      <!-- FIX: Changed id to "task-filter" -->
+      <!-- Dropdown 1: STATUS FILTER (ID: task-filter) -->
       <select class="form-select" id="task-filter" onchange="renderTasks()" 
               style="font-size:12px; padding:5px 8px; width:auto; min-width:100px; margin:0">
         <option value="all">All</option>
@@ -232,7 +232,7 @@
         <option value="completed">Completed</option>
       </select>
 
-      <!-- KEEP: id="task-equip-filter" (This is the one the app fills with equipment) -->
+      <!-- Dropdown 2: EQUIPMENT FILTER (ID: task-equip-filter) -->
       <select class="form-select" id="task-equip-filter" onchange="renderTasks()" 
               style="font-size:12px; padding:5px 8px; width:auto; min-width:140px; margin:0">
         <option value="all">All Equipment</option>
@@ -249,6 +249,29 @@
       </button>
     </div>
   </div>
+
+  <!-- TABLE AREA -->
+  <div class="table-wrap" style="margin-top:20px; overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left; border-bottom:2px solid var(--border);">
+          <th>Work Order</th>
+          <th>Equipment</th>
+          <th>Priority</th>
+          <th>Assigned</th>
+          <th>Due Date</th>
+          <th>Cost</th>
+          <th>Parts Used</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tasks-table-body">
+        <!-- JS fills this -->
+      </tbody>
+    </table>
+  </div>
+</div>
 
   
   <!-- SUPPLIERS -->
