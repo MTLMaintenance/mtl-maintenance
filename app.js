@@ -161,16 +161,13 @@ async function promptResetPin(userId) {
 }
 async function showPinLogin() {
     try {
-        console.log('Switching to PIN Login UI...');
-        // Hide the standard login if it exists
+        console.log('Switching to PIN Login UI (Compact Mode)...');
         var oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
         if (oldLogin) oldLogin.style.display = 'none';
 
-        // Show the PIN UI
         var pinUI = document.getElementById('pin-login-container');
         if (pinUI) pinUI.style.display = 'block';
 
-        // Fetch users from Supabase
         var userResult = await window._mpdb
             .from('profiles')
             .select('id, username, full_name')
@@ -185,14 +182,14 @@ async function showPinLogin() {
         var list = document.getElementById('user-name-list');
 
         if (list && userResult.data) {
-            list.innerHTML = ''; // Clear old content
+            list.innerHTML = ''; 
             
-            // Set the grid layout via JS
+            // COMPACT GRID: 3 columns instead of 2
             list.style.display = 'grid';
-            list.style.gridTemplateColumns = '1fr 1fr';
-            list.style.gap = '15px';
-            list.style.marginTop = '20px';
-            list.style.padding = '10px';
+            list.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
+            list.style.gap = '10px';
+            list.style.marginTop = '15px';
+            list.style.padding = '5px';
 
             userResult.data.forEach(function(user) {
                 var name = user.full_name || user.username;
@@ -200,12 +197,12 @@ async function showPinLogin() {
 
                 var card = document.createElement('div');
                 
-                // Set the card styles (White cards with slight transparency)
+                // COMPACT CARD STYLING
                 card.style.cssText = `
-                    background: rgba(255, 255, 255, 0.1) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-                    border-radius: 12px !important;
-                    padding: 20px 10px !important;
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                    border-radius: 10px !important;
+                    padding: 12px 5px !important;
                     display: flex !important;
                     flex-direction: column !important;
                     align-items: center !important;
@@ -214,21 +211,20 @@ async function showPinLogin() {
                     transition: 0.2s !important;
                 `;
 
-                // Set the inner HTML (Blue circle and white text)
+                // COMPACT AVATAR (shrunk from 48px to 36px)
                 card.innerHTML = `
-                    <div style="width: 48px !important; height: 48px !important; background-color: #3b82f6 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 20px !important; margin-bottom: 10px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;">
+                    <div style="width: 36px !important; height: 36px !important; background-color: #3b82f6 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 16px !important; margin-bottom: 8px !important; box-shadow: 0 3px 6px rgba(0,0,0,0.3) !important;">
                         ${initial}
                     </div>
-                    <div style="color: #ffffff !important; font-size: 14px !important; font-weight: 600 !important; text-align: center !important; margin: 0 !important;">
+                    <div style="color: #ffffff !important; font-size: 12px !important; font-weight: 500 !important; text-align: center !important; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; width: 100%; white-space: nowrap;">
                         ${name}
                     </div>
                 `;
 
                 card.onclick = function() { selectUserForLogin(user); };
                 
-                // Hover effects
-                card.onmouseenter = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; };
-                card.onmouseleave = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; };
+                card.onmouseenter = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; };
+                card.onmouseleave = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; };
 
                 list.appendChild(card);
             });
