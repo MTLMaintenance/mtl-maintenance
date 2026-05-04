@@ -162,12 +162,15 @@ async function promptResetPin(userId) {
 async function showPinLogin() {
     try {
         console.log('Switching to PIN Login UI...');
+        // Hide the standard login if it exists
         var oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
         if (oldLogin) oldLogin.style.display = 'none';
 
+        // Show the PIN UI
         var pinUI = document.getElementById('pin-login-container');
         if (pinUI) pinUI.style.display = 'block';
 
+        // Fetch users from Supabase
         var userResult = await window._mpdb
             .from('profiles')
             .select('id, username, full_name')
@@ -179,56 +182,60 @@ async function showPinLogin() {
             return;
         }
 
-  var list = document.getElementById('user-name-list');
+        var list = document.getElementById('user-name-list');
 
-if (list && userResult.data) {
-    list.innerHTML = ''; // Clear old content
-    
-    // FORCE the grid layout on the container via JS
-    list.style.display = 'grid';
-    list.style.gridTemplateColumns = '1fr 1fr';
-    list.style.gap = '15px';
-    list.style.marginTop = '20px';
-    list.style.padding = '10px';
+        if (list && userResult.data) {
+            list.innerHTML = ''; // Clear old content
+            
+            // Set the grid layout via JS
+            list.style.display = 'grid';
+            list.style.gridTemplateColumns = '1fr 1fr';
+            list.style.gap = '15px';
+            list.style.marginTop = '20px';
+            list.style.padding = '10px';
 
-    userResult.data.forEach(function(user) {
-        var name = user.full_name || user.username;
-        var initial = name.charAt(0).toUpperCase();
+            userResult.data.forEach(function(user) {
+                var name = user.full_name || user.username;
+                var initial = name.charAt(0).toUpperCase();
 
-        var card = document.createElement('div');
-        
-        // FORCE all card styles inline
-        card.style.cssText = `
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 12px !important;
-            padding: 20px 10px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: pointer !important;
-            transition: 0.2s !important;
-        `;
+                var card = document.createElement('div');
+                
+                // Set the card styles (White cards with slight transparency)
+                card.style.cssText = `
+                    background: rgba(255, 255, 255, 0.1) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                    border-radius: 12px !important;
+                    padding: 20px 10px !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    cursor: pointer !important;
+                    transition: 0.2s !important;
+                `;
 
-        // FORCE the Avatar and Name styles inline
-        card.innerHTML = `
-            <div style="width: 48px !important; height: 48px !important; background-color: #3b82f6 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 20px !important; margin-bottom: 10px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;">
-                ${initial}
-            </div>
-            <div style="color: #ffffff !important; font-size: 14px !important; font-weight: 600 !important; text-align: center !important;">
-                ${name}
-            </div>
-        `;
+                // Set the inner HTML (Blue circle and white text)
+                card.innerHTML = `
+                    <div style="width: 48px !important; height: 48px !important; background-color: #3b82f6 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 20px !important; margin-bottom: 10px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;">
+                        ${initial}
+                    </div>
+                    <div style="color: #ffffff !important; font-size: 14px !important; font-weight: 600 !important; text-align: center !important; margin: 0 !important;">
+                        ${name}
+                    </div>
+                `;
 
-        card.onclick = function() { selectUserForLogin(user); };
-        
-        // Add hover effect via JS since we can't do :hover inline
-        card.onmouseenter = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; };
-        card.onmouseleave = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; };
+                card.onclick = function() { selectUserForLogin(user); };
+                
+                // Hover effects
+                card.onmouseenter = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; };
+                card.onmouseleave = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; };
 
-        list.appendChild(card);
-    });
+                list.appendChild(card);
+            });
+        }
+    } catch (err) {
+        console.error('Critical error in showPinLogin:', err);
+    }
 }
 function selectUserForLogin(user) {
     selectedLoginUser = user;
@@ -4531,27 +4538,6 @@ async function deleteObservation(obsId, equipId) {
     } catch(e) { showToast("Failed"); }
 }
 
-function editObservation(obsId) {
-    const o = state.observations.find(x => x.id === obsId);
-    if(!o) return;
-
-    const newText = prompt("Edit Observation:", o.body);
-    if(newText === null || newText.trim() === "") return;
-
-    const newSev = prompt("Change Severity? (info, watch, or critical):", o.severity);
-    const validSevs = ['info', 'watch', 'critical'];
-    
-    o.body = newText;
-    if(validSevs.includes(newSev)) o.severity = newSev;
-
-    window._mpdb.from('observations').update({
-        body: o.body,
-        severity: o.severity
-    }).eq('id', obsId).then(() => {
-        refreshObsList(o.equip_id);
-        showToast("Updated ✓");
-    });
-}
 async function saveEditObservation(obsId, equipId) {
   const body = document.getElementById('edit-obs-body')?.value.trim();
   const severity = document.getElementById('edit-obs-severity')?.value;
