@@ -179,15 +179,26 @@ async function showPinLogin() {
             return;
         }
 
-        var list = document.getElementById('user-name-list');
+      var list = document.getElementById('user-name-list');
         if (list && userResult.data) {
-            list.innerHTML = '';
+            list.innerHTML = ''; // Clear old buttons
+            
             userResult.data.forEach(function(user) {
-                var btn = document.createElement('button');
-                btn.className = 'user-select-btn';
-                btn.textContent = user.full_name || user.username;
-                btn.onclick = function() { selectUserForLogin(user); };
-                list.appendChild(btn);
+                var name = user.full_name || user.username;
+                var initial = name.charAt(0).toUpperCase();
+
+                // Create the card element
+                var card = document.createElement('div');
+                card.className = 'user-select-btn';
+                
+                // Add the Avatar and the Name inside the card
+                card.innerHTML = `
+                    <div class="user-avatar-circle">${initial}</div>
+                    <div class="user-label-text">${name}</div>
+                `;
+                
+                card.onclick = function() { selectUserForLogin(user); };
+                list.appendChild(card);
             });
         }
     } catch (err) {
