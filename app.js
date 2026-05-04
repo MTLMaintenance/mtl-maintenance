@@ -1800,36 +1800,51 @@ function renderTasks() {
     </tr>`;
   }).join('');
 }
-async function deleteTask(id){
-  if(!confirm('Delete this work order?'))return;
-  // THE LOG (Do this BEFORE deleting so we still have the name)
-  logAuditAction("Deleted WO", `Removed "${task.name}" for ${equipName(task.equipId)}`);
+async function deleteTask(id) {
+  if (!confirm('Delete this work order?')) return;
 
-  const task = state.tasks.find(t=>t.id===id);
-  // Delete linked observation - try obs_id first, then fallback to name matching
-  if(task && task.notes && task.notes.startsWith('Auto-created from critical obs')) {
+  // 1. Find the task FIRST (so we can use it for logging and logic)
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return; // If task doesn't exist, stop here
+
+  // 2. Audit Log (Now it has access to the 'task' variable)
+  logAuditAction("Deleted WO", `Removed "${task.name}" for ${typeof equipName === 'function' ? equipName(task.equip_id || task.equipId) : 'Equipment'}`);
+
+  // 3. Delete linked observations
+  if (task.notes && task.notes.startsWith('Auto-created from critical obs')) {
     let obsToDelete = null;
-    if(task.obs_id) {
-      obsToDelete = state.observations.find(o=>o.id===task.obs_id);
+    if (task.obs_id) {
+      obsToDelete = state.observations.find(o => o.id === task.obs_id);
     }
-    if(!obsToDelete) {
-      // Fallback: match by equip and author in notes
-      obsToDelete = state.observations.find(o=>
-        o.equip_id===task.equipId && o.severity==='critical' &&
+    if (!obsToDelete) {
+      // Fallback matching
+      obsToDelete = state.observations.find(o =>
+        (o.equip_id === task.equip_id || o.equip_id === task.equipId) && 
+        o.severity === 'critical' &&
         task.notes.includes(o.author)
       );
     }
-    if(obsToDelete) {
+    if (obsToDelete) {
       try {
         await window._mpdb.from('observations').delete().eq('id', obsToDelete.id);
-        state.observations = state.observations.filter(o=>o.id!==obsToDelete.id);
-        showToast('Work order and linked observation deleted');
-      } catch(e) {}
+        state.observations = state.observations.filter(o => o.id !== obsToDelete.id);
+      } catch (e) { console.error("Linked obs delete failed", e); }
     }
   }
-  state.tasks=state.tasks.filter(t=>t.id!==id);
-  await persist('tasks','delete',{id});
-  renderTasks(); renderDashboard();
+
+  // 4. REMOVE FROM STATE (This is what fixes the Search Bar)
+  state.tasks = state.tasks.filter(t => t.id !== id);
+
+  // 5. PERSIST TO DATABASE
+  await persist('tasks', 'delete', { id });
+
+  // 6. RE-RENDER UI
+  renderTasks(); 
+  renderDashboard();
+  
+  // 7. HIDE SEARCH RESULTS
+  const results = document.getElementById('search-results');
+  if (results) results.style.display = 'none';
 }
 
 // ============================================================
@@ -4914,36 +4929,50 @@ function acceptToolSuggestion() {
   document.getElementById('tools-suggestion-area').style.display = 'none';
 }
 function handleGlobalSearch() {
-  const q = document.getElementById('global-search').value.toLowerCase().trim();
-  const res = document.getElementById('search-results');
-  if (q.length < 2) { res.style.display = 'none'; return; }
+  const input = document.getElementById('global-search');
+  const resultsContainer = document.getElementById('search-results');
+  const query = input.value.toLowerCase().trim();
 
-  let html = '';
-  // Search Equipment
-  const eq = state.equipment.filter(e => e.name.toLowerCase().includes(q) || (e.serial && e.serial.toLowerCase().includes(q)));
-  if (eq.length) html += `<div style="padding:8px; font-size:11px; font-weight:600; color:var(--text3); background:var(--bg2)">EQUIPMENT</div>` + 
-    eq.map(e => `<div style="padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border)" onclick="openEquipDetail('${e.id}'); document.getElementById('search-results').style.display='none'">${e.name} <span style="font-size:11px; color:var(--text2)">(${e.serial})</span></div>`).join('');
-
-  // Search Work Orders
-  const tk = state.tasks.filter(t => t.name.toLowerCase().includes(q) || (t.assign && t.assign.toLowerCase().includes(q)));
-  if (tk.length) html += `<div style="padding:8px; font-size:11px; font-weight:600; color:var(--text3); background:var(--bg2)">WORK ORDERS</div>` + 
-    tk.map(t => `<div style="padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border)" onclick="openTaskDetail('${t.id}'); document.getElementById('search-results').style.display='none'">${t.name} <span style="font-size:11px; color:var(--text2)">[${t.status}]</span></div>`).join('');
-
-  // Search Parts
-  const pt = state.parts.filter(p => p.name.toLowerCase().includes(q) || p.num.toLowerCase().includes(q));
-  if (pt.length) html += `<div style="padding:8px; font-size:11px; font-weight:600; color:var(--text3); background:var(--bg2)">PARTS</div>` + 
-    pt.map(p => `<div style="padding:8px 12px; border-bottom:1px solid var(--border)">${p.name} <span style="font-size:11px; color:var(--text2)">(${p.num}) - ${p.qty} in stock</span></div>`).join('');
- // Search Tools
-  const tl = state.tools.filter(t => t.name.toLowerCase().includes(q));
-  if (tl.length) {
-    html += `<div style="padding:6px 10px; font-size:10px; font-weight:700; color:var(--text3); background:var(--bg2)">TOOLS</div>`;
-    html += tl.map(t => `<div style="padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px" onclick="showPanel('tools'); editTool('${t.id}'); document.getElementById('search-results').style.display='none'"><b>${t.name}</b> <span style="font-size:11px; color:var(--text2)">@ ${t.location || 'Shop'}</span></div>`).join('');
+  if (!query) {
+    resultsContainer.style.display = 'none';
+    return;
   }
 
-  res.innerHTML = html || `<div style="padding:20px; text-align:center; color:var(--text3); font-size:13px">No results for "${q}"</div>`;
-  res.style.display = 'block';
-}
+  // 1. Filter live data ONLY (This ignores anything not in your current state)
+  const equipment = state.equipment.filter(e => e.name.toLowerCase().includes(query));
+  const tasks = state.tasks.filter(t => t.name.toLowerCase().includes(query));
+  const docs = state.documents.filter(d => d.name.toLowerCase().includes(query));
+  const parts = state.parts ? state.parts.filter(p => p.name.toLowerCase().includes(query)) : [];
 
+  // 2. If no results found
+  if (equipment.length === 0 && tasks.length === 0 && docs.length === 0 && parts.length === 0) {
+    resultsContainer.innerHTML = '<div style="padding:10px; font-size:12px; color:var(--text2)">No results found</div>';
+    resultsContainer.style.display = 'block';
+    return;
+  }
+
+  // 3. Build the results list
+  let html = '';
+  
+  if (equipment.length) {
+    html += '<div style="padding:5px 10px; background:rgba(255,255,255,0.05); font-size:10px; font-weight:bold; color:var(--accent)">EQUIPMENT</div>';
+    equipment.forEach(e => {
+      html += `<div class="search-item" onclick="openEquipDetail('${e.id}')">${e.name}</div>`;
+    });
+  }
+
+  if (tasks.length) {
+    html += '<div style="padding:5px 10px; background:rgba(255,255,255,0.05); font-size:10px; font-weight:bold; color:var(--accent)">WORK ORDERS</div>';
+    tasks.forEach(t => {
+      html += `<div class="search-item" onclick="openTaskDetail('${t.id}')">${t.name}</div>`;
+    });
+  }
+
+  // Add more sections for Docs or Parts if needed...
+
+  resultsContainer.innerHTML = html;
+  resultsContainer.style.display = 'block';
+}
 
 async function toggleToolStatus(id) {
   const t = state.tools.find(x => x.id === id);
