@@ -4295,7 +4295,8 @@ async function enterApp(){
   }
 
   // 4. Data Logic
-   await fetchTools();
+ autoCleanupAuditLogs();  
+ await fetchTools();
  await loadState();
   await runRecurrenceEngine();
   applyUserGroupFilter();
@@ -7988,4 +7989,33 @@ async function logAuditAction(action, details) {
   } catch (e) {
     console.error("Failed to log audit action:", e);
   }
+}
+async function autoCleanupAuditLogs() {
+    // Only run this if the current user is an Admin (optional safety check)
+    if (currentUser && currentUser.role !== 'admin') return;
+
+    console.log("Checking for old audit logs to purge...");
+
+    // 1. Calculate the date 14 days ago
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 14);
+    const isoCutoff = cutoffDate.toISOString();
+
+    try {
+        // 2. Delete rows where created_at is LESS THAN (older than) the cutoff
+        const { error, count } = await window._mpdb
+            .from('audit_logs')
+            .delete({ count: 'exact' })
+            .lt('created_at', isoCutoff);
+
+        if (error) throw error;
+
+        if (count > 0) {
+            console.log(`Successfully purged ${count} old audit logs.`);
+            // Log that a cleanup happened!
+            await logAuditAction("System Maintenance", `Auto-purged ${count} logs older than 14 days.`);
+        }
+    } catch (e) {
+        console.error("Auto-cleanup failed:", e);
+    }
 }
