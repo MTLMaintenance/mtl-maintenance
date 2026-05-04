@@ -1720,4 +1720,53 @@ body {
 html {
     background-color: #001f3f;
 }
+/* Make the container a grid of 2 columns */
+#user-name-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 15px !important;
+    margin-top: 20px !important;
+}
 
+/* The New Card Style */
+.user-select-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px !important;
+    padding: 25px 10px !important;
+    display: flex !important;
+    flex-direction: column !important; /* Circle on top, name on bottom */
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer;
+    transition: all 0.2s ease !important;
+    color: white !important;
+    height: auto !important; /* Let it grow vertically */
+}
+
+.user-select-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: #3b82f6 !important;
+    transform: translateY(-3px);
+}
+
+/* The Initial/Avatar Circle */
+.user-avatar-circle {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.user-label-text {
+    font-size: 14px;
+    font-weight: 500;
+}
