@@ -162,24 +162,21 @@ async function promptResetPin(userId) {
     } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
-    console.log('Fetching users for login list...');
+    console.log('Rendering user selection list...');
     try {
-        // 1. Show the Login View and the Name Stage
+        // 1. Show the correct containers
         const loginView = document.getElementById('login-view');
         const nameStage = document.getElementById('login-stage-names');
-        const pinStage = document.getElementById('login-stage-pin');
-        const regView = document.getElementById('register-view');
-        const pendView = document.getElementById('pending-view');
         const appUI = document.getElementById('app');
-
+        
         if (loginView) loginView.style.display = 'block';
         if (nameStage) nameStage.style.display = 'block';
-        if (pinStage) pinStage.style.display = 'none';
-        if (regView) regView.style.display = 'none';
-        if (pendView) pendView.style.display = 'none';
         if (appUI) appUI.style.display = 'none';
 
-        // 2. Fetch Users from Supabase
+        const list = document.getElementById('user-name-list');
+        if (!list) return console.error("ID 'user-name-list' not found in HTML");
+
+        // 2. Fetch the users
         const { data: users, error } = await window._mpdb
             .from('profiles')
             .select('id, username, full_name')
@@ -188,14 +185,11 @@ async function showPinLogin() {
 
         if (error) throw error;
 
-        const list = document.getElementById('user-name-list');
-        if (!list) return console.error("Could not find user-name-list");
-
-        // 3. Clear and Render
-        list.innerHTML = '';
+        // 3. Render the cards
+        list.innerHTML = ''; 
         
         if (!users || users.length === 0) {
-            list.innerHTML = '<div style="grid-column: span 2; color:orange; padding:20px; text-align:center">No approved users found.</div>';
+            list.innerHTML = '<div style="grid-column:span 2; color:orange; padding:20px; text-align:center">No approved users found in database.</div>';
             return;
         }
 
@@ -204,10 +198,10 @@ async function showPinLogin() {
             const initial = name.charAt(0).toUpperCase();
             const card = document.createElement('div');
             
-            // Professional Card Styling
+            // Re-using the professional card style we built
             card.style.cssText = `
-                background: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.15);
                 border-radius: 12px;
                 padding: 15px 5px;
                 display: flex;
@@ -219,20 +213,15 @@ async function showPinLogin() {
 
             card.innerHTML = `
                 <div style="width: 40px; height: 40px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px; font-size: 18px;">${initial}</div>
-                <div style="color: white; font-size: 12px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px;">${name}</div>
+                <div style="color: white; font-size: 12px; font-weight: 600; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
             `;
 
             card.onclick = () => selectUserForLogin(user);
-            
-            // Hover effect
-            card.onmouseenter = () => { card.style.background = 'rgba(255, 255, 255, 0.15)'; };
-            card.onmouseleave = () => { card.style.background = 'rgba(255, 255, 255, 0.08)'; };
-            
             list.appendChild(card);
         });
 
     } catch (e) {
-        console.error("Critical Login List Error:", e);
+        console.error("showPinLogin failed:", e);
     }
 }
 
@@ -632,7 +621,7 @@ let currentUser = null;
 // INIT
 // ============================================================
 async function startApp() {
-  console.log("Starting App Init...");
+  console.log("--- Starting Application Init ---");
   try { localStorage.removeItem('mp_users'); } catch(e) {}
   
   try {
@@ -644,55 +633,34 @@ async function startApp() {
     if (typeof teleportModals === 'function') teleportModals(); 
   } catch(e) { console.warn('Supabase init failed:', e); }
 
-  if(document.getElementById('setup-banner')) {
-    document.getElementById('setup-banner').style.display='none';
-  }
-
   try {
-    const sessionData = typeof validateSession === 'function' ? await validateSession() : null;
+    const sessionData = await validateSession();
     
+    // CASE A: User is already logged in
     if(sessionData) {
-      const { data: profile } = await window._mpdb
-        .from('profiles')
-        .select('*')
-        .eq('username', sessionData.username)
-        .single();
+      const { data: profile } = await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single();
 
       if(profile && profile.status === 'approved') {
-        const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
-        currentUser = { 
-            ...profile, 
-            name: profile.full_name || sessionData.username, 
-            role: isAdmin ? 'admin' : profile.role, 
-            username: sessionData.username 
-        };
+        currentUser = { ...profile, name: profile.full_name || sessionData.username };
         localStorage.setItem('mp_session', JSON.stringify(currentUser));
         if (typeof applyUserPreferences === 'function') applyUserPreferences();
-        if (typeof fetchAbsences === 'function') await fetchAbsences();  
-        if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns(); 
         await enterApp(); 
-        return; // EXIT: We are logged in.
+        return; // Success, stop here.
       }
     }
 
-    // --- CRITICAL FIX: If we get here, no session was found. SHOW LOGIN. ---
-    console.log("No valid session found. Launching PIN login...");
+    // CASE B: No session found. WE MUST SHOW THE LOGIN LIST.
+    console.log("No session found. Running showPinLogin...");
     showPinLogin();
 
   } catch(e) { 
-    console.error("Session validation failed:", e);
-    showPinLogin(); // Fallback to login on error
+    console.error("Startup error:", e);
+    showPinLogin(); // Show login even if validation crashes
   }
 
-  // Event Listeners
-  window.addEventListener('online', () => { 
-    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='none';  
-    setSyncStatus('online'); 
-  });
-  window.addEventListener('offline', () => { 
-    if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='block'; 
-    setSyncStatus('offline'); 
-  });
+  // Set up online/offline listeners
+  window.addEventListener('online', () => setSyncStatus('online'));
+  window.addEventListener('offline', () => setSyncStatus('offline'));
 }
 // ============================================================
 // AUTH
