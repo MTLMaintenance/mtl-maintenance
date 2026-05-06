@@ -162,63 +162,77 @@ async function promptResetPin(userId) {
     } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
+    console.log('Fetching users for login list...');
     try {
-        // 1. UI Switch: Show login container, hide app
-        const pinUI = document.getElementById('pin-login-container');
-        const appUI = document.getElementById('app') || document.getElementById('app-container');
-        if (pinUI) pinUI.style.display = 'block';
+        // 1. Show the Login View and the Name Stage
+        const loginView = document.getElementById('login-view');
+        const nameStage = document.getElementById('login-stage-names');
+        const pinStage = document.getElementById('login-stage-pin');
+        const regView = document.getElementById('register-view');
+        const pendView = document.getElementById('pending-view');
+        const appUI = document.getElementById('app');
+
+        if (loginView) loginView.style.display = 'block';
+        if (nameStage) nameStage.style.display = 'block';
+        if (pinStage) pinStage.style.display = 'none';
+        if (regView) regView.style.display = 'none';
+        if (pendView) pendView.style.display = 'none';
         if (appUI) appUI.style.display = 'none';
 
-        const list = document.getElementById('user-name-list');
-        if (!list) return;
-
-        list.innerHTML = '<div style="color:#aaa; padding:20px; grid-column:span 3">Loading users...</div>';
-
-        // 2. Fetch Users
+        // 2. Fetch Users from Supabase
         const { data: users, error } = await window._mpdb
             .from('profiles')
             .select('id, username, full_name')
             .eq('status', 'approved')
             .order('full_name', { ascending: true });
 
-        if (error || !users || users.length === 0) {
-            list.innerHTML = '<div style="color:orange; padding:20px; grid-column:span 3">No approved users found.</div>';
+        if (error) throw error;
+
+        const list = document.getElementById('user-name-list');
+        if (!list) return console.error("Could not find user-name-list");
+
+        // 3. Clear and Render
+        list.innerHTML = '';
+        
+        if (!users || users.length === 0) {
+            list.innerHTML = '<div style="grid-column: span 2; color:orange; padding:20px; text-align:center">No approved users found.</div>';
             return;
         }
-
-        // 3. Render Cards
-        list.innerHTML = '';
-        list.style.display = 'grid';
-        list.style.gridTemplateColumns = 'repeat(3, 1fr)';
-        list.style.gap = '10px';
 
         users.forEach(user => {
             const name = user.full_name || user.username;
             const initial = name.charAt(0).toUpperCase();
             const card = document.createElement('div');
             
+            // Professional Card Styling
             card.style.cssText = `
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.08);
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 12px;
-                padding: 12px 5px;
+                padding: 15px 5px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 cursor: pointer;
+                transition: 0.2s;
             `;
 
             card.innerHTML = `
-                <div style="width: 36px; height: 36px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">${initial}</div>
-                <div style="color: white; font-size: 11px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                <div style="width: 40px; height: 40px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px; font-size: 18px;">${initial}</div>
+                <div style="color: white; font-size: 12px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px;">${name}</div>
             `;
 
             card.onclick = () => selectUserForLogin(user);
+            
+            // Hover effect
+            card.onmouseenter = () => { card.style.background = 'rgba(255, 255, 255, 0.15)'; };
+            card.onmouseleave = () => { card.style.background = 'rgba(255, 255, 255, 0.08)'; };
+            
             list.appendChild(card);
         });
 
-    } catch (err) {
-        console.error('Login Render Error:', err);
+    } catch (e) {
+        console.error("Critical Login List Error:", e);
     }
 }
 
@@ -226,18 +240,22 @@ function selectUserForLogin(user) {
     selectedLoginUser = user;
     enteredPin = "";
     
-    // Update the greeting text
+    // Update display
     const display = document.getElementById('selected-user-display');
-    if (display) {
-        display.textContent = "Hello, " + (user.full_name || user.username);
-    }
+    if (display) display.textContent = "Hello, " + (user.full_name || user.username);
 
-    // Switch views
+    // Switch Stages
     document.getElementById('login-stage-names').style.display = 'none';
     document.getElementById('login-stage-pin').style.display = 'block';
     
-    // Clear display if it exists
-    updatePinDisplay();
+    // Clear any dots if function exists
+    if (typeof updatePinDots === 'function') updatePinDots();
+}
+
+function backToNames() {
+    enteredPin = "";
+    document.getElementById('login-stage-names').style.display = 'block';
+    document.getElementById('login-stage-pin').style.display = 'none';
 }
 function pressPin(num) {
     if (num === 'clear') {
