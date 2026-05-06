@@ -4278,10 +4278,15 @@ async function enterApp() {
   const preferredPage = (currentUser && currentUser.preferences && currentUser.preferences.startPage) 
                         ? currentUser.preferences.startPage 
                         : 'dashboard';
-  
+   
+    
   // TRIGGER THE PANEL
   showPanel(preferredPage);
-
+const home = (currentUser.preferences && currentUser.preferences.startPage) 
+                 ? currentUser.preferences.startPage 
+                 : 'dashboard';
+                 
+    showPanel(home); 
   // 6. Start Background Services
   if (typeof initChat === 'function') await initChat();
   if (typeof autoCleanupAuditLogs === 'function') autoCleanupAuditLogs();
@@ -8012,28 +8017,42 @@ function applyUserPreferences() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. Fix the "Loading" text instantly
-    const nameEl = document.getElementById('p-topbar-name');
-    if (nameEl) {
-        nameEl.textContent = currentUser.name; // Uses the name we just set in verifyUserPin
-    }
-
-    // 2. Update Emoji
-    const emojiEl = document.getElementById('p-status-emoji');
-    if (emojiEl) {
-        const emojiMap = { 'Available':'🟢', 'In the Field':'🚜', 'At the Shop':'🔧', 'On Lunch':'🍔', 'Busy':'🔴' };
-        emojiEl.textContent = emojiMap[p.status] || '🟢';
-    }
-
-    // 3. Apply Accent Color
+    // 1. LIVE ACCENT COLOR
     if (p.accentColor) {
         document.documentElement.style.setProperty('--accent', p.accentColor);
     }
+
+    // 2. LIVE TOPBAR IDENTITY (Name & Status)
+    const nameEl = document.getElementById('p-topbar-name');
+    const emojiEl = document.getElementById('p-status-emoji');
     
-    // 4. Update Dashboard Note
+    if (nameEl) nameEl.textContent = currentUser.name;
+    if (emojiEl) {
+        const emojiMap = { 
+            'Available':'🟢', 
+            'In the Field':'🚜', 
+            'At the Shop':'🔧', 
+            'On Lunch':'🍔', 
+            'Busy':'🔴' 
+        };
+        emojiEl.textContent = emojiMap[p.status] || '🟢';
+    }
+
+    // 3. LIVE DASHBOARD STICKY NOTE
     const noteContainer = document.getElementById('personal-note-widget');
     if (noteContainer) {
-        noteContainer.innerHTML = p.notes ? `<div class="personal-note-card"><b>📌 Note:</b> ${p.notes}</div>` : '';
+        if (p.notes && p.notes.trim() !== "") {
+            noteContainer.innerHTML = `
+                <div style="background:var(--accent); color:white; padding:12px 15px; border-radius:12px; margin-bottom:20px; display:flex; gap:12px; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2);">
+                    <div style="font-size:22px">📌</div>
+                    <div style="flex:1">
+                        <div style="font-size:10px; text-transform:uppercase; opacity:0.8; font-weight:bold;">Private Note</div>
+                        <div style="font-size:14px; font-weight:500">${p.notes}</div>
+                    </div>
+                </div>`;
+        } else {
+            noteContainer.innerHTML = ''; 
+        }
     }
 }
 function openProfileModal() {
@@ -8062,58 +8081,47 @@ function setAccent(color) {
 }
 
 async function saveUserProfile() {
-    // 1. Safety Check: Make sure we are actually logged in
-    if (!currentUser || !currentUser.id) {
-        showToast("Session expired. Please log in again.");
-        return;
-    }
-
     const newName = document.getElementById('p-name').value.trim();
+    if (!newName) return alert("Please enter a name");
+
     const newPrefs = {
         status: document.getElementById('p-status').value,
         startPage: document.getElementById('p-start-page').value,
         accentColor: document.getElementById('p-accent-color').value,
-        avatarStyle: document.getElementById('p-avatar-style').value,
         notes: document.getElementById('p-notes').value,
     };
 
-    if (!newName) {
-        showToast("Please enter a name");
-        return;
-    }
-
     try {
-        // 2. Save to Database
-        const { error } = await window._mpdb.from('profiles').update({ 
-            full_name: newName, 
-            preferences: newPrefs 
-        }).eq('id', currentUser.id);
+        // 1. Update Supabase
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ 
+                full_name: newName,
+                preferences: newPrefs 
+            })
+            .eq('id', currentUser.id);
 
         if (error) throw error;
 
-        // 3. Update LIVE Object (The variable currently in memory)
+        // 2. Update Live Memory
         currentUser.name = newName;
-        currentUser.full_name = newName; // Update both to be safe
         currentUser.preferences = newPrefs;
 
-        // 4. Update the Session Cache (LocalStorage)
-        // This ensures the "Live" feeling continues after refresh
+        // 3. Update Browser Storage (CRITICAL for Refresh)
         localStorage.setItem('mp_session', JSON.stringify(currentUser));
 
-        // 5. Update the Screen right now (Colors, Name, Status)
-        applyUserPreferences(); 
+        // 4. Update the screen right now
+        applyUserPreferences();
 
         closeModal('profile-modal');
-        showToast("Settings saved and synced ✓");
+        showToast("Settings applied live! ✓");
         
-        // Log it for accountability
-        if (typeof logAuditAction === 'function') {
-            logAuditAction("Profile Update", "Updated personal preferences.");
-        }
+        // Log it in Audit Log
+        logAuditAction("Profile Update", "Personalized app settings and status.");
 
     } catch (e) {
-        console.error("Profile Save Error:", e);
-        showToast("Failed to save settings");
+        console.error("Save failed:", e);
+        showToast("Error saving profile");
     }
 }
 console.log("Script loaded. Forcing startApp...");
