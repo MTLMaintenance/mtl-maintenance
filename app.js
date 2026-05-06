@@ -8022,35 +8022,42 @@ async function autoCleanupAuditLogs() {
 }
 // Global settings apply function
 function applyUserPreferences() {
-    if (!currentUser || !currentUser.preferences) return;
-    const p = currentUser.preferences;
+    if (!currentUser) return;
+    const p = currentUser.preferences || {};
 
-    // 1. Apply Accent Color
+    // 1. Apply Theme Color (Blue, Green, etc)
     if (p.accentColor) {
         document.documentElement.style.setProperty('--accent', p.accentColor);
     }
 
-    // 2. Apply Topbar Status & Name
-    const trigger = document.getElementById('user-profile-trigger');
-    if (trigger) {
+    // 2. Update the Topbar Name & Emoji
+    const nameEl = document.getElementById('p-topbar-name');
+    const emojiEl = document.getElementById('p-status-emoji');
+    
+    if (nameEl) nameEl.textContent = currentUser.name;
+    if (emojiEl) {
         const emojiMap = { 'Available':'🟢', 'In the Field':'🚜', 'At the Shop':'🔧', 'On Lunch':'🍔', 'Busy':'🔴' };
-        const emoji = emojiMap[p.status] || '🟢';
-        trigger.innerHTML = `<span style="margin-right:8px">${emoji}</span>${currentUser.name}`;
+        emojiEl.textContent = emojiMap[p.status] || '🟢';
     }
 
-    // 3. Apply Avatar Style to all avatars in the app
-    const avatars = document.querySelectorAll('.user-avatar-circle');
-    avatars.forEach(el => {
-        el.className = 'user-avatar-circle ' + (p.avatarStyle || 'avatar-style-initial');
-    });
-
-    // 4. Update Dashboard Sticky Note
+    // 3. Update the Private Note on Dashboard
     const noteContainer = document.getElementById('personal-note-widget');
     if (noteContainer) {
-        noteContainer.innerHTML = p.notes ? `<div class="personal-note-card"><b>📌 My Reminder:</b><br>${p.notes}</div>` : '';
+        if (p.notes && p.notes.trim() !== "") {
+            noteContainer.innerHTML = `
+                <div style="background:var(--accent); color:white; padding:12px; border-radius:10px; margin-bottom:20px; display:flex; gap:10px; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.2)">
+                    <div style="font-size:20px">📌</div>
+                    <div style="flex:1">
+                        <div style="font-size:10px; text-transform:uppercase; opacity:0.8; font-weight:bold">Personal Reminder</div>
+                        <div style="font-size:13px">${p.notes}</div>
+                    </div>
+                    <button onclick="openProfileModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:5px; padding:4px 8px; cursor:pointer; font-size:11px">Edit</button>
+                </div>`;
+        } else {
+            noteContainer.innerHTML = ''; // Hide if empty
+        }
     }
 }
-
 function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
