@@ -1,3 +1,24 @@
+:root {
+}
+/* Update your primary buttons and highlights to use the variable */
+.btn-primary, .user-avatar-circle, .active-nav-item, .pin-dot.filled {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* The "Quick Note" Dashboard Widget style */
+.personal-note-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid var(--accent);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+/* Styles for the avatar shapes */
+.avatar-style-initial { border-radius: 50%; }
+.avatar-style-square { border-radius: 8px; }
+.avatar-style-border { border-radius: 50%; border: 3px solid var(--accent); background: none !important; color: var(--accent) !important; }
 .type-btn {
     flex: 1;
     padding: 10px;
