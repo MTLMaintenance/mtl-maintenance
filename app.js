@@ -697,6 +697,7 @@ window.addEventListener('offline', () => {
     if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='block'; 
     setSyncStatus('offline'); 
 });
+}
 // ============================================================
 // AUTH
 // ============================================================
@@ -8098,6 +8099,12 @@ function setAccent(color) {
 }
 
 async function saveUserProfile() {
+    // 1. Safety Check: Make sure we are actually logged in
+    if (!currentUser || !currentUser.id) {
+        showToast("Session expired. Please log in again.");
+        return;
+    }
+
     const newName = document.getElementById('p-name').value.trim();
     const newPrefs = {
         status: document.getElementById('p-status').value,
@@ -8107,30 +8114,42 @@ async function saveUserProfile() {
         notes: document.getElementById('p-notes').value,
     };
 
+    if (!newName) {
+        showToast("Please enter a name");
+        return;
+    }
+
     try {
-        // 1. Save to Database
-        await window._mpdb.from('profiles').update({ 
+        // 2. Save to Database
+        const { error } = await window._mpdb.from('profiles').update({ 
             full_name: newName, 
             preferences: newPrefs 
         }).eq('id', currentUser.id);
 
-        // 2. Update LIVE Object
+        if (error) throw error;
+
+        // 3. Update LIVE Object (The variable currently in memory)
         currentUser.name = newName;
+        currentUser.full_name = newName; // Update both to be safe
         currentUser.preferences = newPrefs;
 
-        // 3. Update the Session Cache (This is why it was reverting on refresh)
-        const session = JSON.parse(localStorage.getItem('mp_session') || '{}');
-        session.name = newName;
-        session.preferences = newPrefs;
-        localStorage.setItem('mp_session', JSON.stringify(session));
+        // 4. Update the Session Cache (LocalStorage)
+        // This ensures the "Live" feeling continues after refresh
+        localStorage.setItem('mp_session', JSON.stringify(currentUser));
 
-        // 4. Update the Screen right now
+        // 5. Update the Screen right now (Colors, Name, Status)
         applyUserPreferences(); 
 
         closeModal('profile-modal');
         showToast("Settings saved and synced ✓");
+        
+        // Log it for accountability
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Profile Update", "Updated personal preferences.");
+        }
 
     } catch (e) {
+        console.error("Profile Save Error:", e);
         showToast("Failed to save settings");
     }
 }
