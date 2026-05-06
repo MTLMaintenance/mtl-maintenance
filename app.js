@@ -8025,36 +8025,34 @@ function applyUserPreferences() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. Apply Theme Color (Blue, Green, etc)
+    // Apply Accent Color Live
     if (p.accentColor) {
         document.documentElement.style.setProperty('--accent', p.accentColor);
     }
 
-    // 2. Update the Topbar Name & Emoji
+    // Update Topbar Pill Live
     const nameEl = document.getElementById('p-topbar-name');
     const emojiEl = document.getElementById('p-status-emoji');
-    
     if (nameEl) nameEl.textContent = currentUser.name;
     if (emojiEl) {
         const emojiMap = { 'Available':'🟢', 'In the Field':'🚜', 'At the Shop':'🔧', 'On Lunch':'🍔', 'Busy':'🔴' };
         emojiEl.textContent = emojiMap[p.status] || '🟢';
     }
 
-    // 3. Update the Private Note on Dashboard
+    // Update Dashboard Note Live
     const noteContainer = document.getElementById('personal-note-widget');
     if (noteContainer) {
         if (p.notes && p.notes.trim() !== "") {
             noteContainer.innerHTML = `
-                <div style="background:var(--accent); color:white; padding:12px; border-radius:10px; margin-bottom:20px; display:flex; gap:10px; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.2)">
-                    <div style="font-size:20px">📌</div>
+                <div style="background:var(--accent); color:white; padding:15px; border-radius:12px; margin-bottom:25px; display:flex; gap:12px; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.2)">
+                    <div style="font-size:24px">📌</div>
                     <div style="flex:1">
-                        <div style="font-size:10px; text-transform:uppercase; opacity:0.8; font-weight:bold">Personal Reminder</div>
-                        <div style="font-size:13px">${p.notes}</div>
+                        <div style="font-size:10px; text-transform:uppercase; font-weight:bold; opacity:0.8">Note to Self</div>
+                        <div style="font-size:14px; font-weight:500">${p.notes}</div>
                     </div>
-                    <button onclick="openProfileModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:5px; padding:4px 8px; cursor:pointer; font-size:11px">Edit</button>
                 </div>`;
         } else {
-            noteContainer.innerHTML = ''; // Hide if empty
+            noteContainer.innerHTML = ''; 
         }
     }
 }
@@ -8094,6 +8092,7 @@ async function saveUserProfile() {
     };
 
     try {
+        // 1. Save to Supabase
         const { error } = await window._mpdb
             .from('profiles')
             .update({ 
@@ -8104,18 +8103,26 @@ async function saveUserProfile() {
 
         if (error) throw error;
 
-        // Update Local State
+        // 2. UPDATE LOCAL MEMORY IMMEDIATELY
         currentUser.name = name;
         currentUser.preferences = newPrefs;
-
-        applyUserPreferences();
-        closeModal('profile-modal');
-        showToast("Profile Personalized ✓");
         
-        // Audit Log for accountability
-        logAuditAction("Profile Update", "Updated personal preferences and status.");
+        // 3. Update the mp_session in LocalStorage so it stays on refresh
+        const session = JSON.parse(localStorage.getItem('mp_session') || '{}');
+        session.name = name;
+        session.preferences = newPrefs;
+        localStorage.setItem('mp_session', JSON.stringify(session));
+
+        // 4. TRIGGER LIVE UI UPDATE
+        applyUserPreferences(); 
+
+        closeModal('profile-modal');
+        showToast("Profile Updated Live ✓");
+        
+        logAuditAction("Profile Update", "Settings updated and applied live.");
 
     } catch (e) {
-        showToast("Error saving settings");
+        console.error(e);
+        showToast("Error saving live settings");
     }
 }
