@@ -162,75 +162,71 @@ async function promptResetPin(userId) {
     } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
+    console.log('1. Starting showPinLogin...');
     try {
-        console.log('Switching to PIN Login UI (Compact Mode)...');
-        var oldLogin = document.getElementById('login-screen') || document.getElementById('auth-container'); 
-        if (oldLogin) oldLogin.style.display = 'none';
-
-        var pinUI = document.getElementById('pin-login-container');
+        // 1. Show the PIN UI
+        const pinUI = document.getElementById('pin-login-container');
         if (pinUI) pinUI.style.display = 'block';
 
-        var userResult = await window._mpdb
+        // 2. Fetch users from Supabase
+        console.log('2. Fetching profiles from Supabase...');
+        const userResult = await window._mpdb
             .from('profiles')
             .select('id, username, full_name')
             .eq('status', 'approved')
             .order('full_name', { ascending: true });
 
         if (userResult.error) {
-            console.error('User fetch error:', userResult.error);
+            console.error('Database error fetching profiles:', userResult.error);
             return;
         }
 
-        var list = document.getElementById('user-name-list');
+        console.log(`3. Success! Found ${userResult.data.length} users.`);
 
-        if (list && userResult.data) {
-            list.innerHTML = ''; 
-            
-            // COMPACT GRID: 3 columns instead of 2
-            list.style.display = 'grid';
-            list.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
-            list.style.gap = '10px';
-            list.style.marginTop = '15px';
-            list.style.padding = '5px';
-
-            userResult.data.forEach(function(user) {
-                var name = user.full_name || user.username;
-                var initial = name.charAt(0).toUpperCase();
-
-                var card = document.createElement('div');
-                
-                // COMPACT CARD STYLING
-                card.style.cssText = `
-                    background: rgba(255, 255, 255, 0.08) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                    border-radius: 10px !important;
-                    padding: 12px 5px !important;
-                    display: flex !important;
-                    flex-direction: column !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    cursor: pointer !important;
-                    transition: 0.2s !important;
-                `;
-
-                // COMPACT AVATAR (shrunk from 48px to 36px)
-                card.innerHTML = `
-                    <div style="width: 36px !important; height: 36px !important; background-color: #3b82f6 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 16px !important; margin-bottom: 8px !important; box-shadow: 0 3px 6px rgba(0,0,0,0.3) !important;">
-                        ${initial}
-                    </div>
-                    <div style="color: #ffffff !important; font-size: 12px !important; font-weight: 500 !important; text-align: center !important; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; width: 100%; white-space: nowrap;">
-                        ${name}
-                    </div>
-                `;
-
-                card.onclick = function() { selectUserForLogin(user); };
-                
-                card.onmouseenter = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; };
-                card.onmouseleave = function() { this.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; };
-
-                list.appendChild(card);
-            });
+        const list = document.getElementById('user-name-list');
+        if (!list) {
+            console.error('ERROR: Could not find HTML element with ID "user-name-list"');
+            return;
         }
+
+        // 3. Clear and Rebuild the grid
+        list.innerHTML = ''; 
+        list.style.display = 'grid';
+        list.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
+        list.style.gap = '10px';
+
+        userResult.data.forEach(function(user) {
+            const name = user.full_name || user.username;
+            const initial = name.charAt(0).toUpperCase();
+
+            const card = document.createElement('div');
+            card.style.cssText = `
+                background: rgba(255, 255, 255, 0.08) !important;
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 10px !important;
+                padding: 12px 5px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                cursor: pointer !important;
+            `;
+
+            card.innerHTML = `
+                <div style="width: 36px; height: 36px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">
+                    ${initial}
+                </div>
+                <div style="color: white; font-size: 12px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${name}
+                </div>
+            `;
+
+            card.onclick = function() { selectUserForLogin(user); };
+            list.appendChild(card);
+        });
+
+        console.log('4. Login cards rendered successfully ✓');
+
     } catch (err) {
         console.error('Critical error in showPinLogin:', err);
     }
