@@ -269,49 +269,46 @@ function updatePinDisplay() {
 async function verifyUserPin() {
     const { data, error } = await window._mpdb
         .from('profiles')
-        .select('*')
+        .select('*') // Fetches everything, including the 'preferences' column
         .eq('id', selectedLoginUser.id)
         .eq('pin_code', enteredPin)
         .single();
 
     if (data) {
         // 1. Success! Set the current user
-        // We explicitly add the 'name' property so logAuditAction can find it
+        // We include the 'preferences' from the database here
         currentUser = {
             ...data,
             name: data.full_name || data.username
         };
 
-        // 2. SAVE THE SESSION so startApp() finds it on refresh
-        localStorage.setItem('mp_session', JSON.stringify({
-            id: data.id,
-            username: data.username,
-            name: data.full_name || data.username
-        }));
+        // 2. SAVE THE SESSION (Including preferences)
+        localStorage.setItem('mp_session', JSON.stringify(currentUser));
 
-        // 3. ACCOUNTABILITY: Log the sign-in event
+        // 3. APPLY PREFERENCES IMMEDIATELY (This fixes the "LOADING" name issue)
+        if (typeof applyUserPreferences === 'function') {
+            applyUserPreferences();
+        }
+
+        // 4. ACCOUNTABILITY: Log the sign-in event
         if (typeof logAuditAction === 'function') {
-            // We use 'await' to ensure the log is sent before the screen switches
             await logAuditAction("Sign In", `Logged into the workspace via PIN.`);
         }
 
-        // 4. Create the official session token in Supabase
+        // 5. Create official session
         if (typeof createSession === 'function') {
             await createSession(data.username, data.id);
         }
 
-        // 5. Enter the app
+        // 6. Enter the app
         if (typeof fetchAbsences === 'function') await fetchAbsences();
-        
         await enterApp(); 
 
-        // Optional: Refresh logs once inside so the login event shows up immediately
         if (typeof renderAuditLogs === 'function') renderAuditLogs();
 
     } else {
         alert("Incorrect PIN");
         enteredPin = "";
-        // Safety check for the function name
         if (typeof updatePinDots === 'function') updatePinDots();
         else if (typeof updatePinDisplay === 'function') updatePinDisplay();
     }
@@ -652,46 +649,44 @@ async function startApp() {
     document.getElementById('setup-banner').style.display='none';
   }
 
-  try {
+try {
     const sessionData = await validateSession();
     if(sessionData) {
-      const profile = sessionData.profiles || (await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single()).data;
+      // Fetch the full profile so we get the 'preferences' JSON
+      const { data: profile } = await window._mpdb
+        .from('profiles')
+        .select('*')
+        .eq('username', sessionData.username)
+        .single();
+
       if(profile && profile.status === 'approved') {
         const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
-        currentUser = { id: profile.id, name: profile.full_name || sessionData.username, role: isAdmin ? 'admin' : profile.role, username: sessionData.username };
+        
+        // --- FIX: Store all profile data into currentUser ---
+        currentUser = { 
+            ...profile, 
+            name: profile.full_name || sessionData.username, 
+            role: isAdmin ? 'admin' : profile.role, 
+            username: sessionData.username 
+        };
+
+        // Update LocalStorage so it's always fresh
+        localStorage.setItem('mp_session', JSON.stringify(currentUser));
+
+        // --- FIX: Apply the looks (Colors, Name, Status) ---
+        if (typeof applyUserPreferences === 'function') {
+            applyUserPreferences();
+        }
+
         await fetchAbsences();  
         refreshAllDropdowns(); 
-       await enterApp(); return;
+        
+        // Go into the app
+        await enterApp(); 
+        return;
       }
     }
-
-    const saved = localStorage.getItem('mp_session');
-    if (saved) {
-      const u = JSON.parse(saved);
-      const { data: profile } = await window._mpdb.from('profiles').select('*').eq('username', u.username).single();
-      if (profile && profile.status === 'approved') {
-        const isAdmin = u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
-        currentUser = { ...u, role: isAdmin ? 'admin' : profile.role };
-        await fetchAbsences();
-        await createSession(u.username, profile.id);
-        await enterApp(); return;
-      } else { 
-        localStorage.removeItem('mp_session'); 
-      }
-    }
-  } catch(e) {
-    console.error("Session error:", e);
-  }
-  
-  showPinLogin();
-}
-
-// Keep your standard loading listeners below
-if (document.readyState === 'loading') { 
-    document.addEventListener('DOMContentLoaded', startApp); 
-} else { 
-    startApp(); 
-}
+  } catch(e) { console.error("Session init failed", e); }
 
 window.addEventListener('online',  () => { 
     if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='none';  
@@ -4245,66 +4240,94 @@ function openModal(id) {
         console.error("Modal not found:", id);
     }
 }
-async function enterApp(){
+async function enterApp() {
+  console.log("Entering application...");
+  
+  // 1. Initial UI Setup
   try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('user-chip-name').textContent = currentUser.name;
+  
+  const authScreen = document.getElementById('auth-screen');
+  const appContainer = document.getElementById('app');
+  
+  if (authScreen) authScreen.style.display = 'none';
+  if (appContainer) appContainer.style.display = 'flex';
 
+  // 2. Build the Navigation Bar (Alphabetized)
   const nav = document.getElementById('main-nav');
-  nav.innerHTML = '';
+  if (nav) {
+      nav.innerHTML = ''; // Clear existing
+      const buttons = [
+        { id: 'analytics', label: 'Analytics' },
+        { id: 'calendar', label: 'Calendar' },
+        { id: 'chat', label: 'Chat' },
+        { id: 'checklists', label: 'Checklists' },
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'documents', label: 'Docs' },
+        { id: 'equipment', label: 'Equipment' },
+        { id: 'parts', label: 'Parts' },
+        { id: 'suppliers', label: 'Suppliers' },
+        { id: 'tools', label: 'Tool Crib' },
+        { id: 'tasks', label: 'Work Orders' }
+      ];
 
-  const buttons = [
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'calendar', label: 'Calendar' },
-    { id: 'chat', label: 'Chat' },
-    { id: 'checklists', label: 'Checklists' },
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'documents', label: 'Docs' },
-    { id: 'equipment', label: 'Equipment' },
-    { id: 'parts', label: 'Parts' },
-    { id: 'suppliers', label: 'Suppliers' },
-    { id: 'tools', label: 'Tool Crib' },
-    { id: 'tasks', label: 'Work Orders' }
-  ];
+      // Sort A-Z
+      buttons.sort((a, b) => a.label.localeCompare(b.label));
 
-  // 1. Sort A-Z
-  buttons.sort((a, b) => a.label.localeCompare(b.label));
+      // Build buttons
+      buttons.forEach(btn => {
+        // Permissions check (using your 'can' function)
+        if (btn.id === 'analytics' && typeof can === 'function' && !can('canViewReports')) return;
+        if (btn.id === 'suppliers' && typeof can === 'function' && !can('canManageSuppliers')) return;
 
-  // 2. Filter and Build
-  buttons.forEach(btn => {
-    if (btn.id === 'analytics' && !can('canViewReports')) return;
-    if (btn.id === 'suppliers' && !can('canManageSuppliers')) return;
+        const b = document.createElement('button');
+        b.className = 'nav-btn';
+        b.id = `nav-${btn.id}`; // Add unique ID to find it later
+        b.onclick = () => showPanel(btn.id);
+        b.innerHTML = btn.id === 'chat' ? 
+          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
+        nav.appendChild(b);
+      });
 
-    const b = document.createElement('button');
-    b.className = 'nav-btn';
-    if (btn.id === 'dashboard') b.classList.add('active');
-    b.onclick = () => showPanel(btn.id);
-    b.innerHTML = btn.id === 'chat' ? 
-      `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
-    nav.appendChild(b);
-  });
-
-  // 3. Add Admin last
-  if (currentUser.role === 'admin') {
-    const adminBtn = document.createElement('button');
-    adminBtn.className = 'nav-btn';
-    adminBtn.onclick = () => showPanel('admin');
-    adminBtn.textContent = 'Admin';
-    nav.appendChild(adminBtn);
+      // Add Admin last
+      if (currentUser.role === 'admin') {
+        const adminBtn = document.createElement('button');
+        adminBtn.className = 'nav-btn';
+        adminBtn.onclick = () => showPanel('admin');
+        adminBtn.textContent = 'Admin';
+        nav.appendChild(adminBtn);
+      }
   }
 
-  // 4. Data Logic
- applyUserPreferences();
- autoCleanupAuditLogs();  
- await fetchTools();
- await loadState();
-  await runRecurrenceEngine();
-  applyUserGroupFilter();
-  showPanel('dashboard');
-  await initChat();
-  updateLastSeen();
-  setInterval(updateLastSeen, 2 * 60 * 1000);
+  // 3. Load Data & Logic
+  await loadState(); // Load your DB info
+  if (typeof fetchTools === 'function') await fetchTools();
+  if (typeof runRecurrenceEngine === 'function') await runRecurrenceEngine();
+  if (typeof applyUserGroupFilter === 'function') applyUserGroupFilter();
+  
+  // 4. --- PERSONALIZATION (Live Updates) ---
+  if (typeof applyUserPreferences === 'function') {
+      applyUserPreferences(); // Set colors, status, and Topbar name
+  }
+
+  // 5. --- HOME SCREEN LOGIC ---
+  // Determine which page to show
+  const preferredPage = (currentUser && currentUser.preferences && currentUser.preferences.startPage) 
+                        ? currentUser.preferences.startPage 
+                        : 'dashboard';
+  
+  // TRIGGER THE PANEL
+  showPanel(preferredPage);
+
+  // 6. Start Background Services
+  if (typeof initChat === 'function') await initChat();
+  if (typeof autoCleanupAuditLogs === 'function') autoCleanupAuditLogs();
+  
+  if (typeof updateLastSeen === 'function') {
+      updateLastSeen();
+      setInterval(updateLastSeen, 2 * 60 * 1000);
+  }
+  
+  console.log(`App ready. Welcome, ${currentUser.name}. Home: ${preferredPage}`);
 }
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
@@ -8025,35 +8048,28 @@ function applyUserPreferences() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // Apply Accent Color Live
-    if (p.accentColor) {
-        document.documentElement.style.setProperty('--accent', p.accentColor);
+    // 1. Fix the "Loading" text instantly
+    const nameEl = document.getElementById('p-topbar-name');
+    if (nameEl) {
+        nameEl.textContent = currentUser.name; // Uses the name we just set in verifyUserPin
     }
 
-    // Update Topbar Pill Live
-    const nameEl = document.getElementById('p-topbar-name');
+    // 2. Update Emoji
     const emojiEl = document.getElementById('p-status-emoji');
-    if (nameEl) nameEl.textContent = currentUser.name;
     if (emojiEl) {
         const emojiMap = { 'Available':'🟢', 'In the Field':'🚜', 'At the Shop':'🔧', 'On Lunch':'🍔', 'Busy':'🔴' };
         emojiEl.textContent = emojiMap[p.status] || '🟢';
     }
 
-    // Update Dashboard Note Live
+    // 3. Apply Accent Color
+    if (p.accentColor) {
+        document.documentElement.style.setProperty('--accent', p.accentColor);
+    }
+    
+    // 4. Update Dashboard Note
     const noteContainer = document.getElementById('personal-note-widget');
     if (noteContainer) {
-        if (p.notes && p.notes.trim() !== "") {
-            noteContainer.innerHTML = `
-                <div style="background:var(--accent); color:white; padding:15px; border-radius:12px; margin-bottom:25px; display:flex; gap:12px; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.2)">
-                    <div style="font-size:24px">📌</div>
-                    <div style="flex:1">
-                        <div style="font-size:10px; text-transform:uppercase; font-weight:bold; opacity:0.8">Note to Self</div>
-                        <div style="font-size:14px; font-weight:500">${p.notes}</div>
-                    </div>
-                </div>`;
-        } else {
-            noteContainer.innerHTML = ''; 
-        }
+        noteContainer.innerHTML = p.notes ? `<div class="personal-note-card"><b>📌 Note:</b> ${p.notes}</div>` : '';
     }
 }
 function openProfileModal() {
