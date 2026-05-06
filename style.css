@@ -1015,14 +1015,15 @@ body, html {
   }
 
   /* 3. FIX VERTICAL CUTOFF: Unlock the panels */
- .panel {
-    display: none; /* Default hidden */
-    padding: 30px 25px 100px 25px !important; /* 30px from top, 25px sides, 100px bottom */
-    height: auto !important;
-    min-height: calc(100vh - 80px);
-    overflow-y: auto;
+.panel {
+    display: none;
+    width: 100%;
+    max-width: 1400px; /* Limits width on huge monitors */
+    margin: 0 auto !important; /* Centers the content */
+    padding: 20px !important; /* Adds side breathing room */
     box-sizing: border-box;
 }
+
   /* 4. FIX "FLOATING OFF SIDE": The Table & Header Fix */
   .section-header {
     flex-direction: column !important; /* Stack "Work Orders" above buttons */
