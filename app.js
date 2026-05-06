@@ -4295,6 +4295,7 @@ async function enterApp(){
   }
 
   // 4. Data Logic
+ applyUserPreferences();
  autoCleanupAuditLogs();  
  await fetchTools();
  await loadState();
@@ -8017,5 +8018,97 @@ async function autoCleanupAuditLogs() {
         }
     } catch (e) {
         console.error("Auto-cleanup failed:", e);
+    }
+}
+// Global settings apply function
+function applyUserPreferences() {
+    if (!currentUser || !currentUser.preferences) return;
+    const p = currentUser.preferences;
+
+    // 1. Apply Accent Color
+    if (p.accentColor) {
+        document.documentElement.style.setProperty('--accent', p.accentColor);
+    }
+
+    // 2. Apply Topbar Status & Name
+    const trigger = document.getElementById('user-profile-trigger');
+    if (trigger) {
+        const emojiMap = { 'Available':'🟢', 'In the Field':'🚜', 'At the Shop':'🔧', 'On Lunch':'🍔', 'Busy':'🔴' };
+        const emoji = emojiMap[p.status] || '🟢';
+        trigger.innerHTML = `<span style="margin-right:8px">${emoji}</span>${currentUser.name}`;
+    }
+
+    // 3. Apply Avatar Style to all avatars in the app
+    const avatars = document.querySelectorAll('.user-avatar-circle');
+    avatars.forEach(el => {
+        el.className = 'user-avatar-circle ' + (p.avatarStyle || 'avatar-style-initial');
+    });
+
+    // 4. Update Dashboard Sticky Note
+    const noteContainer = document.getElementById('personal-note-widget');
+    if (noteContainer) {
+        noteContainer.innerHTML = p.notes ? `<div class="personal-note-card"><b>📌 My Reminder:</b><br>${p.notes}</div>` : '';
+    }
+}
+
+function openProfileModal() {
+    if (!currentUser) return;
+    const p = currentUser.preferences || {};
+
+    // Fill fields
+    document.getElementById('p-name').value = currentUser.name;
+    document.getElementById('p-status').value = p.status || 'Available';
+    document.getElementById('p-start-page').value = p.startPage || 'dashboard';
+    document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
+    document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
+    document.getElementById('p-notes').value = p.notes || '';
+
+    // Update Preview
+    document.getElementById('p-preview-name').textContent = currentUser.name;
+    document.getElementById('p-preview-avatar').textContent = currentUser.name.charAt(0);
+    document.getElementById('p-preview-avatar').style.background = p.accentColor || '#3b82f6';
+
+    openModal('profile-modal');
+}
+
+function setAccent(color) {
+    document.getElementById('p-accent-color').value = color;
+    document.getElementById('p-preview-avatar').style.background = color;
+}
+
+async function saveUserProfile() {
+    const name = document.getElementById('p-name').value.trim();
+    const newPrefs = {
+        status: document.getElementById('p-status').value,
+        startPage: document.getElementById('p-start-page').value,
+        accentColor: document.getElementById('p-accent-color').value,
+        avatarStyle: document.getElementById('p-avatar-style').value,
+        notes: document.getElementById('p-notes').value,
+    };
+
+    try {
+        const { error } = await window._mpdb
+            .from('profiles')
+            .update({ 
+                full_name: name,
+                preferences: newPrefs 
+            })
+            .eq('id', currentUser.id);
+
+        if (error) throw error;
+
+        // Update Local State
+        currentUser.name = name;
+        currentUser.preferences = newPrefs;
+
+        applyUserPreferences();
+        closeModal('profile-modal');
+        showToast("Profile Personalized ✓");
+        
+        // Audit Log for accountability
+        logAuditAction("Profile Update", "Updated personal preferences and status.");
+
+    } catch (e) {
+        showToast("Error saving settings");
     }
 }
