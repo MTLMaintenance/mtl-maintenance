@@ -162,47 +162,51 @@ async function promptResetPin(userId) {
     } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
-    console.log('1. Starting showPinLogin...');
+    console.log('--- showPinLogin Triggered ---');
     try {
-        // 1. Show the PIN UI
         const pinUI = document.getElementById('pin-login-container');
         if (pinUI) pinUI.style.display = 'block';
 
-        // 2. Fetch users from Supabase
-        console.log('2. Fetching profiles from Supabase...');
-        const userResult = await window._mpdb
+        const list = document.getElementById('user-name-list');
+        if (!list) return console.error('Element user-name-list not found');
+
+        // Force a minimum height so it doesn't collapse
+        list.style.minHeight = '100px';
+        list.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: span 3; padding: 20px;">Fetching users...</div>';
+
+        const { data: users, error } = await window._mpdb
             .from('profiles')
-            .select('id, username, full_name')
-            .eq('status', 'approved')
+            .select('id, username, full_name, status')
+            // Temporarily comment out the status check if names don't show up
+            .eq('status', 'approved') 
             .order('full_name', { ascending: true });
 
-        if (userResult.error) {
-            console.error('Database error fetching profiles:', userResult.error);
+        if (error) {
+            list.innerHTML = `<div style="color:red; grid-column: span 3;">DB Error: ${error.message}</div>`;
             return;
         }
 
-        console.log(`3. Success! Found ${userResult.data.length} users.`);
+        console.log('Users found in DB:', users);
 
-        const list = document.getElementById('user-name-list');
-        if (!list) {
-            console.error('ERROR: Could not find HTML element with ID "user-name-list"');
+        if (!users || users.length === 0) {
+            list.innerHTML = '<div style="color:#ffcc00; text-align:center; grid-column: span 3; padding: 20px; font-size: 13px;">No approved users found in database.<br><small>(Check "profiles" table status)</small></div>';
             return;
         }
 
-        // 3. Clear and Rebuild the grid
+        // 3. Clear and build the grid
         list.innerHTML = ''; 
         list.style.display = 'grid';
         list.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
         list.style.gap = '10px';
 
-        userResult.data.forEach(function(user) {
+        users.forEach(function(user) {
             const name = user.full_name || user.username;
             const initial = name.charAt(0).toUpperCase();
 
             const card = document.createElement('div');
             card.style.cssText = `
-                background: rgba(255, 255, 255, 0.08) !important;
-                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                background: rgba(255, 255, 255, 0.1) !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
                 border-radius: 10px !important;
                 padding: 12px 5px !important;
                 display: flex !important;
@@ -213,22 +217,16 @@ async function showPinLogin() {
             `;
 
             card.innerHTML = `
-                <div style="width: 36px; height: 36px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">
-                    ${initial}
-                </div>
-                <div style="color: white; font-size: 12px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    ${name}
-                </div>
+                <div style="width: 36px; height: 36px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">${initial}</div>
+                <div style="color: white; font-size: 11px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
             `;
 
             card.onclick = function() { selectUserForLogin(user); };
             list.appendChild(card);
         });
 
-        console.log('4. Login cards rendered successfully ✓');
-
     } catch (err) {
-        console.error('Critical error in showPinLogin:', err);
+        console.error('Critical UI Error:', err);
     }
 }
 function selectUserForLogin(user) {
