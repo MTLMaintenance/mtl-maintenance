@@ -162,71 +162,63 @@ async function promptResetPin(userId) {
     } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
-    alert("1. showPinLogin started");
     try {
+        // 1. UI Switch: Show login container, hide app
+        const pinUI = document.getElementById('pin-login-container');
+        const appUI = document.getElementById('app') || document.getElementById('app-container');
+        if (pinUI) pinUI.style.display = 'block';
+        if (appUI) appUI.style.display = 'none';
+
         const list = document.getElementById('user-name-list');
-        
-        if (!list) {
-            alert("ERROR: HTML element 'user-name-list' was NOT found!");
-            return;
-        }
+        if (!list) return;
 
-        // FORCE visibility so we can find it
-        list.style.cssText = "min-height: 200px !important; width: 100% !important; background: rgba(255,0,0,0.2) !important; display: block !important;";
-        list.innerHTML = "JS is working... reaching out to Supabase now...";
-        
-        alert("2. Found the list box. Now checking Database connection.");
+        list.innerHTML = '<div style="color:#aaa; padding:20px; grid-column:span 3">Loading users...</div>';
 
-        if (!window._mpdb) {
-            alert("ERROR: Supabase (_mpdb) is not initialized yet!");
-            return;
-        }
-
+        // 2. Fetch Users
         const { data: users, error } = await window._mpdb
             .from('profiles')
-            .select('id, username, full_name, status')
+            .select('id, username, full_name')
+            .eq('status', 'approved')
             .order('full_name', { ascending: true });
 
-        if (error) {
-            alert("DB Error: " + error.message);
-            list.innerHTML = "Database Error: " + error.message;
+        if (error || !users || users.length === 0) {
+            list.innerHTML = '<div style="color:orange; padding:20px; grid-column:span 3">No approved users found.</div>';
             return;
         }
 
-        alert("3. Database responded. Found " + (users ? users.length : 0) + " users.");
-
-        if (!users || users.length === 0) {
-            list.innerHTML = "No users found in profiles table.";
-            return;
-        }
-
-        // Filter for approved only (If this makes the list 0, we'll see the message below)
-        const approved = users.filter(u => u.status === 'approved');
-        if (approved.length === 0) {
-            list.innerHTML = "Found " + users.length + " users, but NONE are marked 'approved'.";
-            return;
-        }
-
-        list.innerHTML = ''; 
+        // 3. Render Cards
+        list.innerHTML = '';
         list.style.display = 'grid';
-        list.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
+        list.style.gridTemplateColumns = 'repeat(3, 1fr)';
         list.style.gap = '10px';
-        list.style.background = 'transparent';
 
-        approved.forEach(function(user) {
+        users.forEach(user => {
             const name = user.full_name || user.username;
+            const initial = name.charAt(0).toUpperCase();
             const card = document.createElement('div');
-            card.style.cssText = "background: white; color: black; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer;";
-            card.innerHTML = name;
-            card.onclick = function() { selectUserForLogin(user); };
+            
+            card.style.cssText = `
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 12px 5px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                cursor: pointer;
+            `;
+
+            card.innerHTML = `
+                <div style="width: 36px; height: 36px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">${initial}</div>
+                <div style="color: white; font-size: 11px; font-weight: 500; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+            `;
+
+            card.onclick = () => selectUserForLogin(user);
             list.appendChild(card);
         });
 
-        alert("4. All cards finished drawing!");
-
     } catch (err) {
-        alert("CRASH: " + err.message);
-        console.error(err);
+        console.error('Login Render Error:', err);
     }
 }
 
@@ -622,8 +614,8 @@ let currentUser = null;
 // INIT
 // ============================================================
 async function startApp() {
+  console.log("Starting App Init...");
   try { localStorage.removeItem('mp_users'); } catch(e) {}
-  try { window._geminiKey = localStorage.getItem('mp_gemini_key') || ''; } catch(e) {}
   
   try {
     window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -631,23 +623,17 @@ async function startApp() {
     });
     window.supabase = window._mpdb;
     setSyncStatus('online');
-
-    // --- RUN TELEPORT HERE ---
-    // We do this immediately after Supabase connects
-    teleportModals(); 
-
-  } catch(e) { 
-    console.warn('Supabase init failed:', e); 
-  }
+    if (typeof teleportModals === 'function') teleportModals(); 
+  } catch(e) { console.warn('Supabase init failed:', e); }
 
   if(document.getElementById('setup-banner')) {
     document.getElementById('setup-banner').style.display='none';
   }
 
-try {
-    const sessionData = await validateSession();
+  try {
+    const sessionData = typeof validateSession === 'function' ? await validateSession() : null;
+    
     if(sessionData) {
-      // Fetch the full profile so we get the 'preferences' JSON
       const { data: profile } = await window._mpdb
         .from('profiles')
         .select('*')
@@ -656,42 +642,39 @@ try {
 
       if(profile && profile.status === 'approved') {
         const isAdmin = sessionData.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
-        
-        // --- FIX: Store all profile data into currentUser ---
         currentUser = { 
             ...profile, 
             name: profile.full_name || sessionData.username, 
             role: isAdmin ? 'admin' : profile.role, 
             username: sessionData.username 
         };
-
-        // Update LocalStorage so it's always fresh
         localStorage.setItem('mp_session', JSON.stringify(currentUser));
-
-        // --- FIX: Apply the looks (Colors, Name, Status) ---
-        if (typeof applyUserPreferences === 'function') {
-            applyUserPreferences();
-        }
-
-        await fetchAbsences();  
-        refreshAllDropdowns(); 
-        
-        // Go into the app
+        if (typeof applyUserPreferences === 'function') applyUserPreferences();
+        if (typeof fetchAbsences === 'function') await fetchAbsences();  
+        if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns(); 
         await enterApp(); 
-        return;
+        return; // EXIT: We are logged in.
       }
     }
-  } catch(e) { console.error("Session init failed", e); }
 
-window.addEventListener('online',  () => { 
+    // --- CRITICAL FIX: If we get here, no session was found. SHOW LOGIN. ---
+    console.log("No valid session found. Launching PIN login...");
+    showPinLogin();
+
+  } catch(e) { 
+    console.error("Session validation failed:", e);
+    showPinLogin(); // Fallback to login on error
+  }
+
+  // Event Listeners
+  window.addEventListener('online', () => { 
     if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='none';  
     setSyncStatus('online'); 
-});
-
-window.addEventListener('offline', () => { 
+  });
+  window.addEventListener('offline', () => { 
     if(document.getElementById('offline-banner')) document.getElementById('offline-banner').style.display='block'; 
     setSyncStatus('offline'); 
-});
+  });
 }
 // ============================================================
 // AUTH
