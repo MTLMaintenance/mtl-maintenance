@@ -577,9 +577,86 @@
       <div class="card"><div class="card-header"><span class="card-title">Next 30 Days</span></div><div id="sched-next30"></div></div>
     </div>
   </div>
-</div> <!-- CRITICAL: THIS CLOSES THE ENTIRE CALENDAR PANEL -->
+</div> 
 <!-- ===== MODALS ===== -->
-<!-- Work Order Modal -->
+<!---- PROFILE---->
+ <div class="modal-backdrop" id="profile-modal" style="display:none">
+  <div class="modal" style="max-width:450px">
+    <div class="modal-header">
+      <span class="modal-title">Personal Settings</span>
+      <button class="modal-close" onclick="closeModal('profile-modal')">✕</button>
+    </div>
+
+    <div style="display:flex; gap:15px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px">
+        <div id="p-preview-avatar" class="user-avatar-circle" style="width:50px; height:50px; font-size:20px">T</div>
+        <div>
+            <div id="p-preview-name" style="font-weight:bold; font-size:16px">Tanner</div>
+            <div id="p-preview-role" style="font-size:12px; color:var(--text3)">Administrator</div>
+        </div>
+    </div>
+
+    <!-- Personalization Grid -->
+    <div class="form-grid">
+      <!-- 1. Name -->
+      <div class="form-group full"><label class="form-label">Full Name</label><input class="form-input" id="p-name"></div>
+      
+      <!-- 2. Status -->
+      <div class="form-group"><label class="form-label">Current Status</label>
+        <select class="form-select" id="p-status">
+            <option value="Available">🟢 Available</option>
+            <option value="In the Field">🚜 In the Field</option>
+            <option value="At the Shop">🔧 At the Shop</option>
+            <option value="On Lunch">🍔 On Lunch</option>
+            <option value="Busy">🔴 Busy</option>
+        </select>
+      </div>
+
+      <!-- 3. Start Page -->
+      <div class="form-group"><label class="form-label">Home Screen</label>
+        <select class="form-select" id="p-start-page">
+            <option value="dashboard">Dashboard</option>
+            <option value="tasks">Work Orders</option>
+            <option value="tools">Tool Crib</option>
+        </select>
+      </div>
+
+      <!-- 4. Accent Color -->
+      <div class="form-group full">
+        <label class="form-label">Accent Theme</label>
+        <div style="display:flex; gap:10px; margin-top:5px">
+            <div class="color-swatch" onclick="setAccent('#3b82f6')" style="background:#3b82f6; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
+            <div class="color-swatch" onclick="setAccent('#10b981')" style="background:#10b981; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
+            <div class="color-swatch" onclick="setAccent('#f59e0b')" style="background:#f59e0b; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
+            <div class="color-swatch" onclick="setAccent('#ef4444')" style="background:#ef4444; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
+            <div class="color-swatch" onclick="setAccent('#a855f7')" style="background:#a855f7; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
+        </div>
+        <input type="hidden" id="p-accent-color">
+      </div>
+
+      <!-- 5. Avatar Style -->
+      <div class="form-group full">
+          <label class="form-label">Avatar Style</label>
+          <select class="form-select" id="p-avatar-style">
+              <option value="avatar-style-initial">Circle</option>
+              <option value="avatar-style-square">Rounded Square</option>
+              <option value="avatar-style-border">Outline Only</option>
+          </select>
+      </div>
+
+      <!-- 6. Personal Note -->
+      <div class="form-group full">
+          <label class="form-label">Private Sticky Note (Only you see this)</label>
+          <textarea class="form-textarea" id="p-notes" placeholder="Jot down reminders..." style="height:60px"></textarea>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeModal('profile-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUserProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+ <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
   <div class="modal" style="max-width:640px">
    <input type="hidden" id="task-edit-id"> 
