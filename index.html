@@ -132,21 +132,25 @@
 </button>
     </nav>
       <div class="topbar-right">
-      <span class="user-chip"><span class="sync-dot" id="sync-dot"></span><span id="user-chip-name"></span></span>
-      <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
-      <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ Work Order</button>
-      <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode">🌙</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report">💬</button>
-      <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign out">↩ Sign Out</button>
-      <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷 Scan QR</button>
-    
-    </div>
+  <!-- NEW: Personalized Profile Trigger -->
+  <div id="user-profile-trigger" onclick="openProfileModal()" style="display:flex; align-items:center; gap:8px; color:white; cursor:pointer; padding: 4px 12px; background: rgba(255,255,255,0.08); border-radius: 20px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; transition: 0.2s;">
+      <span id="p-status-emoji">🟢</span>
+      <span id="p-topbar-name" style="font-weight: 600;">Loading...</span>
+      <span class="sync-dot" id="sync-dot" style="margin-left:4px"></span>
   </div>
+
+  <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
+  <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
+  <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ Work Order</button>
+  <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()" id="dark-btn" title="Toggle dark mode">🌙</button>
+  <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')" title="Feedback / Bug report">💬</button>
+  <button class="btn btn-primary btn-sm" onclick="signOut()" title="Sign out">↩ Sign Out</button>
+  <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷 Scan QR</button>
+</div>
 
   <!-- DASHBOARD -->
  <div class="panel active" id="panel-dashboard">
-  
+   <div id="personal-note-widget"></div>
   <!-- TOP STATS ROW: Using 'metrics' and 'metric-card' for consistency -->
   <div class="metrics">
     <div class="metric-card">
