@@ -1015,6 +1015,7 @@ body, html {
 
   /* 3. FIX VERTICAL CUTOFF: Unlock the panels */
   .panel {
+     margin-top: 20px !important; 
     height: auto !important;
     min-height: calc(100vh - 100px);
     overflow: visible !important;
