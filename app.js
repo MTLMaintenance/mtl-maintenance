@@ -162,66 +162,65 @@ async function promptResetPin(userId) {
     } catch (err) { console.error(err); }
 }
 async function showPinLogin() {
-    console.log('Rendering user selection list...');
+    console.log('DEBUG: showPinLogin started');
+    
+    // 1. Force the containers to show
+    const loginView = document.getElementById('login-view');
+    const nameStage = document.getElementById('login-stage-names');
+    const list = document.getElementById('user-name-list');
+
+    if (loginView) loginView.style.display = 'block';
+    if (nameStage) nameStage.style.display = 'block';
+
+    if (!list) {
+        alert("CRITICAL ERROR: user-name-list NOT FOUND IN HTML");
+        return;
+    }
+
+    // 2. Clear and show "Checking Database..."
+    list.innerHTML = '<div style="color:white; grid-column:span 2;">Attempting to load names...</div>';
+
     try {
-        // 1. Show the correct containers
-        const loginView = document.getElementById('login-view');
-        const nameStage = document.getElementById('login-stage-names');
-        const appUI = document.getElementById('app');
-        
-        if (loginView) loginView.style.display = 'block';
-        if (nameStage) nameStage.style.display = 'block';
-        if (appUI) appUI.style.display = 'none';
-
-        const list = document.getElementById('user-name-list');
-        if (!list) return console.error("ID 'user-name-list' not found in HTML");
-
-        // 2. Fetch the users
+        // 3. The Fetch
         const { data: users, error } = await window._mpdb
             .from('profiles')
-            .select('id, username, full_name')
-            .eq('status', 'approved')
-            .order('full_name', { ascending: true });
+            .select('*'); // Get everything to be safe
 
-        if (error) throw error;
+        console.log("DEBUG: Database Data:", users);
 
-        // 3. Render the cards
-        list.innerHTML = ''; 
-        
-        if (!users || users.length === 0) {
-            list.innerHTML = '<div style="grid-column:span 2; color:orange; padding:20px; text-align:center">No approved users found in database.</div>';
+        if (error) {
+            list.innerHTML = `<div style="color:red; grid-column:span 2;">DB Error: ${error.message}</div>`;
             return;
         }
 
+        // 4. IF DATABASE IS EMPTY, SHOW A FAKE BUTTON (To test if UI works)
+        if (!users || users.length === 0) {
+            list.innerHTML = `
+                <div style="color:orange; grid-column:span 2; margin-bottom:10px;">No users in DB. Showing test button:</div>
+                <div onclick="alert('UI is working!')" style="background:#3b82f6; color:white; padding:15px; border-radius:10px; text-align:center; cursor:pointer;">
+                   UI TEST BUTTON
+                </div>`;
+            return;
+        }
+
+        // 5. Render real names
+        list.innerHTML = '';
         users.forEach(user => {
+            // Check if status is correct
+            if (user.status !== 'approved') {
+                console.log(`User ${user.username} is NOT approved. Status: ${user.status}`);
+            }
+
             const name = user.full_name || user.username;
-            const initial = name.charAt(0).toUpperCase();
             const card = document.createElement('div');
-            
-            // Re-using the professional card style we built
-            card.style.cssText = `
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                border-radius: 12px;
-                padding: 15px 5px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                cursor: pointer;
-                transition: 0.2s;
-            `;
-
-            card.innerHTML = `
-                <div style="width: 40px; height: 40px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px; font-size: 18px;">${initial}</div>
-                <div style="color: white; font-size: 12px; font-weight: 600; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-            `;
-
+            card.style.cssText = "background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer;";
+            card.innerHTML = name;
             card.onclick = () => selectUserForLogin(user);
             list.appendChild(card);
         });
 
     } catch (e) {
-        console.error("showPinLogin failed:", e);
+        console.error("Crash in showPinLogin:", e);
     }
 }
 
@@ -8117,3 +8116,5 @@ async function saveUserProfile() {
         showToast("Failed to save settings");
     }
 }
+console.log("Script loaded. Forcing startApp...");
+startApp();
