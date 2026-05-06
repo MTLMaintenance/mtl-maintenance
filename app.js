@@ -8082,7 +8082,7 @@ function setAccent(color) {
 }
 
 async function saveUserProfile() {
-    const name = document.getElementById('p-name').value.trim();
+    const newName = document.getElementById('p-name').value.trim();
     const newPrefs = {
         status: document.getElementById('p-status').value,
         startPage: document.getElementById('p-start-page').value,
@@ -8092,37 +8092,29 @@ async function saveUserProfile() {
     };
 
     try {
-        // 1. Save to Supabase
-        const { error } = await window._mpdb
-            .from('profiles')
-            .update({ 
-                full_name: name,
-                preferences: newPrefs 
-            })
-            .eq('id', currentUser.id);
+        // 1. Save to Database
+        await window._mpdb.from('profiles').update({ 
+            full_name: newName, 
+            preferences: newPrefs 
+        }).eq('id', currentUser.id);
 
-        if (error) throw error;
-
-        // 2. UPDATE LOCAL MEMORY IMMEDIATELY
-        currentUser.name = name;
+        // 2. Update LIVE Object
+        currentUser.name = newName;
         currentUser.preferences = newPrefs;
-        
-        // 3. Update the mp_session in LocalStorage so it stays on refresh
+
+        // 3. Update the Session Cache (This is why it was reverting on refresh)
         const session = JSON.parse(localStorage.getItem('mp_session') || '{}');
-        session.name = name;
+        session.name = newName;
         session.preferences = newPrefs;
         localStorage.setItem('mp_session', JSON.stringify(session));
 
-        // 4. TRIGGER LIVE UI UPDATE
+        // 4. Update the Screen right now
         applyUserPreferences(); 
 
         closeModal('profile-modal');
-        showToast("Profile Updated Live ✓");
-        
-        logAuditAction("Profile Update", "Settings updated and applied live.");
+        showToast("Settings saved and synced ✓");
 
     } catch (e) {
-        console.error(e);
-        showToast("Error saving live settings");
+        showToast("Failed to save settings");
     }
 }
