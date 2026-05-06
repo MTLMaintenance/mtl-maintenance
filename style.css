@@ -754,7 +754,8 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     flex-wrap: wrap !important;
     padding: 10px 12px !important;
     gap: 10px !important;
-  }
+   margin-bottom: 30px !important;
+    }
   #global-search {
     max-width: 120px !important;
     font-size: 11px !important;
@@ -1014,15 +1015,14 @@ body, html {
   }
 
   /* 3. FIX VERTICAL CUTOFF: Unlock the panels */
-  .panel {
-     margin-top: 20px !important; 
+ .panel {
+    display: none; /* Default hidden */
+    padding: 30px 25px 100px 25px !important; /* 30px from top, 25px sides, 100px bottom */
     height: auto !important;
-    min-height: calc(100vh - 100px);
-    overflow: visible !important;
-    padding: 10px !important;
-    padding-bottom: 100px !important; /* Space for the bottom of the page */
-  }
-
+    min-height: calc(100vh - 80px);
+    overflow-y: auto;
+    box-sizing: border-box;
+}
   /* 4. FIX "FLOATING OFF SIDE": The Table & Header Fix */
   .section-header {
     flex-direction: column !important; /* Stack "Work Orders" above buttons */
