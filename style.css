@@ -5,7 +5,17 @@
   background-color: var(--accent) !important;
   border-color: var(--accent) !important;
 }
+/* 1. Hide topbar whenever the app is not active */
+#app[style*="display: none"] .topbar,
+#app[style*="display:none"] .topbar {
+    display: none !important;
+}
 
+/* 2. Hide topbar if we are specifically on any auth/login views */
+body:has(#login-view:not([style*="display: none"])) .topbar,
+body:has(#register-view:not([style*="display: none"])) .topbar {
+    display: none !important;
+}
 /* The "Quick Note" Dashboard Widget style */
 .personal-note-card {
     background: rgba(255, 255, 255, 0.05);
