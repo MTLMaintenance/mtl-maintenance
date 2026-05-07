@@ -633,9 +633,13 @@ async function startApp() {
   } catch(e) { console.warn('Supabase init failed:', e); }
 
   try {
+    // --- ADDED: Load all users/profiles so Chat Dots work ---
+    if (typeof fetchAllProfiles === 'function') {
+        await fetchAllProfiles(); 
+    }
+
     const sessionData = await validateSession();
     
-    // CASE A: User is already logged in
     if(sessionData) {
       const { data: profile } = await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single();
 
@@ -644,20 +648,18 @@ async function startApp() {
         localStorage.setItem('mp_session', JSON.stringify(currentUser));
         if (typeof applyUserPreferences === 'function') applyUserPreferences();
         await enterApp(); 
-        return; // Success, stop here.
+        return; 
       }
     }
 
-    // CASE B: No session found. WE MUST SHOW THE LOGIN LIST.
     console.log("No session found. Running showPinLogin...");
     showPinLogin();
 
   } catch(e) { 
     console.error("Startup error:", e);
-    showPinLogin(); // Show login even if validation crashes
+    showPinLogin(); 
   }
 
-  // Set up online/offline listeners
   window.addEventListener('online', () => setSyncStatus('online'));
   window.addEventListener('offline', () => setSyncStatus('offline'));
 }
@@ -3766,29 +3768,55 @@ function renderChatMessages(msgs,container){
   msgs.forEach(msg=>{const msgDate=new Date(msg.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});if(msgDate!==lastDate){html+=`<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div>${msgDate}<div style="flex:1;height:1px;background:var(--border)"></div></div>`;lastDate=msgDate;}html+=buildChatMsgHtml(msg);});
   container.innerHTML=html;
 }
-function buildChatMsgHtml(msg){
-  const initials=(msg.author_name||msg.author).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  const isMe=msg.author===currentUser.username;
-  const time=new Date(msg.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  let body=(msg.body||'').split('\n').join('<br>');
-  body=body.replace(/@([\w]+)/g,'<span style="color:var(--accent);font-weight:500">@$1</span>');
-  const equipTag=msg.equip_id?`<div style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent-text);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openEquipDetail('${msg.equip_id}')">🔧 ${equipName(msg.equip_id)}</div>`:'';
-  const taskN=state.tasks.find(t=>t.id===msg.task_id)?.name||'Work Order';
-  const taskTag=msg.task_id?`<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);color:var(--text2);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openTaskDetail('${msg.task_id}')">📋 ${taskN}</div>`:'';
-  const photoHtml=msg.photo?`<img src="${msg.photo}" style="max-width:240px;border-radius:var(--radius);margin-top:6px;cursor:pointer;border:1px solid var(--border)" onclick="viewPhoto('${msg.photo}')"/>`:'';
-  const canDelete=isMe||currentUser?.role==='admin'||currentUser?.role==='manager';
-  const canBlock=!isMe&&(currentUser?.role==='admin'||currentUser?.role==='manager');
-  return `<div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start;${isMe?'flex-direction:row-reverse':''}" onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
-    <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--success-bg)':'var(--accent-bg)'};color:${isMe?'var(--success-text)':'var(--accent-text)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${initials}</div>
-    <div style="flex:1;min-width:0;${isMe?'align-items:flex-end;display:flex;flex-direction:column':''}">
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;${isMe?'flex-direction:row-reverse':''}">
-        <span style="font-weight:600;font-size:13px">${isMe?'You':msg.author_name||msg.author}</span>
+function buildChatMsgHtml(msg) {
+  // 1. Status Dot Logic
+  const sender = (state.profiles || []).find(p => p.username === msg.author);
+  const status = sender?.preferences?.status || 'Available';
+  const dotColors = {
+      'Available': '#28a745',
+      'In the Field': '#f59e0b',
+      'At the Shop': '#6c757d',
+      'On Lunch': '#007bff',
+      'Busy': '#dc3545'
+  };
+  const dotColor = dotColors[status] || '#28a745';
+  const glow = status === 'Available' ? `box-shadow: 0 0 5px ${dotColor};` : '';
+  const statusDot = `<span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block; margin-right:5px; vertical-align:middle; ${glow}"></span>`;
+
+  // 2. Existing Logic
+  const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const isMe = msg.author === currentUser.username;
+  const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  
+  let body = (msg.body || '').split('\n').join('<br>');
+  body = body.replace(/@([\w]+)/g, '<span style="color:var(--accent);font-weight:500">@$1</span>');
+  
+  const equipTag = msg.equip_id ? `<div style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent-text);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openEquipDetail('${msg.equip_id}')">🔧 ${equipName(msg.equip_id)}</div>` : '';
+  const taskN = state.tasks.find(t => t.id === msg.task_id)?.name || 'Work Order';
+  const taskTag = msg.task_id ? `<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);color:var(--text2);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openTaskDetail('${msg.task_id}')">📋 ${taskN}</div>` : '';
+  const photoHtml = msg.photo ? `<img src="${msg.photo}" style="max-width:240px;border-radius:var(--radius);margin-top:6px;cursor:pointer;border:1px solid var(--border)" onclick="viewPhoto('${msg.photo}')"/>` : '';
+  
+  const canDelete = isMe || currentUser?.role === 'admin' || currentUser?.role === 'manager';
+  const canBlock = !isMe && (currentUser?.role === 'admin' || currentUser?.role === 'manager');
+
+  return `<div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start;${isMe ? 'flex-direction:row-reverse' : ''}" onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
+    <div style="width:32px;height:32px;border-radius:50%;background:${isMe ? 'var(--success-bg)' : 'var(--accent-bg)'};color:${isMe ? 'var(--success-text)' : 'var(--accent-text)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${initials}</div>
+    <div style="flex:1;min-width:0;${isMe ? 'align-items:flex-end;display:flex;flex-direction:column' : ''}">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;${isMe ? 'flex-direction:row-reverse' : ''}">
+        
+        <!-- ADDED: Status Dot next to name -->
+        <span style="font-weight:600;font-size:13px;display:flex;align-items:center">
+            ${!isMe ? statusDot : ''} 
+            ${isMe ? 'You' : msg.author_name || msg.author}
+            ${isMe ? `<span style="margin-left:5px">${statusDot}</span>` : ''}
+        </span>
+
         <span style="font-size:11px;color:var(--text3)">${time}</span>
-        ${canDelete||canBlock?`<span class="msg-actions" style="opacity:0;transition:opacity .15s;display:flex;gap:4px;margin-left:4px">${canDelete?`<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px" title="Delete">🗑</button>`:''}${canBlock?`<button onclick="blockChatUser('${msg.author}','${msg.author_name||msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px" title="Block">🚫</button>`:''}</span>`:''}
+        ${canDelete || canBlock ? `<span class="msg-actions" style="opacity:0;transition:opacity .15s;display:flex;gap:4px;margin-left:4px">${canDelete ? `<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px" title="Delete">🗑</button>` : ''}${canBlock ? `<button onclick="blockChatUser('${msg.author}','${msg.author_name||msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px" title="Block">🚫</button>` : ''}</span>` : ''}
       </div>
-      <div style="background:${isMe?'var(--success-bg)':'var(--bg2)'};border-radius:${isMe?'12px 12px 2px 12px':'12px 12px 12px 2px'};padding:8px 12px">
-        ${body?`<div style="font-size:13px;color:var(--text);line-height:1.5;word-break:break-word">${body}</div>`:''}${photoHtml}
-        ${equipTag||taskTag?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${equipTag}${taskTag}</div>`:''}
+      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'};border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'};padding:8px 12px">
+        ${body ? `<div style="font-size:13px;color:var(--text);line-height:1.5;word-break:break-word">${body}</div>` : ''}${photoHtml}
+        ${equipTag || taskTag ? `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
       </div>
     </div>
   </div>`;
@@ -7193,6 +7221,36 @@ async function fetchTools() {
 
     } catch (err) {
         console.error("💥 Function crashed:", err);
+    }
+}
+
+async function fetchAllProfiles() {
+    try {
+        const { data, error } = await window._mpdb
+            .from('profiles')
+            .select('id, username, full_name, preferences');
+        
+        if (error) throw error;
+        state.profiles = data || [];
+        console.log(`Successfully loaded ${state.profiles.length} team profiles.`);
+
+ 
+        window._mpdb.channel('global-profile-updates')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, payload => {
+                const updatedUser = payload.new;
+                const idx = state.profiles.findIndex(u => u.id === updatedUser.id);
+                if (idx !== -1) {
+                    state.profiles[idx] = updatedUser;
+                    
+                    if (document.getElementById('panel-chat')?.classList.contains('active')) {
+                        
+                        renderChat(); 
+                    }
+                }
+            }).subscribe();
+
+    } catch (e) {
+        console.error("Error loading team profiles:", e);
     }
 }
 // --- TOOL NOTE ACTIONS ---
