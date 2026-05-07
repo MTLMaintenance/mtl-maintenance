@@ -1811,3 +1811,19 @@ html {
     margin: 0 !important;
     text-align: center !important;
 }
+.chat-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* Colors based on status */
+.dot-available { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
+.dot-busy      { background-color: #dc3545; }
+.dot-field     { background-color: #f59e0b; }
+.dot-lunch     { background-color: #007bff; }
+.dot-shop      { background-color: #6c757d; }
+  
