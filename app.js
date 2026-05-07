@@ -8184,3 +8184,24 @@ async function saveUserProfile() {
 }
 console.log("Script loaded. Forcing startApp...");
 startApp();
+
+function openMobileSearch() {
+    // Instead of a tiny bar, we use a prompt or a full-screen search experience
+    const query = prompt("Search equipment, tasks, or parts:");
+    
+    if (query && query.trim() !== "") {
+        // Use your existing search logic
+        const input = document.getElementById('global-search');
+        if (input) {
+            input.value = query;
+            handleGlobalSearch(); // Trigger the search result dropdown
+        } else {
+            // Fallback: If you don't have the global search input anymore
+            // We can just alert or filter the current view
+            alert("Searching for: " + query);
+        }
+    }
+}
+
+// Make it global
+window.openMobileSearch = openMobileSearch;
