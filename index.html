@@ -127,8 +127,12 @@
           <span id="p-topbar-name">User</span>
       </div>
       <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
-      <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="signOut()">↩</button>
+    <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ WO</button>
+    <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()">🌙</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')">💬</button>
+    <button class="btn btn-primary btn-sm" onclick="signOut()">↩</button>
+    <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷</button>
     </div>
   </div>
 
