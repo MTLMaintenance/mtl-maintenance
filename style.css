@@ -1011,11 +1011,11 @@ body, html {
   #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar { display: none; }
 
   /* D. VERTICAL SPACING */
-  .topbar-spacer { height: 135px !important; }
+  .topbar-spacer { height: 125px !important; }
 
   .panel {
     padding: 10px !important;
-    margin-top: 135px !important; /* Matches topbar height */
+    margin-top: 125px !important; /* Matches topbar height */
     height: auto !important;
     overflow-y: auto !important;
   }
