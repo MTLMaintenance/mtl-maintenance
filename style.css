@@ -1010,12 +1010,11 @@ body, html {
   }
   #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar { display: none; }
 
-  /* D. VERTICAL SPACING */
-  .topbar-spacer { height: 125px !important; }
-
+/* D. DYNAMIC VERTICAL SPACING */
   .panel {
     padding: 10px !important;
-    margin-top: 125px !important; /* Matches topbar height */
+    /* We use the dynamic height measured by JS, fallback to 110px */
+    margin-top: var(--topbar-h, 110px) !important; 
     height: auto !important;
     overflow-y: auto !important;
   }
