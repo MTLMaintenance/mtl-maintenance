@@ -14,7 +14,9 @@
     border-radius: 8px;
     margin-top: 15px;
 }
-
+#app[style*="display: none"] .topbar {
+    display: none !important;
+}
 /* Styles for the avatar shapes */
 .avatar-style-initial { border-radius: 50%; }
 .avatar-style-square { border-radius: 8px; }
@@ -990,7 +992,7 @@ body, html {
     font-size: 16px !important;
     display: block !important;
   }
-  .pc-only-search { display: none !important; } /* Hide bulky search */
+  .pc-only-search { display: none !important; }
 
   /* C. HORIZONTAL SWIPE (NAV & ACTIONS) */
   #main-nav, .topbar-right {
@@ -1001,25 +1003,19 @@ body, html {
     gap: 12px !important;
     -webkit-overflow-scrolling: touch;
   }
-
-  /* Prevent button squishing */
   .nav-btn, .topbar-right .btn, #user-profile-trigger {
     flex: 0 0 auto !important;
     white-space: nowrap !important;
     font-size: 12px !important;
   }
-  
-  /* Hide scrollbars for clean look */
   #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar { display: none; }
 
-  /* D. VERTICAL SPACING & PANEL PULL-UP */
-  .topbar-spacer {
-    height: 135px !important; /* Forces panels down just enough */
-  }
+  /* D. VERTICAL SPACING */
+  .topbar-spacer { height: 135px !important; }
 
   .panel {
     padding: 10px !important;
-    margin-top: 0 !important;
+    margin-top: 135px !important; /* Matches topbar height */
     height: auto !important;
     overflow-y: auto !important;
   }
@@ -1027,77 +1023,59 @@ body, html {
   /* E. THE "NO-SPILL" FORM FIX */
   .form-grid, .grid-2, .form-row, .row {
     display: flex !important;
-    flex-direction: column !important; /* Stack vertically */
+    flex-direction: column !important;
     width: 100% !important;
     gap: 12px !important;
   }
-
-  input, select, textarea, .form-input, .form-select {
-    width: 100% !important; /* Take full width of card */
-    max-width: 100% !important;
-    box-sizing: border-box !important; /* Includes padding in width calculation */
-    font-size: 16px !important; /* Prevents iOS auto-zoom */
+  input, select, textarea {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; 
   }
 
-  /* F. MODAL SCROLL FIX (Add Equipment Fix) */
+  /* F. MODAL SCROLL FIX */
   .modal-backdrop {
-    align-items: flex-start !important; /* Start at top so bottom buttons are reachable */
+    align-items: flex-start !important;
     padding: 20px 10px !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
   }
-  
-  /* Logic to allow closeModal JS to work with !important styles */
   .modal-backdrop[style*="display: block"], 
   .modal-backdrop[style*="display: flex"] {
     display: flex !important;
   }
 
-  .modal {
-    margin: 0 auto 50px auto !important; /* Space for Save buttons */
-    width: 96% !important;
-    position: relative !important;
-    top: 0 !important; transform: none !important;
-  }
-
   /* G. TABLE HORIZONTAL SWIPE */
-  .table-wrap {
-    width: 100% !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
+  .table-wrap { width: 100% !important; overflow-x: auto !important; }
   table { min-width: 650px !important; }
- #panel-chat {
-    /* Calculate: Total height - Topbar height (135px) - Bottom Safety margin */
-    height: calc(100dvh - 190px) !important; 
-    display: none; /* Hidden by default */
-    flex-direction: column; /* Stack messages and input */
-    padding: 10px !important;
-    margin-top: 135px !important; /* Pushes it below the fixed topbar */
-    overflow: hidden !important; /* Prevents the PANEL from scrolling; we want the MESSAGES to scroll */
-  padding-bottom: 0 !important;  
- }
 
+  /* H. MOBILE CHAT FIX - LOCK TO VIEWPORT */
   #panel-chat.active {
-    display: flex !important; /* Use flex so children can fill space */
+    position: fixed !important; /* Locks it to the screen */
+    top: 135px !important;    /* Starts right after Topbar */
+    bottom: 0 !important;      /* Ends at screen bottom */
+    left: 0; right: 0;
+    height: calc(100dvh - 135px) !important; /* Exact math */
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background: #001f3f !important; /* Ensures background covers any gaps */
+    z-index: 10;
   }
 
-  /* 2. MAKE MESSAGES SCROLLABLE */
-  /* Replace '#chat-messages' with whatever ID your message container uses */
   #chat-messages-container, .chat-body {
-    flex: 1 !important; /* Take up all available middle space */
+    flex: 1 !important;      /* Makes messages fill the middle */
     overflow-y: auto !important;
+    padding-bottom: 20px;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 5px;
   }
 
-  /* 3. FIX INPUT BAR TO BOTTOM OF PANEL */
   .chat-input-wrap {
-    flex-shrink: 0 !important; /* Don't let the input bar shrink */
+    flex-shrink: 0 !important; /* Keeps bar at bottom */
     background: #111;
-    padding: 10px;
-    border-radius: 12px;
-    margin-bottom: 10px !important; 
+    padding: 12px;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 5px !important; /* Tiny lift off very bottom */
   }
 }
 
