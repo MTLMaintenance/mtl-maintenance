@@ -6,7 +6,11 @@
   border-color: var(--accent) !important;
 }
 
-
+/* If the app container is hidden, force the topbar to stay hidden */
+#app[style*="display: none"] .topbar,
+#app[style*="display:none"] .topbar {
+    display: none !important;
+}
 /* The "Quick Note" Dashboard Widget style */
 .personal-note-card {
     background: rgba(255, 255, 255, 0.05);
