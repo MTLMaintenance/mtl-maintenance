@@ -8205,3 +8205,21 @@ function openMobileSearch() {
 
 // Make it global
 window.openMobileSearch = openMobileSearch;
+
+function handleLogoClick() {
+    if (window.innerWidth <= 768) {
+        // MOBILE: Open Search
+        const query = prompt("Search for equipment, tasks, or parts:");
+        if (query && query.trim() !== "") {
+            const searchInput = document.getElementById('global-search');
+            if (searchInput) {
+                searchInput.value = query;
+                handleGlobalSearch(); 
+            }
+        }
+    } else {
+        // PC: Standard behavior (Go to Dashboard)
+        showPanel('dashboard');
+    }
+}
+window.handleLogoClick = handleLogoClick;
