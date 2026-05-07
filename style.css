@@ -971,118 +971,78 @@ body, html {
    ============================================================ */
 @media screen and (max-width: 768px) {
   
-  /* 1. ENABLE VERTICAL SCROLLING & FIX BACKGROUND */
+  /* 1. ALLOW VERTICAL SCROLL, STOP PAGE WIGGLE */
   html, body {
-    background-color: #001f3f !important;
-    background-image: none !important;
     height: auto !important;
-    min-height: 100vh;
-    overflow-x: hidden !important;
+    overflow-x: hidden !important; /* Prevents the whole app from shaking left/right */
     overflow-y: auto !important;
-    margin: 0;
-    padding: 0;
+    background-color: #001f3f !important;
   }
 
-  /* 2. THE TOPBAR: Compact & Stacked Rows */
+  /* 2. THE TOPBAR: Fixed and Compact */
   .topbar {
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
     display: flex !important;
     flex-direction: column !important;
-    position: fixed !important; /* Keep it locked to top */
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 9999;
     background: #111 !important;
     width: 100% !important;
-    gap: 0 !important; /* Remove gaps between rows */
   }
 
-  /* Force all Topbar rows to be swipable and horizontal */
-  .topbar-main-row, #main-nav, .topbar-right {
+  /* 3. RESTORE SIDE-SCROLLING (The "Swipe" Fix) */
+  #main-nav, .topbar-right, .topbar-main-row {
     display: flex !important;
-    justify-content: flex-start !important; 
-    align-items: center !important;
-    flex-wrap: nowrap !important;           
-    overflow-x: auto !important;            
+    flex-wrap: nowrap !important;       /* Prevents buttons from jumping to new lines */
+    overflow-x: auto !important;        /* Re-enables the thumb swipe */
     width: 100% !important;
-    padding: 6px 12px !important; /* Tightened padding to save space */
-    -webkit-overflow-scrolling: touch;
+    padding: 6px 12px !important;       /* Tight padding to save height */
+    -webkit-overflow-scrolling: touch; /* Makes swipe feel smooth like an iPhone app */
+    gap: 10px !important;
   }
 
-  /* Buttons inside Topbar (The ones that shouldn't wrap) */
-  .nav-item, .topbar-main-row a, .topbar-right .btn, #user-profile-trigger {
-    flex: 0 0 auto !important; /* Prevents buttons from squishing */
-    margin-right: 12px !important;
+  /* Force buttons to keep their shape so they can scroll */
+  .nav-btn, .topbar-right .btn, #user-profile-trigger {
+    flex: 0 0 auto !important;         /* CRITICAL: Stops buttons from squishing */
     white-space: nowrap !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
+    margin: 0 !important;
   }
 
-  /* Hide scrollbars for the top rows */
-  .topbar-main-row::-webkit-scrollbar, #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar {
+  /* Hide the scrollbars for a cleaner look */
+  #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar {
     display: none;
   }
 
-  /* 3. THE SPACER & PANEL: Pull content UP */
+  /* 4. FIX THE "HALFWAY DOWN" GAP */
   .topbar-spacer {
-    height: 110px !important; /* Adjust this to match the height of your 3 rows */
+    /* This should be the exact height of your 2-3 topbar rows combined */
+    height: 85px !important; 
   }
 
   .panel {
     display: none;
-    width: 100% !important;
-    margin-top: 110px !important; /* Pushes content exactly below fixed topbar */
-    padding: 10px !important; /* Reduced side breathing room for mobile */
-    padding-bottom: 100px !important; 
+    margin-top: 5px !important;    /* Small gap between bar and content */
+    padding: 10px !important;
     box-sizing: border-box;
+    width: 100% !important;
   }
 
   .panel.active {
     display: block !important;
   }
 
-  /* 4. FIX "FLOATING OFF SIDE": The Table & Header Fix */
-  .section-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 8px !important;
-    margin-bottom: 15px !important;
-  }
-
+  /* 5. FIX THE TABLE (Inside Panel) */
   .table-wrap {
     width: 100% !important;
-    overflow-x: auto !important; 
-    -webkit-overflow-scrolling: touch;
+    overflow-x: auto !important; /* Allow the TABLE to swipe separately */
     border-radius: 8px;
-    background: rgba(255,255,255,0.05);
   }
-
+  
   table {
-    min-width: 600px !important; /* Allow user to swipe the table content */
+      min-width: 600px !important; /* Ensure columns aren't crushed */
   }
-
-  /* 5. CARD & INPUT FIXES */
-  .modal-content, .card {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 10px 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  .form-row, .grid, .flex, .form-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 10px !important;
-  }
-
-  input, select, textarea {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    font-size: 16px !important; 
-  }
-
-} /* END MOBILE BLOCK */
+}
 
 /* ============================================================
    2. PC OVERRIDES (769px and LARGER)
