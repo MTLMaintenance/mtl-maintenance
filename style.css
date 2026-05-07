@@ -971,59 +971,28 @@ body, html {
    ============================================================ */
 @media screen and (max-width: 768px) {
   
-  /* 1. ALLOW VERTICAL SCROLL, STOP PAGE WIGGLE */
-  html, body {
-    height: auto !important;
-    overflow-x: hidden !important; /* Prevents the whole app from shaking left/right */
-    overflow-y: auto !important;
-    background-color: #001f3f !important;
-  }
-
-  /* 2. THE TOPBAR: Fixed and Compact */
+  /* 1. THE TOPBAR: No changes here, keep it fixed */
   .topbar {
     position: fixed !important;
     top: 0; left: 0; right: 0;
     z-index: 9999;
+    background: #111 !important;
     display: flex !important;
     flex-direction: column !important;
-    background: #111 !important;
-    width: 100% !important;
   }
 
-  /* 3. RESTORE SIDE-SCROLLING (The "Swipe" Fix) */
-  #main-nav, .topbar-right, .topbar-main-row {
-    display: flex !important;
-    flex-wrap: nowrap !important;       /* Prevents buttons from jumping to new lines */
-    overflow-x: auto !important;        /* Re-enables the thumb swipe */
-    width: 100% !important;
-    padding: 6px 12px !important;       /* Tight padding to save height */
-    -webkit-overflow-scrolling: touch; /* Makes swipe feel smooth like an iPhone app */
-    gap: 10px !important;
-  }
-
-  /* Force buttons to keep their shape so they can scroll */
-  .nav-btn, .topbar-right .btn, #user-profile-trigger {
-    flex: 0 0 auto !important;         /* CRITICAL: Stops buttons from squishing */
-    white-space: nowrap !important;
-    font-size: 12px !important;
-    margin: 0 !important;
-  }
-
-  /* Hide the scrollbars for a cleaner look */
-  #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* 4. FIX THE "HALFWAY DOWN" GAP */
+  /* 2. THE SPACER: This is what pushes your cards down */
+  /* If 140px is too much, try 130px. If not enough, try 150px. */
   .topbar-spacer {
-    /* This should be the exact height of your 2-3 topbar rows combined */
-    height: 85px !important; 
+    height: 140px !important; 
+    display: block !important;
   }
 
+  /* 3. THE PANEL: Remove the margin-top we added before */
   .panel {
     display: none;
-    margin-top: 5px !important;    /* Small gap between bar and content */
-    padding: 10px !important;
+    margin-top: 0 !important; 
+    padding: 15px !important;
     box-sizing: border-box;
     width: 100% !important;
   }
@@ -1032,18 +1001,22 @@ body, html {
     display: block !important;
   }
 
-  /* 5. FIX THE TABLE (Inside Panel) */
-  .table-wrap {
-    width: 100% !important;
-    overflow-x: auto !important; /* Allow the TABLE to swipe separately */
-    border-radius: 8px;
+  /* 4. KEEP THE SWIPE WORKING */
+  #main-nav, .topbar-right {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 12px !important;
+    padding: 8px 12px !important;
   }
-  
-  table {
-      min-width: 600px !important; /* Ensure columns aren't crushed */
+
+  /* Prevent buttons from squishing */
+  .nav-btn, .topbar-right .btn, #user-profile-trigger {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
   }
 }
-
 /* ============================================================
    2. PC OVERRIDES (769px and LARGER)
    This block "talks over" the mobile styles when on PC.
