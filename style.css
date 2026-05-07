@@ -970,38 +970,36 @@ body, html {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. CENTER THE LOGO ROW */
-  .topbar-logo-row {
-    width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    padding: 12px 0 8px 0 !important;
-    cursor: pointer;
-    color: white;
-  }
-
-  /* 2. FORCE ROWS TO BE FULL WIDTH AND CENTERED */
   .topbar {
-    padding: 0 !important;
-    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important; /* Stack rows */
+    padding-top: 10px !important;
   }
-
-  /* 3. REDUCE SPACER: Content moves up closer now that search bar is gone */
-  .topbar-spacer {
-    height: 125px !important; 
+  
+  /* Centered Logo Row */
+  .logo {
+    width: 100% !important;
+    text-align: center !important;
+    padding: 10px 0 !important;
+    font-size: 16px !important;
+    cursor: pointer;
   }
+  
+  .mobile-search-icon { display: inline !important; opacity: 0.5; font-size: 12px; margin-left: 5px; }
 
-  /* 4. HIDE PC SEARCH: If you still have the old search bar in HTML, hide it on mobile */
-  #global-search-container {
-    display: none !important;
-  }
+  /* Hide the bulky search bar */
+  .pc-only-search { display: none !important; }
 
-  /* 5. FIX NAV & ACTION SWIPING */
+  /* Ensure rows swipe correctly */
   #main-nav, .topbar-right {
-    justify-content: flex-start !important; /* Items start at edge for better swiping */
-    padding: 6px 15px !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 6px 12px !important;
+    -webkit-overflow-scrolling: touch;
   }
+  
+  .topbar-spacer { height: 130px !important; }
 }
 /* ============================================================
    2. PC OVERRIDES (769px and LARGER)
