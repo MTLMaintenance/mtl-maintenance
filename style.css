@@ -1052,9 +1052,9 @@ body, html {
   #panel-chat.active {
     position: fixed !important; /* Locks it to the screen */
     top: 135px !important;    /* Starts right after Topbar */
-    bottom: 140 !important;      /* Ends at screen bottom */
+    bottom: 10 !important;      /* Ends at screen bottom */
     left: 0; right: 0;
-    height: calc(100dvh - 105px) !important; /* Exact math */
+    height: calc(100dvh - 90px) !important; /* Exact math */
     display: flex !important;
     flex-direction: column !important;
     margin: 0 !important;
