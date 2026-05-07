@@ -8227,3 +8227,32 @@ function handleLogoClick() {
     }
 }
 window.handleLogoClick = handleLogoClick;
+function adjustMobileLayout() {
+    // Only run this logic on mobile screens
+    if (window.innerWidth <= 768) {
+        const topbar = document.querySelector('.topbar');
+        if (topbar) {
+            // Measure the actual height of the bar right now
+            const height = topbar.offsetHeight;
+            // Send that height to the CSS
+            document.documentElement.style.setProperty('--topbar-h', height + 'px');
+        }
+    } else {
+        // Reset for PC
+        document.documentElement.style.setProperty('--topbar-h', '60px');
+    }
+}
+
+// Run this whenever the window is resized or a new panel is shown
+window.addEventListener('resize', adjustMobileLayout);
+
+// Update your showPanel function to call this
+const _origShowPanel = showPanel;
+window.showPanel = function(id) {
+    _origShowPanel(id);
+    // Give the browser a millisecond to render the new panel, then adjust
+    setTimeout(adjustMobileLayout, 10); 
+};
+
+// Also run it once when the app starts
+setTimeout(adjustMobileLayout, 500);
