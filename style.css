@@ -1069,13 +1069,14 @@ body, html {
   table { min-width: 650px !important; }
  #panel-chat {
     /* Calculate: Total height - Topbar height (135px) - Bottom Safety margin */
-    height: calc(100dvh - 145px) !important; 
+    height: calc(100dvh - 190px) !important; 
     display: none; /* Hidden by default */
     flex-direction: column; /* Stack messages and input */
     padding: 10px !important;
     margin-top: 135px !important; /* Pushes it below the fixed topbar */
     overflow: hidden !important; /* Prevents the PANEL from scrolling; we want the MESSAGES to scroll */
-  }
+  padding-bottom: 0 !important;  
+ }
 
   #panel-chat.active {
     display: flex !important; /* Use flex so children can fill space */
@@ -1087,7 +1088,7 @@ body, html {
     flex: 1 !important; /* Take up all available middle space */
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
   }
 
   /* 3. FIX INPUT BAR TO BOTTOM OF PANEL */
@@ -1096,7 +1097,7 @@ body, html {
     background: #111;
     padding: 10px;
     border-radius: 12px;
-    margin-bottom: env(safe-area-inset-bottom); /* Safety for iPhone home bar */
+    margin-bottom: 10px !important; 
   }
 }
 
