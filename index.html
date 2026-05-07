@@ -117,15 +117,18 @@
 </div>
 <!---- MAIN NAVITIGATION---->
 <!-- THE WRAPPER -->
-<div class="topbar"> </div>
+<div class="topbar">
+  <!-- TOP ROW: Centered Logo / Search Trigger -->
+  <div class="topbar-logo-row" onclick="openMobileSearch()">
+    <span style="font-weight: 700; letter-spacing: -0.5px; font-size: 16px;">⚙ MTL Maintenance</span>
+    <span style="font-size: 12px; opacity: 0.5; margin-left: 8px;">🔍</span>
+  </div>
 
-  <!-- 2. NAVIGATION ROW -->
+  <!-- NAV ROW: Swipable Navigation -->
   <nav class="nav" id="main-nav">
     <button class="nav-btn" onclick="showPanel('analytics')">Analytics</button>
     <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
-    <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">
-      Chat <span id="chat-unread-top" class="badge bd" style="display:none; font-size:10px; margin-left:4px; padding:1px 5px">0</span>
-    </button>
+    <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">Chat</button>
     <button class="nav-btn" onclick="showPanel('checklists')">Checklists</button>
     <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
     <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
@@ -137,25 +140,18 @@
     <button class="nav-btn" onclick="showPanel('admin')">Admin</button>
   </nav>
 
-  <!-- 3. ACTION ROW (PDF, Status, etc) -->
+  <!-- ACTION ROW: PDF, Status, etc. -->
   <div class="topbar-right">
-    <div id="user-profile-trigger" onclick="openProfileModal()" style="display:flex; align-items:center; gap:8px; color:white; cursor:pointer; padding: 4px 12px; background: rgba(255,255,255,0.08); border-radius: 20px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px;">
+    <div id="user-profile-trigger" onclick="openProfileModal()">
         <span id="p-status-emoji">🟢</span>
-        <span id="p-topbar-name" style="font-weight: 600;">Loading...</span>
-        <span class="sync-dot" id="sync-dot" style="margin-left:4px"></span>
+        <span id="p-topbar-name">User</span>
     </div>
-
     <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
     <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
-    <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ WO</button>
-    <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()">🌙</button>
-    <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')">💬</button>
     <button class="btn btn-primary btn-sm" onclick="signOut()">↩</button>
-    <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷</button>
   </div>
-</div> <!-- END OF TOPBAR -->
+</div>
 
-<!-- THE SPACER (Outside the topbar) -->
 <div class="topbar-spacer"></div>
   <!-- DASHBOARD -->
  <div class="panel active" id="panel-dashboard">
