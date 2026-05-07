@@ -4235,19 +4235,22 @@ function openModal(id) {
 async function enterApp() {
   console.log("Entering application...");
   
-  // 1. Initial UI Setup
-  try { localStorage.setItem('mp_session', JSON.stringify(currentUser)); } catch(e) {}
+  // 1. Initial UI Setup & Session Persistence
+  try { 
+      localStorage.setItem('mp_session', JSON.stringify(currentUser)); 
+  } catch(e) { console.error("Session save failed", e); }
   
   const authScreen = document.getElementById('auth-screen');
   const appContainer = document.getElementById('app');
   
+  // HIDE LOGIN, SHOW APP (This reveals the Topbar since it's inside #app)
   if (authScreen) authScreen.style.display = 'none';
   if (appContainer) appContainer.style.display = 'flex';
 
   // 2. Build the Navigation Bar (Alphabetized)
   const nav = document.getElementById('main-nav');
   if (nav) {
-      nav.innerHTML = ''; // Clear existing
+      nav.innerHTML = ''; 
       const buttons = [
         { id: 'analytics', label: 'Analytics' },
         { id: 'calendar', label: 'Calendar' },
@@ -4262,25 +4265,20 @@ async function enterApp() {
         { id: 'tasks', label: 'Work Orders' }
       ];
 
-      // Sort A-Z
       buttons.sort((a, b) => a.label.localeCompare(b.label));
 
-      // Build buttons
       buttons.forEach(btn => {
-        // Permissions check (using your 'can' function)
         if (btn.id === 'analytics' && typeof can === 'function' && !can('canViewReports')) return;
         if (btn.id === 'suppliers' && typeof can === 'function' && !can('canManageSuppliers')) return;
 
         const b = document.createElement('button');
         b.className = 'nav-btn';
-        b.id = `nav-${btn.id}`; // Add unique ID to find it later
         b.onclick = () => showPanel(btn.id);
         b.innerHTML = btn.id === 'chat' ? 
           `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
         nav.appendChild(b);
       });
 
-      // Add Admin last
       if (currentUser.role === 'admin') {
         const adminBtn = document.createElement('button');
         adminBtn.className = 'nav-btn';
@@ -4290,31 +4288,24 @@ async function enterApp() {
       }
   }
 
-  // 3. Load Data & Logic
-  await loadState(); // Load your DB info
+  // 3. Load Data & State
+  await loadState(); 
   if (typeof fetchTools === 'function') await fetchTools();
   if (typeof runRecurrenceEngine === 'function') await runRecurrenceEngine();
   if (typeof applyUserGroupFilter === 'function') applyUserGroupFilter();
   
-  // 4. --- PERSONALIZATION (Live Updates) ---
+  // 4. APPLY PERSONALIZATION (Theme, Status, Name)
   if (typeof applyUserPreferences === 'function') {
-      applyUserPreferences(); // Set colors, status, and Topbar name
+      applyUserPreferences(); 
   }
 
-  // 5. --- HOME SCREEN LOGIC ---
-  // Determine which page to show
-  const preferredPage = (currentUser && currentUser.preferences && currentUser.preferences.startPage) 
-                        ? currentUser.preferences.startPage 
-                        : 'dashboard';
-   
-    
-  // TRIGGER THE PANEL
-  showPanel(preferredPage);
-const home = (currentUser.preferences && currentUser.preferences.startPage) 
+  // 5. REDIRECT TO PREFERRED HOME PAGE
+  const home = (currentUser.preferences && currentUser.preferences.startPage) 
                  ? currentUser.preferences.startPage 
                  : 'dashboard';
-                 
-    showPanel(home); 
+  
+  showPanel(home); 
+
   // 6. Start Background Services
   if (typeof initChat === 'function') await initChat();
   if (typeof autoCleanupAuditLogs === 'function') autoCleanupAuditLogs();
@@ -4324,11 +4315,14 @@ const home = (currentUser.preferences && currentUser.preferences.startPage)
       setInterval(updateLastSeen, 2 * 60 * 1000);
   }
   
-  console.log(`App ready. Welcome, ${currentUser.name}. Home: ${preferredPage}`);
- setTimeout(() => {
+  // 7. --- MOBILE LAYOUT NUDGE ---
+  // This triggers your height detector to snap content under the topbar
+  setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
         console.log("Forced mobile layout refresh.");
-    }, 1);
+  }, 100);
+
+  console.log(`App ready. Welcome, ${currentUser.name}. Home: ${home}`);
 }
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
