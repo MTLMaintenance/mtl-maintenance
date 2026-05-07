@@ -4328,7 +4328,7 @@ const home = (currentUser.preferences && currentUser.preferences.startPage)
  setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
         console.log("Forced mobile layout refresh.");
-    }, 5);
+    }, 1);
 }
 // ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
