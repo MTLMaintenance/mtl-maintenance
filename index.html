@@ -116,40 +116,46 @@
   <div id="search-results" style="display:none; position:absolute; top:32px; left:0; right:0; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:1000; max-height:400px; overflow-y:auto; color: var(--text)"></div>
 </div>
 <!---- MAIN NAVITIGATION---->
-<nav class="nav" id="main-nav">
-  <button class="nav-btn" onclick="showPanel('analytics')">Analytics</button>
-  <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
-  <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">
-    Chat <span id="chat-unread-top" class="badge bd" style="display:none; font-size:10px; margin-left:4px; padding:1px 5px">0</span>
-  </button>
-  <button class="nav-btn" onclick="showPanel('checklists')">Checklists</button>
-  <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
-  <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
-  <button class="nav-btn" onclick="showPanel('equipment')">Equipment</button>
-  <button class="nav-btn" onclick="showPanel('parts')">Parts</button>
-  <button class="nav-btn" onclick="showPanel('suppliers')">Suppliers</button>
-  <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
-  <button class="nav-btn" onclick="showPanel('tasks')">Work Orders</button>
-  <!-- Admin usually stays at the very end regardless of alphabet -->
-  <button class="nav-btn" onclick="showPanel('admin')">Admin</button>
-</nav>
+<!-- THE WRAPPER -->
+<div class="topbar"> </div>
 
-<div class="topbar-right">
-  <!-- The Profile Pill -->
-  <div id="user-profile-trigger" onclick="openProfileModal()" style="display:flex; align-items:center; gap:8px; color:white; cursor:pointer; padding: 4px 12px; background: rgba(255,255,255,0.08); border-radius: 20px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px;">
-      <span id="p-status-emoji">🟢</span>
-      <span id="p-topbar-name" style="font-weight: 600;">Loading...</span>
-      <span class="sync-dot" id="sync-dot" style="margin-left:4px"></span>
+  <!-- 2. NAVIGATION ROW -->
+  <nav class="nav" id="main-nav">
+    <button class="nav-btn" onclick="showPanel('analytics')">Analytics</button>
+    <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
+    <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">
+      Chat <span id="chat-unread-top" class="badge bd" style="display:none; font-size:10px; margin-left:4px; padding:1px 5px">0</span>
+    </button>
+    <button class="nav-btn" onclick="showPanel('checklists')">Checklists</button>
+    <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
+    <button class="nav-btn" onclick="showPanel('equipment')">Equipment</button>
+    <button class="nav-btn" onclick="showPanel('parts')">Parts</button>
+    <button class="nav-btn" onclick="showPanel('suppliers')">Suppliers</button>
+    <button class="nav-btn" onclick="showPanel('tools')">Tool Crib</button>
+    <button class="nav-btn" onclick="showPanel('tasks')">Work Orders</button>
+    <button class="nav-btn" onclick="showPanel('admin')">Admin</button>
+  </nav>
+
+  <!-- 3. ACTION ROW (PDF, Status, etc) -->
+  <div class="topbar-right">
+    <div id="user-profile-trigger" onclick="openProfileModal()" style="display:flex; align-items:center; gap:8px; color:white; cursor:pointer; padding: 4px 12px; background: rgba(255,255,255,0.08); border-radius: 20px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px;">
+        <span id="p-status-emoji">🟢</span>
+        <span id="p-topbar-name" style="font-weight: 600;">Loading...</span>
+        <span class="sync-dot" id="sync-dot" style="margin-left:4px"></span>
+    </div>
+
+    <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
+    <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ WO</button>
+    <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()">🌙</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')">💬</button>
+    <button class="btn btn-primary btn-sm" onclick="signOut()">↩</button>
+    <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷</button>
   </div>
+</div> <!-- END OF TOPBAR -->
 
-  <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
-  <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
-  <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ Work Order</button>
-  <button class="btn btn-primary btn-sm" onclick="toggleDarkMode()" id="dark-btn">🌙</button>
-  <button class="btn btn-primary btn-sm" onclick="openModal('bug-modal')">💬</button>
-  <button class="btn btn-primary btn-sm" onclick="signOut()">↩ Sign Out</button>
-  <button class="btn btn-primary btn-sm" onclick="startQRScanner()">📷 Scan QR</button>
-</div>
+<!-- THE SPACER (Outside the topbar) -->
 <div class="topbar-spacer"></div>
   <!-- DASHBOARD -->
  <div class="panel active" id="panel-dashboard">
