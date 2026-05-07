@@ -973,28 +973,31 @@ body, html {
   
   /* 1. ENABLE VERTICAL SCROLLING & FIX BACKGROUND */
   html, body {
-    background-color: #001f3f !important; /* Navy Blue */
+    background-color: #001f3f !important;
     background-image: none !important;
-    height: auto !important;          /* CRITICAL: Allows vertical scroll */
+    height: auto !important;
     min-height: 100vh;
-    overflow-x: hidden !important;    /* Prevents side-to-side wiggle */
-    overflow-y: auto !important;      /* Forces vertical scroll */
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     margin: 0;
     padding: 0;
   }
 
-  /* 2. TOPBAR: Keep the swiping you liked */
+  /* 2. THE TOPBAR: Compact & Stacked Rows */
   .topbar {
     display: flex !important;
     flex-direction: column !important;
-    position: sticky !important;
+    position: fixed !important; /* Keep it locked to top */
     top: 0;
-    z-index: 1000;
+    left: 0;
+    right: 0;
+    z-index: 9999;
     background: #111 !important;
     width: 100% !important;
-    padding: 0 !important;
+    gap: 0 !important; /* Remove gaps between rows */
   }
 
+  /* Force all Topbar rows to be swipable and horizontal */
   .topbar-main-row, #main-nav, .topbar-right {
     display: flex !important;
     justify-content: flex-start !important; 
@@ -1002,51 +1005,59 @@ body, html {
     flex-wrap: nowrap !important;           
     overflow-x: auto !important;            
     width: 100% !important;
-    padding: 8px 12px !important;
+    padding: 6px 12px !important; /* Tightened padding to save space */
     -webkit-overflow-scrolling: touch;
   }
 
-  .nav-item, .topbar-main-row a {
-    flex: 0 0 auto !important; 
-    margin-right: 20px !important;
-    color: white !important;
+  /* Buttons inside Topbar (The ones that shouldn't wrap) */
+  .nav-item, .topbar-main-row a, .topbar-right .btn, #user-profile-trigger {
+    flex: 0 0 auto !important; /* Prevents buttons from squishing */
+    margin-right: 12px !important;
     white-space: nowrap !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
   }
 
-  /* 3. FIX VERTICAL CUTOFF: Unlock the panels */
-.panel {
+  /* Hide scrollbars for the top rows */
+  .topbar-main-row::-webkit-scrollbar, #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar {
     display: none;
-    width: 100%;
-    max-width: 1400px; /* Limits width on huge monitors */
-    margin: 0 auto !important; /* Centers the content */
-    padding: 20px !important; /* Adds side breathing room */
+  }
+
+  /* 3. THE SPACER & PANEL: Pull content UP */
+  .topbar-spacer {
+    height: 110px !important; /* Adjust this to match the height of your 3 rows */
+  }
+
+  .panel {
+    display: none;
+    width: 100% !important;
+    margin-top: 110px !important; /* Pushes content exactly below fixed topbar */
+    padding: 10px !important; /* Reduced side breathing room for mobile */
+    padding-bottom: 100px !important; 
     box-sizing: border-box;
-}
+  }
+
+  .panel.active {
+    display: block !important;
+  }
 
   /* 4. FIX "FLOATING OFF SIDE": The Table & Header Fix */
   .section-header {
-    flex-direction: column !important; /* Stack "Work Orders" above buttons */
+    flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 10px !important;
+    gap: 8px !important;
+    margin-bottom: 15px !important;
   }
 
-  .section-header > div {
-    flex-wrap: wrap !important; /* Allow buttons/dropdowns to wrap if needed */
-    width: 100%;
-  }
-
-  /* Force the Table to scroll INSIDE its card */
   .table-wrap {
     width: 100% !important;
     overflow-x: auto !important; 
     -webkit-overflow-scrolling: touch;
     border-radius: 8px;
-    background: rgba(255,255,255,0.05); /* Slight tint for the table area */
+    background: rgba(255,255,255,0.05);
   }
 
   table {
-    min-width: 700px !important; /* Forces the table to be readable, user swipes it */
+    min-width: 600px !important; /* Allow user to swipe the table content */
   }
 
   /* 5. CARD & INPUT FIXES */
@@ -1057,12 +1068,10 @@ body, html {
     box-sizing: border-box !important;
   }
 
-  /* Stack form inputs vertically */
   .form-row, .grid, .flex, .form-grid {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    padding: 0 !important;
     gap: 10px !important;
   }
 
@@ -1070,7 +1079,7 @@ body, html {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    font-size: 16px !important; /* Stops iOS zoom-jump */
+    font-size: 16px !important; 
   }
 
 } /* END MOBILE BLOCK */
