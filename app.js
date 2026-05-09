@@ -5931,6 +5931,7 @@ async function handleZerkMapClick(event, viewIdx) {
 
         if (!equip.zerk_points) equip.zerk_points = [];
         equip.zerk_points.push({
+            id: uid(),   
             x: x.toFixed(2),
             y: y.toFixed(2),
             lx: x.toFixed(2), // label matches target in dot mode
@@ -5972,31 +5973,28 @@ async function handleZerkMapClick(event, viewIdx) {
         }
     }
 }
-async function editZerkNote(pointIdx) {
+async function editZerkNote(id) {
     const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
-    const viewIdx = window._currentZerkViewIdx || 0;
-    
-    // Filter to find the specific point in this view
-    const pointsInView = equip.zerk_points.filter(p => p.view_index === viewIdx);
-    const targetPoint = pointsInView[pointIdx];
+    if (!equip || !equip.zerk_points) return;
 
-    const newNote = prompt("Edit grease instructions:", targetPoint.note);
-    
-    if (newNote === null) {
-        // If cancel is pressed, ask to delete
-        if (confirm("Delete this grease point permanently?")) {
-            equip.zerk_points = equip.zerk_points.filter(p => p !== targetPoint);
-        } else return;
-    } else {
-        targetPoint.note = newNote;
+    // Find the point by ID instead of Index
+    const targetPoint = equip.zerk_points.find(p => p.id === id);
+    if (!targetPoint) {
+        console.error("Could not find zerk point with ID:", id);
+        return;
     }
 
+    const newNote = prompt("Edit grease instructions:", targetPoint.note || "");
+    if (newNote === null) return; // User pressed cancel
+
+    // Update the note
+    targetPoint.note = newNote;
+
+    // Save the entire equipment object back to Supabase
     await persist('equipment', 'upsert', equip);
     renderZerkTab(equip.id);
 }
 window.editZerkNote = editZerkNote;
-// CRITICAL: Make it global so the HTML can see it
-window.handleZerkMapClick = handleZerkMapClick;
 
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
@@ -6075,83 +6073,37 @@ async function deleteZerkView() {
         showToast("Delete failed");     
     }
 }
-  async function deleteZerk(id) {
-    if(!id || !confirm("Delete this grease point?")) return;
+ async function deleteZerk(id) {
+    if (!id) return;
+    if (!confirm("Delete this grease point?")) return;
 
     const equipId = window._currentDetailEquipId;
     const equip = state.equipment.find(x => x.id === equipId);
     
-    try {
-        // 1. Delete from the separate grease_points table if you use it
-        await window._mpdb.from('grease_points').delete().eq('id', id);
-        
-        // 2. Remove it from the equip.zerk_points array in our state
-        if (equip && equip.zerk_points) {
-            equip.zerk_points = equip.zerk_points.filter(p => p.id !== id);
-        }
+    if (!equip || !equip.zerk_points) return;
 
-        // 3. Update the equipment table in Supabase to sync the points
-        await window._mpdb.from('equipment')
+    try {
+        // 1. Remove the point from the local array
+        equip.zerk_points = equip.zerk_points.filter(p => p.id !== id);
+
+        // 2. Save the equipment record (which contains the zerk_points JSONB)
+        const { error } = await window._mpdb
+            .from('equipment')
             .update({ zerk_points: equip.zerk_points })
             .eq('id', equipId);
-        
-        // 4. Force UI refresh
-        renderZerkTab(equipId);
-        
+
+        if (error) throw error;
+
+        // 3. UI Update
         showToast("Point removed ✓");
-    } catch(e) { 
-        console.error("Delete point failed:", e); 
+        renderZerkTab(equipId);
+
+    } catch (e) {
+        console.error("Delete failed:", e);
         showToast("Error deleting point");
     }
 }
-// UPDATE: refreshZerkMap to use the new zerk_photos field
-async function refreshZerkMap(equipId) {
-   if (!window.currentZerkView) window.currentZerkView = 'side_1';  
- const e = state.equipment.find(x => x.id === equipId);
-    if(!e) return;
-
-    const switcher = document.getElementById('zerk-view-switcher');
-    const noPhotos = document.getElementById('zerk-no-photos');
-    const container = document.getElementById('zerk-map-container');
-    const delViewBtn = document.getElementById('btn-delete-view');
-
-    if(!e.zerk_photos || e.zerk_photos.length === 0) {
-        if(switcher) switcher.style.display = 'none';
-        if(container) container.style.display = 'none';
-        if(delViewBtn) delViewBtn.style.display = 'none';
-        if(noPhotos) noPhotos.style.display = 'block';
-        return;
-    }
-
-    if(switcher) switcher.style.display = 'flex';
-    if(container) container.style.display = 'block';
-    if(delViewBtn) delViewBtn.style.display = 'block';
-    if(noPhotos) noPhotos.style.display = 'none';
-
-    switcher.innerHTML = e.zerk_photos.map((_, i) => `
-        <button class="btn btn-secondary btn-sm" id="btn-zerk-side_${i+1}" onclick="changeZerkView('side_${i+1}', this)">
-            View ${i+1}
-        </button>
-    `).join('');
-
-    const { data } = await window._mpdb.from('grease_points').select('*').eq('equip_id', equipId);
-    allMachineZerks = data || [];
-    
-    changeZerkView('side_1', document.getElementById('btn-zerk-side_1'));
-}
-
-// UPDATE: changeZerkView to pull from zerk_photos array
-function changeZerkView(viewIndex, btn) {
-    // Set the global tracker
-    window._currentZerkViewIdx = viewIndex;
-    
-    // Just call the master refresh function
-    renderZerkTab(window._currentDetailEquipId);
-    
-    // Hide the old detail box if it exists
-    const detailBox = document.getElementById('zerk-detail-box');
-    if (detailBox) detailBox.style.display = 'none';
-}
+window.deleteZerk = deleteZerk;
 
 function renderZerkDots() {
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
