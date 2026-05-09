@@ -6090,67 +6090,86 @@ async function refreshZerkMap(equipId) {
 
 // UPDATE: changeZerkView to pull from zerk_photos array
 function changeZerkView(viewIndex, btn) {
+    // Set the global tracker
     window._currentZerkViewIdx = viewIndex;
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    
+    // Just call the master refresh function
+    renderZerkTab(window._currentDetailEquipId);
+    
+    // Hide the old detail box if it exists
+    const detailBox = document.getElementById('zerk-detail-box');
+    if (detailBox) detailBox.style.display = 'none';
+}
+function renderZerkTab(equipId) {
+    const equip = state.equipment.find(x => x.id === equipId);
     if (!equip) return;
 
-    // 1. Highlight the active button
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
-        b.classList.remove('btn-primary');
-        b.classList.add('btn-secondary');
-    });
-    if (btn) {
-        btn.classList.add('btn-primary');
-        btn.classList.remove('btn-secondary');
-    }
+    const viewIdx = window._currentZerkViewIdx || 0;
+    const switcher = document.getElementById('zerk-view-switcher');
+    const sidebar = document.getElementById('zerk-sidebar-container');
+    const img = document.getElementById('zerk-map-img');
+    const modal = document.getElementById('equip-detail-modal'); // Ensure this ID is correct
+    const histBtn = document.getElementById('btn-history-report');
 
-    // 2. Widen the modal and hide the History Report button
-    const modal = document.getElementById('equip-detail-modal'); // Change to your modal's ID
-    const histBtn = document.getElementById('btn-history-report'); 
-    
-    if (equip.zerk_photos && equip.zerk_photos[viewIndex]) {
-        if (modal) modal.classList.add('modal-zerk-wide');
-        if (histBtn) histBtn.style.display = 'none'; // Hide report button
-        
-        const img = document.getElementById('zerk-map-img');
-        img.src = equip.zerk_photos[viewIndex];
-    } else {
+    // 1. Handle Empty State
+    if (!equip.zerk_photos || equip.zerk_photos.length === 0) {
         if (modal) modal.classList.remove('modal-zerk-wide');
         if (histBtn) histBtn.style.display = 'block';
+        if (switcher) switcher.innerHTML = `<button class="btn btn-primary" onclick="addZerkViewWithTitle()">+ Add Photo Map</button>`;
+        return;
     }
 
-    // 3. Re-render the dots and the NEW side table
+    // 2. Build the Switcher Buttons
+    if (switcher) {
+        switcher.innerHTML = equip.zerk_photos.map((_, i) => {
+            const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
+            const isActive = viewIdx === i;
+            return `<button class="btn ${isActive ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="changeZerkView(${i}, this)">${name}</button>`;
+        }).join('') + `<button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>`;
+    }
+
+    // 3. Widen Modal & Hide History
+    if (modal) modal.classList.add('modal-zerk-wide');
+    if (histBtn) histBtn.style.display = 'none';
+
+    // 4. Update the Image
+    if (img) img.src = equip.zerk_photos[viewIdx];
+
+    // 5. Draw the Dots & Sidebar Table
     renderZerkDots();
 }
 function renderZerkDots() {
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
     const viewIdx = window._currentZerkViewIdx || 0;
-    
-    // 1. Get the points for THIS specific view
-    const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
-    
-    // 2. Draw the dots on the map overlay
     const overlay = document.getElementById('zerk-dots-overlay');
-    overlay.innerHTML = points.map((p, idx) => `
-        <div class="zerk-dot" 
-             style="left:${p.x}%; top:${p.y}%" 
-             onclick="event.stopPropagation(); editZerkNote(${idx})">
-            ${idx + 1}
-        </div>
-    `).join('');
-
-    // 3. Populate the NEW sidebar table (Make sure this ID exists in your HTML)
     const sidebar = document.getElementById('zerk-sidebar-container');
+
+    // Filter points belonging ONLY to this specific photo
+    const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
+
+    // Draw the Numbers on the Image
+    if (overlay) {
+        overlay.innerHTML = points.map((p, idx) => `
+            <div class="zerk-dot" style="left:${p.x}%; top:${p.y}%" onclick="event.stopPropagation(); editZerkNote(${idx})">
+                ${idx + 1}
+            </div>
+        `).join('');
+    }
+
+    // Draw the Instruction Table on the Right
     if (sidebar) {
         sidebar.innerHTML = `
-            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Grease Point Instructions</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                <h4 style="margin:0; font-size:14px;">Grease Points</h4>
+                <button class="btn btn-danger btn-sm" onclick="deleteZerkView()">Delete View</button>
+            </div>
             <table class="zerk-sidebar-table">
-                <thead><tr><th>#</th><th>Instructions</th></tr></thead>
+                <thead><tr><th style="width:40px">#</th><th>Instructions</th></tr></thead>
                 <tbody>
                     ${points.map((p, idx) => `
                         <tr onclick="editZerkNote(${idx})">
                             <td style="color:#ffec00; font-weight:bold">#${idx + 1}</td>
-                            <td>${p.note || '<span style="opacity:0.5">No instructions</span>'}</td>
+                            <td>${p.note || '<span style="opacity:0.4">No instructions</span>'}</td>
                         </tr>
                     `).join('') || '<tr><td colspan="2" style="text-align:center; padding:20px; opacity:0.5">Click map to add points</td></tr>'}
                 </tbody>
@@ -6158,8 +6177,6 @@ function renderZerkDots() {
         `;
     }
 }
-    
-
 function renderZerkMap(equipId) {
     const container = document.getElementById('tab-content-zerk');
     if (!container) return;
