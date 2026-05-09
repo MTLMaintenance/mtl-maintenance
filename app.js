@@ -6097,6 +6097,88 @@ function renderDashboardObs(equipId) {
         </div>
     `).join('') || '<div style="color:var(--text3); font-size:12px">No recent activity</div>';
 }
+function renderZerkMap(equipId) {
+    const container = document.getElementById('tab-content-zerk');
+    if (!container) return;
+
+    const views = state.zerkMaps ? state.zerkMaps.filter(v => v.equip_id === equipId) : [];
+    const currentView = views[window._currentZerkViewIdx || 0];
+
+    // 1. Manage Modal Width and Bottom Buttons
+    const modal = container.closest('.modal');
+    const histBtn = document.getElementById('btn-history-report'); // Ensure your History button has this ID
+
+    if (currentView) {
+        if (modal) modal.classList.add('modal-zerk-wide');
+        if (histBtn) histBtn.style.display = 'none'; // Hide history report
+    } else {
+        if (modal) modal.classList.remove('modal-zerk-wide');
+        if (histBtn) histBtn.style.display = 'block';
+    }
+
+    // 2. Build Header (Views Navigation and Actions)
+    let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px;">
+            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
+                ${views.map((v, i) => `
+                    <button class="btn ${window._currentZerkViewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" 
+                            style="white-space:nowrap"
+                            onclick="window._currentZerkViewIdx=${i}; renderZerkMap('${equipId}')">
+                        ${v.name || 'View ' + (i + 1)}
+                    </button>
+                `).join('')}
+            </div>
+            <div style="display:flex; gap:8px">
+                ${currentView ? `<button class="btn btn-danger btn-sm" onclick="deleteZerkView('${currentView.id}')">Delete View</button>` : ''}
+                <button class="btn btn-primary btn-sm" onclick="addZerkView('${equipId}')">+ Add View</button>
+            </div>
+        </div>
+    `;
+
+    if (!currentView) {
+        container.innerHTML = html + `<div style="text-align:center; padding:60px; color:var(--text3); border:2px dashed var(--border); border-radius:12px">No Zerk Maps found. Upload a photo to start.</div>`;
+        return;
+    }
+
+    // 3. Main Layout Grid
+    html += `
+    <div class="zerk-layout-grid">
+        <!-- LEFT: THE MAP -->
+        <div id="zerk-map-container" onclick="handleZerkMapClick(event, '${currentView.id}')">
+            <img id="zerk-map-img" src="${currentView.image_data}">
+            <svg id="zerk-svg-layer">
+                <!-- Lines would be rendered here if enabled -->
+            </svg>
+            <div id="zerk-dots-overlay">
+                ${(currentView.points || []).map((p, idx) => `
+                    <div class="zerk-dot" style="left:${p.x}%; top:${p.y}%" 
+                         onclick="event.stopPropagation(); editZerkPoint('${currentView.id}', ${idx})">
+                        ${idx + 1}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+
+        <!-- RIGHT: THE INSTRUCTIONS TABLE -->
+        <div class="zerk-sidebar">
+            <table class="zerk-instruction-table">
+                <thead>
+                    <tr><th style="width:40px">#</th><th>Instructions</th></tr>
+                </thead>
+                <tbody>
+                    ${(currentView.points || []).map((p, idx) => `
+                        <tr onclick="editZerkPoint('${currentView.id}', ${idx})">
+                            <td style="font-weight:bold; color:#ffec00">#${idx + 1}</td>
+                            <td style="color:white">${p.note || '<i style="opacity:0.5">Click to add note</i>'}</td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="2" style="text-align:center; padding:20px; opacity:0.5">Tap on the map to add grease points.</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+
+    container.innerHTML = html;
+}
 function renderQuickSpecs(equipId) {
     const container = document.getElementById('eq-quick-specs');
     if(!container) return;
