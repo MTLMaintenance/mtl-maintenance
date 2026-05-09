@@ -5908,13 +5908,8 @@ async function addZerkViewWithTitle() {
     input.click();
 }
 async function handleZerkMapClick(event, viewIdx) {
-    // 1. Permission check
-    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-        showToast("Only Admins can add grease points.");
-        return;
-    }
-    
-    // 2. Coordinate calculation
+    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
+
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
@@ -5922,57 +5917,58 @@ async function handleZerkMapClick(event, viewIdx) {
     const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
     if (!equip) return;
 
-    // --- LOGIC FOR DIFFERENT MODES ---
+    const mode = window.zerkPinMode || 'dot';
 
-    // MODE 1: SIMPLE DOT (One Click)
-    if (typeof zerkPinMode === 'undefined' || zerkPinMode === 'dot') {
-        const note = prompt("Grease Point Instructions (e.g. 5 pumps Red Lithium):");
-        if (note === null) return; // Cancelled
+    // --- MODE 1: SIMPLE DOT ---
+    if (mode === 'dot') {
+        const note = prompt("Grease Instructions:");
+        if (note === null) return;
 
         if (!equip.zerk_points) equip.zerk_points = [];
         equip.zerk_points.push({
-            id: uid(),   
+            id: uid(),
             x: x.toFixed(2),
             y: y.toFixed(2),
-            lx: x.toFixed(2), // label matches target in dot mode
-            ly: y.toFixed(2),
+            lx: null, // No label offset
+            ly: null,
             note: note || "",
             view_index: viewIdx
         });
-
-        await persist('equipment', 'upsert', equip);
-        renderZerkTab(equip.id);
     } 
-    
-    // MODE 2: POINTER LINE (Two Clicks)
+    // --- MODE 2: POINTER LINE (Two Clicks) ---
     else {
-        // Step 1: User clicks the actual grease fitting
-        if (window.zerkDrawingStep === 1 || !window.zerkDrawingStep) {
+        if (!window.zerkDrawingStep || window.zerkDrawingStep === 1) {
+            // STEP 1: Setting the fitting location
             window.tempZerkCoords = { x, y };
             window.zerkDrawingStep = 2;
-            showToast("Zerk position set. Now click where you want the number to appear.");
-        } 
-        // Step 2: User clicks where the label/number should float
-        else {
-            const note = prompt("Grease Point Instructions:");
+            showToast("Fitting set! Now click where the number should sit.");
+            return; // Exit and wait for second click
+        } else {
+            // STEP 2: Setting the label location
+            const note = prompt("Grease Instructions:");
             if (note === null) { window.zerkDrawingStep = 1; return; }
-            
+
             if (!equip.zerk_points) equip.zerk_points = [];
             equip.zerk_points.push({
-                x: window.tempZerkCoords.x.toFixed(2), // Target
+                id: uid(),
+                x: window.tempZerkCoords.x.toFixed(2), // Line Start (Fitting)
                 y: window.tempZerkCoords.y.toFixed(2),
-                lx: x.toFixed(2), // Label position
+                lx: x.toFixed(2),                      // Line End (Number)
                 ly: y.toFixed(2),
                 note: note || "",
                 view_index: viewIdx
             });
 
-            window.zerkDrawingStep = 1; // Reset for next point
-            await persist('equipment', 'upsert', equip);
-            renderZerkTab(equip.id);
+            window.zerkDrawingStep = 1; // Reset for next time
+            showToast("Pointer line added ✓");
         }
     }
+
+    // Save and Refresh
+    await persist('equipment', 'upsert', equip);
+    renderZerkTab(equip.id);
 }
+window.handleZerkMapClick = handleZerkMapClick;
 async function editZerkNote(id) {
     const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
     if (!equip || !equip.zerk_points) return;
@@ -6194,18 +6190,31 @@ function renderZerkTab(equipId) {
             <img id="zerk-map-img" src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
             
             <!-- SVG LAYER FOR POINTER LINES -->
-            <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50">
-                ${points.map(p => (p.lx && p.ly) ? `<line x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" stroke="#ffec00" stroke-width="2" />` : '').join('')}
-            </svg>
+           <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50">
+    ${points.map(p => {
+        if (p.lx !== null && p.lx !== undefined) {
+            return `<line x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" 
+                          stroke="#ffec00" stroke-width="2" stroke-dasharray="0" />`;
+        }
+        return '';
+    }).join('')}
+</svg>
 
             <!-- THE DOTS -->
-            <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
-                ${points.map((p, idx) => `
-                    <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" onclick="event.stopPropagation(); editZerkNote('${p.id}')">
-                        ${idx + 1}
-                    </div>
-                `).join('')}
+          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
+    ${points.map((p, idx) => {
+        // Use lx/ly if they exist, otherwise use x/y
+        const posX = (p.lx !== null && p.lx !== undefined) ? p.lx : p.x;
+        const posY = (p.ly !== null && p.ly !== undefined) ? p.ly : p.y;
+        
+        return `
+            <div class="zerk-dot" style="left:${posX}%; top:${posY}%" 
+                 onclick="event.stopPropagation(); editZerkNote('${p.id}')">
+                ${idx + 1}
             </div>
+        `;
+    }).join('')}
+</div>
         </div>
 
         <!-- RIGHT: THE SIDEBAR (Instructions) -->
