@@ -2316,26 +2316,15 @@ function openEquipDetail(id){
     </div>
   </div>
 
-  <!-- THE MAP AREA -->
-  <div id="zerk-map-container">
-      <img id="zerk-map-img" src="" style="width:auto; max-height:65vh; display:block; opacity:0.9"/>
-      <svg id="zerk-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;"></svg>
-      <div id="zerk-dots-overlay" onclick="handleMapClick(event)"></div>
+ <!-- TAB: ZERK MAP -->
+<div id="tab-zerk" class="tab-pane">
+  <!-- 1. The Switcher Buttons Area -->
+  <div id="zerk-view-switcher" style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap"></div>
 
-      <!-- THE FLOATING DETAIL CARD (Moved inside for professional look) -->
-      <div id="zerk-detail-box" style="display:none; position:absolute; bottom:15px; left:15px; z-index:200; width:220px; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); color:white; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px;">
-            <div id="zerk-label" style="font-weight:700; color:#ffec00; text-transform:uppercase; font-size:12px;"></div>
-            
-            <!-- CLEAN SINGLE DELETE BUTTON -->
-            <button class="btn btn-danger btn-sm" 
-                    style="font-size:18px; background:none; border:none; color:#ff6b6b; cursor:pointer; line-height:1; padding:0;" 
-                    onclick="deleteZerk(window.activeZerkId)">×</button>
-        </div>
-        <div id="zerk-instr" style="font-size:11px; color:#ddd; line-height:1.4"></div>
-      </div>
-  </div>
-
+  <!-- 2. The Master Container (This is where the JS pours Area 2) -->
+  <div id="tab-content-zerk"></div>
+  
+  <!-- Hidden input for uploads -->
   <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
 </div>
     <!-- 3. FULL HISTORY VIEW -->
@@ -6177,87 +6166,74 @@ function renderZerkDots() {
         `;
     }
 }
-function renderZerkMap(equipId) {
+function renderZerkTab(equipId) {
+    const equip = state.equipment.find(x => x.id === equipId);
+    const switcher = document.getElementById('zerk-view-switcher');
     const container = document.getElementById('tab-content-zerk');
-    if (!container) return;
+    const modal = document.getElementById('equip-detail-modal');
+    const histBtn = document.getElementById('btn-history-report');
 
-    const views = state.zerkMaps ? state.zerkMaps.filter(v => v.equip_id === equipId) : [];
-    const currentView = views[window._currentZerkViewIdx || 0];
+    if (!equip || !container) return;
 
-    // 1. Manage Modal Width and Bottom Buttons
-    const modal = container.closest('.modal');
-    const histBtn = document.getElementById('btn-history-report'); // Ensure your History button has this ID
-
-    if (currentView) {
-        if (modal) modal.classList.add('modal-zerk-wide');
-        if (histBtn) histBtn.style.display = 'none'; // Hide history report
-    } else {
+    // 1. EMPTY STATE
+    if (!equip.zerk_photos || equip.zerk_photos.length === 0) {
         if (modal) modal.classList.remove('modal-zerk-wide');
         if (histBtn) histBtn.style.display = 'block';
-    }
-
-    // 2. Build Header (Views Navigation and Actions)
-    let html = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px;">
-            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
-                ${views.map((v, i) => `
-                    <button class="btn ${window._currentZerkViewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" 
-                            style="white-space:nowrap"
-                            onclick="window._currentZerkViewIdx=${i}; renderZerkMap('${equipId}')">
-                        ${v.name || 'View ' + (i + 1)}
-                    </button>
-                `).join('')}
-            </div>
-            <div style="display:flex; gap:8px">
-                ${currentView ? `<button class="btn btn-danger btn-sm" onclick="deleteZerkView('${currentView.id}')">Delete View</button>` : ''}
-                <button class="btn btn-primary btn-sm" onclick="addZerkView('${equipId}')">+ Add View</button>
-            </div>
-        </div>
-    `;
-
-    if (!currentView) {
-        container.innerHTML = html + `<div style="text-align:center; padding:60px; color:var(--text3); border:2px dashed var(--border); border-radius:12px">No Zerk Maps found. Upload a photo to start.</div>`;
+        if (switcher) switcher.innerHTML = `<button class="btn btn-primary" onclick="addZerkViewWithTitle()">+ Add Photo Map</button>`;
+        container.innerHTML = `<div style="text-align:center; padding:60px; color:var(--text3); border:2px dashed var(--border); border-radius:12px; margin-top:15px">No photo maps added.</div>`;
         return;
     }
 
-    // 3. Main Layout Grid
-    html += `
-    <div class="zerk-layout-grid">
+    // 2. BUILD SWITCHER BUTTONS
+    const viewIdx = window._currentZerkViewIdx || 0;
+    switcher.innerHTML = equip.zerk_photos.map((_, i) => {
+        const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
+        const isActive = viewIdx === i;
+        return `<button class="btn ${isActive ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="changeZerkView(${i}, this)">${name}</button>`;
+    }).join('') + `<button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>`;
+
+    // 3. WIDE MODE & BUTTON TOGGLE
+    if (modal) modal.classList.add('modal-zerk-wide');
+    if (histBtn) histBtn.style.display = 'none';
+
+    // 4. FILTER POINTS FOR THIS PHOTO
+    const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
+
+    // 5. DRAW THE GRID (Merging Area 2 here)
+    container.innerHTML = `
+    <div style="display:flex; justify-content: flex-end; margin-bottom: 10px;">
+         <button class="btn btn-danger btn-sm" onclick="deleteZerkView()">Delete Current View</button>
+    </div>
+    <div class="zerk-main-layout">
         <!-- LEFT: THE MAP -->
-        <div id="zerk-map-container" onclick="handleZerkMapClick(event, '${currentView.id}')">
-            <img id="zerk-map-img" src="${currentView.image_data}">
-            <svg id="zerk-svg-layer">
-                <!-- Lines would be rendered here if enabled -->
-            </svg>
+        <div id="zerk-map-container" style="position:relative" onclick="handleZerkMapClick(event, ${viewIdx})">
+            <img id="zerk-map-img" src="${equip.zerk_photos[viewIdx]}" style="width:100%; display:block; border-radius:8px">
             <div id="zerk-dots-overlay">
-                ${(currentView.points || []).map((p, idx) => `
-                    <div class="zerk-dot" style="left:${p.x}%; top:${p.y}%" 
-                         onclick="event.stopPropagation(); editZerkPoint('${currentView.id}', ${idx})">
+                ${points.map((p, idx) => `
+                    <div class="zerk-dot" style="left:${p.x}%; top:${p.y}%" onclick="event.stopPropagation(); editZerkNote(${idx})">
                         ${idx + 1}
                     </div>
                 `).join('')}
             </div>
+            <svg id="zerk-svg-layer"></svg>
         </div>
 
-        <!-- RIGHT: THE INSTRUCTIONS TABLE -->
-        <div class="zerk-sidebar">
-            <table class="zerk-instruction-table">
-                <thead>
-                    <tr><th style="width:40px">#</th><th>Instructions</th></tr>
-                </thead>
+        <!-- RIGHT: THE SIDEBAR (Instruction Table) -->
+        <div id="zerk-sidebar-container" class="zerk-sidebar">
+            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Grease Point Instructions</h4>
+            <table class="zerk-sidebar-table">
+                <thead><tr><th style="width:40px">#</th><th>Instructions</th></tr></thead>
                 <tbody>
-                    ${(currentView.points || []).map((p, idx) => `
-                        <tr onclick="editZerkPoint('${currentView.id}', ${idx})">
-                            <td style="font-weight:bold; color:#ffec00">#${idx + 1}</td>
-                            <td style="color:white">${p.note || '<i style="opacity:0.5">Click to add note</i>'}</td>
+                    ${points.map((p, idx) => `
+                        <tr onclick="editZerkNote(${idx})">
+                            <td style="color:#ffec00; font-weight:bold">#${idx + 1}</td>
+                            <td>${p.note || '<span style="opacity:0.4">No instructions</span>'}</td>
                         </tr>
-                    `).join('') || '<tr><td colspan="2" style="text-align:center; padding:20px; opacity:0.5">Tap on the map to add grease points.</td></tr>'}
+                    `).join('') || '<tr><td colspan="2" style="text-align:center; padding:20px; opacity:0.5">Click the map to add points</td></tr>'}
                 </tbody>
             </table>
         </div>
     </div>`;
-
-    container.innerHTML = html;
 }
 
 function renderQuickSpecs(equipId) {
