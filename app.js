@@ -2311,7 +2311,8 @@ function openEquipDetail(id){
     <!-- Management Buttons Grouped Together -->
     <div style="display:flex; gap:8px;">
         <button id="btn-delete-view" class="btn btn-danger btn-sm" style="background:#dc3545 !important; border:none;" onclick="deleteZerkView()">🗑️ Delete View</button>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('zerk-upload-input').click()">+ Add View</button>
+        <button class="btn btn-primary btn-sm" onclick="addZerkViewWithTitle()">+ Add View</button>
+
     </div>
   </div>
 
