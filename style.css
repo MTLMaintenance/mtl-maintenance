@@ -393,22 +393,39 @@ body.dark-mode .modal {
   pointer-events: auto !important;
 }
 .zerk-dot {
-  pointer-events: auto !important;
-  position: absolute !important;
-  width: 24px;
-  height: 24px;
-  background: #ffec00 !important; 
-  color: #000 !important;
-  border: 2px solid #000 !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  transform: translate(-50%, -50%) !important;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    /* 1. Positioning & Layout */
+    position: absolute !important;
+    transform: translate(-50%, -50%) !important; /* Centers exactly on click */
+    z-index: 150 !important; /* Forces it above the image and lines */
+    pointer-events: auto !important;
+    cursor: pointer;
+    
+    /* 2. Shape & Size */
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    border: 2px solid #000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    
+    /* 3. Colors (The "No White Box" Fix) */
+    background: #ffec00 !important; /* Solid bright yellow */
+    color: #000000 !important;     /* Solid black number */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.6) !important;
+    
+    /* 4. Text Styling */
+    font-size: 12px !important;
+    font-weight: 900 !important; /* Extra bold for visibility */
+    line-height: 1 !important;
+    text-align: center !important;
+    text-shadow: none !important; /* Removes any blurry edges */
+}
+
+/* Optional: Slight pop effect when hovering over the dot */
+.zerk-dot:hover {
+    background: #ffffff !important;
+    transform: translate(-50%, -50%) scale(1.1) !important;
 }
 /* Widen the modal ONLY when looking at Zerk Maps */
 .modal-zerk-wide {
@@ -1496,14 +1513,6 @@ select.form-select:focus {
     inset: 0 !important;
     z-index: 20 !important;
     pointer-events: auto !important;
-}
-
-/* 4. The Yellow Dots */
-.zerk-dot {
-    z-index: 100 !important;
-    background: #ffec00 !important;
-    color: black !important;
-    font-weight: 800 !important;
 }
 /* Ensure the Tool Modal has a limit and scrolls internally */
 #tool-modal .modal {
