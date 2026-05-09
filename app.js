@@ -5999,14 +5999,10 @@ window.editZerkNote = editZerkNote;
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
-    const idx = window._currentZerkViewIdx; // Use the index we track globally
+    const idx = window._currentZerkViewIdx;
 
-    if (!e || !e.zerk_photos || idx === undefined || idx === null) {
-        alert("Please select a view to delete.");
-        return;
-    }
+    if (!e || !e.zerk_photos || idx === undefined) return;
 
-    // Get the name for the confirmation message
     const viewName = (e.zerk_names && e.zerk_names[idx]) ? e.zerk_names[idx] : `View ${idx + 1}`;
     if (!confirm(`Delete the view "${viewName}" and ALL its grease points?`)) return;
 
@@ -6015,58 +6011,30 @@ async function deleteZerkView() {
         e.zerk_photos.splice(idx, 1);
         if (e.zerk_names) e.zerk_names.splice(idx, 1);
 
-        // 2. Filter out all points that were attached to this view index
-        // and re-index the remaining points so they don't break
+        // 2. Filter out all points attached to this view
         if (e.zerk_points) {
             e.zerk_points = e.zerk_points.filter(p => p.view_index !== idx);
-            // Move any points with a higher index down by 1 to fill the gap
-            e.zerk_points.forEach(p => {
-                if (p.view_index > idx) p.view_index--;
-            });
+            // Re-index remaining points so they match new array positions
+            e.zerk_points.forEach(p => { if (p.view_index > idx) p.view_index--; });
         }
 
-        // 3. Update Supabase
+        // 3. Update Supabase (Only the equipment table!)
         const { error } = await window._mpdb
             .from('equipment')
             .update({ 
                 zerk_photos: e.zerk_photos, 
                 zerk_names: e.zerk_names,
-                zerk_points: e.zerk_points // Assumes you store points in equipment table now for speed
+                zerk_points: e.zerk_points 
             })
             .eq('id', equipId);
 
         if (error) throw error;
 
-        // 4. Cleanup Grease Points Table (If you still use a separate table)
-        await window._mpdb.from('grease_points')
-            .delete()
-            .eq('equip_id', equipId)
-            .eq('view_index', idx);
-
         showToast("View deleted ✓");
 
-        // 5. UI REFRESH & MODAL SIZING
-        const modal = document.getElementById('equip-detail-modal'); // Change to your modal ID
-        const histBtn = document.getElementById('btn-history-report');
-
-        if (e.zerk_photos.length === 0) {
-            // Machine has NO photos left
-            window._currentZerkViewIdx = 0;
-            if (modal) modal.classList.remove('modal-zerk-wide');
-            if (histBtn) histBtn.style.display = 'block'; // Show history button again
-            
-            // Clear the view
-            const img = document.getElementById('zerk-map-img');
-            if (img) img.src = "";
-            document.getElementById('zerk-dots-overlay').innerHTML = "";
-            document.getElementById('zerk-sidebar-container').innerHTML = "";
-            
-            refreshZerkMap(equipId); // Call your general refresh
-        } else {
-            // Reset to the first remaining view
-            window._currentZerkViewIdx = 0;
-            refreshZerkMap(equipId); 
-        }
+        // 4. UI REFRESH
+        window._currentZerkViewIdx = 0; // Reset to first view
+        renderZerkTab(equipId); // FIXED: Changed from refreshZerkMap to renderZerkTab
 
     } catch (err) { 
         console.error("Delete view failed:", err);
@@ -6104,6 +6072,26 @@ async function deleteZerkView() {
     }
 }
 window.deleteZerk = deleteZerk;
+async function renameZerkView(idx) {
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    if (!equip) return;
+
+    const currentName = (equip.zerk_names && equip.zerk_names[idx]) ? equip.zerk_names[idx] : `View ${idx + 1}`;
+    const newName = prompt("Rename this view:", currentName);
+
+    if (newName && newName.trim() !== "") {
+        if (!equip.zerk_names) equip.zerk_names = [];
+        equip.zerk_names[idx] = newName.trim();
+
+        // Save to Database
+        await persist('equipment', 'upsert', equip);
+        
+        // Refresh UI
+        renderZerkTab(equip.id);
+        showToast("Renamed ✓");
+    }
+}
+window.renameZerkView = renameZerkView;
 
 function renderZerkDots() {
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
@@ -6165,10 +6153,19 @@ function renderZerkTab(equipId) {
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%; border-bottom:1px solid #ddd; padding-bottom:15px; margin-bottom:15px">
         <div style="display:flex; gap:6px;">
             ${equip.zerk_photos.map((_, i) => {
-                const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
-                return `<button class="btn ${viewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')">${name}</button>`;
-            }).join('')}
-            <button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>
+               const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
+    const isActive = viewIdx === i;
+    
+    return `
+        <button class="btn ${isActive ? 'btn-primary' : 'btn-secondary'} btn-sm" 
+                onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')"
+                ondblclick="renameZerkView(${i})"
+                title="Double-click to rename">
+            ${name}
+        </button>
+    `;
+}).join('') + `<button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>`;
+
         </div>
         <div style="display:flex; gap:5px;">
             <button class="btn ${currentMode === 'dot' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='dot'; renderZerkTab('${equipId}')">Point Only</button>
