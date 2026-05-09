@@ -2197,7 +2197,7 @@ function switchDetailTab(tab, btn){
   if(tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
   if(tab === 'eq-history') renderFullHistoryList(id);
   if(tab === 'eq-obs') refreshObsList(id);
-  if(tab === 'eq-zerks') refreshZerkMap(id);
+  if(tab === 'eq-zerks') renderZerkTab(id);
   if(tab === 'eq-invoices') renderInvoicesList(id);
   if(tab === 'eq-docs') renderDocsList(id);
 }
