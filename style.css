@@ -485,47 +485,52 @@ body.dark-mode .modal {
 
 /* Sidebar Container */
 #zerk-sidebar-container {
-    background: #f8f9fa; /* Light grey background like your screenshot */
+    background: #ffffff !important; /* Pure white background for high contrast */
     border-radius: 12px;
     padding: 15px;
     border: 1px solid #ddd;
-    height: 100%; /* Fill vertical space */
-    min-height: 400px;
+    height: 100%; 
+    min-height: 450px;
     display: flex;
     flex-direction: column;
 }
 
-/* Sidebar Table Styling */
+/* Sidebar Table - Black Text for readability */
 .zerk-sidebar-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
-    color: #000000 !important; /* FORCE BLACK TEXT */
+    color: #000000 !important; /* FORCED BLACK TEXT */
 }
 
 .zerk-sidebar-table th {
     text-align: left;
     padding: 10px 5px;
     border-bottom: 2px solid #eee;
-    color: #666;
+    color: #555;
     font-size: 11px;
-    text-transform: uppercase;
 }
 
 .zerk-sidebar-table td {
     padding: 12px 5px;
     border-bottom: 1px solid #eee;
     vertical-align: middle;
-    color: #000000 !important; /* FORCE BLACK TEXT */
+    color: #000000 !important; /* FORCED BLACK TEXT */
 }
 
-/* Highlight the number */
-.zerk-num-badge {
-    color: #d4af37; /* Darker Gold for readability on white */
+/* Yellow circle numbers in the table */
+.zerk-num-list {
+    background: #ffec00;
+    color: black;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 800;
-    font-size: 14px;
+    font-size: 11px;
+    border: 1px solid #000;
 }
-
 /* 5. Mobile Fix: Stack them on top of each other if the screen is small */
 @media screen and (max-width: 768px) {
     .zerk-main-layout {
