@@ -5880,6 +5880,50 @@ function showZerkInfo(event, zerkId) {
     
     box.style.display = 'block';
 }
+async function addZerkViewWithTitle() {
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    if (!equip) return;
+
+    // 1. Ask for the Name first
+    const viewName = prompt("Name this view (e.g. Front Loader, Boom, Right Side):");
+    if (!viewName) return; // User cancelled
+
+    // 2. Create hidden file input to pick the image
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const imageData = event.target.result;
+
+            // 3. Initialize arrays if they don't exist
+            if (!equip.zerk_photos) equip.zerk_photos = [];
+            if (!equip.zerk_names) equip.zerk_names = [];
+
+            // 4. Save data
+            equip.zerk_photos.push(imageData);
+            equip.zerk_names.push(viewName);
+
+            // 5. Persist to Supabase/Database
+            await persist('equipment', 'upsert', equip);
+
+            // 6. UI Update
+            // Set the new view as the active one
+            window._currentZerkViewIdx = equip.zerk_photos.length - 1;
+            
+            // Refresh the switcher and the map
+            renderZerkTab(equip.id); 
+            showToast("View Added ✓");
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
 async function handleMapClick(event) {
     if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
     
@@ -5914,59 +5958,76 @@ async function handleMapClick(event) {
 async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
     const e = state.equipment.find(x => x.id === equipId);
-    
-    if(!e || !e.zerk_photos || !currentZerkView) {
+    const idx = window._currentZerkViewIdx; // Use the index we track globally
+
+    if (!e || !e.zerk_photos || idx === undefined || idx === null) {
         alert("Please select a view to delete.");
         return;
     }
 
-    if(!confirm("Delete this machine photo and ALL dots attached to it?")) return;
+    // Get the name for the confirmation message
+    const viewName = (e.zerk_names && e.zerk_names[idx]) ? e.zerk_names[idx] : `View ${idx + 1}`;
+    if (!confirm(`Delete the view "${viewName}" and ALL its grease points?`)) return;
 
     try {
-        // 1. Identify which photo to remove
-        const viewParts = currentZerkView.split('_');
-        const viewIndex = parseInt(viewParts[viewParts.length - 1]) - 1;
+        // 1. Remove photo and name from local arrays
+        e.zerk_photos.splice(idx, 1);
+        if (e.zerk_names) e.zerk_names.splice(idx, 1);
 
-        // 2. Delete all dots belonging to this specific view from DB
-        await window._mpdb.from('grease_points')
-            .delete()
-            .eq('equip_id', equipId)
-            .eq('view_name', currentZerkView);
+        // 2. Filter out all points that were attached to this view index
+        // and re-index the remaining points so they don't break
+        if (e.zerk_points) {
+            e.zerk_points = e.zerk_points.filter(p => p.view_index !== idx);
+            // Move any points with a higher index down by 1 to fill the gap
+            e.zerk_points.forEach(p => {
+                if (p.view_index > idx) p.view_index--;
+            });
+        }
 
-        // 3. Remove photo from the local array
-        e.zerk_photos.splice(viewIndex, 1);
-
-        // 4. Update the equipment record in Supabase
+        // 3. Update Supabase
         const { error } = await window._mpdb
             .from('equipment')
-            .update({ zerk_photos: e.zerk_photos })
+            .update({ 
+                zerk_photos: e.zerk_photos, 
+                zerk_names: e.zerk_names,
+                zerk_points: e.zerk_points // Assumes you store points in equipment table now for speed
+            })
             .eq('id', equipId);
 
         if (error) throw error;
 
+        // 4. Cleanup Grease Points Table (If you still use a separate table)
+        await window._mpdb.from('grease_points')
+            .delete()
+            .eq('equip_id', equipId)
+            .eq('view_index', idx);
+
         showToast("View deleted ✓");
 
-        // 5. THE UI REFRESH
+        // 5. UI REFRESH & MODAL SIZING
+        const modal = document.getElementById('equip-detail-modal'); // Change to your modal ID
+        const histBtn = document.getElementById('btn-history-report');
+
         if (e.zerk_photos.length === 0) {
-            // FORCE CLEAR: The machine has NO photos left
-            document.getElementById('zerk-map-img').src = "";
-            document.getElementById('zerk-view-switcher').innerHTML = "";
+            // Machine has NO photos left
+            window._currentZerkViewIdx = 0;
+            if (modal) modal.classList.remove('modal-zerk-wide');
+            if (histBtn) histBtn.style.display = 'block'; // Show history button again
+            
+            // Clear the view
+            const img = document.getElementById('zerk-map-img');
+            if (img) img.src = "";
             document.getElementById('zerk-dots-overlay').innerHTML = "";
-            document.getElementById('zerk-svg-layer').innerHTML = "";
-            document.getElementById('btn-delete-view').style.display = "none";
-            currentZerkView = ""; 
+            document.getElementById('zerk-sidebar-container').innerHTML = "";
+            
+            refreshZerkMap(equipId); // Call your general refresh
         } else {
-            // REFRESH: Machine still has other photos
-            currentZerkView = 'side_1'; 
+            // Reset to the first remaining view
+            window._currentZerkViewIdx = 0;
             refreshZerkMap(equipId); 
         }
-        
-        // Hide detail box if it was open
-        if(document.getElementById('zerk-detail-box')) {
-            document.getElementById('zerk-detail-box').style.display = 'none';
-        }
 
-    } catch(err) { 
+    } catch (err) { 
         console.error("Delete view failed:", err);
         showToast("Delete failed");     
     }
@@ -6027,76 +6088,77 @@ async function refreshZerkMap(equipId) {
 }
 
 // UPDATE: changeZerkView to pull from zerk_photos array
-function changeZerkView(viewName, btn) {
-    currentZerkView = viewName;
+function changeZerkView(viewIndex, btn) {
+    window._currentZerkViewIdx = viewIndex;
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    
-    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => b.style.borderColor = 'var(--border2)');
-    if(btn) btn.style.borderColor = 'var(--accent)';
+    if (!equip) return;
 
-    const viewIndex = parseInt(viewName.split('_')[1]) - 1;
-    const img = document.getElementById('zerk-map-img');
-    
-    if(equip.zerk_photos && equip.zerk_photos[viewIndex]) {
-        img.src = equip.zerk_photos[viewIndex];
+    // 1. Highlight the active button
+    document.querySelectorAll('#zerk-view-switcher .btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+    });
+    if (btn) {
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-secondary');
     }
 
+    // 2. Widen the modal and hide the History Report button
+    const modal = document.getElementById('equip-detail-modal'); // Change to your modal's ID
+    const histBtn = document.getElementById('btn-history-report'); 
+    
+    if (equip.zerk_photos && equip.zerk_photos[viewIndex]) {
+        if (modal) modal.classList.add('modal-zerk-wide');
+        if (histBtn) histBtn.style.display = 'none'; // Hide report button
+        
+        const img = document.getElementById('zerk-map-img');
+        img.src = equip.zerk_photos[viewIndex];
+    } else {
+        if (modal) modal.classList.remove('modal-zerk-wide');
+        if (histBtn) histBtn.style.display = 'block';
+    }
+
+    // 3. Re-render the dots and the NEW side table
     renderZerkDots();
-    document.getElementById('zerk-detail-box').style.display = 'none';
 }
 function renderZerkDots() {
+    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
+    const viewIdx = window._currentZerkViewIdx || 0;
+    
+    // 1. Get the points for THIS specific view
+    const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
+    
+    // 2. Draw the dots on the map overlay
     const overlay = document.getElementById('zerk-dots-overlay');
-    const svg = document.getElementById('zerk-svg-layer');
-    if(!overlay || !svg) return;
- overlay.innerHTML = ""; 
-    svg.innerHTML = "";
-    const visibleDots = allMachineZerks.filter(z => z.view_name === currentZerkView);
-    
-    // 1. Draw Lines in SVG
-    svg.innerHTML = visibleDots.map(z => `
-        <line class="zerk-line" x1="${z.x_target}" y1="${z.y_target}" x2="${z.x_pos}" y2="${z.y_pos}" />
-    `).join('');
-
-    // 2. Draw Labels and Target Dots
-    let html = visibleDots.map((z, index) => `
-        <div class="zerk-target-dot" style="left: ${z.x_target}%; top: ${z.y_target}%"></div>
-        <div class="zerk-dot" style="left: ${z.x_pos}%; top: ${z.y_pos}%" onclick="showZerkInfo(event, '${z.id}')">
-             ${index + 1}
+    overlay.innerHTML = points.map((p, idx) => `
+        <div class="zerk-dot" 
+             style="left:${p.x}%; top:${p.y}%" 
+             onclick="event.stopPropagation(); editZerkNote(${idx})">
+            ${idx + 1}
         </div>
     `).join('');
 
-    // 3. Show temporary target if in Step 2 of drawing
-    if (zerkDrawingStep === 2) {
-        html += `<div class="zerk-target-dot" style="left: ${tempZerkCoords.x}%; top: ${tempZerkCoords.y}%; background: yellow; scale: 2;"></div>`;
+    // 3. Populate the NEW sidebar table (Make sure this ID exists in your HTML)
+    const sidebar = document.getElementById('zerk-sidebar-container');
+    if (sidebar) {
+        sidebar.innerHTML = `
+            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Grease Point Instructions</h4>
+            <table class="zerk-sidebar-table">
+                <thead><tr><th>#</th><th>Instructions</th></tr></thead>
+                <tbody>
+                    ${points.map((p, idx) => `
+                        <tr onclick="editZerkNote(${idx})">
+                            <td style="color:#ffec00; font-weight:bold">#${idx + 1}</td>
+                            <td>${p.note || '<span style="opacity:0.5">No instructions</span>'}</td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="2" style="text-align:center; padding:20px; opacity:0.5">Click map to add points</td></tr>'}
+                </tbody>
+            </table>
+        `;
     }
-
-    overlay.innerHTML = html;
 }
     
-function renderDashboardObs(equipId) {
-    const container = document.getElementById('eq-obs-list-dash');
-    if(!container) return;
-    const obs = state.observations.filter(o => o.equip_id === equipId).slice(0, 3);
-    container.innerHTML = obs.map(o => `
-        <div style="padding:6px 0; border-bottom:1px solid var(--border); font-size:12px">
-            <div style="color:var(--text3); font-size:10px">${o.author} · ${fmtDate(o.created_at)}</div>
-            <div>${o.body.slice(0, 50)}${o.body.length > 50 ? '...' : ''}</div>
-        </div>
-    `).join('') || '<div style="color:var(--text3); font-size:11px">No notes</div>';
-}
-    function renderMiniTimeline(equipId) {
-    const container = document.getElementById('eq-timeline-content-mini');
-    if(!container) return;
 
-    const items = state.tasks.filter(t => t.equipId === equipId).slice(0, 5);
-    container.innerHTML = items.map(t => `
-        <div style="padding:8px 0; border-bottom: 1px solid var(--border); font-size: 12px">
-            <div style="color: var(--text3); font-size: 10px">${fmtDate(t.due)}</div>
-            <div style="font-weight: 600">${t.name}</div>
-            <div style="color: var(--text2)">${badge(t.status)}</div>
-        </div>
-    `).join('') || '<div style="color:var(--text3); font-size:12px">No recent activity</div>';
-}
 function renderZerkMap(equipId) {
     const container = document.getElementById('tab-content-zerk');
     if (!container) return;
@@ -6179,6 +6241,7 @@ function renderZerkMap(equipId) {
 
     container.innerHTML = html;
 }
+
 function renderQuickSpecs(equipId) {
     const container = document.getElementById('eq-quick-specs');
     if(!container) return;
@@ -6207,6 +6270,30 @@ function renderQuickSpecs(equipId) {
                     title="Delete Spec">✕</button>
         </div>
     `).join('');
+}
+function renderDashboardObs(equipId) {
+    const container = document.getElementById('eq-obs-list-dash');
+    if(!container) return;
+    const obs = state.observations.filter(o => o.equip_id === equipId).slice(0, 3);
+    container.innerHTML = obs.map(o => `
+        <div style="padding:6px 0; border-bottom:1px solid var(--border); font-size:12px">
+            <div style="color:var(--text3); font-size:10px">${o.author} · ${fmtDate(o.created_at)}</div>
+            <div>${o.body.slice(0, 50)}${o.body.length > 50 ? '...' : ''}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:11px">No notes</div>';
+}
+    function renderMiniTimeline(equipId) {
+    const container = document.getElementById('eq-timeline-content-mini');
+    if(!container) return;
+
+    const items = state.tasks.filter(t => t.equipId === equipId).slice(0, 5);
+    container.innerHTML = items.map(t => `
+        <div style="padding:8px 0; border-bottom: 1px solid var(--border); font-size: 12px">
+            <div style="color: var(--text3); font-size: 10px">${fmtDate(t.due)}</div>
+            <div style="font-weight: 600">${t.name}</div>
+            <div style="color: var(--text2)">${badge(t.status)}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:12px">No recent activity</div>';
 }
 async function addQuickSpec(equipId) {
     // 1. Find the machine in our local list
