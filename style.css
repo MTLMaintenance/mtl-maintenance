@@ -378,7 +378,7 @@ body.dark-mode .modal {
 
 /* ADD THIS: This forces the actual image to stay inside the screen bounds */
 #zerk-map-img {
-    max-height: 65vh !important;
+    max-height: 80vh !important;
     width: auto !important; /* Prevents the image from stretching horizontally */
     max-width: 100% !important;
     display: block;
@@ -429,8 +429,8 @@ body.dark-mode .modal {
 }
 /* Widen the modal ONLY when looking at Zerk Maps */
 .modal-zerk-wide {
-    max-width: 1100px !important;
-    width: 95% !important;
+    max-width: 1350px !important; 
+    width: 98% !important;
 }
 
 /* The Grid Container */
@@ -466,7 +466,7 @@ body.dark-mode .modal {
 /* The Main Grid: Puts the map and table side-by-side */
 .zerk-main-layout {
     display: grid !important;
-    grid-template-columns: 1fr 340px !important; 
+    grid-template-columns: 1fr 300px !important; 
     gap: 20px !important;
     align-items: flex-start !important;
     margin-top: 15px;
