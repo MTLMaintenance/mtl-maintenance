@@ -526,7 +526,10 @@ body.dark-mode .modal {
     font-size: 11px;
     border: 1px solid #000;
 }
-
+#zerk-view-switcher .btn {
+    cursor: pointer;
+    user-select: none; 
+}
 /* ============================================================
    2. MOBILE OVERRIDES (max-width: 768px)
    ============================================================ */
