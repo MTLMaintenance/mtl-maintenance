@@ -463,21 +463,16 @@ body.dark-mode .modal {
     max-height: 65vh;
     overflow-y: auto;
 }
-
-@media screen and (max-width: 768px) {
-    .zerk-layout-grid { grid-template-columns: 1fr; } /* Stack on mobile */
-    .zerk-sidebar { max-height: none; }
-}    
-/* 1. The Main Grid: Puts the map and table side-by-side */
+/* The Main Grid: Puts the map and table side-by-side */
 .zerk-main-layout {
     display: grid !important;
-    grid-template-columns: 1fr 340px !important; /* 1fr is the image, 340px is the sidebar */
+    grid-template-columns: 1fr 340px !important; 
     gap: 20px !important;
     align-items: flex-start !important;
     margin-top: 15px;
 }
 
-/* 2. Wide Modal Rule: Forces the Equipment card to grow */
+/* Wide Modal Rule: Forces the Equipment card to grow */
 .modal-zerk-wide {
     max-width: 1200px !important;
     width: 95% !important;
@@ -485,7 +480,7 @@ body.dark-mode .modal {
 
 /* Sidebar Container */
 #zerk-sidebar-container {
-    background: #ffffff !important; /* Pure white background for high contrast */
+    background: #ffffff !important; 
     border-radius: 12px;
     padding: 15px;
     border: 1px solid #ddd;
@@ -499,7 +494,7 @@ body.dark-mode .modal {
 .zerk-sidebar-table {
     width: 100%;
     border-collapse: collapse;
-    color: #000000 !important; /* FORCED BLACK TEXT */
+    color: #000000 !important; 
 }
 
 .zerk-sidebar-table th {
@@ -514,7 +509,7 @@ body.dark-mode .modal {
     padding: 12px 5px;
     border-bottom: 1px solid #eee;
     vertical-align: middle;
-    color: #000000 !important; /* FORCED BLACK TEXT */
+    color: #000000 !important; 
 }
 
 /* Yellow circle numbers in the table */
@@ -531,11 +526,44 @@ body.dark-mode .modal {
     font-size: 11px;
     border: 1px solid #000;
 }
-/* 5. Mobile Fix: Stack them on top of each other if the screen is small */
+
+/* ============================================================
+   2. MOBILE OVERRIDES (max-width: 768px)
+   ============================================================ */
 @media screen and (max-width: 768px) {
+    /* Stack the Zerk layout vertically on phones */
     .zerk-main-layout {
         grid-template-columns: 1fr !important;
     }
+    
+    #zerk-sidebar-container {
+        min-height: auto !important;
+    }
+
+    .metrics, .grid-2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .metric-card, .card {
+        width: 100% !important;
+    }
+} 
+
+@media screen and (min-width: 769px) {
+    .metrics {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 20px !important;
+    }
+
+    .grid-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 20px !important;
+    }
+}
     
 #chat-sidebar {
     width: 240px !important;
