@@ -483,41 +483,47 @@ body.dark-mode .modal {
     width: 95% !important;
 }
 
-/* 3. The Sidebar Styling */
+/* Sidebar Container */
 #zerk-sidebar-container {
-    background: rgba(255, 255, 255, 0.05);
+    background: #f8f9fa; /* Light grey background like your screenshot */
     border-radius: 12px;
     padding: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    max-height: 65vh;
-    overflow-y: auto;
+    border: 1px solid #ddd;
+    height: 100%; /* Fill vertical space */
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 4. The Sidebar Table (Instructions) */
+/* Sidebar Table Styling */
 .zerk-sidebar-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
-    color: white;
+    color: #000000 !important; /* FORCE BLACK TEXT */
 }
 
 .zerk-sidebar-table th {
     text-align: left;
-    padding: 8px;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    color: #aaa;
+    padding: 10px 5px;
+    border-bottom: 2px solid #eee;
+    color: #666;
     font-size: 11px;
     text-transform: uppercase;
 }
 
 .zerk-sidebar-table td {
-    padding: 10px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    vertical-align: top;
+    padding: 12px 5px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    color: #000000 !important; /* FORCE BLACK TEXT */
 }
 
-.zerk-sidebar-table tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+/* Highlight the number */
+.zerk-num-badge {
+    color: #d4af37; /* Darker Gold for readability on white */
+    font-weight: 800;
+    font-size: 14px;
 }
 
 /* 5. Mobile Fix: Stack them on top of each other if the screen is small */
@@ -525,10 +531,7 @@ body.dark-mode .modal {
     .zerk-main-layout {
         grid-template-columns: 1fr !important;
     }
-    #zerk-sidebar-container {
-        max-height: none;
-    }
-}
+    
 #chat-sidebar {
     width: 240px !important;
     background: rgba(0, 0, 0, 0.4);
