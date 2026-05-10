@@ -556,25 +556,68 @@ body.dark-mode .modal {
    2. MOBILE OVERRIDES (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-    /* Stack the Zerk layout vertically on phones */
-    .zerk-main-layout {
-        grid-template-columns: 1fr !important;
+    /* 1. Fix the Modal Tabs (Overview, Zerk Map, etc.) */
+    /* This makes them scrollable sideways so they stay on ONE line */
+    #detail-modal .modal-header + div, 
+    .tab-container { 
+        display: flex !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        gap: 10px !important;
+        padding: 10px 5px !important;
+        -webkit-overflow-scrolling: touch;
     }
-    
-    #zerk-sidebar-container {
-        min-height: auto !important;
+    #detail-modal .tab { 
+        flex: 0 0 auto !important; 
+        padding: 6px 12px !important;
+        font-size: 13px !important;
     }
 
+    /* 2. Fix the Zerk Header (View Buttons + Tool Toggles) */
+    #zerk-view-switcher > div {
+        flex-direction: column !important; /* Stack views above tools */
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    /* 3. The Main Layout: Map then Table */
+    .zerk-main-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 15px !important;
+    }
+
+    /* 4. Force the Image to fill the screen width */
+    #zerk-map-container {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 50vh !important; /* Don't let it take the whole screen */
+    }
+
+    #zerk-map-img {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+    }
+
+    /* 5. Shrink the Sidebar for Mobile */
+    #zerk-sidebar-container {
+        width: 100% !important;
+        min-height: auto !important;
+        max-height: 400px !important; /* Limit list height so we can scroll the modal */
+        padding: 10px !important;
+    }
+
+    /* Standard Dashboard stacking (keeping your previous work) */
     .metrics, .grid-2 {
         display: flex !important;
         flex-direction: column !important;
         gap: 10px !important;
     }
-
     .metric-card, .card {
         width: 100% !important;
     }
-} 
+}
 
 @media screen and (min-width: 769px) {
     .metrics {
