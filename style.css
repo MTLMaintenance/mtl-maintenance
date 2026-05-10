@@ -1697,92 +1697,93 @@ html {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR */
+  /* 1. MASTER CONTAINER: Force a single horizontal line */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* Force Side-by-Side */
-    flex-wrap: nowrap !important;         /* Prevent Stacking */
-    align-items: center !important;      /* Vertical Center */
-    justify-content: flex-start !important; /* Start drawing from the LEFT */
-    height: 60px !important;
-    padding: 0 20px !important;
+    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
+    flex-wrap: nowrap !important;         /* STOP JUMPING TO NEW LINES */
+    align-items: center !important;      /* ALIGN ALL BUTTONS VERTICALLY */
+    justify-content: flex-start !important; 
+    height: 60px !important;              /* Thin professional bar */
+    padding: 0 15px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
   }
 
-  /* 2. THE LOGO: FORCE TO LEFT */
-  .logo { 
-    display: inline-block !important;
-    width: auto !important;              /* Stop taking up 100% width */
-    max-width: none !important;
-    text-align: left !important;         /* Stop centering text */
-    margin: 0 20px 0 0 !important;       /* Space to the right only */
-    flex-shrink: 0 !important;           /* Stop it from disappearing */
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
+  /* 2. SUB-CONTAINER RESET: Force every div inside to be a horizontal piece */
+  .topbar > div, 
+  .topbar > nav, 
+  .topbar > span,
+  .topbar-main-row,
+  .pc-only-search,
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;      /* Force them to be horizontal */
+    align-items: center !important;
+    width: auto !important;              /* Stop them from taking full width */
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;           /* Stop them from vanishing */
   }
 
-  /* 3. THE SEARCH WRAP: FORCE NEXT TO LOGO */
+  /* 3. INDIVIDUAL SPACING */
+  .logo { 
+    margin-right: 20px !important; 
+    font-weight: bold; 
+    font-size: 14px;
+    white-space: nowrap !important;
+  }
+
   #pc-search-wrap, .pc-only-search { 
-    display: block !important;
-    width: 200px !important;             /* Fixed width */
-    margin: 0 20px 0 0 !important;       /* Space to the right only */
-    flex-shrink: 0 !important;
-    position: relative !important;
+    width: 160px !important;             /* Locked width for search box */
+    margin-right: 20px !important; 
   }
 
   #global-search {
     width: 100% !important;
-    height: 30px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 6px !important;
-    color: white !important;
-    padding-left: 10px !important;
+    height: 28px !important;
+    background: rgba(255,255,255,0.1) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 4px;
+    color: white;
+    padding-left: 8px !important;
   }
 
-  /* 4. THE NAVIGATION (Fills the gap) */
+  /* 4. NAVIGATION: Sucks up the middle space */
   #main-nav { 
-    display: flex !important; 
-    flex-direction: row !important;
-    flex: 1 !important;                  /* Stretches to fill the middle */
-    gap: 8px !important;
+    flex: 1 !important;                  /* Pushes profile/pdf to the far right */
+    gap: 5px !important;
     justify-content: flex-start !important;
-    margin: 0 !important;
     overflow: hidden !important;
   }
 
   .nav-btn {
     white-space: nowrap !important;
     font-size: 12px !important;
-    padding: 5px 10px !important;
-    flex-shrink: 0 !important;
+    padding: 4px 8px !important;
   }
 
-  /* 5. ACTION BUTTONS: PIN TO FAR RIGHT */
+  /* 5. TOPBAR RIGHT: Pinned to far right edge */
   .topbar-right { 
-    display: flex !important; 
-    flex-direction: row !important;
-    margin-left: auto !important;        /* THE "SPRING" that pushes to the edge */
+    margin-left: 15px !important;
     gap: 8px !important;
-    flex-shrink: 0 !important;
   }
 
-  /* 6. GAP FIX: Pushes content below the 60px bar */
+  /* 6. FIX THE CONTENT POSITION (The Gap Fix) */
   .panel {
     display: none;
-    margin-top: 80px !important;         /* 60px bar + 20px gap */
+    margin-top: 75px !important;         /* Pushes cards down below the 60px bar */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
+    padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* RESTORE DASHBOARD GRID */
+  /* RESTORE THE DASHBOARD BOXES */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
@@ -1795,6 +1796,7 @@ html {
     border-radius: 12px;
   }
 }
+/* -------end of pc block ----------*/
 .modern-login-card {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
