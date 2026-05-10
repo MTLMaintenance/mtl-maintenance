@@ -39,14 +39,13 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  
-  /* FORCE TOPBAR INTO ONE ROW */
+  /* 1. MASTER ROW */
   .topbar {
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important; /* Items flow from left to right */
     height: 60px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
@@ -55,52 +54,58 @@ button[onclick="saveInvoice()"] {
     padding: 0 20px !important;
   }
 
-  /* LOGO (Left) */
+  /* 2. THE LOGO (Left) */
   .logo { 
     width: auto !important; 
-    margin-right: 15px !important; 
-    flex-shrink: 0 !important;
-    font-weight: bold;
-    color: white;
+    margin-right: 20px !important; 
+    flex-shrink: 0 !important; 
   }
 
-  /* SEARCH BAR (Next to Logo) */
-  .pc-only-search {
+  /* 3. THE SEARCH BAR (Fixed Width Lock) */
+  #pc-search-wrap, .pc-only-search {
     display: block !important;
-    width: 200px !important;
-    flex-shrink: 0 !important;
+    position: relative !important;
+    width: 200px !important; /* This locks the size so it can't push things */
+    flex-shrink: 0 !important; /* This stops it from vanishing */
+    margin-right: 20px !important;
   }
 
   #global-search {
+    width: 100% !important;
+    height: 30px !important;
     background: rgba(255, 255, 255, 0.1) !important;
-    color: #fff !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow: none !important;
-    height: 30px;
-    width: 100%;
-    padding-left: 10px;
-    border-radius: 6px;
+    border-radius: 6px !important;
+    color: white !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    outline: none !important;
   }
 
-  /* NAV (Center) */
+  /* 4. THE NAVIGATION (Fills the middle space) */
   #main-nav {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: center !important;
     gap: 5px !important;
-    flex: 1 !important;
-    margin: 0 10px !important;
+    flex: 1 !important; /* Sucks up all available space in the middle */
+    justify-content: flex-start !important;
+    margin: 0 !important;
   }
 
-  /* ACTIONS (Right) */
+  .nav-btn {
+    flex: 0 0 auto !important; /* Stop buttons from squishing */
+    white-space: nowrap !important;
+  }
+
+  /* 5. TOPBAR RIGHT (Action buttons) */
   .topbar-right {
     display: flex !important;
-    flex-direction: row !important;
+    margin-left: auto !important; /* Anchor to far right */
     gap: 8px !important;
     flex-shrink: 0 !important;
   }
 
-  /* PANELS: Pushed down so they start below the 60px bar */
+  /* 6. GAP FIX (Pushes cards down below the bar) */
   .panel {
     display: none;
     margin-top: 80px !important; /* 60px bar + 20px gap */
@@ -110,27 +115,16 @@ button[onclick="saveInvoice()"] {
     margin-right: auto !important;
   }
   .panel.active { display: block !important; }
-
-  /* DASHBOARD GRID (2 Columns) */
-  .metrics, .grid-2 {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 20px !important;
-  }
-  .metric-card, .card {
-    flex: 1 !important;
-    background: #f8f9fa;
-    color: #333;
-    border-radius: 12px;
-    padding: 20px;
-  }
 }
-
 /* ============================================================
    3. MOBILE LAYOUT (768px and down)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  .topbar {
+
+   #pc-search-wrap, .pc-only-search { 
+    display: none !important; 
+  }   
+   .topbar {
     display: flex !important;
     flex-direction: column !important;
     position: fixed !important;
