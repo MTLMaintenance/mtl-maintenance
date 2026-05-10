@@ -6,9 +6,18 @@
   right: 20px;
 }
 
-/* Ensure the modal backdrop isn't stealing focus */
+#toast-container, .toast, .toast-notification {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 9999999 !important; /* 7 nines to be safe */
+    display: block !important;
+    pointer-events: auto !important;
+}
+
+/* Ensure the modal backdrop is lower than the toast */
 .modal-backdrop {
-  z-index: 10000;
+    z-index: 10000 !important; 
 }
 /* ============================================================
    1. GLOBAL / BASE STYLES
@@ -814,14 +823,7 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
     position: relative !important;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
-/* 2. THE TOAST FIX (Must be higher than 5000) */
-#toast-container, .toast, .toast-notification {
-    position: fixed !important;
-    bottom: 25px !important;
-    right: 25px !important;
-    z-index: 9999 !important; /* Beats the modal's 5000 */
-    pointer-events: none;
-}
+
 .modal{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .modal-title{font-size:16px;font-weight:600}
