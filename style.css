@@ -39,12 +39,13 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER ROW */
+  /* 1. THE TOPBAR CONTAINER */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE HORIZONTAL */
-    flex-wrap: nowrap !important;         /* PREVENT STACKING */
-    align-items: center !important;      /* Vertical center */
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important; /* Items start from the left */
     height: 60px !important;
     padding: 0 20px !important;
     position: fixed !important;
@@ -53,54 +54,50 @@ button[onclick="saveInvoice()"] {
     z-index: 10000 !important;
   }
 
-  /* 2. LOGO & SEARCH (Fixed on the left) */
+  /* 2. LOGO & SEARCH (Stay Left) */
   .logo { 
     width: auto !important; 
     margin-right: 15px !important; 
     flex-shrink: 0 !important; 
-    font-size: 14px;
-    font-weight: bold;
   }
-
-  #pc-search-wrap, .pc-only-search {
-    display: block !important;
+  .pc-only-search { 
+    display: block !important; 
     width: 150px !important; 
-    flex-shrink: 0 !important;
-    margin-right: 15px !important;
+    flex-shrink: 0 !important; 
+    margin-right: 20px !important;
   }
 
-  /* 3. NAVIGATION (The Middle - Takes up all empty space) */
+  /* 3. NAVIGATION (Centered or Left-Center) */
   #main-nav {
     display: flex !important;
     flex-direction: row !important;
-    flex: 1 !important;                 /* Pushes buttons to the right */
-    justify-content: flex-start !important;
     gap: 5px !important;
-    overflow: hidden !important;         /* Prevents wrapping */
+    width: auto !important;
+    overflow: visible !important;
   }
-
   .nav-btn {
     flex: 0 0 auto !important;
-    padding: 4px 8px !important;
+    padding: 4px 10px !important;
     font-size: 12px !important;
     white-space: nowrap !important;
   }
 
-  /* 4. TOPBAR RIGHT (Action Buttons - NO STRETCHING) */
+  /* 4. ACTION BUTTONS (Pinned to FAR RIGHT) */
   .topbar-right {
     display: flex !important;
     flex-direction: row !important;
-    width: auto !important;             /* CRITICAL: Stops the stretch */
-    flex-shrink: 0 !important;          /* Prevents squishing */
     gap: 8px !important;
-    margin-left: 15px !important;       /* Space between nav and buttons */
+    width: auto !important;
+    flex-shrink: 0 !important;
+    /* THIS IS THE FIX: Pushes the box to the edge of the screen */
+    margin-left: auto !important; 
     align-items: center !important;
   }
 
-  /* 5. CONTENT SPACING */
+  /* 5. CONTENT SPACING (Pushes cards down below the bar) */
   .panel {
     display: none;
-    margin-top: 75px !important;        /* Gap below the 60px bar */
+    margin-top: 80px !important; 
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
@@ -108,11 +105,12 @@ button[onclick="saveInvoice()"] {
   }
   .panel.active { display: block !important; }
 
-  /* 6. RESTORE DASHBOARD GRID SIZE */
+  /* 6. DASHBOARD GRIDS (Maintaining correct 2-column size) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
+    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
