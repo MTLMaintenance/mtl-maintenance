@@ -1706,82 +1706,90 @@ html {
 /* ============================================================
    2. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
-@media screen and (min-width: 769px) {
-  html, body { background-color: #1a1a1a !important; }
-
-  /* MASTER ROW: Forces everything to stay on one single horizontal line */
+media screen and (min-width: 769px) {
+  /* 1. MASTER TOPBAR: Force a single horizontal line */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      
-    flex-wrap: nowrap !important;         /* CRITICAL: Prevents 2nd row */
-    align-items: center !important;      
+    flex-direction: row !important;      /* Forces items side-by-side */
+    flex-wrap: nowrap !important;         /* Prevents wrapping to new lines */
+    align-items: center !important;      /* Centers all items vertically */
+    justify-content: flex-start !important; 
     height: 60px !important;
+    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    padding: 0 20px !important;
     background: #000 !important;
     z-index: 10000 !important;
     width: 100% !important;
   }
 
-  /* LEFT GROUP (Logo & Search) */
+  /* 2. SHRINK THE BOXES: Stop every container from being 100% wide */
+  .logo, 
+  #pc-search-wrap, 
+  #main-nav, 
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: auto !important;              /* THE FIX: Stop stretching to 100% */
+    flex-shrink: 0 !important;           /* Stop them from vanishing */
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 3. SET INDIVIDUAL SPACING */
   .logo { 
-    width: auto !important; 
     margin-right: 20px !important; 
-    flex-shrink: 0 !important;
     font-weight: bold;
-    font-size: 14px;
     white-space: nowrap !important;
   }
 
   #pc-search-wrap { 
-    width: 180px !important;             
-    margin: 0 !important; 
-    flex-shrink: 0 !important;
-    display: flex !important;
-    align-items: center !important;
+    width: 180px !important;             /* Locked search width */
+    margin-right: 20px !important; 
   }
 
-  /* CENTER GROUP (Navigation) */
+  #global-search {
+    width: 100% !important;
+    height: 28px !important;
+    background: rgba(255,255,255,0.1) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 4px;
+    color: #fff;
+    padding: 0 8px !important;
+  }
+
+  /* 4. NAVIGATION (Middle Section) */
   #main-nav { 
-    display: flex !important; 
-    flex-direction: row !important;
-    gap: 8px !important;
-    /* This creates the centering "Spring" */
-    margin: 0 auto !important;           
-    flex-shrink: 1 !important;
-    overflow: hidden !important;
+    gap: 5px !important;
+    flex-shrink: 1 !important;           /* Allow nav to shrink if screen is tiny */
   }
 
   .nav-btn {
     white-space: nowrap !important;
     font-size: 12px !important;
-    padding: 5px 8px !important;
-    flex: 0 0 auto !important;
+    padding: 4px 10px !important;
   }
 
-  /* RIGHT GROUP (Actions) */
+  /* 5. TOPBAR RIGHT (PDF, Profile, etc.) */
   .topbar-right { 
-    display: flex !important; 
-    flex-direction: row !important;
+    margin-left: auto !important;        /* THE MAGIC: Pushes this box to the far right */
     gap: 8px !important;
-    flex-shrink: 0 !important;
-    width: auto !important;
   }
 
-  /* SPACING: Pushes cards below the 60px bar */
+  /* 6. FIX PANEL POSITION (Pushes content below the 60px bar) */
   .panel {
     display: none;
-    margin-top: 80px !important; 
+    margin-top: 80px !important;         /* 60px Bar + 20px Gap */
     width: 98% !important;
-    max-width: 1700px !important;
+    max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
     padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* DASHBOARD GRID */
+  /* 7. RESTORE DASHBOARD BOX SIZES (2 Columns) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
