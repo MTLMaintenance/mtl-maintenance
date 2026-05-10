@@ -831,21 +831,24 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 .chat-channel-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 .chat-channel-btn.active{background:rgba(255,255,255,0.25);color:#fff;font-weight:600;border-color:rgba(255,255,255,0.3)}
    
-  }
+
+@media screen and (max-width: 768px) {
   .user-chip {
-    display: none !important; 
+    display: none !important;
   }
-   
+
   .metrics {
     grid-template-columns: 1fr 1fr !important;
   }
- 
-  
+
   .modal {
     width: 95% !important;
     padding: 15px !important;
- .sync-dot {
-  width: 7px;
+  }
+}
+
+.sync-dot {
+width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #639922; /* Green */
@@ -862,19 +865,10 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
   background: #E24B4A; /* Red */
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .4; }
-}
-  }
-}
 #mention-dropdown {
   bottom: 100% !important;
   z-index: 9999 !important;
   background: var(--bg) !important;
-
-  }
-
 
 .zerk-target-dot {
     position: absolute;
@@ -890,7 +884,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     z-index: 50;
 }   
     
-  }
+  
 .eq-dash-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1078,7 +1072,10 @@ body, html {
 .modal-backdrop.active {
     display: flex !important;
     pointer-events: auto !important;
+ justify-content: center !important;
+    align-items: center !important;
 }
+
 
 /* The actual Card styling */
 .modal-card {
@@ -1127,10 +1124,7 @@ body, html {
 #absence-detail-modal[style*="display: flex"] {
     display: flex !important;
 }
-/* Ensure the Absence Request form is at the absolute top layer */
-#absence-modal {
-    z-index: 2000005 !important; 
-}
+
 
 /* Ensure the Day Action card is slightly lower */
 #cal-action-modal {
@@ -1142,12 +1136,7 @@ body, html {
 #absence-modal {
     z-index: 2000005 !important;
 }
-/* Safety: If both are open, this keeps them centered correctly */
-.modal-backdrop.active {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-}
+
 /* --- SMALL HIGH-CONTRAST SCHEDULE ITEM --- */
 .sched-item {
     display: flex !important; /* Forces items side-by-side */
@@ -1246,7 +1235,8 @@ body, html {
 .pin-btn:active {
     background: rgba(255, 255, 255, 0.2) !important;
 }
-.modal, #add-part-modal .modal, .auth-card {
+#part-modal .modal,
+.auth-card {
     overflow: visible !important;
 }
 .form-group {
@@ -1256,7 +1246,9 @@ body, html {
 select.form-select:focus {
     position: relative;
     z-index: 10001;
-#panel-parts.active {
+}
+   
+   #panel-parts.active {
     display: block !important;
     position: relative !important;
     width: 100% !important;
@@ -1304,20 +1296,15 @@ select.form-select:focus {
     min-height: 80px !important;
     max-height: 150px !important;
 }
-/* 1. Kill the 'Zombie' boxes globally */
-#tool-tab-obs, #tool-obs-list, #tool-notes-input {
+/* Keep tool modal subcontent from appearing as stray "zombie" boxes when the modal is closed.
+   While the modal is open, switchToolModalTab() controls which tab is visible. */
+#tool-modal:not(.open) #tool-tab-obs,
+#tool-modal:not(.open) #tool-obs-list,
+#tool-modal:not(.open) #tool-notes-input {
     display: none !important;
 }
 
-/* 2. Only 'Release' them when the modal is actually open */
-#tool-modal[style*="display: flex"] #tool-tab-obs {
-    display: flex !important;
-}
 
-/* 3. Ensure the list inside is visible */
-#tool-modal[style*="display: flex"] #tool-obs-list {
-    display: block !important;
-}
 /* FORCE TOOL CRIB LAYOUT */
 #panel-tools.active {
     display: block !important;
@@ -1402,59 +1389,7 @@ select.form-select:focus {
 
 
 /* 1. THE OUTER BAR */
-#panel-parts .tab-bar {
-    background: rgba(0, 0, 0, 0.45) !important;
-    padding: 5px !important;
-    border-radius: 12px !important;
-    display: inline-flex !important;
-    gap: 5px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px) !important;
-    margin-bottom: 20px !important;
-    height: auto !important;
-    width: auto !important;
-    float: none !important;
-}
-
-/* 2. THE BUTTONS (INACTIVE) */
-#panel-parts .tab-bar button.tab {
-    background: transparent !important;
-    background-color: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important; 
-    /* THIS KILLS THE BORDERS AND SQUARES */
-    border: none !important; 
-    outline: none !important;
-    box-shadow: none !important;
-    
-    padding: 8px 22px !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: all 0.2s ease !important;
-    margin: 0 !important;
-}
-
-/* 3. THE ACTIVE BUTTON (WHITE PILL) */
-#panel-parts .tab-bar button.tab.active {
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-    color: #1a1a1a !important; /* Bold Dark Text */
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    border: none !important;
-}
-
-/* 4. HOVER EFFECT */
-#panel-parts .tab-bar button.tab:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.15) !important;
-    color: #ffffff !important;
-}
-/* --- OVERRIDE GLOBAL RULE ON LINE 82 FOR PARTS TABS ONLY --- */
-div#panel-parts div.tab-bar {
+#panel-parts #parts-subtab-bar {
     background: rgba(0, 0, 0, 0.45) !important;
     padding: 4px !important;
     border-radius: 12px !important;
@@ -1464,46 +1399,45 @@ div#panel-parts div.tab-bar {
     backdrop-filter: blur(8px) !important;
     margin-bottom: 20px !important;
     height: auto !important;
+    width: auto !important;
+    float: none !important;
 }
 
-div#panel-parts div.tab-bar button.tab {
+#panel-parts #parts-subtab-bar button.tab {
     background: transparent !important;
     background-color: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important;
+     color: rgba(255, 255, 255, 0.7) !important;
     border: none !important;
-    box-shadow: none !important;
-    padding: 8px 20px !important;
+    outline: none !important;
+    box-shadow: none !important;    
+    padding: 8px 22px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
-    min-height: 0 !important; /* Overrides the 32px from line 82 */
-    margin: 0 !important;
+    font-weight: 600 !important;
+   min-height: 0 !important;
+    margin: 0 !important; 
+   cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+
+}
+    #panel-parts #parts-subtab-bar button.tab:hover:not(.active) {
+   background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
 }
 
-/* THE ACTIVE PILL */
-div#panel-parts div.tab-bar button.tab.active {
+   #panel-parts #parts-subtab-bar button.tab.active {
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #1a1a1a !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
-/* --- THE ULTIMATE OVERRIDE FOR PARTS PILLS --- */
-#panel-parts #parts-subtab-bar button.tab {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important; /* Forces the black box from line 82 to die */
-    color: rgba(255, 255, 255, 0.7) !important;
-    padding: 8px 22px !important;
-    border-radius: 8px !important;
-    min-height: 0 !important; /* Overrides the 32px from line 82 */
-    box-shadow: none !important;
-}
 
-#panel-parts #parts-subtab-bar button.tab.active {
-    background: #ffffff !important; /* Solid white pill */
-    background-color: #ffffff !important;
-    color: #1a1a1a !important; /* Dark text */
     font-weight: 800 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+      border: none !important;
 }
 #review-modal.active {
     display: flex !important;
@@ -1557,7 +1491,7 @@ div#panel-parts div.tab-bar button.tab.active {
     transition: background 0.2s;
 }
 .doc-item:hover {
-    background: var(--hover-bg) !important;
+    background: var(--hover-bg, var(--bg2)) !important;
 }
 .btn-sm {
     padding: 4px 10px;
@@ -1567,10 +1501,6 @@ div#panel-parts div.tab-bar button.tab.active {
   z-index: 100000 !important;
 }
 
-/* If you have a general modal class, make sure backdrops are high */
-.modal-backdrop {
-  z-index: 9000;
-}
 body {
     background-color: #001f3f; /* Your Navy Blue */
     background-attachment: fixed;
