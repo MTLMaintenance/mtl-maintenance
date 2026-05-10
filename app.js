@@ -2495,42 +2495,56 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
-    // Check if we are editing an existing part
-    const editId = document.getElementById('part-edit-id').value;
-    const name = document.getElementById('p-name').value.trim();
-    
-    if(!name) { showToast('Please enter a name'); return; }
+  const name = document.getElementById('p-name').value.trim();
+  const partNumber = document.getElementById('p-number').value.trim();
+  const unitCost = parseFloat(document.getElementById('p-cost').value) || 0;
+  const supplierId = document.getElementById('p-supplier').value;
+  const currentQty = parseInt(document.getElementById('p-qty').value) || 0;
+  const minQty = parseInt(document.getElementById('p-min').value) || 0;
 
-    const record = {
-        id: editId || uid(), // Use the existing ID if it's there!
-        name: name,
-        num: document.getElementById('p-num').value,
-        supplier_id: document.getElementById('p-supplier-select').value || null,
-        qty: parseInt(document.getElementById('p-qty').value) || 0,
-        reorder: parseInt(document.getElementById('p-reorder').value) || 0,
-        cost: parseFloat(document.getElementById('p-cost').value) || 0,
-        auto_reorder: document.getElementById('p-auto-reorder').checked,
-        reorder_qty: parseInt(document.getElementById('p-reorder-qty').value) || 10,
-    };
+  if (!name) {
+    showToast("Part Name is required");
+    return;
+  }
 
-    try {
-        // Save to Supabase (upsert handles both Add and Edit)
-        await window._mpdb.from('parts').upsert([record]);
-        
-        // Update local state
-        const idx = state.parts.findIndex(x => x.id === record.id);
-        if(idx > -1) state.parts[idx] = record; else state.parts.push(record);
+  const record = {
+    id: uid(), // or use an existing ID if editing
+    name: name,
+    part_number: partNumber,
+    unit_cost: unitCost,
+    supplier_id: supplierId || null,
+    current_qty: currentQty,
+    reorder_qty: minQty,
+    created_at: new Date().toISOString()
+  };
 
-        closeModal('part-modal');
-        renderParts(); 
-        showToast("Part saved successfully ✓");
+  try {
+    const { data, error } = await window._mpdb
+      .from('parts')
+      .upsert(record);
 
-        // RESET the hidden ID for next time
-        document.getElementById('part-edit-id').value = "";
-        
-    } catch(e) {
-        showToast("Save failed");
+    if (error) {
+      console.error("Supabase Error:", error);
+      showToast(`Save Failed: ${error.message}`); // This will now be visible!
+      return;
     }
+
+    // Update local state
+    state.parts.push(record);
+    
+    // Log the action for accountability
+    if (typeof logAuditAction === 'function') {
+        await logAuditAction("Added Part", `New part created: ${name} (${partNumber})`);
+    }
+
+    showToast("Part saved successfully ✓");
+    closeModal('part-modal');
+    renderParts(); // Refresh your list
+
+  } catch (err) {
+    console.error("Critical Save Error:", err);
+    showToast("An unexpected error occurred");
+  }
 }
 
 async function saveSupplier(){
