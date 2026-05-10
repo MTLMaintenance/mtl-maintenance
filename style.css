@@ -1662,22 +1662,30 @@ html {
 
 
 /* ============================================================
-   3. MOBILE LAYOUT (768px and down)
+   1. MOBILE LAYOUT (Apply ONLY to screens 768px and SMALLER)
    ============================================================ */
 @media screen and (max-width: 768px) {
+  html, body { background-color: #001f3f !important; }
 
-   #pc-search-wrap, .pc-only-search { 
+  /* Hide PC-only elements */
+  #pc-search-wrap, .pc-only-search { 
     display: none !important; 
   }   
-   .topbar {
+
+  .topbar {
     display: flex !important;
-    flex-direction: column !important;
+    flex-direction: column !important; /* Mobile stacks vertically */
     position: fixed !important;
     height: auto !important;
-    padding: 8px 0 !important;
+    padding: 10px 0 !important;
+    top: 0; left: 0; right: 0;
+    background: #000 !important;
+    z-index: 10000;
   }
+
   .logo { width: 100% !important; text-align: center !important; padding: 5px 0 !important; }
-  .pc-only-search { display: none !important; }
+
+  /* Mobile swiping for Nav and Actions */
   #main-nav, .topbar-right {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -1685,27 +1693,28 @@ html {
     padding: 6px 12px !important;
     width: 100% !important;
   }
+
   .panel { margin-top: 135px !important; padding: 10px !important; }
   .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
   .metric-card, .card { width: 100% !important; }
 }
 
+/* Base Panel Rules (Applies to both) */
 .panel { display: none; }
 .panel.active { display: block !important; }
 
-   /* ============================================================
-   2. PC LAYOUT (769px and up)
+/* ============================================================
+   2. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. PC BACKGROUND */
   html, body { background-color: #1a1a1a !important; }
 
-  /* 2. THE MASTER ROW: No wrapping, no stacking */
+  /* MASTER ROW: Forces everything to stay on one single horizontal line */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE HORIZONTAL */
-    flex-wrap: nowrap !important;         /* FORBID NEW LINES */
-    align-items: center !important;      /* VERTICAL CENTER ALL */
+    flex-direction: row !important;      
+    flex-wrap: nowrap !important;         /* CRITICAL: Prevents 2nd row */
+    align-items: center !important;      
     height: 60px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
@@ -1715,10 +1724,10 @@ html {
     width: 100% !important;
   }
 
-  /* 3. GROUP 1: LOGO & SEARCH (Pinned Left) */
+  /* LEFT GROUP (Logo & Search) */
   .logo { 
     width: auto !important; 
-    margin: 0 20px 0 0 !important; 
+    margin-right: 20px !important; 
     flex-shrink: 0 !important;
     font-weight: bold;
     font-size: 14px;
@@ -1726,19 +1735,20 @@ html {
   }
 
   #pc-search-wrap { 
-    width: 180px !important;             /* Fixed width */
+    width: 180px !important;             
     margin: 0 !important; 
     flex-shrink: 0 !important;
     display: flex !important;
     align-items: center !important;
   }
 
-  /* 4. GROUP 2: BLACK NAV BUTTONS (Pinned Center) */
+  /* CENTER GROUP (Navigation) */
   #main-nav { 
     display: flex !important; 
     flex-direction: row !important;
-    gap: 5px !important;
-    margin: 0 auto !important;           /* THE MAGIC: Centers this group */
+    gap: 8px !important;
+    /* This creates the centering "Spring" */
+    margin: 0 auto !important;           
     flex-shrink: 1 !important;
     overflow: hidden !important;
   }
@@ -1750,29 +1760,28 @@ html {
     flex: 0 0 auto !important;
   }
 
-  /* 5. GROUP 3: BLUE BUTTONS & PROFILE (Pinned Right) */
+  /* RIGHT GROUP (Actions) */
   .topbar-right { 
     display: flex !important; 
     flex-direction: row !important;
     gap: 8px !important;
-    margin-left: 0 !important;           /* Reset previous margins */
-    flex-shrink: 0 !important;           /* Prevents vanishing */
+    flex-shrink: 0 !important;
     width: auto !important;
   }
 
-  /* 6. CONTENT SPACING (Pushes cards below the 60px bar) */
+  /* SPACING: Pushes cards below the 60px bar */
   .panel {
     display: none;
-    margin-top: 80px !important;         /* 60px Bar + 20px Space */
+    margin-top: 80px !important; 
     width: 98% !important;
-    max-width: 1800px !important;
+    max-width: 1700px !important;
     margin-left: auto !important;
     margin-right: auto !important;
     padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* 7. RESTORE CARD SIZES (2 Columns) */
+  /* DASHBOARD GRID */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
