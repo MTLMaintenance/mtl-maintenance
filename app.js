@@ -2496,7 +2496,7 @@ async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))
 
 async function savePart() {
   const name = document.getElementById('p-name').value.trim();
-  const partNumber = document.getElementById('p-number').value.trim();
+  const partNumber = document.getElementById('p-num').value.trim();
   const unitCost = parseFloat(document.getElementById('p-cost').value) || 0;
   const supplierId = document.getElementById('p-supplier').value;
   const currentQty = parseInt(document.getElementById('p-qty').value) || 0;
