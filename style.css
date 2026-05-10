@@ -677,16 +677,7 @@ body > #invoice-photo-area {
   display: flex !important; /* Shown only when 'open' class is added */
 }
 
-/* The middle navigation area */
-.nav {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  gap: 4px !important;
-  flex: 1 !important; /* Makes this section fill the middle space */
-  justify-content: flex-start !important;
-  overflow: hidden !important; /* Prevents buttons from pushing the bar wide */
-}
+
 
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
@@ -839,31 +830,16 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 .chat-channel-btn{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--radius);font-size:13px;cursor:pointer;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);border:1px solid transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s}
 .chat-channel-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 .chat-channel-btn.active{background:rgba(255,255,255,0.25);color:#fff;font-weight:600;border-color:rgba(255,255,255,0.3)}
-
    
-
-  
-
-  .nav::-webkit-scrollbar {
-    display: none;
-    
   }
-
-  .nav-btn {
-    padding: 6px 14px !important;
-    background: rgba(255, 255, 255, 0.1) !important; 
-    font-size: 13px !important;
-  }
-
   .user-chip {
     display: none !important; 
   }
-  
- 
+   
   .metrics {
     grid-template-columns: 1fr 1fr !important;
   }
-  
+ 
   
   .modal {
     width: 95% !important;
@@ -984,52 +960,7 @@ body, html {
 }
 
 /* --- THE HEADER: FIXED TO TOP --- */
-.topbar {
-  display: flex !important;
-  flex-direction: column !important;
-  flex-shrink: 0 !important; /* Header never moves or shrinks */
-  background: rgba(0, 0, 0, 0.85) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-}
 
-.topbar-main-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  gap: 12px;
-}
-
-.nav {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  gap: 4px;
-  padding: 0 12px 8px;
-  overflow-x: auto !important; /* SWIPEABLE BUTTONS */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.nav::-webkit-scrollbar { display: none; }
-
-/* Fix for button colors */
-#main-nav .nav-btn {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-  border: none !important;
-  font-size: 12px;
-  padding: 6px 14px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-#main-nav .nav-btn.active {
-  background: #ffffff !important;
-  color: #1a1a18 !important;
-  font-weight: 700;
-}
 
 /* ============================================================
    3. SHARED COMPONENTS (Dots & Buttons)
