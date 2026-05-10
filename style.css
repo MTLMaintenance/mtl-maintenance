@@ -1,3 +1,27 @@
+/* FORCE ALL TABLE DATA TO BE BLACK/DARK */
+table tbody td, 
+table tbody td span, 
+table tbody td div,
+table tbody td b {
+    color: #1a1a18 !important; /* Professional dark charcoal */
+}
+
+/* Ensure the currency and numbers pop */
+table tbody td {
+    font-weight: 500;
+}
+
+/* Keep the 'Status' colors working (Red for 'Out', Green for 'In') */
+/* This prevents the black rule from 'killing' your status colors */
+table tbody td .badge,
+table tbody td span[style*="color"] {
+    color: inherit !important;
+}
+
+/* Optional: Make the zebra stripes slightly more visible for easier reading */
+table tbody tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+}
 /* Force notifications to the very front of the screen */
 #toast-container, .toast, #toast {
   z-index: 20000 !important; 
