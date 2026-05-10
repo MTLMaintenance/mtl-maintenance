@@ -2495,56 +2495,82 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
-  const name = document.getElementById('p-name').value.trim();
-  const partNumber = document.getElementById('p-num').value.trim();
-  const unitCost = parseFloat(document.getElementById('p-cost').value) || 0;
-  const supplierId = document.getElementById('p-supplier-select').value;
-  const currentQty = parseInt(document.getElementById('p-qty').value) || 0;
-  const minQty = parseInt(document.getElementById('p-reorder').value) || 0;
+    console.log("--- Starting Save Part Process ---");
 
-  if (!name) {
-    showToast("Part Name is required");
-    return;
-  }
+    // 1. Helper function to safely get values and identify which ID is missing
+    const getSafeValue = (id) => {
+        const el = document.getElementById(id);
+        if (!el) {
+            console.error(`MISSING ELEMENT: Could not find HTML ID "${id}"`);
+            return null;
+        }
+        return el.value;
+    };
 
-  const record = {
-    id: uid(), // or use an existing ID if editing
-    name: name,
-    part_number: partNumber,
-    unit_cost: unitCost,
-    supplier_id: supplierId || null,
-    current_qty: currentQty,
-    reorder_qty: minQty,
-    created_at: new Date().toISOString()
-  };
+    // 2. Gather values safely
+   
+    const name = getSafeValue('p-name');
+    const partNumber =  getSafeValue('p-num'); /
+    const unitCost = getSafeValue('p-cost');
+    const supplierId = getSafeValue('p-supplier-select'); 
+    const currentQty = getSafeValue('p-qty');
+    const minQty =  getSafeValue('p-reorder');
 
-  try {
-    const { data, error } = await window._mpdb
-      .from('parts')
-      .upsert(record);
-
-    if (error) {
-      console.error("Supabase Error:", error);
-      showToast(`Save Failed: ${error.message}`); // This will now be visible!
-      return;
+    // 3. Check if any CRITICAL IDs were missing from your HTML
+    if (name === null || partNumber === null || unitCost === null) {
+        alert("CRITICAL ERROR: One or more HTML IDs are missing. Check the browser console (F12) to see which one.");
+        return;
     }
 
-    // Update local state
-    state.parts.push(record);
-    
-    // Log the action for accountability
-    if (typeof logAuditAction === 'function') {
-        await logAuditAction("Added Part", `New part created: ${name} (${partNumber})`);
+    if (!name.trim()) {
+        showToast("Part Name is required");
+        return;
     }
 
-    showToast("Part saved successfully ✓");
-    closeModal('part-modal');
-    renderParts(); // Refresh your list
+    // 4. Prepare the data record
+    const record = {
+        id: uid(), 
+        name: name.trim(),
+        part_number: partNumber.trim(),
+        unit_cost: parseFloat(unitCost) || 0,
+        supplier_id: supplierId || null,
+        current_qty: parseInt(currentQty) || 0,
+        reorder_qty: parseInt(minQty) || 0,
+        created_at: new Date().toISOString()
+    };
 
-  } catch (err) {
-    console.error("Critical Save Error:", err);
-    showToast("An unexpected error occurred");
-  }
+    try {
+        // 5. Send to Supabase
+        const { error } = await window._mpdb
+            .from('parts')
+            .upsert(record);
+
+        if (error) {
+            console.error("Supabase Error:", error);
+            // Backup Alert in case Toast is invisible
+            alert("SAVE FAILED: " + error.message);
+            showToast(`Error: ${error.message}`);
+            return;
+        }
+
+        // 6. Update local state and UI
+        if (!state.parts) state.parts = [];
+        state.parts.push(record);
+        
+        if (typeof logAuditAction === 'function') {
+            await logAuditAction("Added Part", `Created part: ${record.name}`);
+        }
+
+        showToast("Part saved successfully ✓");
+        alert("Success! Part saved."); // Physical confirmation
+        
+        closeModal('part-modal');
+        if (typeof renderParts === 'function') renderParts();
+
+    } catch (err) {
+        console.error("Critical Javascript Error:", err);
+        alert("APP CRASHED: " + err.message);
+    }
 }
 
 async function saveSupplier(){
