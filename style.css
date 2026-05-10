@@ -1715,53 +1715,53 @@ html {
     height: auto !important;
   }
 /* 8 Calendar Styling */
-    /* A. Make the panel take up the full available viewport height */
-  #panel-calendar {
-    height: calc(100vh - 100px) !important; /* Total height minus Topbar space */
-    display: flex !important;
+   /* Change #panel-calendar to #panel-calendar.active */
+#panel-calendar.active {
+    height: calc(100vh - 100px) !important; 
+    display: flex !important; /* Now only flexes when active */
     flex-direction: column !important;
-  }
+}
 
-  /* B. Make the white card stretch to the very bottom */
-  #panel-calendar .card, #cal-grid-container .card {
-    flex: 1 !important; /* This forces it to stretch to the bottom edge */
+/* Ensure the white card stretches to the very bottom ONLY when active */
+#panel-calendar.active .card, 
+#cal-grid-container.active .card {
+    flex: 1 !important; 
     display: flex !important;
     flex-direction: column !important;
-    margin-bottom: 10px !important; /* Small gap at the very bottom */
+    margin-bottom: 10px !important; 
     max-width: 98% !important;
     width: 98% !important;
-  }
+}
 
-  /* C. The magic: Force the day grid to fill the remaining space */
-  #cal-days {
+/* The magic: Force the day grid to fill the remaining space */
+#cal-days {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    /* This makes every row (4, 5, or 6) take up exactly equal space to hit the bottom */
+    /* This makes every row (4, 5, or 6) take up exactly equal space */
     grid-auto-rows: 1fr !important; 
     flex: 1 !important; 
     border-bottom: 1px solid #ddd;
-  }
+}
 
-  /* D. Ensure the individual day boxes take full height */
-  .cal-day {
+/* Ensure the individual day boxes take full height */
+.cal-day {
     height: 100% !important;
-    min-height: 0 !important; /* Removes any old 100px height limits */
+    min-height: 0 !important; 
     display: flex;
     flex-direction: column;
     padding: 5px !important;
     border: 1px solid #eee;
-    color: #1a1a18 !important; /* Ensures dates are black/readable */
-  }
+    color: #1a1a18 !important; 
+}
 
-  /* E. Keep the Day Names (Sun, Mon, etc.) at a fixed height */
-  .cal-day-labels {
+/* Keep the Day Names (Sun, Mon, etc.) at a fixed height */
+.cal-day-labels {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-weight: bold;
     padding: 10px 0;
     color: #555;
-  }
 }
 /* -------end of pc block ----------*/
 .modern-login-card {
