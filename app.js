@@ -2495,74 +2495,63 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
-    console.log("Checkpoint 1: Function Started");
+    console.log("--- Starting Save Part Process ---");
     
     try {
-        // Use the new ID 'edit-p-name' you created
+        // 1. Gather data from HTML
         const name = document.getElementById('edit-p-name')?.value.trim();
         const partNumber = document.getElementById('p-num')?.value.trim();
         const unitCost = parseFloat(document.getElementById('p-cost')?.value) || 0;
         const currentQty = parseInt(document.getElementById('p-qty')?.value) || 0;
-        const reorderQty = parseInt(document.getElementById('p-reorder')?.value) || 0;
+        const reorderThreshold = parseInt(document.getElementById('p-reorder')?.value) || 0;
         const supplierId = document.getElementById('p-supplier-select')?.value || null;
-
-        console.log("Checkpoint 2: Data Gathered", { name, partNumber });
 
         if (!name) {
             alert("Please enter a part name");
             return;
         }
 
+        // 2. MAPPED TO YOUR TABLE COLUMNS (Matches your screenshot)
         const record = {
             id: uid(),
-            name,
-            part_number: partNumber,
-            unit_cost: unitCost,
+            name: name,
+            num: partNumber,        // Database column is 'num'
+            qty: currentQty,        // Database column is 'qty'
+            reorder: reorderThreshold, // Database column is 'reorder'
+            cost: unitCost,         // Database column is 'cost'
             supplier_id: supplierId,
-            current_qty: currentQty,
-            reorder_qty: reorderQty
-            // FIX: Removed created_at. The DB will add this automatically.
+            auto_reorder: false     // Defaulting to false as per your table
         };
 
-        console.log("Checkpoint 3: Connecting to Supabase...");
-
-        if (!window._mpdb) {
-            alert("CRITICAL: Supabase (_mpdb) is not initialized!");
-            return;
-        }
+        console.log("Connecting to Supabase...");
 
         const response = await window._mpdb
             .from('parts')
             .upsert(record);
 
-        console.log("Checkpoint 4: Supabase responded", response);
-
         if (response.error) {
-            // This alert will tell us if there are ANY other column name mismatches
-            alert("DATABASE ERROR: " + response.error.message);
+            console.error("Database Error Details:", response.error);
+            alert("DATABASE REJECTED: " + response.error.message);
             return;
         }
 
-        // --- ACCOUNTABILITY LOGGING ---
-        // This is where your actual auditing happens!
+        // 3. ACCOUNTABILITY LOGGING
         if (typeof logAuditAction === 'function') {
-            await logAuditAction("Added Part", `Created part: "${name}" (${partNumber}) with ${currentQty} in stock.`);
+            await logAuditAction("Added Part", `User ${currentUser.name} added "${name}" (${partNumber}) to inventory.`);
         }
 
-        console.log("Checkpoint 5: Refreshing UI");
-        
-        // Update the app's local memory
+        // 4. Update UI
         if (!state.parts) state.parts = [];
         state.parts.push(record);
         
         closeModal('part-modal');
         if (typeof renderParts === 'function') renderParts();
         
-        showToast("Part saved and logged ✓");
+        showToast("Part saved successfully ✓");
 
     } catch (e) {
-        console.error("Checkpoint ERROR:", e);
-        alert("JS CRASHED: " + e.message);
+        console.error("Javascript Crash:", e);
+        alert("APP ERROR: " + e.message);
     }
 }
 
