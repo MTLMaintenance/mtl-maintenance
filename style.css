@@ -1,49 +1,46 @@
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR ROW: Forces everything to stay on ONE line */
+  /* 1. FORCE TOPBAR INTO ONE ROW */
   .topbar {
     display: flex !important;
-    flex-direction: row !important; /* FORCE HORIZONTAL */
-    flex-wrap: nowrap !important;    /* FORCE NO STACKING */
+    flex-direction: row !important; /* Horizontal */
+    flex-wrap: nowrap !important;    /* No stacking */
     align-items: center !important;
-    justify-content: space-between !important; /* Spread from Left to Right */
-    height: 65px !important;
-    padding: 0 20px !important;
+    justify-content: flex-start !important;
+    height: 60px !important;         /* Fixed height for PC */
     position: fixed !important;
     top: 0; left: 0; right: 0;
+    padding: 0 20px !important;
     background: #111 !important;
     z-index: 9999;
   }
 
-  /* 2. ALIGN ALL SUB-CONTAINERS IN THE ROW */
-  /* This targets any div inside the topbar that might be trying to stack */
-  .topbar-main-row, #main-nav, .topbar-right, .logo, .pc-only-search {
+  /* 2. ALIGN ALL TOPBAR CHILDREN SIDE-BY-SIDE */
+  .logo, .pc-only-search, #main-nav, .topbar-right {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     margin: 0 !important;
-    padding: 0 !important;
-    height: 100% !important;
-    width: auto !important;
     flex-shrink: 0 !important;
   }
 
-  /* Space the items out */
   .logo { margin-right: 20px !important; }
-  .pc-only-search { margin-right: 20px !important; width: 200px !important; }
-  #main-nav { gap: 8px !important; }
-  .topbar-right { margin-left: auto !important; gap: 8px !important; }
-
-  /* 3. POSITION THE CARDS: This pushes them down below the 65px bar */
-  .topbar-spacer {
-    height: 65px !important;
-    display: block !important;
+  .pc-only-search { width: 200px !important; margin-right: 20px !important; }
+  
+  #main-nav { 
+    flex: 1 !important; /* Fills the middle space */
+    justify-content: flex-start !important;
+    gap: 8px !important;
   }
 
+  .topbar-right { margin-left: auto !important; gap: 8px !important; }
+
+  /* 3. PUSH CARDS DOWN (Since we deleted the spacer) */
   .panel {
     display: none;
-    margin-top: 30px !important; /* 30px gap below the topbar */
-    width: 98% !important;       /* Maintain large card width */
-    max-width: 1800px !important;
+    /* This uses the height detected by our JS function */
+    margin-top: var(--topbar-h, 75px) !important; 
+    padding: 20px !important;
+    max-width: 1600px;
     margin-left: auto !important;
     margin-right: auto !important;
   }
