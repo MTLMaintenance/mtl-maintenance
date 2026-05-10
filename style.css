@@ -1,87 +1,85 @@
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR: One long solid horizontal row */
+  /* 1. MASTER TOPBAR: One solid horizontal row */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* Forces horizontal line */
-    flex-wrap: nowrap !important;         /* STOP STACKING FOREVER */
+    flex-direction: row !important;      /* FORCE HORIZONTAL */
+    flex-wrap: nowrap !important;         /* STOP WRAPPING TO NEW LINES */
     align-items: center !important;      /* Vertical center */
-    justify-content: space-between !important; 
+    justify-content: flex-start !important; 
     height: 60px !important;
     padding: 0 15px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    background: #111 !important;
+    background: #000 !important;
     z-index: 10000 !important;
   }
 
-  /* 2. FORCE EVERY PIECE TO STAY VISIBLE ON THE SAME LINE */
-  .logo, .pc-only-search, #main-nav, .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-shrink: 0 !important; /* CRITICAL: Stops pieces from vanishing */
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Spacing and Sizing */
+  /* 2. LOGO & SEARCH (Left Side) */
   .logo { 
     width: auto !important; 
     margin-right: 15px !important; 
-    font-weight: bold; 
+    flex-shrink: 0 !important; 
     font-size: 14px;
   }
-
   .pc-only-search { 
     display: block !important; 
-    width: 160px !important; /* Shrunk slightly to make room for nav */
-    margin-right: 15px !important; 
+    width: 150px !important; 
+    flex-shrink: 0 !important; 
+    margin-right: 10px !important;
   }
 
-  /* MAIN NAV: The row that was missing */
+  /* 3. NAVIGATION (The Middle - Allows swiping if screen is narrow) */
   #main-nav { 
-    flex: 1 !important;           /* Allows this part to take up the middle */
-    justify-content: flex-start !important; 
-    gap: 4px !important;          /* Tight gap to fit all 10+ buttons */
-    overflow: visible !important; /* Ensures buttons aren't hidden */
+    display: flex !important; 
+    flex-direction: row !important;
+    flex: 1 !important;                 /* Sucks up all available middle space */
+    gap: 5px !important;
+    overflow-x: auto !important;         /* Allow scrolling if buttons don't fit */
+    white-space: nowrap !important;
+    padding: 0 10px !important;
+    -webkit-overflow-scrolling: touch;
   }
+  /* Hide scrollbar for the nav buttons */
+  #main-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
-      padding: 4px 8px !important;
-      font-size: 12px !important;
-      white-space: nowrap !important;
+    flex: 0 0 auto !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
   }
 
-  /* TOPBAR RIGHT: Action buttons */
+  /* 4. TOPBAR RIGHT (The Actions) */
   .topbar-right { 
-    margin-left: 10px !important; 
-    gap: 5px !important; 
+    display: flex !important; 
+    flex-direction: row !important;
+    margin-left: auto !important;        /* Pushes to far right */
+    gap: 6px !important;
+    flex-shrink: 0 !important;
   }
 
-  /* 3. PUSH CARDS DOWN (The Gap Fix) */
+  /* 5. CONTENT SPACING: Content starts 15px below the 60px bar */
   .panel {
     display: none;
-    margin-top: 75px !important; /* Gap below the fixed 60px bar */
+    margin-top: 75px !important; 
     width: 98% !important;
     max-width: 1600px !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* 4. DASHBOARD GRIDS (Maintaining correct 2-column size) */
+  /* DASHBOARD GRIDS: Restoring your 2-column box look */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
+    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
     background: #f8f9fa;
     color: #333;
     border-radius: 12px;
-    height: auto !important;
   }
 }
 /* ============================================================
