@@ -2498,6 +2498,7 @@ async function savePart() {
     console.log("Checkpoint 1: Function Started");
     
     try {
+        // Use the new ID 'edit-p-name' you created
         const name = document.getElementById('edit-p-name')?.value.trim();
         const partNumber = document.getElementById('p-num')?.value.trim();
         const unitCost = parseFloat(document.getElementById('p-cost')?.value) || 0;
@@ -2505,7 +2506,7 @@ async function savePart() {
         const reorderQty = parseInt(document.getElementById('p-reorder')?.value) || 0;
         const supplierId = document.getElementById('p-supplier-select')?.value || null;
 
-        console.log("Checkpoint 2: Data Gathered", { name, partNumber, unitCost });
+        console.log("Checkpoint 2: Data Gathered", { name, partNumber });
 
         if (!name) {
             alert("Please enter a part name");
@@ -2519,13 +2520,12 @@ async function savePart() {
             unit_cost: unitCost,
             supplier_id: supplierId,
             current_qty: currentQty,
-            reorder_qty: reorderQty,
-            created_at: new Date().toISOString()
+            reorder_qty: reorderQty
+            // FIX: Removed created_at. The DB will add this automatically.
         };
 
         console.log("Checkpoint 3: Connecting to Supabase...");
 
-        // Check if the database object exists
         if (!window._mpdb) {
             alert("CRITICAL: Supabase (_mpdb) is not initialized!");
             return;
@@ -2538,16 +2538,27 @@ async function savePart() {
         console.log("Checkpoint 4: Supabase responded", response);
 
         if (response.error) {
+            // This alert will tell us if there are ANY other column name mismatches
             alert("DATABASE ERROR: " + response.error.message);
             return;
         }
 
+        // --- ACCOUNTABILITY LOGGING ---
+        // This is where your actual auditing happens!
+        if (typeof logAuditAction === 'function') {
+            await logAuditAction("Added Part", `Created part: "${name}" (${partNumber}) with ${currentQty} in stock.`);
+        }
+
         console.log("Checkpoint 5: Refreshing UI");
+        
+        // Update the app's local memory
+        if (!state.parts) state.parts = [];
         state.parts.push(record);
+        
         closeModal('part-modal');
         if (typeof renderParts === 'function') renderParts();
         
-        alert("Part saved successfully ✓");
+        showToast("Part saved and logged ✓");
 
     } catch (e) {
         console.error("Checkpoint ERROR:", e);
