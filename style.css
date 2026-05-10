@@ -1697,84 +1697,73 @@ html {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER CONTAINER: Force a single horizontal line */
+  /* 1. PC BACKGROUND */
+  html, body { background-color: #1a1a1a !important; }
+
+  /* 2. THE MASTER ROW: No wrapping, no stacking */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
-    flex-wrap: nowrap !important;         /* STOP JUMPING TO NEW LINES */
-    align-items: center !important;      /* ALIGN ALL BUTTONS VERTICALLY */
-    justify-content: flex-start !important; 
-    height: 60px !important;              /* Thin professional bar */
-    padding: 0 15px !important;
+    flex-direction: row !important;      /* FORCE HORIZONTAL */
+    flex-wrap: nowrap !important;         /* FORBID NEW LINES */
+    align-items: center !important;      /* VERTICAL CENTER ALL */
+    height: 60px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
+    padding: 0 20px !important;
     background: #000 !important;
     z-index: 10000 !important;
+    width: 100% !important;
   }
 
-  /* 2. SUB-CONTAINER RESET: Force every div inside to be a horizontal piece */
-  .topbar > div, 
-  .topbar > nav, 
-  .topbar > span,
-  .topbar-main-row,
-  .pc-only-search,
-  .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;      /* Force them to be horizontal */
-    align-items: center !important;
-    width: auto !important;              /* Stop them from taking full width */
-    margin: 0 !important;
-    padding: 0 !important;
-    flex-shrink: 0 !important;           /* Stop them from vanishing */
-  }
-
-  /* 3. INDIVIDUAL SPACING */
+  /* 3. GROUP 1: LOGO & SEARCH (Pinned Left) */
   .logo { 
-    margin-right: 20px !important; 
-    font-weight: bold; 
+    width: auto !important; 
+    margin: 0 20px 0 0 !important; 
+    flex-shrink: 0 !important;
+    font-weight: bold;
     font-size: 14px;
     white-space: nowrap !important;
   }
 
-  #pc-search-wrap, .pc-only-search { 
-    width: 160px !important;             /* Locked width for search box */
-    margin-right: 20px !important; 
+  #pc-search-wrap { 
+    width: 180px !important;             /* Fixed width */
+    margin: 0 !important; 
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
-  #global-search {
-    width: 100% !important;
-    height: 28px !important;
-    background: rgba(255,255,255,0.1) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    border-radius: 4px;
-    color: white;
-    padding-left: 8px !important;
-  }
-
-  /* 4. NAVIGATION: Sucks up the middle space */
+  /* 4. GROUP 2: BLACK NAV BUTTONS (Pinned Center) */
   #main-nav { 
-    flex: 1 !important;                  /* Pushes profile/pdf to the far right */
+    display: flex !important; 
+    flex-direction: row !important;
     gap: 5px !important;
-    justify-content: flex-start !important;
+    margin: 0 auto !important;           /* THE MAGIC: Centers this group */
+    flex-shrink: 1 !important;
     overflow: hidden !important;
   }
 
   .nav-btn {
     white-space: nowrap !important;
     font-size: 12px !important;
-    padding: 4px 8px !important;
+    padding: 5px 8px !important;
+    flex: 0 0 auto !important;
   }
 
-  /* 5. TOPBAR RIGHT: Pinned to far right edge */
+  /* 5. GROUP 3: BLUE BUTTONS & PROFILE (Pinned Right) */
   .topbar-right { 
-    margin-left: 15px !important;
+    display: flex !important; 
+    flex-direction: row !important;
     gap: 8px !important;
+    margin-left: 0 !important;           /* Reset previous margins */
+    flex-shrink: 0 !important;           /* Prevents vanishing */
+    width: auto !important;
   }
 
-  /* 6. FIX THE CONTENT POSITION (The Gap Fix) */
+  /* 6. CONTENT SPACING (Pushes cards below the 60px bar) */
   .panel {
     display: none;
-    margin-top: 75px !important;         /* Pushes cards down below the 60px bar */
+    margin-top: 80px !important;         /* 60px Bar + 20px Space */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
@@ -1783,17 +1772,19 @@ html {
   }
   .panel.active { display: block !important; }
 
-  /* RESTORE THE DASHBOARD BOXES */
+  /* 7. RESTORE CARD SIZES (2 Columns) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
+    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
     background: #f8f9fa;
     color: #333;
     border-radius: 12px;
+    height: auto !important;
   }
 }
 /* -------end of pc block ----------*/
