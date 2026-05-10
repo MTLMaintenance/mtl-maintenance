@@ -1,51 +1,56 @@
+/* ============================================================
+   1. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
+   ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. FORCE THE TOPBAR INTO ONE SINGLE HORIZONTAL ROW */
+  html, body {
+    background-color: #1a1a1a !important; /* PC Grey Background */
+  }
+
+  /* FORCE TOPBAR INTO ONE SINGLE ROW (Logo Left -> Buttons Right) */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* Forces everything side-by-side */
-    flex-wrap: nowrap !important;         /* Prevents jumping to new lines */
-    align-items: center !important;      /* Centers all buttons vertically */
-    justify-content: space-between !important; /* Spreads things from left to right */
-    height: 70px !important;              /* Set a specific height for the bar */
-    padding: 0 20px !important;
+    flex-direction: row !important;      /* Horizontal */
+    flex-wrap: nowrap !important;         /* No Stacking */
+    align-items: center !important;
+    justify-content: space-between !important; 
+    height: 60px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
+    width: 100% !important;
+    padding: 0 20px !important;
     background: #111 !important;
     z-index: 9999;
   }
 
-  /* Ensure all internal groups stay horizontal */
+  /* Keep all internal pieces side-by-side */
   .logo, .pc-only-search, #main-nav, .topbar-right {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    width: auto !important;
-    flex-shrink: 0 !important; /* Prevents items from squishing */
+    height: 100% !important;
     margin: 0 !important;
+    flex-shrink: 0 !important;
   }
+  
+  #main-nav { flex: 1 !important; margin: 0 20px !important; }
+  .pc-only-search { width: 200px !important; }
 
-  /* Specific Spacing between the groups */
-  .logo { margin-right: 20px !important; }
-  .pc-only-search { width: 180px !important; margin-right: 20px !important; }
-  #main-nav { gap: 6px !important; flex-grow: 1 !important; } /* Nav takes up middle space */
-  .topbar-right { gap: 8px !important; margin-left: 20px !important; }
-
-  /* 2. MOVE THE CONTENT DOWN (Pushes cards below the 70px topbar) */
+  /* 1. MOVE CARDS DOWN (Pushes cards down below the fixed bar) */
   .panel {
     display: none;
-    /* This creates the gap so cards start AFTER the bar ends */
-    margin-top: 90px !important; 
-    padding: 0 20px !important;
-    max-width: 1800px;
+    margin-top: 80px !important; /* The Gap you asked for */
+    width: 100% !important;
+    max-width: 1600px !important;
     margin-left: auto !important;
     margin-right: auto !important;
+    padding: 0 20px !important;
   }
   .panel.active { display: block !important; }
 
-  /* DASHBOARD BOXES (Maintaining current correct size) */
+  /* 2. RESTORE DASHBOARD GRID (Keep your card sizes correct) */
   .metrics, .grid-2 {
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: row !important; 
     gap: 20px !important;
     width: 100% !important;
   }
@@ -54,47 +59,42 @@
     background: #f8f9fa;
     color: #333;
     border-radius: 12px;
+    height: auto !important;
   }
 }
+
 /* ============================================================
-   2. MOBILE ONLY (Apply ONLY if screen is small)
+   2. MOBILE LAYOUT (Apply ONLY to screens 768px and SMALLER)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  html, body { background-color: #001f3f !important; }
+  html, body {
+    background-color: #001f3f !important; /* Mobile Navy Background */
+  }
 
-  /* Stack Topbar into rows on Mobile */
+  /* Stack Topbar into rows only for phone */
   .topbar {
+    display: flex !important;
     flex-direction: column !important;
     height: auto !important;
-    padding-top: 10px !important;
+    position: fixed !important;
+    padding: 10px 0 !important;
   }
-  .logo { width: 100% !important; text-align: center !important; margin: 0 0 10px 0 !important; }
+
+  .logo { width: 100% !important; text-align: center !important; }
   .pc-only-search { display: none !important; }
+
+  /* Allow swiping left-to-right on phone */
   #main-nav, .topbar-right {
     display: flex !important;
     flex-wrap: nowrap !important;
-    overflow-x: auto !important; /* Horizontal swipe */
-    width: 100% !important;
+    overflow-x: auto !important;
     padding: 6px 12px !important;
   }
-  
-  /* Reset Spacer for stacked header */
-  .topbar-spacer { height: 135px !important; }
-  .panel { margin-top: 0 !important; padding: 10px !important; }
 
-  /* Stack Dashboard boxes into one column */
-  .metrics, .grid-2, .zerk-main-layout {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 15px !important;
-  }
-  .metric-card, .card { width: 100% !important; }
-  
-  /* Modal stretching */
-  .modal { width: 100% !important; max-height: none !important; }
+  /* Stack dashboard boxes into one column for phone */
+  .panel { margin-top: 135px !important; padding: 10px !important; }
+  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
 }
-
 /* ============================================================
    3. SHARED COMPONENTS (Dots, Badges, etc)
    ============================================================ */
