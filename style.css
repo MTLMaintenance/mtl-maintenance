@@ -1,55 +1,67 @@
 @media screen and (min-width: 769px) {
-  /* 1. FORCE TOPBAR INTO ONE ROW */
+  /* 1. PC BACKGROUND */
+  html, body {
+    background-color: #1a1a1a !important;
+  }
+
+  /* 2. FORCE ONE SINGLE ROW ACROSS THE WHOLE TOP */
   .topbar {
     display: flex !important;
-    flex-direction: row !important; /* Horizontal */
-    flex-wrap: nowrap !important;    /* No stacking */
+    flex-direction: row !important; /* Force side-by-side */
+    flex-wrap: nowrap !important;    /* Stop jumping to new lines */
     align-items: center !important;
-    justify-content: flex-start !important;
-    height: 60px !important;         /* Fixed height for PC */
+    justify-content: flex-start !important; /* Align everything from the left */
+    height: 60px !important;         /* Fixed thin height */
+    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    padding: 0 20px !important;
     background: #111 !important;
     z-index: 9999;
   }
 
-  /* 2. ALIGN ALL TOPBAR CHILDREN SIDE-BY-SIDE */
-  .logo, .pc-only-search, #main-nav, .topbar-right {
+  /* 3. ALIGN INTERNAL PARTS (Logo, Search, Nav, Buttons) */
+  /* This targets any "Rows" inside the topbar and turns them into parts of the line */
+  .topbar-logo-row, .topbar-main-row, .pc-only-search, #main-nav, .topbar-right {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    width: auto !important;
     flex-shrink: 0 !important;
   }
 
-  .logo { margin-right: 20px !important; }
-  .pc-only-search { width: 200px !important; margin-right: 20px !important; }
+  /* Specific Spacing */
+  .logo, .topbar-logo-row { margin-right: 20px !important; }
+  .pc-only-search { width: 180px !important; margin-right: 15px !important; }
   
   #main-nav { 
-    flex: 1 !important; /* Fills the middle space */
-    justify-content: flex-start !important;
+    flex: 1 !important; /* This sucks up all empty space to push buttons to the right */
     gap: 8px !important;
   }
 
-  .topbar-right { margin-left: auto !important; gap: 8px !important; }
+  .topbar-right { 
+    margin-left: auto !important; /* Ensure buttons stay on the far right */
+    gap: 8px !important;
+  }
 
-  /* 3. PUSH CARDS DOWN (Since we deleted the spacer) */
+  /* 4. PUSH CARDS DOWN (Since Topbar is 60px) */
   .panel {
     display: none;
-    /* This uses the height detected by our JS function */
-    margin-top: var(--topbar-h, 75px) !important; 
-    padding: 20px !important;
-    max-width: 1600px;
+    margin-top: 80px !important; /* 80px = 60px Bar + 20px Gap */
+    padding: 0 20px !important;
+    max-width: 1600px !important;
+    width: 98% !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
   .panel.active { display: block !important; }
 
-  /* 4. MAINTAIN CARD SIZE (2 Columns) */
+  /* 5. RESTORE 2-COLUMN DASHBOARD BOXES */
   .metrics, .grid-2 {
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: row !important; 
     gap: 20px !important;
     width: 100% !important;
   }
