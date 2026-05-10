@@ -1716,54 +1716,52 @@ html {
   }
 /* 8 Calendar Styling */
    
- /* 1. Force the calendar panel to take up the whole screen height minus topbar */
+  /* 1. The Main Panel: Ensure it has a defined height to grow into */
   #panel-calendar.active {
     display: flex !important;
     flex-direction: column !important;
-    height: calc(100vh - 100px) !important; /* Forces panel to bottom of monitor */
-    margin-top: 80px !important;
-    margin-bottom: 0 !important;
+    /* Pushes the bottom of the tab all the way to the screen edge */
+    height: calc(100vh - 180px) !important; 
+    margin-top: 20px !important;
   }
 
-  /* 2. Force the white card to fill the entire panel */
+  /* 2. THE FIX: Force the white card to stretch to the bottom */
   #panel-calendar.active .card {
+    flex: 1 !important;             /* Takes up all remaining vertical space */
     display: flex !important;
     flex-direction: column !important;
-    flex: 1 !important;             /* This is what stretches the white card */
-    height: 100% !important;        /* Fallback for older browsers */
-    margin: 0 auto 10px auto !important; /* 10px gap at the very bottom */
+    height: 100% !important;
     width: 98% !important;
-    max-width: 100% !important;
-    padding: 15px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin: 0 auto !important;
+    padding: 20px !important;
+    background: #ffffff !important;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   }
 
-  /* 3. Keep the Month Header (May 2026) and Labels (Sun-Sat) at their normal height */
-  #cal-header, .cal-day-labels {
-    flex-shrink: 0 !important; 
-  }
-
-  /* 4. THE CORE FIX: Force the day grid to fill all remaining vertical space in the card */
+  /* 3. The Grid Container: Tell it to fill the now-stretched card */
   #cal-days {
+    flex: 1 !important;             /* Stretches the grid inside the card */
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    /* Divide the remaining card height equally among the number of weeks */
+    /* Divide the height of the card equally by the number of weeks */
     grid-template-rows: repeat(auto-fit, minmax(0, 1fr)) !important;
-    flex: 1 !important;           /* This stretches the grid to the bottom of the card */
-    height: 100% !important;
-    border-bottom: 1px solid #eee;
+    gap: 0 !important;
+    border: 1px solid #eee;
   }
 
-  /* 5. Individual Day Boxes: Stretch to fill the new big grid cells */
+  /* 4. Individual Day Cells */
   .cal-day {
     height: 100% !important;
-    display: flex;
-    flex-direction: column;
-    padding: 8px !important;
-    border: 1px solid #eee;
+    width: 100% !important;
+    border: 1px solid #f0f0f0;
+    padding: 10px !important;
     background: white;
-    font-size: 14px;
-    color: #333 !important;
+  }
+
+  /* Keep headers from squishing */
+  .cal-day-labels, #cal-header {
+    flex-shrink: 0 !important;
   }
 }
 /* -------end of pc block ----------*/
