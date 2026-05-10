@@ -815,15 +815,7 @@ button[onclick="saveInvoice()"] {
 
 
 
-/* The right side buttons */
-.topbar-right {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  gap: 6px !important;
-  align-items: center !important;
-  flex-shrink: 0 !important; /* Prevents these buttons from disappearing */
-}
+/
 
 /* Search bar width adjustment */
 #global-search {
