@@ -39,12 +39,12 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR ROW */
+  /* 1. MASTER ROW */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
-    flex-wrap: nowrap !important;         /* PREVENT DROPPING TO NEW LINES */
-    align-items: center !important;      /* CENTER ALL VERTICALLY */
+    flex-direction: row !important;      /* Forces horizontal line */
+    flex-wrap: nowrap !important;         /* Prevents any wrapping */
+    align-items: center !important;      /* Centers all items vertically */
     justify-content: flex-start !important; 
     height: 60px !important;
     padding: 0 20px !important;
@@ -54,33 +54,35 @@ button[onclick="saveInvoice()"] {
     z-index: 10000 !important;
   }
 
-  /* 2. FORCE LOGO AND SEARCH TO BE PART OF THE ROW */
+  /* 2. LOGO (Lock width) */
   .logo { 
-    display: inline-block !important;    /* Force it to be a tiny piece of the row */
     width: auto !important; 
-    margin: 0 15px 0 0 !important; 
-    flex-shrink: 0 !important;           /* Stop it from disappearing */
+    margin-right: 20px !important; 
+    flex: 0 0 auto !important;           /* Do not grow, do not shrink */
     font-size: 14px;
     font-weight: bold;
     white-space: nowrap !important;
   }
 
-  .pc-only-search { 
-    display: flex !important;            /* Force it to be a piece of the row */
+  /* 3. SEARCH BAR (Lock width - stops the stretching) */
+  #pc-search-wrap { 
+    display: flex !important;
     align-items: center !important;
-    width: 180px !important;             /* Locked width */
-    margin: 0 15px 0 0 !important; 
-    flex-shrink: 0 !important;
+    width: 180px !important;             /* STOPS THE STRETCH */
+    flex: 0 0 180px !important;          /* STOPS THE STRETCH */
+    margin-right: 20px !important; 
+    position: relative !important;
   }
 
-  /* 3. NAVIGATION (The Middle Section) */
+  /* 4. NAVIGATION (The Spreader) */
   #main-nav {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     gap: 5px !important;
-    flex: 1 !important;                  /* Sucks up space to push buttons to right */
+    flex: 1 1 auto !important;           /* This fills the middle space */
     overflow: hidden !important;
+    margin: 0 !important;
   }
 
   .nav-btn {
@@ -90,21 +92,21 @@ button[onclick="saveInvoice()"] {
     white-space: nowrap !important;
   }
 
-  /* 4. ACTION BUTTONS (Pinned to Far Right) */
+  /* 5. TOPBAR RIGHT (Pinned to far right - NO STRETCH) */
   .topbar-right {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    width: auto !important;
-    flex-shrink: 0 !important;
-    margin-left: auto !important;        /* THE "SPRING" THAT PUSHES THEM TO THE EDGE */
+    width: auto !important;              /* STOPS THE BACKGROUND STRETCH */
+    flex: 0 0 auto !important;           /* Do not grow */
+    margin-left: auto !important;        /* Pushes to far right edge */
     gap: 8px !important;
   }
 
-  /* 5. CONTENT SPACING (Keep your correct card sizes) */
+  /* 6. CONTENT POSITION (Keep your correct grid sizes) */
   .panel {
     display: none;
-    margin-top: 80px !important;         /* Gap below the fixed 60px bar */
+    margin-top: 80px !important;         /* Space below the 60px bar */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
@@ -112,11 +114,12 @@ button[onclick="saveInvoice()"] {
   }
   .panel.active { display: block !important; }
 
-  /* Grids (Keep your 2-column boxes) */
+  /* Metrics Grids (Keep your 2-column boxes) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
+    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
