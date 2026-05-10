@@ -1701,44 +1701,57 @@ html {
   /* Standard Panels stay as Blocks */
   .panel.active { display: block !important; }
 
- /* 3. --- THE CALENDAR POWER FIX --- */
-  /* This forces the calendar to be a Flexbox and hit the bottom of the monitor */
+ //* 3. --- THE CALENDAR POWER FIX --- */
+  /* This forces the calendar panel to fill the monitor height from the topbar down */
   body #panel-calendar.active {
     display: flex !important; 
     flex-direction: column !important;
-    height: calc(100vh - 100px) !important; /* Dynamic height calculation */
+    /* Calculated as: Full Height - Topbar Height - Top Buttons Height */
+    height: calc(100vh - 80px) !important; 
     overflow: hidden !important;
+    padding-bottom: 10px !important; /* Tiny gap at the very bottom of the monitor */
   }
 
-  /* Force the white card to stretch to the floor */
+  /* Force the white card to stretch and fill the space */
   #panel-calendar.active .card {
-    flex: 1 !important;             /* Claim all available vertical space */
     display: flex !important;
     flex-direction: column !important;
+    flex: 1 !important;             
     height: 100% !important;
+    min-height: calc(100vh - 160px) !important; /* FORCES the card to the bottom */
     background: #f8f9fa !important;
     border-radius: 12px;
-    padding: 20px !important;
-    margin-bottom: 10px !important;
+    padding: 15px !important;
+    margin: 0 auto !important;
+    width: 98% !important;
   }
 
-  /* Force the grid of days to fill the bottom of the card */
+  /* Ensure the grid area takes up every pixel of the now-stretched card */
   #cal-days {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    /* Divide rows equally: 4, 5, or 6 weeks will always hit the bottom */
+    /* Divide the rows: 1fr makes each week perfectly tall to fill the card */
     grid-template-rows: repeat(auto-fit, minmax(0, 1fr)) !important;
     flex: 1 !important; 
     height: 100% !important;
+    border: 1px solid #ddd;
+    background: white;
   }
 
+  /* Make individual date boxes fill the tall grid cells */
   .cal-day {
     height: 100% !important;
-    border: 1px solid #eee !important;
-    display: flex;
-    flex-direction: column;
-    padding: 5px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border: 1px solid #f0f0f0 !important;
+    padding: 8px !important;
     color: #333 !important;
+  }
+
+  /* Prevent headers from shrinking */
+  #cal-header, .cal-day-labels {
+    flex-shrink: 0 !important;
+    margin-bottom: 5px !important;
   }
 
   /* 4. Restore Dashboard Grid (2 Columns) */
