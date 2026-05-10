@@ -1815,18 +1815,14 @@ html {
    1. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  html, body {
-    background-color: #1a1a1a !important; /* PC Grey/Black */
-    height: 100vh;
-    overflow: hidden; /* PC uses internal scrollbars usually */
-  }
-
-  /* TOPBAR: Horizontal Row */
+  /* FORCE ONE ROW */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: row !important; /* Forces horizontal */
+    flex-wrap: nowrap !important;    /* Prevents jumping to new lines */
     align-items: center !important;
-    height: 60px !important;
+    justify-content: flex-start !important; /* Starts from the left */
+    height: 65px !important;
     padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
@@ -1834,45 +1830,45 @@ html {
     z-index: 9999;
   }
 
-  .topbar-spacer { height: 60px !important; }
-  .topbar-right { margin-left: auto !important; display: flex; gap: 8px; }
+  /* LOGO: Left aligned on PC */
+  .logo {
+    width: auto !important;
+    text-align: left !important;
+    margin-right: 20px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
 
-  /* DASHBOARD: Grid/Row Layout */
-  .metrics {
+  /* SEARCH: Beside the logo */
+  .pc-only-search {
+    display: block !important;
+    width: 220px !important;
+    margin-right: 15px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* NAVIGATION: Horizontal in the middle */
+  #main-nav {
     display: flex !important;
-    flex-direction: row !important; /* Force side-by-side */
-    gap: 20px !important;
-  }
-  .metric-card { flex: 1 !important; }
-
-  .grid-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important; /* Force 2 columns */
-    gap: 20px !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    margin-right: auto !important; /* Pushes the buttons to the far right */
+    overflow: visible !important;
   }
 
-  /* MODALS: Contained on PC */
-  .modal {
-    max-height: 85vh !important;
-    max-width: 600px; /* Standard modal width */
-    overflow-y: auto !important;
+  /* ACTION BUTTONS: Far right */
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    margin-left: 20px !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
   }
 
-  /* ZERK MAP: Side-by-Side */
-  .modal-zerk-wide {
-    max-width: 1300px !important;
-    width: 95% !important;
-  }
-  .zerk-main-layout {
-    display: grid !important;
-    grid-template-columns: 1fr 320px !important; 
-    gap: 25px !important;
-  }
-  #zerk-sidebar-container {
-    max-height: 70vh !important;
-    overflow-y: auto !important;
-    background: #f8f9fa !important;
-    color: black !important;
+  /* RESET SPACER FOR PC */
+  .topbar-spacer {
+    height: 65px !important;
   }
 }
 
