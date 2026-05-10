@@ -39,87 +39,89 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER ROW */
+  /* 1. FORCE THE MASTER BOX TO BE ONE FLAT ROW */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* Forces horizontal line */
-    flex-wrap: nowrap !important;         /* Prevents any wrapping */
-    align-items: center !important;      /* Centers all items vertically */
+    flex-direction: row !important;      /* FORCE HORIZONTAL */
+    flex-wrap: nowrap !important;         /* PREVENT STACKING */
+    align-items: center !important;      /* VERTICAL CENTER */
     justify-content: flex-start !important; 
     height: 60px !important;
-    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
+    width: 100% !important;
     background: #000 !important;
     z-index: 10000 !important;
+    padding: 0 20px !important;
   }
 
-  /* 2. LOGO (Lock width) */
+  /* 2. ALIGN ALL CHILDREN IN A LINE */
+  .logo, #pc-search-wrap, #main-nav, .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important; /* Stop them from squishing */
+  }
+
+  /* 3. SET INDIVIDUAL WIDTHS */
   .logo { 
     width: auto !important; 
     margin-right: 20px !important; 
-    flex: 0 0 auto !important;           /* Do not grow, do not shrink */
-    font-size: 14px;
     font-weight: bold;
-    white-space: nowrap !important;
   }
 
-  /* 3. SEARCH BAR (Lock width - stops the stretching) */
   #pc-search-wrap { 
-    display: flex !important;
-    align-items: center !important;
-    width: 180px !important;             /* STOPS THE STRETCH */
-    flex: 0 0 180px !important;          /* STOPS THE STRETCH */
-    margin-right: 20px !important; 
+    width: 200px !important;             /* Locked width for search area */
+    margin-right: 20px !important;
     position: relative !important;
   }
 
-  /* 4. NAVIGATION (The Spreader) */
-  #main-nav {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 5px !important;
-    flex: 1 1 auto !important;           /* This fills the middle space */
-    overflow: hidden !important;
-    margin: 0 !important;
+  #global-search {
+    width: 100% !important;
+    height: 30px !important;
+    background: rgba(255,255,255,0.1) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 6px !important;
+    color: white !important;
+  }
+
+  /* 4. NAVIGATION (The Spreader - fills the empty space) */
+  #main-nav { 
+    flex: 1 !important;                  /* Sucks up the middle gap */
+    gap: 8px !important;
+    justify-content: flex-start !important;
   }
 
   .nav-btn {
-    flex: 0 0 auto !important;
-    padding: 4px 8px !important;
-    font-size: 12px !important;
     white-space: nowrap !important;
+    font-size: 13px !important;
+    padding: 5px 10px !important;
   }
 
-  /* 5. TOPBAR RIGHT (Pinned to far right - NO STRETCH) */
-  .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    width: auto !important;              /* STOPS THE BACKGROUND STRETCH */
-    flex: 0 0 auto !important;           /* Do not grow */
-    margin-left: auto !important;        /* Pushes to far right edge */
+  /* 5. TOPBAR RIGHT (Action buttons - Pinned to far right) */
+  .topbar-right { 
+    margin-left: auto !important;        /* THE "SPRING" that pushes it to the edge */
     gap: 8px !important;
   }
 
-  /* 6. CONTENT POSITION (Keep your correct grid sizes) */
+  /* 6. FIX THE PANEL OVERLAP */
   .panel {
     display: none;
-    margin-top: 80px !important;         /* Space below the 60px bar */
+    margin-top: 85px !important;         /* Gap below the 60px bar */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
+    padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* Metrics Grids (Keep your 2-column boxes) */
+  /* RESTORE THE BOX SHAPE OF DASHBOARD CARDS */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
-    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
