@@ -552,169 +552,7 @@ body.dark-mode .modal {
     background: #ffffff !important;
     z-index: 200 !important;
 }
-/* ============================================================
-   2. MOBILE OVERRIDES (max-width: 768px)
-   ============================================================ */
-@media screen and (max-width: 768px) {
-  
-  /* 1. VIEWPORT & BACKGROUND */
-  html, body {
-    height: auto !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    background-color: #001f3f !important;
-  }
 
-  /* 2. FIXED STACKED TOPBAR & LOGO */
-  .topbar {
-    display: flex !important;
-    flex-direction: column !important;
-    position: fixed !important;
-    top: 0; left: 0; right: 0;
-    z-index: 9999;
-    background: #111 !important;
-    padding-top: 8px !important;
-  }
-  .logo {
-    width: 100% !important;
-    text-align: center !important;
-    padding: 10px 0 !important;
-    font-size: 16px !important;
-    display: block !important;
-  }
-  .pc-only-search { display: none !important; }
-
-  /* 3. HORIZONTAL SWIPE (NAV & ACTIONS) */
-  #main-nav, .topbar-right {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    padding: 6px 12px !important;
-    gap: 12px !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  .nav-btn, .topbar-right .btn, #user-profile-trigger {
-    flex: 0 0 auto !important;
-    white-space: nowrap !important;
-    font-size: 12px !important;
-  }
-
-  /* 4. DYNAMIC VERTICAL SPACING */
-  .panel {
-    padding: 10px !important;
-    margin-top: var(--topbar-h, 135px) !important; 
-    height: auto !important;
-  }
-
-  /* 5. MODAL TABS FIX & CONTENT STRETCH */
-  #detail-modal .modal-body,
-  #equip-detail-modal .modal-body,
-  .modal-content > div[style*="display: flex"] {
-      display: flex !important;
-      flex-direction: column !important; 
-      height: auto !important; /* Allow body to grow */
-  }
-
-  .tab-sidebar,
-  .modal div[style*="width: 150px"],
-  .modal div[style*="width: 200px"] {
-      width: 100% !important;
-      display: flex !important;
-      flex-direction: row !important;
-      overflow-x: auto !important;
-      white-space: nowrap !important;
-      gap: 10px !important;
-      padding: 10px !important;
-      border-right: none !important;
-      border-bottom: 1px solid #eee;
-      -webkit-overflow-scrolling: touch;
-  }
-
-  /* Force the content area to grow vertically */
-  .tab-content, .content-area {
-      width: 100% !important;
-      height: auto !important;
-      overflow: visible !important; 
-      padding: 15px 5px !important;
-  }
-
-  /* 6. ZERK MAP MOBILE FIXES */
-  .zerk-main-layout {
-      display: flex !important;
-      flex-direction: column !important;
-      height: auto !important;
-  }
-  #zerk-map-container {
-      width: 100% !important;
-      max-height: 45vh !important;
-  }
-  #zerk-sidebar-container {
-      width: 100% !important;
-      height: auto !important; /* Stretch table with rows */
-      max-height: none !important; 
-  }
-
-  /* 7. FORM & GRID STACKING */
-  .form-grid, .grid-2, .form-row, .row, .metrics {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    height: auto !important;
-  }
-  .metric-card, .card { 
-      width: 100% !important; 
-      height: auto !important; 
-      box-sizing: border-box !important; 
-  }
-
-  /* 8. MODAL AUTO-STRETCH & BACKDROP SCROLL */
-  .modal-backdrop {
-    display: none; 
-    align-items: flex-start !important; 
-    padding: 15px 10px !important;
-    overflow-y: auto !important; /* Scroll the whole screen if card is long */
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .modal-backdrop[style*="display: block"], 
-  .modal-backdrop[style*="display: flex"] {
-      display: flex !important;
-  }
-
-  .modal {
-      width: 100% !important;
-      height: auto !important;     /* CRITICAL: No fixed height */
-      max-height: none !important; /* CRITICAL: Allow infinite growth */
-      margin: 0 auto 50px auto !important; /* Extra bottom margin so buttons aren't on edge */
-      position: relative !important;
-      top: 0 !important;
-      transform: none !important;
-      overflow: visible !important; /* Let children stretch it */
-  }
-
-  /* 9. MOBILE CHAT VIEWPORT LOCK (Kept separate as it shouldn't stretch) */
-  #panel-chat.active {
-    position: fixed !important;
-    top: var(--topbar-h, 135px) !important;
-    bottom: 0 !important;
-    height: calc(100dvh - var(--topbar-h, 135px)) !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-}
-@media screen and (min-width: 769px) {
-    .metrics {
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 20px !important;
-    }
-
-    .grid-2 {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 20px !important;
-    }
-}
     
 #chat-sidebar {
     width: 240px !important;
@@ -1280,57 +1118,6 @@ body, html {
   font-weight: 700;
 }
 
-/* ============================================================
-   2. PC OVERRIDES (769px and LARGER)
-   This block "talks over" the mobile styles when on PC.
-   ============================================================ */
-@media screen and (min-width: 769px) {
-  html, body {
-    background-color: #1a1a1a !important; /* Dark Gray/Black for PC */
-  }
-
-  .topbar {
-    flex-direction: row !important; /* Horizontal bar on PC */
-    height: 60px !important;
-    padding: 0 20px !important;
-    overflow: visible !important;
-  }
-
-  .topbar-main-row, #main-nav, .topbar-right {
-    overflow: visible !important; /* No swiping on PC */
-    width: auto !important;
-    padding: 0 !important;
-  }
-
-  .topbar-right {
-    margin-left: auto !important; /* Push to right side */
-  }
-
-  /* Form/Grid Overrides for PC */
-  .form-row, .grid, .flex {
-    flex-direction: row !important; /* Side-by-side on PC */
-    gap: 15px !important;
-  }
-
- #panel-calendar .card, #cal-grid-container .card {
-    max-width: 100% !important;
-    width: 98% !important;
-    margin: 0 auto 30px auto !important; /* Added 30px bottom margin */
-    
-    min-height: auto !important;
-    height: auto !important; 
-    
-    /* ADD THIS: Ensures the white card doesn't cut off the last row */
-    padding-bottom: 40px !important; 
-    overflow: visible !important;
-  }
-
-  /* SHRINK CELLS: Changed from 120px to 100px */
-  #cal-days .cal-day {
-    min-height: 100px !important; 
-    padding: 5px !important;
-  }
-}
 /* ============================================================
    3. SHARED COMPONENTS (Dots & Buttons)
    ============================================================ */
@@ -2024,3 +1811,191 @@ html {
 .dot-lunch     { background-color: #007bff; }
 .dot-shop      { background-color: #6c757d; }
   
+/* ============================================================
+   1. PC OVERRIDES (769px and LARGER)
+   ============================================================ */
+@media screen and (min-width: 769px) {
+  html, body {
+    background-color: #1a1a1a !important;
+  }
+
+  /* Force the PC modal to contain its content and scroll internally */
+  .modal {
+    max-height: 90vh !important; 
+    overflow-y: auto !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* PC Topbar */
+  .topbar {
+    flex-direction: row !important;
+    height: 60px !important;
+    padding: 0 20px !important;
+    overflow: visible !important;
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+  }
+
+  .topbar-main-row, #main-nav, .topbar-right {
+    overflow: visible !important;
+    width: auto !important;
+    padding: 0 !important;
+  }
+
+  .topbar-right { margin-left: auto !important; }
+
+  /* PC Layout Grids */
+  .form-row, .grid, .flex, .metrics {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 20px !important;
+  }
+
+  .grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* PC Zerk Map Layout (Side-by-Side) */
+  .zerk-main-layout {
+    display: grid !important;
+    grid-template-columns: 1fr 320px !important; /* Fixed width sidebar for PC */
+    gap: 25px !important;
+    align-items: flex-start !important;
+  }
+
+  #zerk-sidebar-container {
+    background: #f8f9fa !important;
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    max-height: 75vh !important; /* Contain it */
+    overflow-y: auto !important;
+  }
+
+  /* PC Calendar Fix */
+  #panel-calendar .card, #cal-grid-container .card {
+    max-width: 100% !important;
+    width: 98% !important;
+    margin: 0 auto 30px auto !important;
+    min-height: auto !important;
+    height: auto !important; 
+    padding-bottom: 40px !important; 
+    overflow: visible !important;
+  }
+
+  #cal-days .cal-day {
+    min-height: 100px !important; 
+    padding: 5px !important;
+  }
+}
+
+/* ============================================================
+   2. MOBILE ONLY (max-width: 768px)
+   ============================================================ */
+@media screen and (max-width: 768px) {
+  
+  html, body {
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background-color: #001f3f !important;
+  }
+
+  .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    background: #111 !important;
+    padding-top: 8px !important;
+  }
+
+  .logo {
+    width: 100% !important;
+    text-align: center !important;
+    padding: 10px 0 !important;
+    font-size: 16px !important;
+    display: block !important;
+  }
+
+  #main-nav, .topbar-right {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 6px 12px !important;
+    gap: 12px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-btn, .topbar-right .btn, #user-profile-trigger {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+  }
+
+  .panel {
+    padding: 10px !important;
+    margin-top: var(--topbar-h, 135px) !important; 
+    height: auto !important;
+  }
+
+  /* Mobile Modal Stretch logic */
+  .modal {
+      width: 98% !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      margin: 0 auto 50px auto !important;
+  }
+
+  /* Mobile Tab Sidebar to Horizontal Scroll */
+  .modal-header + div {
+      display: flex !important;
+      flex-direction: row !important;
+      overflow-x: auto !important;
+      white-space: nowrap !important;
+      gap: 10px !important;
+      -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile Zerk Map Stacking */
+  .zerk-main-layout {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 15px !important;
+  }
+
+  #zerk-sidebar-container {
+      width: 100% !important;
+      height: auto !important;
+      max-height: none !important;
+      padding: 10px !important;
+  }
+
+  /* Mobile Form & Dashboard Stacking */
+  .form-grid, .grid-2, .form-row, .row, .metrics {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .metric-card, .card { width: 100% !important; }
+
+  /* Mobile Chat specific viewport */
+  #panel-chat.active {
+    position: fixed !important;
+    top: var(--topbar-h, 135px) !important;
+    bottom: 0 !important;
+    height: calc(100dvh - var(--topbar-h, 135px)) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 10px !important;
+  }
+}
