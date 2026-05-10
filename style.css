@@ -575,7 +575,6 @@ body.dark-mode .modal {
     background: #111 !important;
     padding-top: 8px !important;
   }
-
   .logo {
     width: 100% !important;
     text-align: center !important;
@@ -610,29 +609,40 @@ body.dark-mode .modal {
   }
 
   /* 5. MODAL TABS FIX (Move from side to TOP) */
-  /* This targets the tabs in your 'test' equipment card */
-  #detail-modal .modal-header + div, 
-  #equip-detail-modal .modal-header + div,
-  .tab-container { 
+  /* Targets the container that holds the sidebar and content area */
+  #detail-modal .modal-body,
+  #equip-detail-modal .modal-body,
+  .modal-content > div[style*="display: flex"] {
+      flex-direction: column !important; /* Stack sidebar on top of content */
+  }
+
+  /* Targets the sidebar itself and turns it into a horizontal scroll */
+  .tab-sidebar,
+  .modal div[style*="width: 150px"],
+  .modal div[style*="width: 200px"] {
+      width: 100% !important;
+      min-width: 100% !important;
       display: flex !important;
-      flex-direction: row !important; /* Force horizontal instead of vertical */
+      flex-direction: row !important; /* Horizontal tabs */
       overflow-x: auto !important;
       white-space: nowrap !important;
       gap: 10px !important;
-      padding: 10px 5px !important;
-      -webkit-overflow-scrolling: touch;
+      padding: 10px !important;
+      border-right: none !important;
       border-bottom: 1px solid #eee;
+      -webkit-overflow-scrolling: touch;
   }
+
   .tab, .nav-link { 
       flex: 0 0 auto !important; 
-      padding: 6px 12px !important;
+      padding: 8px 15px !important;
       font-size: 13px !important;
   }
 
   /* 6. ZERK MAP MOBILE FIXES */
   .zerk-main-layout {
       display: flex !important;
-      flex-direction: column !important; /* Stack map above instructions */
+      flex-direction: column !important;
       gap: 15px !important;
   }
   #zerk-map-container {
@@ -651,11 +661,6 @@ body.dark-mode .modal {
       max-height: 350px !important;
       padding: 10px !important;
   }
-  #zerk-view-switcher > div {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      gap: 12px !important;
-  }
 
   /* 7. FORM & GRID STACKING */
   .form-grid, .grid-2, .form-row, .row, .metrics {
@@ -664,7 +669,7 @@ body.dark-mode .modal {
     width: 100% !important;
     gap: 12px !important;
   }
-  .metric-card, .card { width: 100% !important; }
+  .metric-card, .card { width: 100% !important; box-sizing: border-box !important; }
 
   input, select, textarea {
     width: 100% !important;
@@ -674,13 +679,24 @@ body.dark-mode .modal {
 
   /* 8. MODAL SCROLLING & OVERLAY */
   .modal-backdrop {
-    align-items: flex-start !important;
-    padding: 15px 10px !important;
+    align-items: flex-start !important; /* Forces content to start at top for scrolling */
+    padding: 10px !important;
     overflow-y: auto !important;
+    display: none; /* JS will toggle this */
   }
+  
+  /* Fix to allow modals to be flex when JS sets them to block */
+  .modal-backdrop[style*="display: block"], 
+  .modal-backdrop[style*="display: flex"] {
+      display: flex !important;
+  }
+
   .modal {
-      width: 98% !important;
-      margin-bottom: 40px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 auto 50px auto !important;
+      top: 0 !important;
+      transform: none !important;
   }
 
   /* 9. MOBILE CHAT VIEWPORT LOCK */
@@ -701,12 +717,6 @@ body.dark-mode .modal {
     flex: 1 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-  }
-  .chat-input-wrap {
-    flex-shrink: 0 !important;
-    background: #111;
-    padding: 10px;
-    border-radius: 10px 10px 0 0;
   }
 }
 @media screen and (min-width: 769px) {
