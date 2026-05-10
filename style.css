@@ -39,64 +39,71 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR: One thin horizontal row */
+  /* 1. MASTER TOPBAR: Force everything into one solid horizontal line */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
-    flex-wrap: nowrap !important;         /* PREVENT STACKING */
-    align-items: center !important;      /* VERTICAL CENTER ALL */
-    justify-content: space-between !important; 
+    flex-direction: row !important;      /* Forces horizontal */
+    flex-wrap: nowrap !important;         /* Prevents any wrapping */
+    align-items: center !important;      /* Vertical center */
+    justify-content: flex-start !important; /* Starts all content from the left */
     height: 60px !important;
-    padding: 0 15px !important;
+    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
   }
 
-  /* 2. THE MAGIC FIX: Force every child of Topbar to be a horizontal piece */
-  .topbar > div, 
-  .topbar > nav, 
-  .topbar > span,
-  #pc-search-wrap,
-  .topbar-right {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    width: auto !important;              /* Stop them from taking full width */
-    flex-shrink: 0 !important;           /* Stop them from vanishing */
-    margin: 0 !important;
+  /* 2. FORCE LOGO AND SEARCH TO THE LEFT (Fixes the centering bug) */
+  .logo { 
+    width: auto !important; 
+    margin: 0 20px 0 0 !important; 
     padding: 0 !important;
+    text-align: left !important;         /* FORCES TEXT TO LEFT */
+    flex-shrink: 0 !important;
+    font-size: 15px;
+    font-weight: bold;
+    display: block !important;
   }
 
- 
+  #pc-search-wrap, .pc-only-search { 
+    display: flex !important;            /* Force search to be a row piece */
+    align-items: center !important;
+    width: 200px !important;             /* Locked width */
+    margin: 0 20px 0 0 !important; 
+    flex-shrink: 0 !important;
+    justify-content: flex-start !important; /* Forces input to the left */
+  }
 
-  /* 4. NAVIGATION (Takes up all middle space) */
+  /* 3. NAVIGATION (The Middle) */
   #main-nav { 
-    flex: 1 !important;                  /* Fills the gap */
-    display: flex !important;
+    display: flex !important; 
     flex-direction: row !important;
+    flex: 1 !important;                  /* Fills the gap to push buttons right */
+    gap: 8px !important;
     justify-content: flex-start !important;
-    gap: 4px !important;
-    overflow: hidden !important;
+    margin: 0 !important;
   }
 
   .nav-btn {
     white-space: nowrap !important;
     font-size: 12px !important;
-    padding: 4px 8px !important;
+    padding: 5px 10px !important;
   }
 
-  /* 5. TOPBAR RIGHT (PDF, Profile, etc.) */
+  /* 4. ACTION BUTTONS (Pinned to the far right) */
   .topbar-right { 
-    margin-left: 15px !important;
-    gap: 6px !important;
+    display: flex !important; 
+    flex-direction: row !important;
+    margin-left: auto !important;        /* The "Magnet" pushing it to the edge */
+    gap: 8px !important;
+    flex-shrink: 0 !important;
   }
 
-  /* 6. PUSH CARDS DOWN (Since Bar is 60px) */
+  /* 5. FIX THE GAP: Moves the content down below the 60px bar */
   .panel {
     display: none;
-    margin-top: 75px !important;         /* 15px gap below bar */
+    margin-top: 80px !important;         /* 60px bar + 20px gap */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
@@ -104,12 +111,11 @@ button[onclick="saveInvoice()"] {
   }
   .panel.active { display: block !important; }
 
-  /* 7. RESTORE CORRECT CARD SIZES (2 Columns) */
+  /* RESTORE DASHBOARD GRID (Keeps your cards the correct size) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
-    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
