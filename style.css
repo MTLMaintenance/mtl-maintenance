@@ -39,13 +39,13 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR: Force everything into one solid horizontal line */
+  /* 1. MASTER TOPBAR: One solid horizontal row */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* Forces horizontal */
-    flex-wrap: nowrap !important;         /* Prevents any wrapping */
-    align-items: center !important;      /* Vertical center */
-    justify-content: flex-start !important; /* Starts all content from the left */
+    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
+    flex-wrap: nowrap !important;         /* STOP WRAPPING */
+    align-items: center !important;      /* VERTICAL CENTER */
+    justify-content: flex-start !important; /* Start drawing from the left */
     height: 60px !important;
     padding: 0 20px !important;
     position: fixed !important;
@@ -54,64 +54,68 @@ button[onclick="saveInvoice()"] {
     z-index: 10000 !important;
   }
 
-  /* 2. FORCE LOGO AND SEARCH TO THE LEFT (Fixes the centering bug) */
+  /* 2. LOGO: Pinned to the Left */
   .logo { 
     width: auto !important; 
     margin: 0 20px 0 0 !important; 
     padding: 0 !important;
-    text-align: left !important;         /* FORCES TEXT TO LEFT */
+    text-align: left !important;
     flex-shrink: 0 !important;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
-    display: block !important;
+    color: white;
   }
 
+  /* 3. SEARCH BAR: Next to the Logo on the Left */
   #pc-search-wrap, .pc-only-search { 
-    display: flex !important;            /* Force search to be a row piece */
+    display: flex !important;
     align-items: center !important;
     width: 200px !important;             /* Locked width */
-    margin: 0 20px 0 0 !important; 
+    margin: 0 !important; 
     flex-shrink: 0 !important;
-    justify-content: flex-start !important; /* Forces input to the left */
   }
 
-  /* 3. NAVIGATION (The Middle) */
+  #global-search {
+    width: 100% !important;
+    height: 30px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    color: white !important;
+    padding-left: 10px !important;
+  }
+
+  /* 4. NAVIGATION (Middle) */
   #main-nav { 
     display: flex !important; 
     flex-direction: row !important;
-    flex: 1 !important;                  /* Fills the gap to push buttons right */
     gap: 8px !important;
-    justify-content: flex-start !important;
-    margin: 0 !important;
+    margin-left: 20px !important; /* Gap after search bar */
   }
 
-  .nav-btn {
-    white-space: nowrap !important;
-    font-size: 12px !important;
-    padding: 5px 10px !important;
-  }
-
-  /* 4. ACTION BUTTONS (Pinned to the far right) */
+  /* 5. ACTION BUTTONS: Pinned to the far RIGHT edge */
   .topbar-right { 
     display: flex !important; 
     flex-direction: row !important;
-    margin-left: auto !important;        /* The "Magnet" pushing it to the edge */
     gap: 8px !important;
+    /* THIS IS THE FIX: Pushes the box all the way to the right side */
+    margin-left: auto !important; 
     flex-shrink: 0 !important;
   }
 
-  /* 5. FIX THE GAP: Moves the content down below the 60px bar */
+  /* 6. CONTENT SPACING: Pushes cards below the bar */
   .panel {
     display: none;
-    margin-top: 80px !important;         /* 60px bar + 20px gap */
+    margin-top: 80px !important; /* 60px bar + 20px gap */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
+    padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* RESTORE DASHBOARD GRID (Keeps your cards the correct size) */
+  /* RESTORE DASHBOARD GRID (Keeps cards correct size) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
