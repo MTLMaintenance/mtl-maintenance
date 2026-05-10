@@ -1,64 +1,86 @@
 /* ============================================================
    1. PC LAYOUT (Global / Default)
    ============================================================ */
-:root {
-  --accent: #3b82f6;
-  --bg: #1a1a1a; /* Professional PC Dark Grey */
-  --border: rgba(255,255,255,0.1);
+@media screen and (min-width: 769px) {
+  html, body {
+    background-color: #1a1a1a !important; /* Professional Dark Grey */
+  }
+
+  /* FORCE THE TOPBAR INTO ONE HORIZONTAL LINE */
+  .topbar {
+    display: flex !important;
+    flex-direction: row !important; /* Horizontal row */
+    flex-wrap: nowrap !important;    /* DO NOT WRAP to new lines */
+    align-items: center !important;
+    justify-content: space-between !important; /* Logo far left, Buttons far right */
+    height: 60px !important;
+    padding: 0 20px !important;
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    background: #111 !important;
+    z-index: 9999;
+  }
+
+  /* Distribute items across the one row */
+  .logo { 
+    width: auto !important; 
+    margin: 0 !important; 
+    flex-shrink: 0 !important; 
+  }
+
+  .pc-only-search { 
+    display: block !important; 
+    width: 180px !important; 
+    margin: 0 15px !important; 
+    flex-shrink: 0 !important;
+  }
+
+  #main-nav { 
+    display: flex !important; 
+    flex-direction: row !important; 
+    justify-content: center !important;
+    gap: 5px !important;
+    flex: 1 !important; /* Takes up all middle space */
+    margin: 0 !important;
+  }
+
+  .topbar-right { 
+    display: flex !important; 
+    flex-direction: row !important; 
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    margin-left: 10px !important;
+  }
+
+  /* SPACER: Matches the 60px topbar exactly */
+  .topbar-spacer {
+    height: 60px !important;
+    display: block !important;
+  }
+
+  /* PANELS: Sit directly under the spacer */
+  .panel {
+    display: none;
+    max-width: 1600px;
+    margin: 15px auto 0 auto !important; /* 15px gap below the topbar */
+    padding: 0 20px !important;
+  }
+  .panel.active { display: block !important; }
+
+  /* DASHBOARD GRIDS: 2-column layout */
+  .metrics, .grid-2 {
+    display: flex !important;
+    flex-direction: row !important; 
+    gap: 20px !important;
+    width: 100% !important;
+  }
+  .metric-card, .card {
+    flex: 1 !important;
+    background: #f8f9fa;
+    color: #333;
+    border-radius: 12px;
+  }
 }
-
-*, *::before, *::after { box-sizing: border-box; }
-
-html, body {
-  margin: 0; padding: 0;
-  background-color: var(--bg) !important;
-  color: white;
-  font-family: -apple-system, sans-serif;
-  width: 100%;
-}
-
-/* TOPBAR PC: Forced into one single horizontal row */
-.topbar {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  height: 60px !important;
-  padding: 0 20px !important;
-  position: fixed !important;
-  top: 0; left: 0; right: 0;
-  background: #111 !important;
-  z-index: 9999;
-}
-
-/* Align Topbar Elements side-by-side */
-.logo { width: auto !important; margin-right: 15px !important; flex-shrink: 0 !important; cursor: pointer; }
-.pc-only-search { display: block !important; width: 200px !important; flex-shrink: 0 !important; }
-#main-nav { display: flex !important; flex-direction: row !important; gap: 8px !important; margin: 0 auto !important; }
-.topbar-right { display: flex !important; flex-direction: row !important; gap: 8px !important; flex-shrink: 0 !important; }
-
-/* CONTENT SPACING: Content starts exactly at bottom of bar */
-.topbar-spacer { height: 60px !important; width: 100%; }
-
-.panel {
-  display: none;
-  width: 100%;
-  max-width: 1500px;
-  margin: 20px auto 0 auto !important; /* Centers cards and gives top gap */
-  padding: 0 20px !important;
-}
-.panel.active { display: block !important; }
-
-/* PC DASHBOARD GRIDS: 2-column boxes */
-.metrics { display: flex !important; flex-direction: row !important; gap: 20px !important; margin-bottom: 20px !important; }
-.metric-card { flex: 1 !important; background: #f8f9fa; color: #333; border-radius: 12px; padding: 20px; }
-.grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
-.card { background: #f8f9fa; color: #333; border-radius: 12px; padding: 20px; }
-
-/* ZERK MODAL PC: Wide view */
-.modal-zerk-wide { max-width: 1300px !important; width: 95% !important; }
-.zerk-main-layout { display: grid !important; grid-template-columns: 1fr 340px !important; gap: 25px; }
-
 /* ============================================================
    2. MOBILE ONLY (Apply ONLY if screen is small)
    ============================================================ */
