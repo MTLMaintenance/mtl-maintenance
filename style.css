@@ -149,43 +149,7 @@ button[onclick="saveInvoice()"] {
 
 .panel { display: none; }
 .panel.active { display: block !important; }
-/* ============================================================
-   2. MOBILE LAYOUT (Apply ONLY to screens 768px and SMALLER)
-   ============================================================ */
-@media screen and (max-width: 768px) {
-  html, body {
-    background-color: #001f3f !important; /* Mobile Navy Background */
-  }
 
-  /* Stack Topbar into rows only for phone */
-  {
-    display: flex !important;
-    flex-direction: column !important;
-    height: auto !important;
-    position: fixed !important;
-    padding: 10px 0 !important;
-  }
-
-  .logo { width: 100% !important; text-align: center !important; }
-  .pc-only-search { display: none !important; }
-
-  /* Allow swiping left-to-right on phone */
-  #main-nav,-right {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    padding: 6px 12px !important;
-  }
-
-  /* Stack dashboard boxes into one column for phone */
-  .panel { margin-top: 135px !important; padding: 10px !important; }
-  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
-}
-/* ============================================================
-   3. SHARED COMPONENTS (Dots, Badges, etc)
-   ============================================================ */
-.zerk-dot { position: absolute; transform: translate(-50%, -50%); width: 24px; height: 24px; background: #ffec00 !important; color: #000; border: 2px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; z-index: 150; }
-/*end of mobile*/
 
 /* Update your primary buttons and highlights to use the variable */
 .btn-primary, .user-avatar-circle, .active-nav-item, .pin-dot.filled {
