@@ -1715,46 +1715,44 @@ html {
     height: auto !important;
   }
 /* 8 Calendar Styling */
-   
- /* 1. THE PANEL: Pushed down correctly to clear the topbar */
-  #panel-calendar.active {
+/* 1. Force the calendar panel to be a FLEX container and hit the bottom */
+  body #panel-calendar.active {
     display: flex !important;
     flex-direction: column !important;
-    /* 80px clears your 60px topbar and adds a 20px gap */
-    margin-top: 80px !important; 
-    /* This sets the total height from the topbar to the bottom of the screen */
+    /* Pushes the container from the topbar (80px) to the very bottom of the screen */
     height: calc(100vh - 100px) !important; 
-    overflow: hidden !important;
+    margin-top: 80px !important;
+    padding-bottom: 20px !important;
+    overflow: hidden;
   }
 
-  /* 2. THE TOP BUTTONS: Ensure they have breathing room */
-  #panel-calendar.active > div:first-child {
-    margin-bottom: 15px !important;
+  /* 2. THE STRETCH: Force the white card to fill all that blue space at the bottom */
+  body #panel-calendar.active .card {
+    flex: 1 1 auto !important;      /* This forces the white box to stretch */
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 98% !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+  }
+
+  /* 3. The Month Header (May 2026) and Labels (Sun-Sat) stay at normal size */
+  #cal-header, .cal-day-labels {
     flex-shrink: 0 !important;
   }
 
-  /* 3. THE CARD: Stretch this white box to the bottom of the screen */
-  #panel-calendar.active .card {
-    flex: 1 !important;             /* STRETCH: Fills all remaining space to the bottom */
-    display: flex !important;
-    flex-direction: column !important;
-    width: 98% !important;
-    margin: 0 auto 15px auto !important; /* 15px gap at the very bottom of the monitor */
-    padding: 20px !important;
-    height: 100% !important;
-  }
-
-  /* 4. THE GRID: Fill the now-stretched white card */
+  /* 4. THE GRID: Expand the dates to fill the now-stretched white card */
   #cal-days {
-    flex: 1 !important;             /* Makes the grid hit the bottom of the white card */
+    flex: 1 1 auto !important;      /* This stretches the grid inside the card */
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    /* Divide the height equally by however many weeks are in the month */
+    /* Auto-calculates row height so the bottom row touches the edge of the card */
     grid-template-rows: repeat(auto-fit, minmax(0, 1fr)) !important;
     border-bottom: 1px solid #eee;
   }
 
-  /* 5. DAY CELLS: Natural stretch */
+  /* 5. Day Cells: Fill the new vertical space */
   .cal-day {
     height: 100% !important;
     display: flex;
@@ -1762,11 +1760,6 @@ html {
     padding: 8px !important;
     border: 1px solid #f0f0f0;
     background: white;
-  }
-
-  /* Prevent headers from squishing */
-  .cal-day-labels, #cal-header {
-    flex-shrink: 0 !important;
   }
 }
 /* -------end of pc block ----------*/
