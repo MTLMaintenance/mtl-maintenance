@@ -2498,9 +2498,9 @@ async function savePart() {
   const name = document.getElementById('p-name').value.trim();
   const partNumber = document.getElementById('p-num').value.trim();
   const unitCost = parseFloat(document.getElementById('p-cost').value) || 0;
-  const supplierId = document.getElementById('p-supplier').value;
+  const supplierId = document.getElementById('p-supplier-select').value;
   const currentQty = parseInt(document.getElementById('p-qty').value) || 0;
-  const minQty = parseInt(document.getElementById('p-min').value) || 0;
+  const minQty = parseInt(document.getElementById('p-reorder').value) || 0;
 
   if (!name) {
     showToast("Part Name is required");
