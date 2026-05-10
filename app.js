@@ -2495,81 +2495,63 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
-    console.log("--- Starting Save Part Process ---");
-
-    // 1. Helper function to safely get values and identify which ID is missing
-    const getSafeValue = (id) => {
-        const el = document.getElementById(id);
-        if (!el) {
-            console.error(`MISSING ELEMENT: Could not find HTML ID "${id}"`);
-            return null;
-        }
-        return el.value;
-    };
-
-    // 2. Gather values safely
-   
-    const name = getSafeValue('p-name');
-    const partNumber =  getSafeValue('p-num'); 
-    const unitCost = getSafeValue('p-cost');
-    const supplierId = getSafeValue('p-supplier-select'); 
-    const currentQty = getSafeValue('p-qty');
-    const minQty =  getSafeValue('p-reorder');
-
-    // 3. Check if any CRITICAL IDs were missing from your HTML
-    if (name === null || partNumber === null || unitCost === null) {
-        alert("CRITICAL ERROR: One or more HTML IDs are missing. Check the browser console (F12) to see which one.");
-        return;
-    }
-
-    if (!name.trim()) {
-        showToast("Part Name is required");
-        return;
-    }
-
-    // 4. Prepare the data record
-    const record = {
-        id: uid(), 
-        name: name.trim(),
-        part_number: partNumber.trim(),
-        unit_cost: parseFloat(unitCost) || 0,
-        supplier_id: supplierId || null,
-        current_qty: parseInt(currentQty) || 0,
-        reorder_qty: parseInt(minQty) || 0,
-        created_at: new Date().toISOString()
-    };
-
+    console.log("Checkpoint 1: Function Started");
+    
     try {
-        // 5. Send to Supabase
-        const { error } = await window._mpdb
-            .from('parts')
-            .upsert(record);
+        const name = document.getElementById('p-name')?.value.trim();
+        const partNumber = document.getElementById('p-num')?.value.trim();
+        const unitCost = parseFloat(document.getElementById('p-cost')?.value) || 0;
+        const currentQty = parseInt(document.getElementById('p-qty')?.value) || 0;
+        const reorderQty = parseInt(document.getElementById('p-reorder')?.value) || 0;
+        const supplierId = document.getElementById('p-supplier-select')?.value || null;
 
-        if (error) {
-            console.error("Supabase Error:", error);
-            // Backup Alert in case Toast is invisible
-            alert("SAVE FAILED: " + error.message);
-            showToast(`Error: ${error.message}`);
+        console.log("Checkpoint 2: Data Gathered", { name, partNumber, unitCost });
+
+        if (!name) {
+            alert("Please enter a part name");
             return;
         }
 
-        // 6. Update local state and UI
-        if (!state.parts) state.parts = [];
-        state.parts.push(record);
-        
-        if (typeof logAuditAction === 'function') {
-            await logAuditAction("Added Part", `Created part: ${record.name}`);
+        const record = {
+            id: uid(),
+            name,
+            part_number: partNumber,
+            unit_cost: unitCost,
+            supplier_id: supplierId,
+            current_qty: currentQty,
+            reorder_qty: reorderQty,
+            created_at: new Date().toISOString()
+        };
+
+        console.log("Checkpoint 3: Connecting to Supabase...");
+
+        // Check if the database object exists
+        if (!window._mpdb) {
+            alert("CRITICAL: Supabase (_mpdb) is not initialized!");
+            return;
         }
 
-        showToast("Part saved successfully ✓");
-        alert("Success! Part saved."); // Physical confirmation
-        
+        const response = await window._mpdb
+            .from('parts')
+            .upsert(record);
+
+        console.log("Checkpoint 4: Supabase responded", response);
+
+        if (response.error) {
+            alert("DATABASE ERROR: " + response.error.message);
+            return;
+        }
+
+        console.log("Checkpoint 5: Refreshing UI");
+        state.parts.push(record);
         closeModal('part-modal');
         if (typeof renderParts === 'function') renderParts();
+        
+        alert("Part saved successfully ✓");
 
-    } catch (err) {
-        console.error("Critical Javascript Error:", err);
-        alert("APP CRASHED: " + err.message);
+    } catch (e) {
+        console.error("Checkpoint ERROR:", e);
+        alert("JS CRASHED: " + e.message);
     }
 }
 
