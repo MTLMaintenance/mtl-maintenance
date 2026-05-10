@@ -1621,18 +1621,17 @@ html {
   /* 1. MASTER TOPBAR: Force a single horizontal line */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* Forces items side-by-side */
-    flex-wrap: nowrap !important;         /* Prevents wrapping to new lines */
-    align-items: center !important;      /* Centers all items vertically */
-    justify-content: flex-start !important; 
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
     height: 60px !important;
-    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
-    width: 100% !important;
+    padding: 0 20px !important;
   }
+
 
   /* 2. SHRINK THE BOXES: Stop every container from being 100% wide */
   .logo, 
@@ -1689,78 +1688,62 @@ html {
   }
 
   /* 6. FIX PANEL POSITION (Pushes content below the 60px bar) */
-  .panel {
+   .panel {
     display: none;
-    margin-top: 80px !important;         /* 60px Bar + 20px Gap */
-    width: 98% !important;
-    max-width: 1800px !important;
+    margin-top: 80px !important; /* Push below fixed bar */
+    padding: 0 20px !important;
+    width: 100%;
+    max-width: 1600px;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding: 0 10px !important;
   }
+  
+  /* Standard Panels stay as Blocks */
   .panel.active { display: block !important; }
 
-  /* 7. RESTORE DASHBOARD BOX SIZES (2 Columns) */
-  .metrics, .grid-2 {
-    display: flex !important;
-    flex-direction: row !important; 
-    gap: 20px !important;
-    width: 100% !important;
-  }
-  .metric-card, .card {
-    flex: 1 !important;
-    background: #f8f9fa;
-    color: #333;
-    border-radius: 12px;
-    height: auto !important;
-  }
-/* 8 Calendar Styling */
-/* 1. Force the calendar panel to be a FLEX container and hit the bottom */
+ /* 3. --- THE CALENDAR POWER FIX --- */
+  /* This forces the calendar to be a Flexbox and hit the bottom of the monitor */
   body #panel-calendar.active {
-    display: flex !important;
+    display: flex !important; 
     flex-direction: column !important;
-    /* Pushes the container from the topbar (80px) to the very bottom of the screen */
-    height: calc(100vh - 100px) !important; 
-    margin-top: 80px !important;
-    padding-bottom: 20px !important;
-    overflow: hidden;
+    height: calc(100vh - 100px) !important; /* Dynamic height calculation */
+    overflow: hidden !important;
   }
 
-  /* 2. THE STRETCH: Force the white card to fill all that blue space at the bottom */
-  body #panel-calendar.active .card {
-    flex: 1 1 auto !important;      /* This forces the white box to stretch */
+  /* Force the white card to stretch to the floor */
+  #panel-calendar.active .card {
+    flex: 1 !important;             /* Claim all available vertical space */
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
-    width: 98% !important;
-    margin: 0 auto !important;
+    background: #f8f9fa !important;
+    border-radius: 12px;
     padding: 20px !important;
+    margin-bottom: 10px !important;
   }
 
-  /* 3. The Month Header (May 2026) and Labels (Sun-Sat) stay at normal size */
-  #cal-header, .cal-day-labels {
-    flex-shrink: 0 !important;
-  }
-
-  /* 4. THE GRID: Expand the dates to fill the now-stretched white card */
+  /* Force the grid of days to fill the bottom of the card */
   #cal-days {
-    flex: 1 1 auto !important;      /* This stretches the grid inside the card */
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    /* Auto-calculates row height so the bottom row touches the edge of the card */
+    /* Divide rows equally: 4, 5, or 6 weeks will always hit the bottom */
     grid-template-rows: repeat(auto-fit, minmax(0, 1fr)) !important;
-    border-bottom: 1px solid #eee;
+    flex: 1 !important; 
+    height: 100% !important;
   }
 
-  /* 5. Day Cells: Fill the new vertical space */
   .cal-day {
     height: 100% !important;
+    border: 1px solid #eee !important;
     display: flex;
     flex-direction: column;
-    padding: 8px !important;
-    border: 1px solid #f0f0f0;
-    background: white;
+    padding: 5px !important;
+    color: #333 !important;
   }
+
+  /* 4. Restore Dashboard Grid (2 Columns) */
+  .metrics, .grid-2 { display: flex !important; flex-direction: row !important; gap: 20px !important; }
+  .metric-card, .card { flex: 1 !important; background: #f8f9fa; color: #333; }
 }
 /* -------end of pc block ----------*/
 .modern-login-card {
