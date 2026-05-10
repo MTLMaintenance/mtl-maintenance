@@ -1637,7 +1637,7 @@ html {
 /* ============================================================
    2. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
-media screen and (min-width: 769px) {
+@media screen and (min-width: 769px) {
   /* 1. MASTER TOPBAR: Force a single horizontal line */
   .topbar {
     display: flex !important;
