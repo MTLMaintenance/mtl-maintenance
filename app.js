@@ -2510,7 +2510,7 @@ async function savePart() {
     // 2. Gather values safely
    
     const name = getSafeValue('p-name');
-    const partNumber =  getSafeValue('p-num'); /
+    const partNumber =  getSafeValue('p-num'); 
     const unitCost = getSafeValue('p-cost');
     const supplierId = getSafeValue('p-supplier-select'); 
     const currentQty = getSafeValue('p-qty');
