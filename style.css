@@ -39,89 +39,98 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. FORCE THE MASTER BOX TO BE ONE FLAT ROW */
+  /* 1. MASTER TOPBAR: One thin horizontal row */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE HORIZONTAL */
+    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
     flex-wrap: nowrap !important;         /* PREVENT STACKING */
-    align-items: center !important;      /* VERTICAL CENTER */
-    justify-content: flex-start !important; 
+    align-items: center !important;      /* VERTICAL CENTER ALL */
+    justify-content: space-between !important; 
     height: 60px !important;
+    padding: 0 15px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    width: 100% !important;
     background: #000 !important;
     z-index: 10000 !important;
-    padding: 0 20px !important;
   }
 
-  /* 2. ALIGN ALL CHILDREN IN A LINE */
-  .logo, #pc-search-wrap, #main-nav, .topbar-right {
+  /* 2. THE MAGIC FIX: Force every child of Topbar to be a horizontal piece */
+  .topbar > div, 
+  .topbar > nav, 
+  .topbar > span,
+  #pc-search-wrap,
+  .topbar-right {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
+    width: auto !important;              /* Stop them from taking full width */
+    flex-shrink: 0 !important;           /* Stop them from vanishing */
     margin: 0 !important;
-    flex-shrink: 0 !important; /* Stop them from squishing */
+    padding: 0 !important;
   }
 
-  /* 3. SET INDIVIDUAL WIDTHS */
+  /* 3. SET INDIVIDUAL SPACING */
   .logo { 
-    width: auto !important; 
-    margin-right: 20px !important; 
-    font-weight: bold;
+    margin-right: 15px !important; 
+    font-weight: bold; 
+    white-space: nowrap !important;
   }
 
   #pc-search-wrap { 
-    width: 200px !important;             /* Locked width for search area */
-    margin-right: 20px !important;
+    width: 180px !important; 
+    margin-right: 15px !important; 
     position: relative !important;
   }
 
   #global-search {
     width: 100% !important;
-    height: 30px !important;
+    height: 28px !important;
     background: rgba(255,255,255,0.1) !important;
     border: 1px solid rgba(255,255,255,0.2) !important;
-    border-radius: 6px !important;
-    color: white !important;
+    border-radius: 4px;
+    color: #fff;
+    padding: 0 8px !important;
   }
 
-  /* 4. NAVIGATION (The Spreader - fills the empty space) */
+  /* 4. NAVIGATION (Takes up all middle space) */
   #main-nav { 
-    flex: 1 !important;                  /* Sucks up the middle gap */
-    gap: 8px !important;
+    flex: 1 !important;                  /* Fills the gap */
+    display: flex !important;
+    flex-direction: row !important;
     justify-content: flex-start !important;
+    gap: 4px !important;
+    overflow: hidden !important;
   }
 
   .nav-btn {
     white-space: nowrap !important;
-    font-size: 13px !important;
-    padding: 5px 10px !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
   }
 
-  /* 5. TOPBAR RIGHT (Action buttons - Pinned to far right) */
+  /* 5. TOPBAR RIGHT (PDF, Profile, etc.) */
   .topbar-right { 
-    margin-left: auto !important;        /* THE "SPRING" that pushes it to the edge */
-    gap: 8px !important;
+    margin-left: 15px !important;
+    gap: 6px !important;
   }
 
-  /* 6. FIX THE PANEL OVERLAP */
+  /* 6. PUSH CARDS DOWN (Since Bar is 60px) */
   .panel {
     display: none;
-    margin-top: 85px !important;         /* Gap below the 60px bar */
+    margin-top: 75px !important;         /* 15px gap below bar */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* RESTORE THE BOX SHAPE OF DASHBOARD CARDS */
+  /* 7. RESTORE CORRECT CARD SIZES (2 Columns) */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
+    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
