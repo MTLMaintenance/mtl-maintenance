@@ -6152,33 +6152,39 @@ function renderZerkTab(equipId) {
         return;
     }
 
-    // Header with "Show All Lines" Toggle
+    // 1. IMPROVED MOBILE HEADER (Scrollable Buttons)
     const viewButtonsHtml = equip.zerk_photos.map((_, i) => {
         const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
-        return `<button class="btn ${viewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')" ondblclick="renameZerkView(${i})">${name}</button>`;
+        return `<button class="btn ${viewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" style="flex:0 0 auto" onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')" ondblclick="renameZerkView(${i})">${name}</button>`;
     }).join('');
 
     switcher.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; border-bottom:1px solid #ddd; padding-bottom:15px; margin-bottom:15px">
-        <div style="display:flex; gap:6px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:12px; border-bottom:1px solid #ddd; padding-bottom:15px; margin-bottom:15px">
+        <!-- Views Row (Horizontal Scroll on Mobile) -->
+        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch">
             ${viewButtonsHtml}
             <button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>
         </div>
-        <div style="display:flex; gap:10px; align-items:center">
-            <!-- NEW TOGGLE -->
-            <label style="font-size:11px; color:#666; display:flex; align-items:center; cursor:pointer; margin-right:10px; border-right:1px solid #ddd; padding-right:10px">
+        
+        <!-- Tools Row -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap">
+            <label style="font-size:11px; color:#666; display:flex; align-items:center; cursor:pointer">
                 <input type="checkbox" style="margin-right:5px" ${showAllLines ? 'checked' : ''} onchange="window.showZerkLines=this.checked; renderZerkTab('${equipId}')"> Show Lines
             </label>
-            <button class="btn ${currentMode === 'dot' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='dot'; renderZerkTab('${equipId}')">Point Only</button>
-            <button class="btn ${currentMode === 'line' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='line'; renderZerkTab('${equipId}')">Pointer Line</button>
+            <div style="display:flex; gap:5px">
+                <button class="btn ${currentMode === 'dot' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='dot'; renderZerkTab('${equipId}')">Point</button>
+                <button class="btn ${currentMode === 'line' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='line'; renderZerkTab('${equipId}')">Line</button>
+            </div>
         </div>
     </div>`;
 
     const currentPhoto = equip.zerk_photos[viewIdx];
     const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
 
+    // 2. MAIN LAYOUT
     container.innerHTML = `
     <div class="zerk-main-layout">
+        <!-- LEFT: THE MAP -->
         <div id="zerk-map-container" style="position:relative; background:#000; border-radius:8px; overflow:hidden" onclick="handleZerkMapClick(event, ${viewIdx})">
             <img id="zerk-map-img" src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
             
@@ -6205,6 +6211,7 @@ function renderZerkTab(equipId) {
             </div>
         </div>
 
+        <!-- RIGHT: THE SIDEBAR -->
         <div id="zerk-sidebar-container">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
                 <h4 style="margin:0; font-size:14px; color:#333">Grease Points</h4>
@@ -6212,13 +6219,13 @@ function renderZerkTab(equipId) {
             </div>
             
             <div style="flex:1; overflow-y:auto">
-                <table class="zerk-sidebar-table">
+                <table class="zerk-sidebar-table" style="width:100%">
                     <thead><tr><th style="width:40px">#</th><th>Instructions</th><th style="width:30px"></th></tr></thead>
                     <tbody>
                         ${points.map((p, idx) => `
                             <tr onmouseenter="highlightZerkLink('${p.id}', true)" onmouseleave="highlightZerkLink('${p.id}', false)">
                                 <td><div class="zerk-num-list">${idx + 1}</div></td>
-                                <td style="font-weight:500; color:black !important" onclick="editZerkNote('${p.id}')">${p.note || '<span style="color:#aaa">Add instructions...</span>'}</td>
+                                <td style="font-weight:500; color:black !important; font-size:12px" onclick="editZerkNote('${p.id}')">${p.note || '<span style="color:#aaa">Add instructions...</span>'}</td>
                                 <td style="text-align:right">
                                     <button onclick="deleteZerk('${p.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:16px;">🗑</button>
                                 </td>
