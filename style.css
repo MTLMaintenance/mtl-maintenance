@@ -35,141 +35,6 @@ button[onclick="saveInvoice()"] {
     display: block !important;
 }
 
-/* ============================================================
-   2. PC LAYOUT (769px and up)
-   ============================================================ */
-@media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR */
-  .topbar {
-    display: flex !important;
-    flex-direction: row !important;      /* Force Side-by-Side */
-    flex-wrap: nowrap !important;         /* Prevent Stacking */
-    align-items: center !important;      /* Vertical Center */
-    justify-content: flex-start !important; /* Start drawing from the LEFT */
-    height: 60px !important;
-    padding: 0 20px !important;
-    position: fixed !important;
-    top: 0; left: 0; right: 0;
-    background: #000 !important;
-    z-index: 10000 !important;
-  }
-
-  /* 2. THE LOGO: FORCE TO LEFT */
-  .logo { 
-    display: inline-block !important;
-    width: auto !important;              /* Stop taking up 100% width */
-    max-width: none !important;
-    text-align: left !important;         /* Stop centering text */
-    margin: 0 20px 0 0 !important;       /* Space to the right only */
-    flex-shrink: 0 !important;           /* Stop it from disappearing */
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  /* 3. THE SEARCH WRAP: FORCE NEXT TO LOGO */
-  #pc-search-wrap, .pc-only-search { 
-    display: block !important;
-    width: 200px !important;             /* Fixed width */
-    margin: 0 20px 0 0 !important;       /* Space to the right only */
-    flex-shrink: 0 !important;
-    position: relative !important;
-  }
-
-  #global-search {
-    width: 100% !important;
-    height: 30px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 6px !important;
-    color: white !important;
-    padding-left: 10px !important;
-  }
-
-  /* 4. THE NAVIGATION (Fills the gap) */
-  #main-nav { 
-    display: flex !important; 
-    flex-direction: row !important;
-    flex: 1 !important;                  /* Stretches to fill the middle */
-    gap: 8px !important;
-    justify-content: flex-start !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .nav-btn {
-    white-space: nowrap !important;
-    font-size: 12px !important;
-    padding: 5px 10px !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* 5. ACTION BUTTONS: PIN TO FAR RIGHT */
-  .topbar-right { 
-    display: flex !important; 
-    flex-direction: row !important;
-    margin-left: auto !important;        /* THE "SPRING" that pushes to the edge */
-    gap: 8px !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* 6. GAP FIX: Pushes content below the 60px bar */
-  .panel {
-    display: none;
-    margin-top: 80px !important;         /* 60px bar + 20px gap */
-    width: 98% !important;
-    max-width: 1800px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-  .panel.active { display: block !important; }
-
-  /* RESTORE DASHBOARD GRID */
-  .metrics, .grid-2 {
-    display: flex !important;
-    flex-direction: row !important; 
-    gap: 20px !important;
-  }
-  .metric-card, .card {
-    flex: 1 !important;
-    background: #f8f9fa;
-    color: #333;
-    border-radius: 12px;
-  }
-}
-/* ============================================================
-   3. MOBILE LAYOUT (768px and down)
-   ============================================================ */
-@media screen and (max-width: 768px) {
-
-   #pc-search-wrap, .pc-only-search { 
-    display: none !important; 
-  }   
-   .topbar {
-    display: flex !important;
-    flex-direction: column !important;
-    position: fixed !important;
-    height: auto !important;
-    padding: 8px 0 !important;
-  }
-  .logo { width: 100% !important; text-align: center !important; padding: 5px 0 !important; }
-  .pc-only-search { display: none !important; }
-  #main-nav, .topbar-right {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    padding: 6px 12px !important;
-    width: 100% !important;
-  }
-  .panel { margin-top: 135px !important; padding: 10px !important; }
-  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
-  .metric-card, .card { width: 100% !important; }
-}
-
-.panel { display: none; }
-.panel.active { display: block !important; }
-
-
 /* Update your primary buttons and highlights to use the variable */
 .btn-primary, .user-avatar-circle, .active-nav-item, .pin-dot.filled {
   background-color: var(--accent) !important;
@@ -1795,7 +1660,141 @@ html {
     padding: 10px !important;
 }
 
-/* Unique class for the card */
+
+/* ============================================================
+   3. MOBILE LAYOUT (768px and down)
+   ============================================================ */
+@media screen and (max-width: 768px) {
+
+   #pc-search-wrap, .pc-only-search { 
+    display: none !important; 
+  }   
+   .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    height: auto !important;
+    padding: 8px 0 !important;
+  }
+  .logo { width: 100% !important; text-align: center !important; padding: 5px 0 !important; }
+  .pc-only-search { display: none !important; }
+  #main-nav, .topbar-right {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 6px 12px !important;
+    width: 100% !important;
+  }
+  .panel { margin-top: 135px !important; padding: 10px !important; }
+  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
+  .metric-card, .card { width: 100% !important; }
+}
+
+.panel { display: none; }
+.panel.active { display: block !important; }
+
+   /* ============================================================
+   2. PC LAYOUT (769px and up)
+   ============================================================ */
+@media screen and (min-width: 769px) {
+  /* 1. MASTER TOPBAR */
+  .topbar {
+    display: flex !important;
+    flex-direction: row !important;      /* Force Side-by-Side */
+    flex-wrap: nowrap !important;         /* Prevent Stacking */
+    align-items: center !important;      /* Vertical Center */
+    justify-content: flex-start !important; /* Start drawing from the LEFT */
+    height: 60px !important;
+    padding: 0 20px !important;
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    background: #000 !important;
+    z-index: 10000 !important;
+  }
+
+  /* 2. THE LOGO: FORCE TO LEFT */
+  .logo { 
+    display: inline-block !important;
+    width: auto !important;              /* Stop taking up 100% width */
+    max-width: none !important;
+    text-align: left !important;         /* Stop centering text */
+    margin: 0 20px 0 0 !important;       /* Space to the right only */
+    flex-shrink: 0 !important;           /* Stop it from disappearing */
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  /* 3. THE SEARCH WRAP: FORCE NEXT TO LOGO */
+  #pc-search-wrap, .pc-only-search { 
+    display: block !important;
+    width: 200px !important;             /* Fixed width */
+    margin: 0 20px 0 0 !important;       /* Space to the right only */
+    flex-shrink: 0 !important;
+    position: relative !important;
+  }
+
+  #global-search {
+    width: 100% !important;
+    height: 30px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    color: white !important;
+    padding-left: 10px !important;
+  }
+
+  /* 4. THE NAVIGATION (Fills the gap) */
+  #main-nav { 
+    display: flex !important; 
+    flex-direction: row !important;
+    flex: 1 !important;                  /* Stretches to fill the middle */
+    gap: 8px !important;
+    justify-content: flex-start !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .nav-btn {
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 5. ACTION BUTTONS: PIN TO FAR RIGHT */
+  .topbar-right { 
+    display: flex !important; 
+    flex-direction: row !important;
+    margin-left: auto !important;        /* THE "SPRING" that pushes to the edge */
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 6. GAP FIX: Pushes content below the 60px bar */
+  .panel {
+    display: none;
+    margin-top: 80px !important;         /* 60px bar + 20px gap */
+    width: 98% !important;
+    max-width: 1800px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .panel.active { display: block !important; }
+
+  /* RESTORE DASHBOARD GRID */
+  .metrics, .grid-2 {
+    display: flex !important;
+    flex-direction: row !important; 
+    gap: 20px !important;
+  }
+  .metric-card, .card {
+    flex: 1 !important;
+    background: #f8f9fa;
+    color: #333;
+    border-radius: 12px;
+  }
+}
 .modern-login-card {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
