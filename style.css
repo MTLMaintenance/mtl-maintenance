@@ -1,81 +1,80 @@
-/* ============================================================
-   1. PC LAYOUT (Global / Default)
-   ============================================================ */
 @media screen and (min-width: 769px) {
+  /* 1. PC BACKGROUND */
   html, body {
-    background-color: #1a1a1a !important; /* Professional Dark Grey */
+    background-color: #1a1a1a !important;
   }
 
-  /* FORCE THE TOPBAR INTO ONE HORIZONTAL LINE */
+  /* 2. FORCE TOPBAR INTO ONE SINGLE LINE (LEFT TO RIGHT) */
   .topbar {
     display: flex !important;
-    flex-direction: row !important; /* Horizontal row */
-    flex-wrap: nowrap !important;    /* DO NOT WRAP to new lines */
+    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
+    flex-wrap: nowrap !important;         /* STOP STACKING */
+    justify-content: space-between !important; /* Logo left, Nav middle, Buttons right */
     align-items: center !important;
-    justify-content: space-between !important; /* Logo far left, Buttons far right */
     height: 60px !important;
-    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
+    width: 100% !important;
+    padding: 0 30px !important;
     background: #111 !important;
     z-index: 9999;
   }
 
-  /* Distribute items across the one row */
+  /* Align Logo to the Left */
   .logo { 
     width: auto !important; 
     margin: 0 !important; 
-    flex-shrink: 0 !important; 
-  }
-
-  .pc-only-search { 
-    display: block !important; 
-    width: 180px !important; 
-    margin: 0 15px !important; 
     flex-shrink: 0 !important;
   }
 
+  /* Align Search next to Logo */
+  .pc-only-search { 
+    display: block !important; 
+    width: 200px !important; 
+    margin: 0 20px !important; 
+  }
+
+  /* Align Nav in the center space */
   #main-nav { 
     display: flex !important; 
     flex-direction: row !important; 
-    justify-content: center !important;
-    gap: 5px !important;
-    flex: 1 !important; /* Takes up all middle space */
-    margin: 0 !important;
+    gap: 10px !important;
+    flex: 1 !important; 
+    justify-content: flex-start !important;
   }
 
+  /* Align Actions to the far Right */
   .topbar-right { 
     display: flex !important; 
     flex-direction: row !important; 
     gap: 8px !important;
-    flex-shrink: 0 !important;
-    margin-left: 10px !important;
+    margin-left: auto !important; /* Pushes to far right edge */
   }
 
-  /* SPACER: Matches the 60px topbar exactly */
+  /* 3. FIX THE CARDS & SPACING */
   .topbar-spacer {
-    height: 60px !important;
-    display: block !important;
+    height: 60px !important; /* Content starts right after the 60px bar */
   }
 
-  /* PANELS: Sit directly under the spacer */
   .panel {
     display: none;
-    max-width: 1600px;
-    margin: 15px auto 0 auto !important; /* 15px gap below the topbar */
-    padding: 0 20px !important;
+    width: 98% !important;    /* KEEP CARDS WIDE */
+    max-width: 1600px !important;
+    margin: 20px auto !important; /* 20px Gap between bar and content */
+    padding: 0 !important;
   }
   .panel.active { display: block !important; }
 
-  /* DASHBOARD GRIDS: 2-column layout */
+  /* RESTORE THE 2-COLUMN DASHBOARD BOXES */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
     width: 100% !important;
   }
+  
   .metric-card, .card {
-    flex: 1 !important;
+    flex: 1 !important; /* Forces them to be side-by-side boxes */
     background: #f8f9fa;
     color: #333;
     border-radius: 12px;
