@@ -2498,7 +2498,7 @@ async function savePart() {
     console.log("Checkpoint 1: Function Started");
     
     try {
-        const name = document.getElementById('p-name')?.value.trim();
+        const name = document.getElementById('edit-p-name')?.value.trim();
         const partNumber = document.getElementById('p-num')?.value.trim();
         const unitCost = parseFloat(document.getElementById('p-cost')?.value) || 0;
         const currentQty = parseInt(document.getElementById('p-qty')?.value) || 0;
