@@ -1,3 +1,15 @@
+/* Force notifications to the very front of the screen */
+#toast-container, .toast, #toast {
+  z-index: 20000 !important; 
+  position: fixed !important;
+  bottom: 20px;
+  right: 20px;
+}
+
+/* Ensure the modal backdrop isn't stealing focus */
+.modal-backdrop {
+  z-index: 10000;
+}
 /* ============================================================
    1. GLOBAL / BASE STYLES
    ============================================================ */
@@ -356,9 +368,7 @@ body.dark-mode .modal {
     .badge.b-progress { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; } /* In Progress - Blue */
 .badge.b-parts { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }    /* Waiting for Parts - Orange */
     /* --- CALENDAR BELLS & WHISTLES --- */
-.modal-backdrop {
-    z-index: 5000 !important; /* Higher than any other element */
-}
+
 
 /* 2. Lower the Calendar layer so it doesn't block popups */
 #panel-calendar.active {
