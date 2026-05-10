@@ -21,7 +21,34 @@ html, body {
   background: #001f3f; /* Your preferred Navy Blue background */
   color: white;
 }
+/* ============================================================
+   GLOBAL BUTTON STYLES (Applies to PC & Mobile)
+   ============================================================ */
+.nav-btn, .btn-primary {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
 
+/* Hover effect for all buttons */
+.nav-btn:hover, .btn-primary:hover {
+  filter: brightness(1.2); /* Makes it slightly lighter blue on hover */
+  transform: translateY(-1px);
+}
+
+/* Active State (The page you are currently on) */
+.nav-btn.active {
+  background-color: #ffffff !important;
+  color: #111111 !important; /* Dark text so you can read it on the white */
+  border-color: #ffffff !important;
+}
 /* --- GHOST INVOICE CLEANUP --- */
 #invoice-photo-preview-area, #invoice-scanning, #invoice-extracted-badge, 
 button[onclick="saveInvoice()"] {
