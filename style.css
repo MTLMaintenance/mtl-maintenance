@@ -1,79 +1,79 @@
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR: One solid horizontal row */
+  /* 1. MASTER TOPBAR: One thin horizontal row */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE HORIZONTAL */
-    flex-wrap: nowrap !important;         /* STOP WRAPPING TO NEW LINES */
+    flex-direction: row !important;      /* FORCE SIDE-BY-SIDE */
+    flex-wrap: nowrap !important;         /* PREVENT STACKING */
     align-items: center !important;      /* Vertical center */
-    justify-content: flex-start !important; 
+    justify-content: space-between !important; 
     height: 60px !important;
-    padding: 0 15px !important;
+    padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
   }
 
-  /* 2. LOGO & SEARCH (Left Side) */
+  /* 2. THE LOGO & SEARCH (The "Bar Box") */
+  /* We limit this group's width so it doesn't crowd out the nav */
   .logo { 
     width: auto !important; 
     margin-right: 15px !important; 
     flex-shrink: 0 !important; 
     font-size: 14px;
+    font-weight: bold;
   }
+
   .pc-only-search { 
     display: block !important; 
-    width: 150px !important; 
-    flex-shrink: 0 !important; 
-    margin-right: 10px !important;
-  }
-
-  /* 3. NAVIGATION (The Middle - Allows swiping if screen is narrow) */
-  #main-nav { 
-    display: flex !important; 
-    flex-direction: row !important;
-    flex: 1 !important;                 /* Sucks up all available middle space */
-    gap: 5px !important;
-    overflow-x: auto !important;         /* Allow scrolling if buttons don't fit */
-    white-space: nowrap !important;
-    padding: 0 10px !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  /* Hide scrollbar for the nav buttons */
-  #main-nav::-webkit-scrollbar { display: none; }
-
-  .nav-btn {
-    flex: 0 0 auto !important;
-    padding: 4px 8px !important;
-    font-size: 12px !important;
-  }
-
-  /* 4. TOPBAR RIGHT (The Actions) */
-  .topbar-right { 
-    display: flex !important; 
-    flex-direction: row !important;
-    margin-left: auto !important;        /* Pushes to far right */
-    gap: 6px !important;
+    width: 160px !important; /* Fixed width stops it from stretching too far */
+    margin-right: 20px !important;
     flex-shrink: 0 !important;
   }
 
-  /* 5. CONTENT SPACING: Content starts 15px below the 60px bar */
+  /* 3. NAVIGATION (The Middle - Analytics, Calendar, etc.) */
+  #main-nav { 
+    display: flex !important; 
+    flex-direction: row !important;
+    flex: 1 !important;                 /* Sucks up middle space */
+    justify-content: center !important;  /* Centers the buttons */
+    gap: 4px !important;                 /* Tighter gap to fit everyone */
+    overflow: visible !important;        /* Makes sure they don't vanish */
+    min-width: 0 !important;             /* Allows flex math to work */
+  }
+
+  .nav-btn {
+    flex: 0 0 auto !important;           /* Stop buttons from shrinking to 0 */
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;      /* Force text on one line */
+  }
+
+  /* 4. TOPBAR RIGHT (PDF, Sign Out, etc.) */
+  .topbar-right { 
+    display: flex !important; 
+    flex-direction: row !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;           /* Pinned to far right */
+    margin-left: 20px !important;
+  }
+
+  /* 5. PUSH CONTENT DOWN BELOW THE BAR */
   .panel {
     display: none;
-    margin-top: 75px !important; 
+    margin-top: 75px !important;         /* 15px gap below the 60px bar */
     width: 98% !important;
-    max-width: 1600px !important;
+    max-width: 1700px !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
   .panel.active { display: block !important; }
 
-  /* DASHBOARD GRIDS: Restoring your 2-column box look */
+  /* 6. RESTORE DASHBOARD GRID */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
     gap: 20px !important;
-    width: 100% !important;
   }
   .metric-card, .card {
     flex: 1 !important;
