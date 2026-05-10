@@ -69,28 +69,7 @@ button[onclick="saveInvoice()"] {
     padding: 0 !important;
   }
 
-  /* 3. SET INDIVIDUAL SPACING */
-  .logo { 
-    margin-right: 15px !important; 
-    font-weight: bold; 
-    white-space: nowrap !important;
-  }
-
-  #pc-search-wrap { 
-    width: 180px !important; 
-    margin-right: 15px !important; 
-    position: relative !important;
-  }
-
-  #global-search {
-    width: 100% !important;
-    height: 28px !important;
-    background: rgba(255,255,255,0.1) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    border-radius: 4px;
-    color: #fff;
-    padding: 0 8px !important;
-  }
+ 
 
   /* 4. NAVIGATION (Takes up all middle space) */
   #main-nav { 
