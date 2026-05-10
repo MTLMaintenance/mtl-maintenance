@@ -6139,12 +6139,11 @@ function renderZerkTab(equipId) {
 
     const viewIdx = window._currentZerkViewIdx || 0;
     const currentMode = window.zerkPinMode || 'dot';
+    const showAllLines = window.showZerkLines || false;
 
-    // 1. UI Setup (Widen Modal & Hide Bottom History Button)
     if (modal) modal.classList.add('modal-zerk-wide');
     if (histBtn) histBtn.style.display = 'none';
 
-    // 2. EMPTY STATE
     if (!equip.zerk_photos || equip.zerk_photos.length === 0) {
         if (modal) modal.classList.remove('modal-zerk-wide');
         if (histBtn) histBtn.style.display = 'block';
@@ -6153,18 +6152,10 @@ function renderZerkTab(equipId) {
         return;
     }
 
-    // 3. BUILD HEADER (Switcher + Tool Mode)
-    // Fixed the syntax error here
+    // Header with "Show All Lines" Toggle
     const viewButtonsHtml = equip.zerk_photos.map((_, i) => {
         const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
-        const isActive = viewIdx === i;
-        return `
-            <button class="btn ${isActive ? 'btn-primary' : 'btn-secondary'} btn-sm" 
-                    onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')"
-                    ondblclick="renameZerkView(${i})"
-                    title="Double-click to rename">
-                ${name}
-            </button>`;
+        return `<button class="btn ${viewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')" ondblclick="renameZerkView(${i})">${name}</button>`;
     }).join('');
 
     switcher.innerHTML = `
@@ -6173,7 +6164,11 @@ function renderZerkTab(equipId) {
             ${viewButtonsHtml}
             <button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>
         </div>
-        <div style="display:flex; gap:5px; align-items:center">
+        <div style="display:flex; gap:10px; align-items:center">
+            <!-- NEW TOGGLE -->
+            <label style="font-size:11px; color:#666; display:flex; align-items:center; cursor:pointer; margin-right:10px; border-right:1px solid #ddd; padding-right:10px">
+                <input type="checkbox" style="margin-right:5px" ${showAllLines ? 'checked' : ''} onchange="window.showZerkLines=this.checked; renderZerkTab('${equipId}')"> Show Lines
+            </label>
             <button class="btn ${currentMode === 'dot' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='dot'; renderZerkTab('${equipId}')">Point Only</button>
             <button class="btn ${currentMode === 'line' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window.zerkPinMode='line'; renderZerkTab('${equipId}')">Pointer Line</button>
         </div>
@@ -6182,42 +6177,34 @@ function renderZerkTab(equipId) {
     const currentPhoto = equip.zerk_photos[viewIdx];
     const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
 
-    // 4. DRAW MAIN CONTENT
     container.innerHTML = `
     <div class="zerk-main-layout">
-        <!-- LEFT: THE MAP (Bigger via CSS) -->
         <div id="zerk-map-container" style="position:relative; background:#000; border-radius:8px; overflow:hidden" onclick="handleZerkMapClick(event, ${viewIdx})">
             <img id="zerk-map-img" src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
             
-            <!-- SVG LAYER FOR POINTER LINES -->
-           <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50">
-    ${points.map(p => {
-        if (p.lx !== null && p.lx !== undefined) {
-            return `<line x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" 
-                          stroke="#ffec00" stroke-width="2" stroke-dasharray="0" />`;
-        }
-        return '';
-    }).join('')}
-</svg>
+            <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50">
+                ${points.map(p => (p.lx && p.ly) ? `
+                    <line id="line-${p.id}" class="zerk-line" 
+                          x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" 
+                          style="opacity: ${showAllLines ? '0.3' : '0'}" />` : ''
+                ).join('')}
+            </svg>
 
-            <!-- THE DOTS -->
-          <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
-    ${points.map((p, idx) => {
-        // Use lx/ly if they exist, otherwise use x/y
-        const posX = (p.lx !== null && p.lx !== undefined) ? p.lx : p.x;
-        const posY = (p.ly !== null && p.ly !== undefined) ? p.ly : p.y;
-        
-        return `
-            <div class="zerk-dot" style="left:${posX}%; top:${posY}%" 
-                 onclick="event.stopPropagation(); editZerkNote('${p.id}')">
-                ${idx + 1}
+            <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
+                ${points.map((p, idx) => {
+                    const posX = (p.lx !== null) ? p.lx : p.x;
+                    const posY = (p.ly !== null) ? p.ly : p.y;
+                    return `
+                        <div id="dot-${p.id}" class="zerk-dot" style="left:${posX}%; top:${posY}%" 
+                             onmouseenter="highlightZerkLink('${p.id}', true)" 
+                             onmouseleave="highlightZerkLink('${p.id}', false)"
+                             onclick="event.stopPropagation(); editZerkNote('${p.id}')">
+                            ${idx + 1}
+                        </div>`;
+                }).join('')}
             </div>
-        `;
-    }).join('')}
-</div>
         </div>
 
-        <!-- RIGHT: THE SIDEBAR (Instructions) -->
         <div id="zerk-sidebar-container">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
                 <h4 style="margin:0; font-size:14px; color:#333">Grease Points</h4>
@@ -6229,7 +6216,7 @@ function renderZerkTab(equipId) {
                     <thead><tr><th style="width:40px">#</th><th>Instructions</th><th style="width:30px"></th></tr></thead>
                     <tbody>
                         ${points.map((p, idx) => `
-                            <tr>
+                            <tr onmouseenter="highlightZerkLink('${p.id}', true)" onmouseleave="highlightZerkLink('${p.id}', false)">
                                 <td><div class="zerk-num-list">${idx + 1}</div></td>
                                 <td style="font-weight:500; color:black !important" onclick="editZerkNote('${p.id}')">${p.note || '<span style="color:#aaa">Add instructions...</span>'}</td>
                                 <td style="text-align:right">
@@ -6243,6 +6230,22 @@ function renderZerkTab(equipId) {
         </div>
     </div>`;
 }
+function highlightZerk(id, shouldHighlight) {
+    const line = document.getElementById(`line-${id}`);
+    const dot = document.querySelector(`.zerk-dot[data-id="${id}"]`); // Add data-id to your dots
+    
+    if (line) {
+        if (shouldHighlight) {
+            line.classList.add('highlight');
+            line.style.opacity = "1";
+        } else {
+            line.classList.remove('highlight');
+            line.style.opacity = window.showZerkLines ? "0.3" : "0";
+        }
+    }
+}
+window.highlightZerk = highlightZerk;
+
 function renderQuickSpecs(equipId) {
     const container = document.getElementById('eq-quick-specs');
     if(!container) return;
