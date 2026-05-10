@@ -700,22 +700,6 @@ body > #invoice-photo-area {
 #app{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
 
 
-.modal-backdrop {
-  display: none; /* Hidden by default */
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 3000;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-backdrop.open {
-  display: flex !important; /* Shown only when 'open' class is added */
-}
-
-
-
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -807,8 +791,37 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .doc-name{font-weight:500}
 .doc-meta{font-size:11px;color:var(--text2)}
 /* MODAL */
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px}
-.modal-backdrop.open{display:flex}
+.modal-backdrop {
+    display: none;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.75) !important; /* Slightly transparent */
+    backdrop-filter: blur(4px); /* Glossy effect */
+    z-index: 5000 !important; /* Standard high number */
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Show modal when active or open class is added */
+.modal-backdrop.active, 
+.modal-backdrop.open {
+    display: flex !important;
+}
+/* The actual Card styling */
+.modal-card {
+    position: relative !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+/* 2. THE TOAST FIX (Must be higher than 5000) */
+#toast-container, .toast, .toast-notification {
+    position: fixed !important;
+    bottom: 25px !important;
+    right: 25px !important;
+    z-index: 9999 !important; /* Beats the modal's 5000 */
+    pointer-events: none;
+}
 .modal{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .modal-title{font-size:16px;font-weight:600}
@@ -1092,33 +1105,7 @@ body, html {
     color: white !important;
     border: none !important;
 }
-/* Ensure the darkening backdrop fills the screen */
-.modal-backdrop {
-    display: none; 
-    position: fixed !important;
-    top: 0; left: 0; right: 0; bottom: 0;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0,0,0,0.85) !important;
-    z-index: 1000000 !important; /* Top layer */
-    justify-content: center;
-    align-items: center;
-}
 
-/* Force the Modal Backdrop to show when active */
-.modal-backdrop.active {
-    display: flex !important;
-    pointer-events: auto !important;
- justify-content: center !important;
-    align-items: center !important;
-}
-
-
-/* The actual Card styling */
-.modal-card {
-    position: relative !important;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-}
 /* BACKGROUND CALENDAR BOX COLORS */
 .cal-event.work-order { background: #007bff !important; color: white !important; border-radius: 4px; }
 .cal-event.staff-absence { background: #ffc107 !important; color: #856404 !important; font-weight: 700; border-radius: 4px; }
