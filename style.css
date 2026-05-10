@@ -1,89 +1,61 @@
 @media screen and (min-width: 769px) {
-  /* 1. PC BACKGROUND */
-  html, body {
-    background-color: #1a1a1a !important;
-  }
-
-  /* 2. FORCE EVERYTHING INTO ONE SINGLE ROW */
+  /* 1. MASTER TOPBAR ROW: Forces everything to stay on ONE line */
   .topbar {
     display: flex !important;
-    flex-direction: row !important;      /* FORCE HORIZONTAL */
-    flex-wrap: nowrap !important;         /* PREVENT STACKING */
+    flex-direction: row !important; /* FORCE HORIZONTAL */
+    flex-wrap: nowrap !important;    /* FORCE NO STACKING */
     align-items: center !important;
-    justify-content: flex-start !important;
-    height: 65px !important;              /* Fixed thin bar height */
+    justify-content: space-between !important; /* Spread from Left to Right */
+    height: 65px !important;
     padding: 0 20px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    width: 100% !important;
     background: #111 !important;
     z-index: 9999;
   }
 
-  /* 3. ALIGN INTERNAL ELEMENTS ON THE SAME LINE */
-  
-  /* Logo - far left */
-  .logo { 
-    width: auto !important; 
-    margin: 0 15px 0 0 !important; 
-    flex-shrink: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* PC Search - next to logo */
-  .pc-only-search { 
-    display: block !important; 
-    width: 180px !important; 
-    margin: 0 15px 0 0 !important; 
-    flex-shrink: 0 !important;
-  }
-
-  /* Nav (Dashboard, Docs, etc.) - filling the middle */
-  #main-nav { 
-    display: flex !important; 
-    flex-direction: row !important; 
-    gap: 5px !important;
-    flex: 1 !important;                 /* Sucks up middle space */
+  /* 2. ALIGN ALL SUB-CONTAINERS IN THE ROW */
+  /* This targets any div inside the topbar that might be trying to stack */
+  .topbar-main-row, #main-nav, .topbar-right, .logo, .pc-only-search {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
     margin: 0 !important;
-    justify-content: flex-start !important;
-  }
-
-  /* Topbar Right (PDF, Sign Out, etc.) - pinned to far right */
-  .topbar-right { 
-    display: flex !important; 
-    flex-direction: row !important; 
-    gap: 8px !important;
-    margin: 0 0 0 15px !important;
+    padding: 0 !important;
+    height: 100% !important;
+    width: auto !important;
     flex-shrink: 0 !important;
   }
 
-  /* 4. FIX THE CONTENT POSITION (No Gap) */
-  
-  /* Pushes content exactly to the bottom of the 65px bar */
+  /* Space the items out */
+  .logo { margin-right: 20px !important; }
+  .pc-only-search { margin-right: 20px !important; width: 200px !important; }
+  #main-nav { gap: 8px !important; }
+  .topbar-right { margin-left: auto !important; gap: 8px !important; }
+
+  /* 3. POSITION THE CARDS: This pushes them down below the 65px bar */
   .topbar-spacer {
     height: 65px !important;
     display: block !important;
   }
 
-  /* Ensure cards sit tight under the bar */
   .panel {
     display: none;
-    margin-top: 15px !important; /* 15px Breathing room */
-    padding: 0 20px !important;
-    max-width: 1600px;
+    margin-top: 30px !important; /* 30px gap below the topbar */
+    width: 98% !important;       /* Maintain large card width */
+    max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
   .panel.active { display: block !important; }
 
-  /* 5. RESTORE 2-COLUMN DASHBOARD BOXES */
+  /* 4. MAINTAIN CARD SIZE (2 Columns) */
   .metrics, .grid-2 {
     display: flex !important;
-    flex-direction: row !important; 
+    flex-direction: row !important;
     gap: 20px !important;
     width: 100% !important;
   }
-  
   .metric-card, .card {
     flex: 1 !important;
     background: #f8f9fa;
