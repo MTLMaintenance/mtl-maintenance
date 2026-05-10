@@ -72,7 +72,7 @@
   }
 
   /* Stack Topbar into rows only for phone */
-  .topbar {
+  {
     display: flex !important;
     flex-direction: column !important;
     height: auto !important;
@@ -84,7 +84,7 @@
   .pc-only-search { display: none !important; }
 
   /* Allow swiping left-to-right on phone */
-  #main-nav, .topbar-right {
+  #main-nav,-right {
     display: flex !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
@@ -108,8 +108,8 @@
 }
 
 /* If the app container is hidden, force the topbar to stay hidden */
-#app[style*="display: none"] .topbar,
-#app[style*="display:none"] .topbar {
+#app[style*="display: none"],
+#app[style*="display:none"] {
     display: none !important;
 }
 /* The "Quick Note" Dashboard Widget style */
@@ -768,21 +768,7 @@ button[onclick="saveInvoice()"] {
 /* APP */
 #app{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
 
-     .topbar {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important; /* Forces one single line */
-  align-items: center !important;
-  height: 52px !important;
-  padding: 0 16px !important;
-  background: rgba(0,0,0,0.85) !important;
-  gap: 12px !important;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  backdrop-filter: blur(8px);
-}
- 
+
 .modal-backdrop {
   display: none; /* Hidden by default */
   position: fixed;
@@ -983,17 +969,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 .chat-channel-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 .chat-channel-btn.active{background:rgba(255,255,255,0.25);color:#fff;font-weight:600;border-color:rgba(255,255,255,0.3)}
 
-    .topbar {
-    height: auto !important;
-    flex-wrap: wrap !important;
-    padding: 10px 12px !important;
-    gap: 10px !important;
-   margin-bottom: 30px !important;
-    }
-  #global-search {
-    max-width: 120px !important;
-    font-size: 11px !important;
-  }
+   
 
   
 
