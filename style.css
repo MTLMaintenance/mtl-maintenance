@@ -844,22 +844,6 @@ button[onclick="saveInvoice()"] {
   flex-shrink: 0 !important; /* Prevents these buttons from disappearing */
 }
 
-/* Fix for the black/white button issue */
-#main-nav .nav-btn {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid transparent !important;
-  font-size: 12px !important;
-  white-space: nowrap !important;
-  padding: 5px 10px !important;
-}
-
-#main-nav .nav-btn.active {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
 /* Search bar width adjustment */
 #global-search {
   max-width: 180px !important;
@@ -876,8 +860,6 @@ button[onclick="saveInvoice()"] {
 .btn-success{background:transparent;color:var(--success-text);border:1px solid var(--success);font-size:12px;padding:4px 9px}
 .btn-sm{padding:4px 9px;font-size:12px}
 /* PANELS */
-.panel{display:none;padding:16px;max-width:1400px;margin:0 auto;width:100%}
-.panel.active{display:block}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
 .section-title{font-size:16px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* METRICS */
@@ -1210,15 +1192,6 @@ body, html {
   scrollbar-width: none;
 }
 .nav::-webkit-scrollbar { display: none; }
-
-/* --- THE CONTENT: FILLS THE GAP --- */
-.panel.active {
-  flex: 1 !important; /* Fills every pixel under the header */
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important; /* PINS EVERYTHING TO TOP */
-  padding: 16px;
-}
 
 /* Fix for button colors */
 #main-nav .nav-btn {
