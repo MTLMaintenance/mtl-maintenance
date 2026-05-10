@@ -39,72 +39,96 @@ button[onclick="saveInvoice()"] {
    2. PC LAYOUT (769px and up)
    ============================================================ */
 @media screen and (min-width: 769px) {
-  /* 1. MASTER TOPBAR GRID: Defines 3 clear zones */
+  /* 1. THE MAIN BAR: One rigid horizontal line */
   .topbar {
-    display: grid !important;
-    /* Column 1: Logo/Search (Auto size) | Column 2: Nav (Flexible) | Column 3: Actions (Auto size) */
-    grid-template-columns: auto 1fr auto !important; 
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
+    justify-content: flex-start !important;
     height: 60px !important;
-    padding: 0 20px !important;
+    padding: 0 15px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
   }
 
-  /* 2. LEFT ZONE: Logo and Search Bar side-by-side */
-  /* We target the logo and search wrapper together */
-  .logo, #pc-search-wrap, .pc-only-search {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
+  /* 2. THE LEFT SIDE (Logo & Search) - Locked width so they don't stretch */
+  .logo {
     width: auto !important;
-    margin: 0 !important;
+    margin-right: 20px !important;
+    flex-shrink: 0 !important;
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
+    white-space: nowrap !important;
   }
-  
-  .logo { margin-right: 20px !important; font-weight: bold; white-space: nowrap !important; }
-  #pc-search-wrap { width: 180px !important; margin-right: 20px !important; }
 
-  /* 3. MIDDLE ZONE: Navigation buttons */
+  #pc-search-wrap, .pc-only-search {
+    display: flex !important;
+    width: 160px !important; /* Locked width */
+    flex-shrink: 0 !important; /* Prevents collapsing */
+    margin-right: 15px !important;
+    position: relative !important;
+  }
+
+  #global-search {
+    width: 100% !important;
+    height: 28px !important;
+    background: rgba(255,255,255,0.1) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 4px;
+    color: white;
+    padding-left: 8px !important;
+  }
+
+  /* 3. THE MIDDLE (Navigation Buttons) - Fills the gap */
   #main-nav {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: center !important; /* Centers links in the middle space */
-    gap: 8px !important;
-    overflow: hidden !important;
-    margin: 0 !important;
+    flex: 1 !important;           /* Sucks up all available space */
+    justify-content: flex-start !important;
+    gap: 5px !important;
+    overflow-x: auto !important;   /* If they don't fit, they scroll horizontally */
+    margin-right: 15px !important;
+    flex-shrink: 1 !important;
   }
+  
+  /* Hide scrollbar for a clean look */
+  #main-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
+    flex: 0 0 auto !important;     /* CRITICAL: Prevents buttons from vanishing */
+    padding: 4px 10px !important;
+    font-size: 12px !important;
     white-space: nowrap !important;
-    font-size: 13px !important;
-    padding: 5px 10px !important;
   }
 
-  /* 4. RIGHT ZONE: Actions (Profile, PDF, etc.) */
+  /* 4. THE RIGHT SIDE (Action Buttons) - Pinned to far right */
   .topbar-right {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: flex-end !important;
-    align-items: center !important;
+    width: auto !important;
+    margin-left: auto !important;  /* The "spring" pushing it to the edge */
     gap: 8px !important;
-    margin: 0 !important;
+    flex-shrink: 0 !important;     /* Prevents squishing */
+    align-items: center !important;
   }
 
-  /* 5. GAP FIX: Pushes cards down below the 60px bar */
+  /* 5. THE CONTENT GAP: Moves cards below the 60px bar */
   .panel {
     display: none;
-    margin-top: 80px !important; /* Space for bar + gap */
+    margin-top: 75px !important;   /* 15px gap below the bar */
     width: 98% !important;
     max-width: 1800px !important;
     margin-left: auto !important;
     margin-right: auto !important;
+    padding: 0 10px !important;
   }
   .panel.active { display: block !important; }
 
-  /* Restore Dashboard Card Layout */
+  /* RESTORE DASHBOARD GRID */
   .metrics, .grid-2 {
     display: flex !important;
     flex-direction: row !important; 
