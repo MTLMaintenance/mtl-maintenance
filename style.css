@@ -530,6 +530,28 @@ body.dark-mode .modal {
     cursor: pointer;
     user-select: none; 
 }
+.zerk-line {
+    stroke: #ffec00;
+    stroke-width: 1;
+    stroke-dasharray: 4; /* Makes them dashed/subtle */
+    opacity: 0.3;        /* Fades them out */
+    transition: all 0.2s ease;
+}
+
+/* When hovering over a dot or a table row, make the line "POP" */
+.zerk-line.highlight {
+    stroke-width: 3;
+    stroke-dasharray: 0; /* Solid line */
+    opacity: 1;
+    filter: drop-shadow(0 0 5px #ffec00);
+}
+
+/* Highlight the dot too */
+.zerk-dot.highlight {
+    transform: translate(-50%, -50%) scale(1.3) !important;
+    background: #ffffff !important;
+    z-index: 200 !important;
+}
 /* ============================================================
    2. MOBILE OVERRIDES (max-width: 768px)
    ============================================================ */
