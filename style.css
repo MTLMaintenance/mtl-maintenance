@@ -598,32 +598,29 @@ body.dark-mode .modal {
     white-space: nowrap !important;
     font-size: 12px !important;
   }
-  #main-nav::-webkit-scrollbar, .topbar-right::-webkit-scrollbar { display: none; }
 
-  /* 4. DYNAMIC VERTICAL SPACING FOR PANELS */
+  /* 4. DYNAMIC VERTICAL SPACING */
   .panel {
     padding: 10px !important;
     margin-top: var(--topbar-h, 135px) !important; 
     height: auto !important;
-    overflow-y: auto !important;
   }
 
-  /* 5. MODAL TABS FIX (Move from side to TOP) */
-  /* Targets the container that holds the sidebar and content area */
+  /* 5. MODAL TABS FIX & CONTENT STRETCH */
   #detail-modal .modal-body,
   #equip-detail-modal .modal-body,
   .modal-content > div[style*="display: flex"] {
-      flex-direction: column !important; /* Stack sidebar on top of content */
+      display: flex !important;
+      flex-direction: column !important; 
+      height: auto !important; /* Allow body to grow */
   }
 
-  /* Targets the sidebar itself and turns it into a horizontal scroll */
   .tab-sidebar,
   .modal div[style*="width: 150px"],
   .modal div[style*="width: 200px"] {
       width: 100% !important;
-      min-width: 100% !important;
       display: flex !important;
-      flex-direction: row !important; /* Horizontal tabs */
+      flex-direction: row !important;
       overflow-x: auto !important;
       white-space: nowrap !important;
       gap: 10px !important;
@@ -633,33 +630,28 @@ body.dark-mode .modal {
       -webkit-overflow-scrolling: touch;
   }
 
-  .tab, .nav-link { 
-      flex: 0 0 auto !important; 
-      padding: 8px 15px !important;
-      font-size: 13px !important;
+  /* Force the content area to grow vertically */
+  .tab-content, .content-area {
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible !important; 
+      padding: 15px 5px !important;
   }
 
   /* 6. ZERK MAP MOBILE FIXES */
   .zerk-main-layout {
       display: flex !important;
       flex-direction: column !important;
-      gap: 15px !important;
+      height: auto !important;
   }
   #zerk-map-container {
       width: 100% !important;
       max-height: 45vh !important;
-      margin: 0 !important;
-  }
-  #zerk-map-img {
-      width: 100% !important;
-      height: auto !important;
-      object-fit: contain !important;
   }
   #zerk-sidebar-container {
       width: 100% !important;
-      min-height: auto !important;
-      max-height: 350px !important;
-      padding: 10px !important;
+      height: auto !important; /* Stretch table with rows */
+      max-height: none !important; 
   }
 
   /* 7. FORM & GRID STACKING */
@@ -667,25 +659,23 @@ body.dark-mode .modal {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    gap: 12px !important;
+    height: auto !important;
   }
-  .metric-card, .card { width: 100% !important; box-sizing: border-box !important; }
-
-  input, select, textarea {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    font-size: 16px !important; 
+  .metric-card, .card { 
+      width: 100% !important; 
+      height: auto !important; 
+      box-sizing: border-box !important; 
   }
 
-  /* 8. MODAL SCROLLING & OVERLAY */
+  /* 8. MODAL AUTO-STRETCH & BACKDROP SCROLL */
   .modal-backdrop {
-    align-items: flex-start !important; /* Forces content to start at top for scrolling */
-    padding: 10px !important;
-    overflow-y: auto !important;
-    display: none; /* JS will toggle this */
+    display: none; 
+    align-items: flex-start !important; 
+    padding: 15px 10px !important;
+    overflow-y: auto !important; /* Scroll the whole screen if card is long */
+    -webkit-overflow-scrolling: touch;
   }
   
-  /* Fix to allow modals to be flex when JS sets them to block */
   .modal-backdrop[style*="display: block"], 
   .modal-backdrop[style*="display: flex"] {
       display: flex !important;
@@ -693,30 +683,23 @@ body.dark-mode .modal {
 
   .modal {
       width: 100% !important;
-      max-width: 100% !important;
-      margin: 0 auto 50px auto !important;
+      height: auto !important;     /* CRITICAL: No fixed height */
+      max-height: none !important; /* CRITICAL: Allow infinite growth */
+      margin: 0 auto 50px auto !important; /* Extra bottom margin so buttons aren't on edge */
+      position: relative !important;
       top: 0 !important;
       transform: none !important;
+      overflow: visible !important; /* Let children stretch it */
   }
 
-  /* 9. MOBILE CHAT VIEWPORT LOCK */
+  /* 9. MOBILE CHAT VIEWPORT LOCK (Kept separate as it shouldn't stretch) */
   #panel-chat.active {
     position: fixed !important;
     top: var(--topbar-h, 135px) !important;
     bottom: 0 !important;
-    left: 0; right: 0;
     height: calc(100dvh - var(--topbar-h, 135px)) !important;
     display: flex !important;
     flex-direction: column !important;
-    margin: 0 !important;
-    padding: 10px !important;
-    background: #001f3f !important;
-    z-index: 10;
-  }
-  #chat-messages-container {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
   }
 }
 @media screen and (min-width: 769px) {
