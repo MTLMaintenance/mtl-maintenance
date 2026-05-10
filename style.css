@@ -1716,52 +1716,54 @@ html {
   }
 /* 8 Calendar Styling */
    /* Change #panel-calendar to #panel-calendar.active */
-#panel-calendar.active {
-    height: calc(100vh - 100px) !important; 
-    display: flex !important; /* Now only flexes when active */
-    flex-direction: column !important;
-}
-
-/* Ensure the white card stretches to the very bottom ONLY when active */
-#panel-calendar.active .card, 
-#cal-grid-container.active .card {
-    flex: 1 !important; 
+/* 1. Force the calendar panel to take up the full remaining screen height */
+  #panel-calendar.active {
     display: flex !important;
     flex-direction: column !important;
-    margin-bottom: 10px !important; 
-    max-width: 98% !important;
-    width: 98% !important;
-}
+    /* This calculation pulls the bottom of the panel to the edge of the monitor */
+    height: calc(100vh - 85px) !important; 
+    margin-top: 75px !important; 
+  }
 
-/* The magic: Force the day grid to fill the remaining space */
-#cal-days {
+  /* 2. Make the white card fill that panel completely */
+  #panel-calendar.active .card {
+    flex: 1 !important; /* Stretch to fill panel */
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important; /* Force height */
+    margin: 0 auto 10px auto !important;
+    padding: 15px !important;
+  }
+
+  /* 3. The Grid Labels (Sun, Mon...) should stay small */
+  .cal-day-labels {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    /* This makes every row (4, 5, or 6) take up exactly equal space */
-    grid-auto-rows: 1fr !important; 
-    flex: 1 !important; 
-    border-bottom: 1px solid #ddd;
-}
+    height: 40px !important; /* Fixed height for labels */
+    flex-shrink: 0 !important;
+  }
 
-/* Ensure the individual day boxes take full height */
-.cal-day {
+  /* 4. THE MAGIC FIX: Force the day grid to fill the remaining space */
+  #cal-days {
+    flex-grow: 1 !important; /* Take up all remaining space in the card */
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    /* This tells the grid: divide the remaining vertical space equally among the rows */
+    grid-template-rows: repeat(auto-fit, minmax(0, 1fr)) !important;
     height: 100% !important;
-    min-height: 0 !important; 
-    display: flex;
-    flex-direction: column;
-    padding: 5px !important;
-    border: 1px solid #eee;
-    color: #1a1a18 !important; 
-}
+    border-bottom: 1px solid #eee;
+  }
 
-/* Keep the Day Names (Sun, Mon, etc.) at a fixed height */
-.cal-day-labels {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: bold;
-    padding: 10px 0;
-    color: #555;
+  /* 5. Ensure the individual day boxes stretch to fill the grid cells */
+  .cal-day {
+    height: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border: 1px solid #eee;
+    padding: 5px !important;
+    background: white;
+  }
 }
 /* -------end of pc block ----------*/
 .modern-login-card {
