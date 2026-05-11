@@ -5828,7 +5828,11 @@ async function showPanel(id) {
         'calendar': async () => { if (typeof renderCalendar === 'function') await renderCalendar(); },
         'equipment': () => { if (typeof renderEquipmentTable === 'function') renderEquipmentTable(); },
         'tasks': () => { if (typeof renderTasks === 'function') renderTasks(); },
-        'parts': () => { if (typeof renderParts === 'function') renderParts(); },
+        
+        // --- CHANGED THIS LINE BELOW ---
+        'parts': () => { if (typeof switchPartsTab === 'function') switchPartsTab('inventory'); else if (typeof renderParts === 'function') renderParts(); },
+        // -------------------------------
+
         'suppliers': () => { if (typeof renderSuppliers === 'function') renderSuppliers(); },
         'documents': () => { if (typeof renderDocuments === 'function') renderDocuments(); },
         'analytics': () => { if (typeof renderAnalytics === 'function') renderAnalytics(); },
@@ -5839,13 +5843,12 @@ async function showPanel(id) {
             if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
         },
         'tools': async () => { 
-    // If the list is still undefined or empty, try to fetch it now
-    if (!state.tools || state.tools.length === 0) {
-        await fetchTools();
-    }
-    if (typeof switchToolTab === 'function') switchToolTab('inventory');
-    if (typeof renderTools === 'function') renderTools(); 
-}
+            if (!state.tools || state.tools.length === 0) {
+                await fetchTools();
+            }
+            if (typeof switchToolTab === 'function') switchToolTab('inventory');
+            if (typeof renderTools === 'function') renderTools(); 
+        }
     };
 
     // 6. Execute the render if it exists
@@ -5862,11 +5865,8 @@ async function showPanel(id) {
         const calPanel = document.getElementById('panel-calendar');
         if (calPanel) calPanel.style.overflowY = '';
     }
-} // <--- This closing bracket was likely missing or misplaced
-
-
+}
   
-
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
      window.activeZerkId = zerkId; 
@@ -8460,5 +8460,31 @@ window.showPanel = function(id) {
     setTimeout(adjustMobileLayout, 10); 
 };
 
+function switchPartsTab(tabType) {
+    const partBtn = document.getElementById('add-part-btn');
+    const consumableBtn = document.getElementById('add-consumable-btn');
+
+    if (tabType === 'inventory') {
+        // Show Part button, Hide Consumable button
+        if (partBtn) partBtn.style.display = 'inline-flex';
+        if (consumableBtn) consumableBtn.style.display = 'none';
+        
+        // Your existing logic to show the inventory table
+        renderParts(); 
+    } else {
+        // Hide Part button, Show Consumable button
+        if (partBtn) partBtn.style.display = 'none';
+        if (consumableBtn) consumableBtn.style.display = 'inline-flex';
+        
+        // Your existing logic to show consumables table
+        // renderConsumables(); 
+    }
+}
 // Also run it once when the app starts
 setTimeout(adjustMobileLayout, 500);
+
+function openAddPart() {
+    resetPartForm(); 
+    populateSupplierDropdown(); 
+    openModal('part-modal');
+}
