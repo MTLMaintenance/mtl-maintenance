@@ -2515,7 +2515,6 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
-async function savePart() {
     // 1. Get the ID from the hidden field
     const existingId = document.getElementById('part-edit-id').value;
     
@@ -7578,6 +7577,7 @@ window.editPart = function(id) {
 
     openModal('part-modal');
 };
+
 
 function resetPartForm() {
     document.getElementById('part-modal-title').textContent = "Add New Part";
