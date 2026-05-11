@@ -7570,31 +7570,34 @@ async function editToolObservation(id) {
         showToast("Update failed");
     }
 }
-// 1. OPEN THE EDIT FORM
 window.editPart = function(id) {
     const part = state.parts.find(p => p.id === id);
     if (!part) return;
 
-    document.getElementById('part-edit-id').value = part.id;
-    document.getElementById('part-modal-title').textContent = "Edit Part: " + part.name;
-    document.getElementById('p-name').value = part.name || "";
+    
+ 
+    const idField = document.getElementById('part-edit-id');
+    if (idField) idField.value = id;
+
+ 
+    const titleEl = document.getElementById('part-modal-title');
+    if (titleEl) titleEl.textContent = "Edit Part: " + part.name;
+
+ 
+    document.getElementById('edit-p-name').value = part.name || "";
     document.getElementById('p-num').value = part.num || "";
     document.getElementById('p-cost').value = part.cost || 0;
     document.getElementById('p-qty').value = part.qty || 0;
     document.getElementById('p-reorder').value = part.reorder || 0;
-    document.getElementById('p-reorder-qty').value = part.reorder_qty || 10;
-    document.getElementById('p-auto-reorder').checked = !!part.auto_reorder;
     document.getElementById('p-supplier-select').value = part.supplier_id || "";
 
-   const idField = document.getElementById('part-edit-id');
-    if (idField) idField.value = id;
  
- openModal('part-modal');
+    openModal('part-modal');
 
-   
+ 
     const delBtn = document.getElementById('btn-delete-part');
     if (delBtn) {
-        delBtn.style.setProperty('display', 'block', 'important');
+        delBtn.style.display = 'block';
     }
 };
 
