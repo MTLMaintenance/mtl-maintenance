@@ -1907,30 +1907,58 @@ function renderParts() {
 }
 // 1. THE DELETE FUNCTION
 window.deletePart = async function() {
+    // Grab the ID from the hidden field
     const id = document.getElementById('part-edit-id').value;
-    if(!id) return;
+    
+    if(!id) {
+        alert("Error: Could not find the ID for this part.");
+        return;
+    }
 
     const part = state.parts.find(p => p.id === id);
-    if(!confirm(`Permanently delete "${part.name}"?`)) return;
+    if(!confirm(`Are you sure you want to permanently delete "${part.name}"?`)) return;
 
     try {
-        await window._mpdb.from('parts').delete().eq('id', id);
+        // 1. Delete from Supabase
+        const { error } = await window._mpdb.from('parts').delete().eq('id', id);
+        if (error) throw error;
+
+        // 2. LOG THE ACTION (Accountability)
+        if (typeof logAuditAction === 'function') {
+            await logAuditAction("Deleted Part", `Removed "${part.name}" from inventory.`);
+        }
+
+        // 3. Update Local Memory
         state.parts = state.parts.filter(p => p.id !== id);
+
+        // 4. Close and Refresh
         closeModal('part-modal');
         renderParts();
-        showToast("Part removed");
-    } catch(e) { showToast("Delete failed"); }
+        showToast("Part deleted ✓");
+
+    } catch(e) {
+        console.error("Delete failed:", e);
+        showToast("Error: Could not delete part.");
+    }
 };
 
-// 2. SHOW BUTTON WHEN EDITING
-// Add this inside your editPart(id) function:
-const delBtn = document.getElementById('btn-delete-part');
-if (delBtn) delBtn.style.display = 'block';
+function openAddPart() {
+    // 1. CLEAR THE HIDDEN ID
+    const idField = document.getElementById('part-edit-id');
+    if (idField) idField.value = "";
 
-// 3. HIDE BUTTON WHEN ADDING NEW
-// Add this inside your resetPartForm() function:
-const delBtnNew = document.getElementById('btn-delete-part');
-if (delBtnNew) delBtnNew.style.display = 'none';
+    // 2. CLEAR THE FORM
+    ['edit-p-name', 'p-num', 'p-cost', 'p-qty', 'p-reorder','part-edit-id','part-modal-title','p-reorder-qty','p-auto-reorder','p-supplier-select'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+
+    // 3. HIDE THE DELETE BUTTON (You can't delete a part you haven't saved yet)
+    const delBtn = document.getElementById('btn-delete-part');
+    if (delBtn) delBtn.style.display = 'none';
+
+    openModal('part-modal');
+}
 // ============================================================
 // SUPPLIERS
 // ============================================================
@@ -7547,16 +7575,6 @@ window.editPart = function(id) {
     const part = state.parts.find(p => p.id === id);
     if (!part) return;
 
-    // 1. OPEN MODAL
-    openModal('part-modal');
-
-    // 2. THE FIX: Force the delete button to show
-    const delBtn = document.getElementById('btn-delete-part');
-    if (delBtn) {
-        delBtn.style.setProperty('display', 'block', 'important');
-    }
-
-    // 3. FILL FORM FIELDS
     document.getElementById('part-edit-id').value = part.id;
     document.getElementById('part-modal-title').textContent = "Edit Part: " + part.name;
     document.getElementById('p-name').value = part.name || "";
@@ -7567,8 +7585,19 @@ window.editPart = function(id) {
     document.getElementById('p-reorder-qty').value = part.reorder_qty || 10;
     document.getElementById('p-auto-reorder').checked = !!part.auto_reorder;
     document.getElementById('p-supplier-select').value = part.supplier_id || "";
+
+   const idField = document.getElementById('part-edit-id');
+    if (idField) idField.value = id;
+ 
+ openModal('part-modal');
+
+   
+    const delBtn = document.getElementById('btn-delete-part');
+    if (delBtn) {
+        delBtn.style.setProperty('display', 'block', 'important');
+    }
 };
-// 2. RESET THE FORM (Run this when clicking '+ Add Part')
+
 function resetPartForm() {
     document.getElementById('part-modal-title').textContent = "Add New Part";
     document.getElementById('part-edit-id').value = ""; 
