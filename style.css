@@ -46,6 +46,30 @@ table tbody tr:nth-child(even) {
 /* ============================================================
    1. GLOBAL / BASE STYLES
    ============================================================ */
+
+.cal-day.today {
+    background-color: #e7f3ff !important; 
+    border: 2px solid var(--accent) !important; 
+    position: relative;
+    z-index: 5; 
+}
+
+
+.cal-day.today .cal-day-num {
+    color: var(--accent) !important;
+    font-weight: 800 !important;
+}
+
+.cal-day.today::after {
+    content: "TODAY";
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    font-size: 9px;
+    font-weight: bold;
+    color: var(--accent);
+    opacity: 0.7;
+}
 :root {
   --bg: #ffffff; --bg2: #f5f5f3; --bg3: #eeede8;
   --text: #1a1a18; --text2: #6b6b66; --text3: #9c9a92;
