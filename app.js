@@ -1907,53 +1907,45 @@ function renderParts() {
 }
 // 1. THE DELETE FUNCTION
 window.deletePart = async function() {
-    // Grab the ID from the hidden field
+    // Get ID from the hidden field inside the modal
     const id = document.getElementById('part-edit-id').value;
     
-    if(!id) {
-        alert("Error: Could not find the ID for this part.");
+    if (!id) {
+        alert("No ID found. Close the modal and try again.");
         return;
     }
 
     const part = state.parts.find(p => p.id === id);
-    if(!confirm(`Are you sure you want to permanently delete "${part.name}"?`)) return;
+    if (!confirm(`Permanently delete "${part ? part.name : 'this part'}"?`)) return;
 
     try {
-        // 1. Delete from Supabase
-        const { error } = await window._mpdb.from('parts').delete().eq('id', id);
-        if (error) throw error;
-
-        // 2. LOG THE ACTION (Accountability)
-        if (typeof logAuditAction === 'function') {
-            await logAuditAction("Deleted Part", `Removed "${part.name}" from inventory.`);
-        }
-
-        // 3. Update Local Memory
+        await window._mpdb.from('parts').delete().eq('id', id);
+        
+        // Remove from local memory
         state.parts = state.parts.filter(p => p.id !== id);
-
-        // 4. Close and Refresh
+        
+        showToast("Part deleted");
         closeModal('part-modal');
         renderParts();
-        showToast("Part deleted ✓");
-
-    } catch(e) {
-        console.error("Delete failed:", e);
-        showToast("Error: Could not delete part.");
+    } catch (e) {
+        alert("Delete failed: " + e.message);
     }
 };
 
 function openAddPart() {
-    // 1. CLEAR THE HIDDEN ID
-    const idField = document.getElementById('part-edit-id');
-    if (idField) idField.value = "";
+    // 1. CLEAR the hidden ID (This is very important)
+    document.getElementById('part-edit-id').value = "";
+    
+    // 2. Reset the title
+    document.getElementById('part-modal-title').textContent = "Add New Part";
 
-    // 2. CLEAR THE FORM
-    ['edit-p-name', 'p-num', 'p-cost', 'p-qty', 'p-reorder','part-edit-id','part-modal-title','p-reorder-qty','p-auto-reorder','p-supplier-select'].forEach(id => {
+    // 3. Clear the inputs
+    ['edit-p-name', 'p-num', 'p-cost', 'p-qty', 'p-reorder'].forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.value = '';
+        if (el) el.value = (id === 'p-cost' || id === 'p-qty') ? 0 : '';
     });
 
-    // 3. HIDE THE DELETE BUTTON (You can't delete a part you haven't saved yet)
+    // 4. Hide delete button for new parts
     const delBtn = document.getElementById('btn-delete-part');
     if (delBtn) delBtn.style.display = 'none';
 
@@ -2523,66 +2515,57 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
-    console.log("--- Starting Save Part Process ---");
+    // 1. Get the ID from the hidden field
+    const existingId = document.getElementById('part-edit-id').value;
     
+    // 2. Gather form data
+    const name = document.getElementById('edit-p-name').value.trim();
+    const partNum = document.getElementById('p-num').value.trim();
+    const unitCost = parseFloat(document.getElementById('p-cost').value) || 0;
+    const qty = parseInt(document.getElementById('p-qty').value) || 0;
+    const reorder = parseInt(document.getElementById('p-reorder').value) || 0;
+    const supplierId = document.getElementById('p-supplier-select').value || null;
+
+    if (!name) return alert("Part name is required");
+
+    // 3. DECIDE: Are we updating or creating?
+    // If existingId has a value, use it. Otherwise, make a new uid().
+    const partId = existingId && existingId !== "" ? existingId : uid();
+
+    const record = {
+        id: partId, // This is the key fix
+        name: name,
+        num: partNum,
+        qty: qty,
+        reorder: reorder,
+        cost: unitCost,
+        supplier_id: supplierId,
+        updated_at: new Date().toISOString()
+    };
+
     try {
-        // 1. Gather data from HTML
-        const name = document.getElementById('edit-p-name')?.value.trim();
-        const partNumber = document.getElementById('p-num')?.value.trim();
-        const unitCost = parseFloat(document.getElementById('p-cost')?.value) || 0;
-        const currentQty = parseInt(document.getElementById('p-qty')?.value) || 0;
-        const reorderThreshold = parseInt(document.getElementById('p-reorder')?.value) || 0;
-        const supplierId = document.getElementById('p-supplier-select')?.value || null;
-
-        if (!name) {
-            alert("Please enter a part name");
-            return;
-        }
-
-        // 2. MAPPED TO YOUR TABLE COLUMNS (Matches your screenshot)
-        const record = {
-            id: uid(),
-            name: name,
-            num: partNumber,        // Database column is 'num'
-            qty: currentQty,        // Database column is 'qty'
-            reorder: reorderThreshold, // Database column is 'reorder'
-            cost: unitCost,         // Database column is 'cost'
-            supplier_id: supplierId,
-            auto_reorder: false     // Defaulting to false as per your table
-        };
-
-        console.log("Connecting to Supabase...");
-
-        const response = await window._mpdb
+        const { error } = await window._mpdb
             .from('parts')
-            .upsert(record);
+            .upsert(record); // Upsert handles both insert and update
 
-        if (response.error) {
-            console.error("Database Error Details:", response.error);
-            alert("DATABASE REJECTED: " + response.error.message);
-            return;
+        if (error) throw error;
+
+        // 4. Update Local State (preventing duplicates in memory)
+        const idx = state.parts.findIndex(p => p.id === partId);
+        if (idx !== -1) {
+            state.parts[idx] = record; // Replace old version
+        } else {
+            state.parts.push(record); // Add new
         }
 
-        // 3. ACCOUNTABILITY LOGGING
-        if (typeof logAuditAction === 'function') {
-            await logAuditAction("Added Part", `User ${currentUser.name} added "${name}" (${partNumber}) to inventory.`);
-        }
-
-        // 4. Update UI
-        if (!state.parts) state.parts = [];
-        state.parts.push(record);
-        
+        showToast("Part saved ✓");
         closeModal('part-modal');
-        if (typeof renderParts === 'function') renderParts();
-        
-        showToast("Part saved successfully ✓");
+        renderParts();
 
     } catch (e) {
-        console.error("Javascript Crash:", e);
-        alert("APP ERROR: " + e.message);
+        alert("Error saving: " + e.message);
     }
 }
-
 async function saveSupplier(){
   const name=document.getElementById('sup-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
   const record={
