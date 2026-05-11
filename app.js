@@ -2515,6 +2515,7 @@ async function saveTask(){
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
+async function savePart() {
     // 1. Get the ID from the hidden field
     const existingId = document.getElementById('part-edit-id').value;
     
@@ -2528,35 +2529,32 @@ async function savePart() {
 
     if (!name) return alert("Part name is required");
 
-    // 3. DECIDE: Are we updating or creating?
-    // If existingId has a value, use it. Otherwise, make a new uid().
-    const partId = existingId && existingId !== "" ? existingId : uid();
+    // 3. Determine ID (Existing for Edit, New for Add)
+    const partId = (existingId && existingId !== "") ? existingId : uid();
 
+    // 4. Create record MATCHING your Supabase columns exactly
     const record = {
-        id: partId, // This is the key fix
+        id: partId,
         name: name,
         num: partNum,
         qty: qty,
         reorder: reorder,
         cost: unitCost,
-        supplier_id: supplierId,
-        updated_at: new Date().toISOString()
+        supplier_id: supplierId
+        // REMOVED updated_at because it doesn't exist in your DB
     };
 
     try {
         const { error } = await window._mpdb
             .from('parts')
-            .upsert(record); // Upsert handles both insert and update
+            .upsert(record);
 
         if (error) throw error;
 
-        // 4. Update Local State (preventing duplicates in memory)
+        // Update Local State
         const idx = state.parts.findIndex(p => p.id === partId);
-        if (idx !== -1) {
-            state.parts[idx] = record; // Replace old version
-        } else {
-            state.parts.push(record); // Add new
-        }
+        if (idx !== -1) state.parts[idx] = record;
+        else state.parts.push(record);
 
         showToast("Part saved ✓");
         closeModal('part-modal');
@@ -7557,16 +7555,16 @@ window.editPart = function(id) {
     const part = state.parts.find(p => p.id === id);
     if (!part) return;
 
-    
- 
-    const idField = document.getElementById('part-edit-id');
-    if (idField) idField.value = id;
+    // --- THE FIX: Make sure this ID is set correctly ---
+    const idInput = document.getElementById('part-edit-id');
+    if (idInput) {
+        idInput.value = id;
+    } else {
+        console.error("Hidden input 'part-edit-id' not found in HTML!");
+    }
 
- 
-    const titleEl = document.getElementById('part-modal-title');
-    if (titleEl) titleEl.textContent = "Edit Part: " + part.name;
-
- 
+    // Fill form
+    document.getElementById('part-modal-title').textContent = "Edit Part: " + part.name;
     document.getElementById('edit-p-name').value = part.name || "";
     document.getElementById('p-num').value = part.num || "";
     document.getElementById('p-cost').value = part.cost || 0;
@@ -7574,14 +7572,11 @@ window.editPart = function(id) {
     document.getElementById('p-reorder').value = part.reorder || 0;
     document.getElementById('p-supplier-select').value = part.supplier_id || "";
 
- 
-    openModal('part-modal');
-
- 
+    // Show delete button
     const delBtn = document.getElementById('btn-delete-part');
-    if (delBtn) {
-        delBtn.style.display = 'block';
-    }
+    if (delBtn) delBtn.style.display = 'block';
+
+    openModal('part-modal');
 };
 
 function resetPartForm() {
