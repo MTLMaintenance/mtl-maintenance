@@ -89,7 +89,7 @@ table tbody tr:nth-child(even) {
 }
 /* Force notifications to the very front of the screen */
 #toast-container, .toast, #toast {
-  z-index: 20000 !important; 
+  z-index: 2000000 !important; 
   position: fixed !important;
   bottom: 20px;
   right: 20px;
