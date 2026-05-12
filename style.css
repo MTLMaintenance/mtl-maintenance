@@ -1668,16 +1668,17 @@ html {
    1. MOBILE LAYOUT (Apply ONLY to screens 768px and SMALLER)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  html, body { background-color: #001f3f !important; }
+  /* 1. VIEWPORT & BACKGROUND */
+  html, body { 
+    background-color: #001f3f !important; 
+    height: auto !important;
+    overflow-x: hidden !important;
+  }
 
-  /* Hide PC-only elements */
-  #pc-search-wrap, .pc-only-search { 
-    display: none !important; 
-  }   
-
+  /* 2. FIXED STACKED TOPBAR */
   .topbar {
     display: flex !important;
-    flex-direction: column !important; /* Mobile stacks vertically */
+    flex-direction: column !important;
     position: fixed !important;
     height: auto !important;
     padding: 10px 0 !important;
@@ -1685,72 +1686,96 @@ html {
     background: #000 !important;
     z-index: 10000;
   }
-
   .logo { width: 100% !important; text-align: center !important; padding: 5px 0 !important; }
+  #pc-search-wrap, .pc-only-search { display: none !important; }
 
-  /* Mobile swiping for Nav and Actions */
+  /* 3. HORIZONTAL SWIPE FOR NAV */
   #main-nav, .topbar-right {
     display: flex !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     padding: 6px 12px !important;
     width: 100% !important;
-  }
-
-  .panel { margin-top: 135px !important; padding: 10px !important; }
-  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
-  .metric-card, .card { width: 100% !important; }
-}
-
-/* Base Panel Rules (Applies to both) */
-.panel { display: none; }
-.panel.active { display: block !important; }
-
- .modal-backdrop {
-    display: none; 
-    /* Increased z-index to 10001 so it sits ON TOP of the topbar */
-    z-index: 10001 !important; 
-    align-items: flex-start !important; 
-    padding: 40px 10px 20px 10px !important; /* Added 40px at top to clear notches */
-    overflow-y: auto !important;
-    background: rgba(0,0,0,0.8) !important;
     -webkit-overflow-scrolling: touch;
   }
-  
-  .modal-backdrop[style*="display: block"], 
-  .modal-backdrop[style*="display: flex"] {
-      display: flex !important;
+  .nav-btn, .topbar-right .btn { flex: 0 0 auto !important; }
+
+  /* 4. DASHBOARD & PANEL SPACING */
+  .panel { 
+    display: none;
+    margin-top: 135px !important; 
+    padding: 10px !important; 
   }
+  .panel.active { display: block !important; }
+  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
+  .metric-card, .card { width: 100% !important; height: auto !important; }
+
+  /* 5. MODAL AUTO-STRETCH & SCROLLING */
+  .modal-backdrop {
+    display: none; 
+    z-index: 10001 !important; 
+    align-items: flex-start !important; 
+    padding: 30px 10px 60px 10px !important; 
+    overflow-y: auto !important;
+    background: rgba(0,0,0,0.85) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-backdrop[style*="display: block"], 
+  .modal-backdrop[style*="display: flex"] { display: flex !important; }
 
   .modal {
       width: 100% !important;
+      height: auto !important;     /* Let card grow with content */
+      max-height: none !important; /* No limits */
       background: white !important;
       color: black !important;
       border-radius: 12px;
-      margin-bottom: 50px !important;
+      margin: 0 auto 50px auto !important;
       position: relative !important;
-      overflow: visible !important;
+      overflow: visible !important; /* Prevents data bleeding */
+      display: block !important;
   }
 
-  /* FORCE TAB TEXT TO BE VISIBLE */
+  /* 6. FIX TABS: Move side-tabs to TOP horizontal row */
+  /* This targets the Overview, Zerk Map, Invoices tabs */
+  .tab-sidebar, .modal-header + div, .tab-container {
+      display: flex !important;
+      flex-direction: row !important;
+      overflow-x: auto !important;
+      white-space: nowrap !important;
+      gap: 10px !important;
+      padding: 10px !important;
+      border-bottom: 1px solid #eee;
+      width: 100% !important;
+      -webkit-overflow-scrolling: touch;
+  }
+
   .tab, .nav-link, #detail-modal .tab {
-      color: #333 !important;      /* Dark Grey/Black text */
-      font-weight: 600 !important; /* Make it bold */
-      opacity: 1 !important;       /* Ensure it's not faded */
+      flex: 0 0 auto !important;
+      color: #333 !important;      /* FORCE BLACK TEXT ON TABS */
+      font-weight: 600 !important;
       font-size: 13px !important;
+      padding: 8px 15px !important;
   }
 
-  /* Ensure the active tab stands out */
-  .tab.active, .nav-link.active {
-      background: #f1f1f1 !important;
-      border-radius: 8px;
-      color: var(--accent) !important; /* Blue for the active tab */
+  /* 7. FORCE INTERNAL CONTENT TO STRETCH */
+  .modal-body, .tab-content, .tab-pane {
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible !important;
+      display: block !important;
   }
 
-  /* Fix for the 'X' close button color */
-  .modal-close, .modal-header button {
-      color: #000 !important;
+  input, select, textarea {
+      width: 100% !important;
+      font-size: 16px !important;
+      box-sizing: border-box !important;
   }
+}
+
+/* Base Panel Rules (Fallback) */
+.panel { display: none; }
+.panel.active { display: block !important; }
 /* ============================================================
    2. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
