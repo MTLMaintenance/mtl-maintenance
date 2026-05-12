@@ -1,71 +1,3 @@
-#add-consumable-btn {
-    display: none; /* Hide by default */
-}
-/* ============================================================
-   LOGIN PIN PAD STYLING
-   ============================================================ */
-
-/* 1. The Grid Layout for buttons (3 columns) */
-.pin-pad-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 12px !important;
-    max-width: 280px;
-    margin: 20px auto !important;
-}
-
-/* 2. Individual Button Style */
-.pin-btn {
-    height: 60px !important;
-    font-size: 20px !important;
-    font-weight: bold !important;
-    border-radius: 12px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-    cursor: pointer;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-}
-
-.pin-btn:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-}
-
-/* 3. Special Colors for Clear and Submit */
-.pin-btn.btn-clear {
-    color: #ff4444 !important; /* Red for Clear */
-    font-size: 12px !important;
-}
-
-.pin-btn.btn-submit {
-    background: var(--accent) !important; /* Your Blue color */
-    color: white !important;
-}
-
-/* 4. PIN Dots (The visualization of the entered pin) */
-#pin-display {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.pin-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.2);
-}
-
-.pin-dot.filled {
-    background: #28a745; /* Green when a number is typed */
-    border-color: #28a745;
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-}
-
 /* FORCE ALL TABLE DATA TO BE BLACK/DARK */
 table tbody td, 
 table tbody td span, 
@@ -92,7 +24,7 @@ table tbody tr:nth-child(even) {
 }
 /* Force notifications to the very front of the screen */
 #toast-container, .toast, #toast {
-  z-index: 2000000 !important; 
+  z-index: 20000 !important; 
   position: fixed !important;
   bottom: 20px;
   right: 20px;
@@ -1668,112 +1600,44 @@ html {
    1. MOBILE LAYOUT (Apply ONLY to screens 768px and SMALLER)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  /* 1. ALLOW THE WHOLE PAGE TO SCROLL */
-  html, body {
-    height: auto !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    background-color: #001f3f !important;
-  }
+  html, body { background-color: #001f3f !important; }
 
-  /* 2. THE TOPBAR (Keep our previous fix) */
+  /* Hide PC-only elements */
+  #pc-search-wrap, .pc-only-search { 
+    display: none !important; 
+  }   
+
   .topbar {
+    display: flex !important;
+    flex-direction: column !important; /* Mobile stacks vertically */
     position: fixed !important;
+    height: auto !important;
+    padding: 10px 0 !important;
     top: 0; left: 0; right: 0;
+    background: #000 !important;
     z-index: 10000;
   }
-  .panel { margin-top: 135px !important; padding: 10px !important; }
 
-  /* 3. MODAL BACKDROP: The primary scroller */
-  .modal-backdrop {
-    display: none; 
-    z-index: 20000 !important; 
-    align-items: flex-start !important; 
-    padding: 20px 10px 100px 10px !important; /* Huge bottom padding so buttons are visible */
-    overflow-y: auto !important;
-    background: rgba(0,0,0,0.85) !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  .modal-backdrop[style*="display: block"], 
-  .modal-backdrop[style*="display: flex"] { display: flex !important; }
+  .logo { width: 100% !important; text-align: center !important; padding: 5px 0 !important; }
 
-  /* 4. THE WHITE CARD: Stretch vertically */
-  .modal {
-      width: 100% !important;
-      max-width: 100% !important;
-      height: auto !important;     /* Shrink-wrap the content */
-      max-height: none !important; /* Kill desktop limits */
-      background: white !important;
-      color: black !important;
-      border-radius: 12px;
-      margin: 0 auto !important;
-      position: relative !important;
-      display: block !important;    /* Forces vertical flow */
-      overflow: visible !important;
-  }
-
-  /* 5. FORCE VERTICAL STACKING (Tabs on top, Content below) */
-  #detail-modal .modal-body,
-  #equip-detail-modal .modal-body,
-  .modal-content > div[style*="display: flex"] {
-      display: block !important; /* Changes from Side-by-Side to Vertical */
-      width: 100% !important;
-      height: auto !important;
-  }
-
-  /* 6. TURN SIDEBAR INTO A TOP LIST */
-  .tab-sidebar,
-  .modal div[style*="width: 150px"],
-  .modal div[style*="width: 200px"] {
-      width: 100% !important;
-      min-width: 100% !important;
-      display: block !important;   /* Stack tabs as a list */
-      height: auto !important;
-      border-right: none !important;
-      border-bottom: 1px solid #eee;
-      padding: 5px !important;
-      margin-bottom: 15px !important;
-  }
-
-  /* Style the tabs to be full-width buttons */
-  .tab, .nav-link, #detail-modal .tab {
-      display: block !important;
-      width: 100% !important;
-      padding: 12px !important;
-      color: #333 !important;      /* VISIBLE BLACK TEXT */
-      font-weight: 600 !important;
-      border-bottom: 1px solid #f9f9f9 !important;
-      text-align: left !important;
-      background: #fff !important;
-  }
-  
-  .tab.active {
-      background: #f0f7ff !important;
-      color: var(--accent) !important;
-  }
-
-  /* 7. CONTENT AREA: Grow with data */
-  .tab-content, .content-area, .modal-body-content {
-      width: 100% !important;
-      height: auto !important;
-      display: block !important;
-      overflow: visible !important;
-  }
-
-  /* 8. FORM & DASHBOARD STACKING */
-  .metrics, .grid-2, .form-grid, .form-row, .row {
+  /* Mobile swiping for Nav and Actions */
+  #main-nav, .topbar-right {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 6px 12px !important;
     width: 100% !important;
   }
-  .card, .metric-card { width: 100% !important; box-sizing: border-box !important; height: auto !important; }
 
-  input, select, textarea {
-    width: 100% !important;
-    font-size: 16px !important; 
-  }
+  .panel { margin-top: 135px !important; padding: 10px !important; }
+  .metrics, .grid-2 { display: flex !important; flex-direction: column !important; gap: 10px !important; }
+  .metric-card, .card { width: 100% !important; }
 }
+
+/* Base Panel Rules (Applies to both) */
+.panel { display: none; }
+.panel.active { display: block !important; }
+
 /* ============================================================
    2. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
