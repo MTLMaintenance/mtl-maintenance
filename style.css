@@ -1,3 +1,68 @@
+
+/* ============================================================
+   LOGIN PIN PAD STYLING
+   ============================================================ */
+
+/* 1. The Grid Layout for buttons (3 columns) */
+.pin-pad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    max-width: 280px;
+    margin: 20px auto !important;
+}
+
+/* 2. Individual Button Style */
+.pin-btn {
+    height: 60px !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.pin-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 3. Special Colors for Clear and Submit */
+.pin-btn.btn-clear {
+    color: #ff4444 !important; /* Red for Clear */
+    font-size: 12px !important;
+}
+
+.pin-btn.btn-submit {
+    background: var(--accent) !important; /* Your Blue color */
+    color: white !important;
+}
+
+/* 4. PIN Dots (The visualization of the entered pin) */
+#pin-display {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+}
+
+.pin-dot.filled {
+    background: #28a745; /* Green when a number is typed */
+    border-color: #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
 /* FORCE ALL TABLE DATA TO BE BLACK/DARK */
 table tbody td, 
 table tbody td span, 
