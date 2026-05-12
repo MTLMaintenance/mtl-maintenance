@@ -1706,6 +1706,51 @@ html {
 .panel { display: none; }
 .panel.active { display: block !important; }
 
+ .modal-backdrop {
+    display: none; 
+    /* Increased z-index to 10001 so it sits ON TOP of the topbar */
+    z-index: 10001 !important; 
+    align-items: flex-start !important; 
+    padding: 40px 10px 20px 10px !important; /* Added 40px at top to clear notches */
+    overflow-y: auto !important;
+    background: rgba(0,0,0,0.8) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .modal-backdrop[style*="display: block"], 
+  .modal-backdrop[style*="display: flex"] {
+      display: flex !important;
+  }
+
+  .modal {
+      width: 100% !important;
+      background: white !important;
+      color: black !important;
+      border-radius: 12px;
+      margin-bottom: 50px !important;
+      position: relative !important;
+      overflow: visible !important;
+  }
+
+  /* FORCE TAB TEXT TO BE VISIBLE */
+  .tab, .nav-link, #detail-modal .tab {
+      color: #333 !important;      /* Dark Grey/Black text */
+      font-weight: 600 !important; /* Make it bold */
+      opacity: 1 !important;       /* Ensure it's not faded */
+      font-size: 13px !important;
+  }
+
+  /* Ensure the active tab stands out */
+  .tab.active, .nav-link.active {
+      background: #f1f1f1 !important;
+      border-radius: 8px;
+      color: var(--accent) !important; /* Blue for the active tab */
+  }
+
+  /* Fix for the 'X' close button color */
+  .modal-close, .modal-header button {
+      color: #000 !important;
+  }
 /* ============================================================
    2. PC LAYOUT (Apply ONLY to screens 769px and LARGER)
    ============================================================ */
