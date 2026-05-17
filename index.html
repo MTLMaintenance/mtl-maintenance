@@ -699,6 +699,7 @@
 <div class="modal-backdrop" id="task-modal" style="display:none">
   <div class="modal" style="max-width:640px">
     <input type="hidden" id="task-edit-id"> 
+    
     <div class="modal-header">
       <span class="modal-title" id="task-modal-title">New Work Order</span>
       <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
@@ -710,10 +711,11 @@
       <button class="tab" onclick="switchWOTab('wo-checklist',this)">Checklist</button>
       <button class="tab" onclick="switchWOTab('wo-parts-tab',this)">Parts Used</button>
       <button class="tab" onclick="switchWOTab('wo-comments',this)">Comments</button>
+      <button class="tab" onclick="switchWOTab('wo-attachments',this)">Attachments</button>
     </div>
 
-    <!-- 1. DETAILS TAB (Required fields marked with *) -->
-    <div id="wo-details" class="wo-tab-content">
+    <!-- 1. DETAILS TAB -->
+    <div id="wo-details" class="wo-tab-content" style="display:block">
       <div class="form-grid">
         <div class="form-group full">
           <label class="form-label">Work Order Name *</label>
@@ -724,6 +726,13 @@
           <label class="form-label">Equipment *</label>
           <select class="form-select" id="t-equip">
             <option value="" disabled selected>-- Select Equipment --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Assigned To</label>
+          <select class="form-select" id="t-assign">
+             <option value="">-- Unassigned --</option>
           </select>
         </div>
 
@@ -749,13 +758,6 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Assigned To</label>
-          <select class="form-select" id="t-assign">
-             <option value="">-- Unassigned --</option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label class="form-label">Estimated Labor Cost ($)</label>
           <input class="form-input" id="t-cost" type="number" min="0" placeholder="0"/>
         </div>
@@ -766,7 +768,10 @@
         </div>
         
         <div class="form-group full">
-          <label class="form-label">Tools Required</label>
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <label class="form-label">Tools Required</label>
+            <button class="btn btn-secondary btn-sm" onclick="suggestTools()" style="font-size:10px">✨ AI Suggest</button>
+          </div>
           <input class="form-input" id="t-tools" placeholder="e.g. 3/4 socket set, torque wrench..."/>
         </div>
       </div>
@@ -774,29 +779,35 @@
 
     <!-- 2. CHECKLIST TAB -->
     <div id="wo-checklist" class="wo-tab-content" style="display:none">
-      <label class="form-label">Task Steps (One per line)</label>
-      <textarea class="form-textarea" id="t-checklist" placeholder="Check oil level&#10;Replace filter&#10;Clean spill" style="height:200px"></textarea>
+      <div class="form-group">
+        <label class="form-label">Task Steps (one per line)</label>
+        <textarea class="form-textarea" id="t-checklist" placeholder="Check oil level&#10;Replace filter" style="min-height:200px"></textarea>
+      </div>
     </div>
 
-    <!-- 3. PARTS TAB (Uses your existing woPartsAdded logic) -->
+    <!-- 3. PARTS TAB -->
     <div id="wo-parts-tab" class="wo-tab-content" style="display:none">
-      <div style="background:var(--bg2); padding:15px; border-radius:8px; margin-bottom:15px">
-        <label class="form-label">Add Part from Inventory</label>
-        <div style="display:flex; gap:8px">
-          <select class="form-select" id="wo-part-search" style="flex:1"></select>
-          <input type="number" class="form-input" id="wo-part-qty" value="1" style="width:70px">
-          <button class="btn btn-secondary btn-sm" onclick="addPartToWO()">Add</button>
-        </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="flex:1"><label class="form-label">Part</label><select class="form-select" id="wo-part-select"></select></div>
+        <div class="form-group" style="width:80px"><label class="form-label">Qty</label><input class="form-input" id="wo-part-qty" type="number" min="1" value="1"/></div>
+        <button class="btn btn-primary btn-sm" onclick="addPartToWO()">Add</button>
       </div>
-      <div id="wo-parts-list" style="max-height:150px; overflow-y:auto">
-        <div style="color:var(--text3); font-size:13px">No parts added yet</div>
-      </div>
+      <div id="wo-parts-list"><div style="color:var(--text3);font-size:13px">No parts added yet</div></div>
     </div>
 
     <!-- 4. COMMENTS TAB -->
     <div id="wo-comments" class="wo-tab-content" style="display:none">
-      <label class="form-label">Initial Comments</label>
-      <textarea class="form-textarea" id="wo-comment-input" placeholder="Any details to share with the tech..." style="height:150px"></textarea>
+      <div id="wo-comment-list" style="margin-bottom:12px"><div style="color:var(--text3);font-size:13px">No comments yet</div></div>
+      <textarea class="form-textarea" id="wo-comment-input" placeholder="Add initial notes for the tech..."></textarea>
+    </div>
+
+    <!-- 5. ATTACHMENTS TAB -->
+    <div id="wo-attachments" class="wo-tab-content" style="display:none">
+      <label class="form-label">Photos</label>
+      <div class="photo-grid" id="task-photo-grid">
+        <div class="photo-add" onclick="document.getElementById('task-photo-input').click()">+</div>
+        <input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'task')"/>
+      </div>
     </div>
 
     <!-- MODAL FOOTER -->
@@ -806,78 +817,8 @@
     </div>
   </div>
 </div>
-        
-        <!-- UPDATED STATUS DROPDOWN -->
-        <div class="form-group"><label class="form-label">Status</label>
-            <select class="form-select" id="t-status">
-                <option>Open</option>
-                <option>In Progress</option>
-                <option>Waiting for Parts</option>
-                <option>Overdue</option>
-                <option>Completed</option>
-            </select>
-        </div>
 
-        <div class="form-group"><label class="form-label">Overdue Email Reminder</label>
-          <select class="form-select" id="t-email-freq">
-            <option value="0">No reminders</option>
-            <option value="7" selected>Weekly</option>
-            <option value="3">Every 3 days</option>
-            <option value="1">Daily</option>
-            <option value="14">Every 2 weeks</option>
-          </select>
-        </div>
-        <div class="form-group full"><label class="form-label">Notes</label><textarea class="form-textarea" id="t-notes" placeholder="Additional notes..."></textarea></div>
-        <div class="form-group full">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <label class="form-label" style="margin:0">Tools Required</label>
-            <button class="btn btn-secondary btn-sm" onclick="suggestTools()" id="suggest-tools-btn" style="font-size:11px">✨ AI Suggest</button>
-          </div>
-          <textarea class="form-textarea" id="t-tools" placeholder="e.g. 3/4 socket set, torque wrench, grease gun..." style="min-height:60px"></textarea>
-          <div id="tools-suggestion-area" style="display:none;background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 12px;margin-top:6px;font-size:13px">
-            <div style="font-weight:500;color:var(--accent-text);margin-bottom:6px">✨ AI Suggestion based on past work orders:</div>
-            <div id="tools-suggestion-text" style="color:var(--text);margin-bottom:8px"></div>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-primary btn-sm" onclick="acceptToolSuggestion()">Use This</button>
-              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('tools-suggestion-area').style.display='none'">Dismiss</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="wo-checklist" style="display:none">
-      <div class="form-group"><label class="form-label">Checklist Items (one per line)</label><textarea class="form-textarea" id="t-checklist" placeholder="Check oil level&#10;Replace filter&#10;Inspect belts" style="min-height:120px"></textarea></div>
-    </div>
-    <div id="wo-parts-tab" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap">
-        <div class="form-group" style="flex:1"><label class="form-label">Part</label><select class="form-select" id="wo-part-select"></select></div>
-        <div class="form-group" style="width:80px"><label class="form-label">Qty</label><input class="form-input" id="wo-part-qty" type="number" min="1" value="1"/></div>
-        <button class="btn btn-primary btn-sm" onclick="addPartToWO()">Add</button>
-      </div>
-      <div id="wo-parts-list"><div style="color:var(--text3);font-size:13px">No parts added yet</div></div>
-      <div id="wo-parts-cost-summary" style="display:none;margin-top:10px;padding:10px 12px;background:var(--accent-bg);border-radius:var(--radius);border:1px solid var(--border)">
-        <div style="font-size:13px;color:var(--accent-text)">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Parts subtotal:</span><span id="wo-parts-subtotal" style="font-weight:600">$0.00</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)"><span>This will auto-fill Estimated Cost on Details tab</span></div>
-        </div>
-      </div>
-    </div>
-    <div id="wo-comments" style="display:none">
-      <div id="wo-comment-list" style="margin-bottom:12px"><div style="color:var(--text3);font-size:13px">No comments yet</div></div>
-      <div class="form-group"><label class="form-label">Add Comment</label><textarea class="form-textarea" id="wo-comment-input" placeholder="Add a note or update..."></textarea></div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addWOComment()">Post Comment</button>
-    </div>
-    <div id="wo-attachments" style="display:none">
-      <label class="form-label">Photos / Attachments</label>
-      <div class="photo-grid" id="task-photo-grid">
-        <div class="photo-add" onclick="document.getElementById('task-photo-input').click()">+</div>
-        <input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'task')"/>
-      </div>
-    </div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('task-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTask()">Save Work Order</button></div>
-  </div>
-</div>
-<!-- Equipment Modal -->
+ <!-- Equipment Modal -->
 <div class="modal-backdrop" id="equip-modal">
   <div class="modal" style="max-width:600px">
     <div class="modal-header"><span class="modal-title">Add Equipment</span><button class="modal-close" onclick="closeModal('equip-modal')">✕</button></div>
