@@ -260,7 +260,7 @@ function pressPin(num) {
             enteredPin += num;
         }
     }
-
+}
     updatePinDots();
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
