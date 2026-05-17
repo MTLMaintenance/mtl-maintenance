@@ -2264,7 +2264,6 @@ async function openTaskDetail(id) {
     </div>
     
     <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-      ${isManager ? `<button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Delete Work Order</button>` : ''}
       <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
       ${actionButton}
     </div>`;
