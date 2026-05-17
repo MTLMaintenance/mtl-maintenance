@@ -61,6 +61,13 @@
     animation: pop 0.2s ease-out;
 }
 
+.pin-dot.filled {
+    background-color: #28a745 !important; /* Green */
+    border-color: #28a745 !important;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+    transform: scale(1.2);
+}
+
 @keyframes pop {
     0% { transform: scale(0.5); }
     100% { transform: scale(1); }
