@@ -8874,46 +8874,53 @@ async function addPartToTask(taskId) {
     const qtyInput = document.getElementById('dt-part-qty');
     const qtyUsed = parseInt(qtyInput.value);
     
-    if (!partId || qtyUsed <= 0) return alert("Select a part and quantity");
+    if (!partId || qtyUsed <= 0) return alert("Please select a part and quantity");
 
     const part = state.parts.find(p => p.id === partId);
     if (!part) return;
 
-    // Use the column names from your database screenshot (qty and cost)
-    if (part.qty < qtyUsed) return alert(`Not enough stock. Only ${part.qty} left.`);
+    if (part.qty < qtyUsed) return alert(`Not enough stock. Only ${part.qty} available.`);
 
+    // Match these keys EXACTLY to your Supabase columns
     const usage = {
         id: uid(),
         task_id: taskId,
         part_id: partId,
         part_name: part.name,
         qty_used: qtyUsed,
-        unit_cost: parseFloat(part.cost || 0), // Your DB uses 'cost'
-        line_total: parseFloat(part.cost || 0) * qtyUsed,
+        unit_cost: parseFloat(part.cost || 0),
+        line_total: parseFloat(part.cost || 0) * qtyUsed, // This is the column that was missing
         used_by: currentUser.name,
         used_at: new Date().toISOString()
     };
 
     try {
-        // 1. Save usage record
+        // 1. Save usage
         const { error: usageErr } = await window._mpdb.from('part_usage').insert(usage);
         if (usageErr) throw usageErr;
 
-        // 2. Subtract from Inventory (Matches your 'qty' column)
+        // 2. Subtract from Inventory
         part.qty -= qtyUsed; 
         await persist('parts', 'upsert', part);
 
-        // 3. Add to local memory and refresh
+        // 3. Update the total Work Order cost
+        const task = state.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.cost = (parseFloat(task.cost) || 0) + usage.line_total;
+            await persist('tasks', 'upsert', task);
+        }
+
+        // 4. UI Update
         if (!state.partUsage) state.partUsage = [];
         state.partUsage.push(usage);
         
-        // Clear input and refresh UI
         qtyInput.value = 1;
-        openTaskDetail(taskId); 
-        showToast("Part added successfully ✓");
+        openTaskDetail(taskId); // Re-render the modal
+        renderTasks();         // Re-render main list
+        showToast("Part added and inventory updated ✓");
 
     } catch (e) {
-        console.error("Part usage save failed:", e);
-        alert("Database Error: " + e.message); // This will tell you if a column is missing
+        console.error("Save failed:", e);
+        alert("Database Error: " + e.message);
     }
 }
