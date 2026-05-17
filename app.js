@@ -2180,10 +2180,13 @@ async function openTaskDetail(id) {
   const t = state.tasks.find(x => x.id === id); 
   if (!t) return;
 
-  // 1. Determine which tab should be open (Defaults to 'dt-info' if none set)
+  // 1. Tab Memory
   const activeTab = window._activeTaskTab || 'dt-info';
-
   const isManager = (currentUser.role === 'admin' || currentUser.role === 'manager');
+
+  // 2. Data Helpers
+  // This helper replaces empty/null values with a grey "N/A"
+  const val = (data) => (data && data !== "" && data !== "—") ? data : '<span style="color:var(--text3); font-weight:400;">N/A</span>';
 
   let comments = [];
   try { 
@@ -2203,41 +2206,52 @@ async function openTaskDetail(id) {
   document.getElementById('detail-title').textContent = t.name;
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar">
-      <!-- We now use the activeTab variable to set the 'active' class -->
       <button class="tab ${activeTab === 'dt-info' ? 'active' : ''}" onclick="switchTaskTab('dt-info',this)">Info</button>
       <button class="tab ${activeTab === 'dt-checklist' ? 'active' : ''}" onclick="switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
       <button class="tab ${activeTab === 'dt-parts' ? 'active' : ''}" onclick="switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
       <button class="tab ${activeTab === 'dt-comments' ? 'active' : ''}" onclick="switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
     </div>
 
-    <!-- We use the activeTab variable to set the display style -->
+    <!-- INFO TAB -->
     <div id="dt-info" class="dt-section" style="display:${activeTab === 'dt-info' ? 'block' : 'none'}">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;font-size:13px; color:black !important;">
         <div><span style="color:var(--text2)">Equipment:</span> <b>${typeof equipName === 'function' ? equipName(t.equipId || t.equip_id) : t.name}</b></div>
-        <div><span style="color:var(--text2)">Assigned:</span> ${t.assign || '—'}</div>
+        <div><span style="color:var(--text2)">Assigned:</span> ${val(t.assign)}</div>
         <div><span style="color:var(--text2)">Priority:</span> ${badge(t.priority)}</div>
         <div><span style="color:var(--text2)">Status:</span> ${badge(t.status)}</div>
-        <div><span style="color:var(--text2)">Due:</span> <span style="color:${isOverdue(t.due) && t.status !== 'Completed' ? 'var(--danger)' : 'inherit'}">${fmtDate(t.due)}</span></div>
+        <div><span style="color:var(--text2)">Due:</span> <span style="color:${isOverdue(t.due) && t.status !== 'Completed' ? 'var(--danger)' : 'inherit'}; font-weight:bold">${fmtDate(t.due)}</span></div>
         <div><span style="color:var(--text2)">Cost:</span> <b>$${(t.cost || 0).toLocaleString()}</b></div>
+        <div><span style="color:var(--text2)">Meter:</span> ${val(t.meter)}</div>
       </div>
-      ${t.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:10px;border-radius:var(--radius);margin-bottom:12px">${t.notes}</div>` : ''}
+      
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:4px">Notes</div>
+        <div style="font-size:13px; color:black; background:var(--bg2); padding:10px; border-radius:8px">${val(t.notes)}</div>
+      </div>
+      
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:4px">Tools Required</div>
+        <div style="font-size:13px; color:black; background:var(--bg2); padding:10px; border-radius:8px">${val(t.tools)}</div>
+      </div>
     </div>
 
+    <!-- CHECKLIST TAB -->
     <div id="dt-checklist" class="dt-section" style="display:${activeTab === 'dt-checklist' ? 'block' : 'none'}">
       <div style="display:flex; gap:8px; margin-bottom:15px">
         <input type="text" id="new-check-item" class="form-input" placeholder="Add a task step..." style="color:black">
         <button class="btn btn-primary btn-sm" onclick="addTaskCheckItem('${t.id}')">Add</button>
       </div>
-      ${t.checklist ? t.checklist.map((c, i) => `
+      ${t.checklist && t.checklist.length ? t.checklist.map((c, i) => `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border)">
         <div style="display:flex; align-items:center" onclick="toggleCheck('${t.id}',${i})">
             <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '✓' : ''}</div>
             <span class="${c.done ? 'done' : ''}" style="color:black; font-size:13px">${c.text}</span>
         </div>
         <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="deleteChecklistItem('${t.id}', ${i})">🗑</button>
-      </div>`).join('') : ''}
+      </div>`).join('') : '<div style="color:var(--text3); text-align:center; padding:20px;">No checklist items added.</div>'}
     </div>
 
+    <!-- PARTS TAB -->
     <div id="dt-parts" class="dt-section" style="display:${activeTab === 'dt-parts' ? 'block' : 'none'}">
       <div style="background:var(--bg2); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border)">
         <div style="font-size:11px; font-weight:700; color:var(--text2); margin-bottom:8px">PULL FROM INVENTORY</div>
@@ -2250,13 +2264,14 @@ async function openTaskDetail(id) {
           <button class="btn btn-primary btn-sm" onclick="addPartToTask('${t.id}')">Add</button>
         </div>
       </div>
-      ${partsUsed.map(p => `
+      ${partsUsed.length ? partsUsed.map(p => `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border)">
         <div style="color:black; font-size:13px"><b>${p.part_name}</b><br><small style="color:var(--text2)">Qty: ${p.qty_used} · $${(p.line_total || 0).toLocaleString()}</small></div>
         <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="removePartUsage('${p.id}', '${t.id}')">🗑</button>
-      </div>`).join('') || '<div style="color:var(--text3); padding:10px">No parts logged</div>'}
+      </div>`).join('') : '<div style="color:var(--text3); text-align:center; padding:20px;">No parts logged to this task.</div>'}
     </div>
 
+    <!-- COMMENTS TAB -->
     <div id="dt-comments" class="dt-section" style="display:${activeTab === 'dt-comments' ? 'block' : 'none'}">
       <textarea class="form-textarea" id="dt-comment-input-large" placeholder="Add a detailed update..." style="margin-top:8px; height:80px; color:black"></textarea>
       <button class="btn btn-primary btn-sm" style="margin-top:6px; margin-bottom:15px" onclick="addTaskComment('${t.id}')">Post Comment</button>
@@ -2280,7 +2295,6 @@ async function openTaskDetail(id) {
 
  await openModal('detail-modal');
 }
-
 function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
   if(!modal) return;
@@ -2552,60 +2566,59 @@ function addWOComment(){
 // SAVE DATA
 // ============================================================
 async function saveTask() {
-  const nameEl = document.getElementById('t-name');
-  const name = nameEl ? nameEl.value.trim() : "";
-  
-  if (!name) { showToast('Please enter a name'); return; }
+  const name = document.getElementById('t-name').value.trim();
+  const equip = document.getElementById('t-equip').value;
+  const priority = document.getElementById('t-priority').value;
+  const due = document.getElementById('t-due').value;
+  const meter = document.getElementById('t-meter').value.trim();
 
-  // GATHER DATA WITH SAFETY DEFAULTS
+  // 1. REQUIREMENT CHECK
+  if (!name || !equip || !priority || !due || !meter) {
+    showToast("⚠️ Name, Equipment, Priority, Due Date, and Meter are required.", "danger");
+    return; // Exit function and don't save
+  }
+
   const record = {
     id: uid(),
     name: name,
-    equip_id:   document.getElementById('t-equip')?.value || null,
-    assign:     document.getElementById('t-assign')?.value || '—',
-    priority:   document.getElementById('t-priority')?.value || 'Medium',
-    due:        document.getElementById('t-due')?.value || new Date().toISOString().split('T')[0],
-    cost:       parseFloat(document.getElementById('t-cost')?.value) || 0,
-    meter:      document.getElementById('t-meter')?.value || '',
-    status:     document.getElementById('t-status')?.value || 'Open',
-    notes:      document.getElementById('t-notes')?.value || '',
-    tools:      document.getElementById('t-tools')?.value || '',
-    photos:     Array.isArray(pendingPhotos?.task) ? pendingPhotos.task.slice() : [],
-    checklist:  document.getElementById('t-checklist')?.value 
-                ? document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => ({ text, done: false })) 
-                : [],
+    equip_id: equip,
+    priority: priority,
+    due: due,
+    meter: meter,
+    // Optional fields (defaults to null if empty)
+    assign: document.getElementById('t-assign').value || null,
+    cost: parseFloat(document.getElementById('t-cost').value) || 0,
+    status: 'Open', 
+    notes: document.getElementById('t-notes')?.value.trim() || null,
+    tools: document.getElementById('t-tools')?.value.trim() || null,
+    
+    // Checklist: Grabs whatever they typed in the Checklist tab
+    checklist: document.getElementById('t-checklist')?.value 
+      ? document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => ({ text, done: false })) 
+      : [],
+    
     created_at: new Date().toISOString()
   };
 
   try {
-    // 1. Send to Supabase
     const { error } = await window._mpdb.from('tasks').insert(record);
-    if (error) {
-        console.error("Supabase rejected the task:", error);
-        alert("Database Error: " + error.message); // This will tell you the missing column
-        return;
-    }
+    if (error) throw error;
 
-    // 2. Update Local State
-    state.tasks.push({ ...record, equipId: record.equip_id }); // Bridge the ID name
-
-    // 3. Log the action for accountability
-    if (typeof logAuditAction === 'function') {
-        await logAuditAction("New Work Order", `Created task "${name}" for machine.`);
-    }
-
-    // 4. UI Cleanup
-    closeModal('task-modal');
+    // Update local state and UI
+    state.tasks.push({ ...record, equipId: record.equip_id });
     renderTasks();
     renderDashboard();
-    showToast("Work Order Saved ✓");
+    closeModal('task-modal');
+    showToast("Work Order Created ✓");
+    
+    // Reset the "Add" variable if you use one for parts
+    if (typeof woPartsAdded !== 'undefined') woPartsAdded = [];
 
   } catch (e) {
-    console.error("Critical Save Error:", e);
-    showToast("Save failed. Check console.");
+    console.error(e);
+    showToast("Error saving task");
   }
 }
-
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
