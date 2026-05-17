@@ -28,7 +28,7 @@ window.tempZerkCoords = null; // Store the first click for lines
 window.deleteChecklistItem = deleteChecklistItem; 
 window.deleteTaskComment = deleteTaskComment;
 window.removePartUsage = removePartUsage;
-
+window._currentTaskTab = 'dt-info';
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
     
@@ -1795,7 +1795,7 @@ function renderTasks() {
   // 1. Safety Check: If the table doesn't exist, stop.
   if (!container) return;
 
-  // 2. AUTO-FILL DROPDOWN: If equipment dropdown only has 1 option ("All Equipment"), fill it.
+  // 2. AUTO-FILL DROPDOWN
   if (equipSelect && equipSelect.options.length <= 1 && state.equipment.length > 0) {
     let equipHtml = '<option value="all">All Equipment</option>';
     state.equipment.forEach(e => {
@@ -1812,7 +1812,6 @@ function renderTasks() {
 
   // 4. FILTER LOGIC
   if (f === 'active') {
-    // "Active" now includes Open, Overdue, and Pending Approval
     tasks = tasks.filter(t => t.status !== 'Completed');
   } else if (f === 'overdue') {
     tasks = tasks.filter(t => t.status === 'Overdue' || (isOverdue(t.due) && t.status !== 'Completed' && t.status !== 'Pending Approval'));
@@ -1826,7 +1825,7 @@ function renderTasks() {
     tasks = tasks.filter(t => (t.equip_id === ef || t.equipId === ef));
   }
 
-  // 5. SORTING: Overdue -> Open -> Pending Approval -> Completed
+  // 5. SORTING
   tasks.sort((a, b) => {
     const o = { 'Overdue': 0, 'Open': 1, 'Pending Approval': 2, 'Completed': 3 };
     return (o[a.status] || 1) - (o[b.status] || 1);
@@ -1835,18 +1834,16 @@ function renderTasks() {
   // 6. BUILD HTML
   container.innerHTML = tasks.map(t => {
     const pUsed = state.partUsage ? state.partUsage.filter(p => p.task_id === t.id).reduce((a, p) => a + p.qty_used, 0) : 0;
-    
-    // Logic for the Overdue flag
     const isActuallyOverdue = isOverdue(t.due) && t.status !== 'Completed' && t.status !== 'Pending Approval';
     const eId = t.equip_id || t.equipId;
 
-    // Logic for Status Badge Label
     let statusLabel = t.status;
     if (isActuallyOverdue) statusLabel = 'Overdue';
     if (t.status === 'Pending Approval') statusLabel = 'Waiting for Manager';
 
     return `
-    <tr onclick="openTaskDetail('${t.id}')" style="cursor:pointer; border-bottom:1px solid var(--border)">
+    <!-- ADDED: window._activeTaskTab='dt-info' to the onclick below -->
+    <tr onclick="window._activeTaskTab='dt-info'; openTaskDetail('${t.id}')" style="cursor:pointer; border-bottom:1px solid var(--border)">
       <td><div style="font-weight:500">${t.name}</div></td>
       <td style="font-size:12px">${typeof equipName === 'function' ? equipName(eId) : eId}</td>
       <td>${badge(t.priority)}</td>
@@ -2183,6 +2180,9 @@ async function openTaskDetail(id) {
   const t = state.tasks.find(x => x.id === id); 
   if (!t) return;
 
+  // 1. Determine which tab should be open (Defaults to 'dt-info' if none set)
+  const activeTab = window._activeTaskTab || 'dt-info';
+
   const isManager = (currentUser.role === 'admin' || currentUser.role === 'manager');
 
   let comments = [];
@@ -2203,13 +2203,15 @@ async function openTaskDetail(id) {
   document.getElementById('detail-title').textContent = t.name;
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar">
-      <button class="tab active" onclick="switchTaskTab('dt-info',this)">Info</button>
-      <button class="tab" onclick="switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
-      <button class="tab" onclick="switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
-      <button class="tab" onclick="switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
+      <!-- We now use the activeTab variable to set the 'active' class -->
+      <button class="tab ${activeTab === 'dt-info' ? 'active' : ''}" onclick="switchTaskTab('dt-info',this)">Info</button>
+      <button class="tab ${activeTab === 'dt-checklist' ? 'active' : ''}" onclick="switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
+      <button class="tab ${activeTab === 'dt-parts' ? 'active' : ''}" onclick="switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
+      <button class="tab ${activeTab === 'dt-comments' ? 'active' : ''}" onclick="switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
     </div>
 
-    <div id="dt-info" class="dt-section" style="display:block">
+    <!-- We use the activeTab variable to set the display style -->
+    <div id="dt-info" class="dt-section" style="display:${activeTab === 'dt-info' ? 'block' : 'none'}">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
         <div><span style="color:var(--text2)">Equipment:</span> <b>${typeof equipName === 'function' ? equipName(t.equipId || t.equip_id) : t.name}</b></div>
         <div><span style="color:var(--text2)">Assigned:</span> ${t.assign || '—'}</div>
@@ -2221,9 +2223,9 @@ async function openTaskDetail(id) {
       ${t.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:10px;border-radius:var(--radius);margin-bottom:12px">${t.notes}</div>` : ''}
     </div>
 
-    <div id="dt-checklist" class="dt-section" style="display:none">
+    <div id="dt-checklist" class="dt-section" style="display:${activeTab === 'dt-checklist' ? 'block' : 'none'}">
       <div style="display:flex; gap:8px; margin-bottom:15px">
-        <input type="text" id="new-check-item" class="form-input" placeholder="Add a task step...">
+        <input type="text" id="new-check-item" class="form-input" placeholder="Add a task step..." style="color:black">
         <button class="btn btn-primary btn-sm" onclick="addTaskCheckItem('${t.id}')">Add</button>
       </div>
       ${t.checklist ? t.checklist.map((c, i) => `
@@ -2236,7 +2238,7 @@ async function openTaskDetail(id) {
       </div>`).join('') : ''}
     </div>
 
-    <div id="dt-parts" class="dt-section" style="display:none">
+    <div id="dt-parts" class="dt-section" style="display:${activeTab === 'dt-parts' ? 'block' : 'none'}">
       <div style="background:var(--bg2); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border)">
         <div style="font-size:11px; font-weight:700; color:var(--text2); margin-bottom:8px">PULL FROM INVENTORY</div>
         <div style="display:flex; gap:8px">
@@ -2255,7 +2257,7 @@ async function openTaskDetail(id) {
       </div>`).join('') || '<div style="color:var(--text3); padding:10px">No parts logged</div>'}
     </div>
 
-    <div id="dt-comments" class="dt-section" style="display:none">
+    <div id="dt-comments" class="dt-section" style="display:${activeTab === 'dt-comments' ? 'block' : 'none'}">
       <textarea class="form-textarea" id="dt-comment-input-large" placeholder="Add a detailed update..." style="margin-top:8px; height:80px; color:black"></textarea>
       <button class="btn btn-primary btn-sm" style="margin-top:6px; margin-bottom:15px" onclick="addTaskComment('${t.id}')">Post Comment</button>
       <div id="dt-comment-list">
@@ -8673,20 +8675,19 @@ async function verifyTaskPinAction() {
     showToast("Verification Successful ✓");
 } 
 function switchTaskTab(tabId, btn) {
-    // 1. Hide all content areas inside the Work Order detail
-    const sections = ['dt-info', 'dt-checklist', 'dt-parts', 'dt-comments', 'dt-photos'];
-    sections.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
+    // 1. Remember the choice globally
+    window._currentTaskTab = tabId;
 
-    // 2. Show the specific tab clicked
+    // 2. Hide all sections
+    document.querySelectorAll('.dt-section').forEach(s => s.style.display = 'none');
+    
+    // 3. Show target
     const target = document.getElementById(tabId);
     if (target) target.style.display = 'block';
 
-    // 3. Update the active button look
-    const tabBar = btn.parentElement;
-    tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    // 4. Handle button highlights
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
 }
 async function toggleTaskCheck(taskId, index) {
