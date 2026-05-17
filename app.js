@@ -313,8 +313,17 @@ async function verifyUserPin() {
     }
 }
 function updatePinDots() {
-    for (let i = 1; i <= 4; i++) {
-        document.getElementById(`dot-${i}`).classList.toggle('filled', i <= enteredPin.length);
+    // Look for the dots we just added to the HTML
+    for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById('pin-dot-' + i);
+        if (dot) {
+            // If the user has typed this many numbers, fill the dot
+            if (i < enteredPin.length) {
+                dot.classList.add('filled');
+            } else {
+                dot.classList.remove('filled');
+            }
+        }
     }
 }
 
