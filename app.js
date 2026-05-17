@@ -321,29 +321,27 @@ async function verifyUserPin() {
 }
 function updatePinDots() {
     const container = document.getElementById('pin-display');
-    if (!container) {
-        console.error("Could not find 'pin-display' container in HTML!");
-        return;
-    }
+    if (!container) return;
 
-    // This creates one green dot for every character in the PIN string
+    // 1. We want at least 4 dots, or more if the user types more
+    const minDots = 4;
+    const currentLen = enteredPin.length;
+    const dotsCount = Math.max(minDots, currentLen);
+
     let dotHtml = "";
-    for (let i = 0; i < enteredPin.length; i++) {
-        dotHtml += '<div class="pin-dot filled"></div>';
-    }
-
-    // If they haven't typed anything, show 4 empty circles as a hint
-    if (enteredPin.length === 0) {
-        dotHtml = `
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-        `;
+    for (let i = 0; i < dotsCount; i++) {
+        // 2. If the current index is less than what's typed, fill the dot
+        if (i < currentLen) {
+            dotHtml += '<div class="pin-dot filled"></div>';
+        } else {
+            // 3. Otherwise, show an empty outline
+            dotHtml += '<div class="pin-dot"></div>';
+        }
     }
 
     container.innerHTML = dotHtml;
 }
+
 function backToNames() {
     enteredPin = "";
     updatePinDisplay();
