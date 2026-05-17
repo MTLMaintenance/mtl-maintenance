@@ -2278,7 +2278,7 @@ async function openTaskDetail(id) {
       ${actionButton}
     </div>`;
 
-  openModal('detail-modal');
+ await openModal('detail-modal');
 }
 
 function switchDetailTab(tab, btn){
@@ -8675,19 +8675,19 @@ async function verifyTaskPinAction() {
     showToast("Verification Successful ✓");
 } 
 function switchTaskTab(tabId, btn) {
-    // 1. Remember the choice globally
-    window._currentTaskTab = tabId;
+    // SAVE the choice globally so openTaskDetail knows where to stay
+    window._activeTaskTab = tabId;
 
-    // 2. Hide all sections
+    // 1. Hide all sections
     document.querySelectorAll('.dt-section').forEach(s => s.style.display = 'none');
     
-    // 3. Show target
+    // 2. Show the target section
     const target = document.getElementById(tabId);
     if (target) target.style.display = 'block';
 
-    // 4. Handle button highlights
-    const parent = btn.parentElement;
-    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    // 3. Highlight the button
+    const tabBar = btn.parentElement;
+    tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
 }
 async function toggleTaskCheck(taskId, index) {
