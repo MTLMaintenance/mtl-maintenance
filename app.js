@@ -1197,24 +1197,22 @@ function populateSelects() {
         ).join('');
     }
 } // <--- Ensure this bracket is here!
-function switchWOTab(tab, btn) {
-  // 1. Hide all sections
-  const sections = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments', 'wo-attachments'];
-  sections.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
+function switchWOTab(tabId, btn) {
+    // 1. Hide all WO tab content divs
+    const tabs = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments'];
+    tabs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 
-  // 2. Show selected section
-  const active = document.getElementById('wo-' + tab);
-  if (active) active.style.display = 'block';
+    // 2. Show the one we clicked
+    const target = document.getElementById(tabId);
+    if (target) target.style.display = 'block';
 
-  // 3. Update tabs
-  document.querySelectorAll('#task-modal .tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-
-  // 4. Update the global variable (This matches the one we put at the top)
-  currentWOTab = tab;
+    // 3. Update button highlights
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
 }
 function switchTab(group, tab, btn){
   const modal=btn.closest('.modal');
