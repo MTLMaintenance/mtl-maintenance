@@ -19,6 +19,8 @@ const MONTHS = ['January','February','March','April','May','June','July','August
  let currentCalEntryType = 'one-time';   
 let _currentDocEditId = null; 
 let _tempFileData = null; 
+let taskPinEntry = "";
+let currentTargetTaskId = null;
 // CONFIG// ============================================================
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -8487,4 +8489,82 @@ function openAddPart() {
     resetPartForm(); 
     populateSupplierDropdown(); 
     openModal('part-modal');
+}
+// 1. Open the modal
+function openTaskSignoff(taskId) {
+    currentTargetTaskId = taskId;
+    taskPinEntry = "";
+    document.getElementById('task-pin-display').textContent = "";
+    
+    const task = state.tasks.find(t => t.id === taskId);
+    
+    if (task.status === 'Pending Approval') {
+        document.getElementById('task-pin-title').textContent = "Manager Approval";
+        document.getElementById('task-pin-instruction').textContent = "Manager PIN required to finalize";
+    } else {
+        document.getElementById('task-pin-title').textContent = "Technician Sign-off";
+        document.getElementById('task-pin-instruction').textContent = "Enter PIN to request review";
+    }
+
+    document.getElementById('task-pin-user-name').textContent = currentUser.name;
+    openModal('task-pin-modal');
+}
+
+// 2. Handle PIN button presses
+function pressTaskPin(num) {
+    if (num === 'clear') {
+        taskPinEntry = "";
+    } else {
+        if (taskPinEntry.length < 4) taskPinEntry += num;
+    }
+    // Show asterisks for privacy
+    document.getElementById('task-pin-display').textContent = "•".repeat(taskPinEntry.length);
+}
+
+// 3. Verify the PIN and update the Task
+async function verifyTaskPinAction() {
+    const task = state.tasks.find(t => t.id === currentTargetTaskId);
+    const now = new Date().toISOString();
+
+    // Verification Step: Check PIN against currently logged in user
+    // (This prevents people from just guessing pins)
+    if (taskPinEntry !== currentUser.pin_code) {
+        showToast("Incorrect PIN", "danger");
+        taskPinEntry = "";
+        document.getElementById('task-pin-display').textContent = "";
+        return;
+    }
+
+    // ROLE CHECK: If task is in review, ONLY admins/managers can approve
+    if (task.status === 'Pending Approval') {
+        if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
+            alert("Access Denied: Only a Manager can finalize this task.");
+            closeModal('task-pin-modal');
+            return;
+        }
+
+        // Finalize Task
+        task.status = 'Completed';
+        task.manager_user_name = currentUser.name;
+        task.manager_signed_at = now;
+        await logAuditAction("Work Order Finalized", `Manager ${currentUser.name} approved task: ${task.name}`);
+    } 
+    else {
+        // Move to Review
+        task.status = 'Pending Approval';
+        task.tech_user_name = currentUser.name;
+        task.tech_signed_at = now;
+        await logAuditAction("Review Requested", `Tech ${currentUser.name} finished work on: ${task.name}`);
+        
+        // Notification for managers
+        if (typeof notifyManagers === 'function') {
+            notifyManagers(`📢 Task for Review: "${task.name}" completed by ${currentUser.name}.`);
+        }
+    }
+
+    // Save and Refresh
+    await persist('tasks', 'upsert', task);
+    closeModal('task-pin-modal');
+    renderTasks();
+    showToast("Action Verified ✓");
 }
