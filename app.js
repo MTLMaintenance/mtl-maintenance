@@ -8871,18 +8871,16 @@ async function deleteChecklistItem(taskId, index) {
 }
 async function addPartToTask(taskId) {
     const partId = document.getElementById('dt-part-select').value;
-    const qtyUsed = parseInt(document.getElementById('dt-part-qty').value);
+    const qtyInput = document.getElementById('dt-part-qty');
+    const qtyUsed = parseInt(qtyInput.value);
     
-    if (!partId) return alert("Please select a part");
-    if (qtyUsed <= 0) return alert("Quantity must be at least 1");
+    if (!partId || qtyUsed <= 0) return alert("Select a part and quantity");
 
     const part = state.parts.find(p => p.id === partId);
     if (!part) return;
 
-    if (part.qty < qtyUsed) {
-        alert(`Not enough stock. Only ${part.qty} available.`);
-        return;
-    }
+    // Use the column names from your database screenshot (qty and cost)
+    if (part.qty < qtyUsed) return alert(`Not enough stock. Only ${part.qty} left.`);
 
     const usage = {
         id: uid(),
@@ -8890,27 +8888,32 @@ async function addPartToTask(taskId) {
         part_id: partId,
         part_name: part.name,
         qty_used: qtyUsed,
-        unit_cost: part.cost || 0,
-        line_total: (part.cost || 0) * qtyUsed,
+        unit_cost: parseFloat(part.cost || 0), // Your DB uses 'cost'
+        line_total: parseFloat(part.cost || 0) * qtyUsed,
         used_by: currentUser.name,
         used_at: new Date().toISOString()
     };
 
     try {
-        // Save usage record
-        await window._mpdb.from('part_usage').insert(usage);
-        
-        // Subtract from stock
-        part.qty -= qtyUsed;
+        // 1. Save usage record
+        const { error: usageErr } = await window._mpdb.from('part_usage').insert(usage);
+        if (usageErr) throw usageErr;
+
+        // 2. Subtract from Inventory (Matches your 'qty' column)
+        part.qty -= qtyUsed; 
         await persist('parts', 'upsert', part);
 
-        // Update local memory and refresh UI
+        // 3. Add to local memory and refresh
+        if (!state.partUsage) state.partUsage = [];
         state.partUsage.push(usage);
-        openTaskDetail(taskId); // Refresh the modal live
-        showToast("Part added ✓");
         
+        // Clear input and refresh UI
+        qtyInput.value = 1;
+        openTaskDetail(taskId); 
+        showToast("Part added successfully ✓");
+
     } catch (e) {
-        console.error(e);
-        showToast("Error adding part");
+        console.error("Part usage save failed:", e);
+        alert("Database Error: " + e.message); // This will tell you if a column is missing
     }
 }
