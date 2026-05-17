@@ -1861,10 +1861,11 @@ async function deleteTask(id) {
 
   // 1. Find the task FIRST (so we can use it for logging and logic)
   const task = state.tasks.find(t => t.id === id);
-  if (!task) return; // If task doesn't exist, stop here
+  if (!task) return; 
 
-  // 2. Audit Log (Now it has access to the 'task' variable)
-  logAuditAction("Deleted WO", `Removed "${task.name}" for ${typeof equipName === 'function' ? equipName(task.equip_id || task.equipId) : 'Equipment'}`);
+  // 2. Audit Log
+  const machineName = (typeof equipName === 'function') ? equipName(task.equip_id || task.equipId) : 'Equipment';
+  logAuditAction("Deleted WO", `Removed "${task.name}" for ${machineName}`);
 
   // 3. Delete linked observations
   if (task.notes && task.notes.startsWith('Auto-created from critical obs')) {
@@ -1873,7 +1874,6 @@ async function deleteTask(id) {
       obsToDelete = state.observations.find(o => o.id === task.obs_id);
     }
     if (!obsToDelete) {
-      // Fallback matching
       obsToDelete = state.observations.find(o =>
         (o.equip_id === task.equip_id || o.equip_id === task.equipId) && 
         o.severity === 'critical' &&
@@ -1888,7 +1888,7 @@ async function deleteTask(id) {
     }
   }
 
-  // 4. REMOVE FROM STATE (This is what fixes the Search Bar)
+  // 4. REMOVE FROM STATE
   state.tasks = state.tasks.filter(t => t.id !== id);
 
   // 5. PERSIST TO DATABASE
@@ -1897,12 +1897,14 @@ async function deleteTask(id) {
   // 6. RE-RENDER UI
   renderTasks(); 
   renderDashboard();
-  closeModal('detail-modal');
+  
+  // Close the detail card if it was open
+  if (typeof closeModal === 'function') closeModal('detail-modal');
+
   // 7. HIDE SEARCH RESULTS
   const results = document.getElementById('search-results');
   if (results) results.style.display = 'none';
-}
-
+} 
 // ============================================================
 // SCHEDULE
 // ============================================================
@@ -6556,6 +6558,7 @@ function updateCalEntryTypeButtons(type) {
         console.error("Save failed:", error.message);
         alert("Error: " + error.message);
     }
+    }
 function renderFullHistoryList(equipId) {
     const container = document.getElementById('eq-history-list');
     if (!container) return;
@@ -6584,7 +6587,8 @@ function renderFullHistoryList(equipId) {
         </div>
     `).join('') || '<div style="padding:20px; color:var(--text3); text-align:center">No work order history.</div>';
 }
-   function renderDocsList(equipId) {
+   
+     function renderDocsList(equipId) {
     const container = document.getElementById('docs-list');
     if(!container) return;
     
