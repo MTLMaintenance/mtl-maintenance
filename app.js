@@ -8869,3 +8869,48 @@ async function deleteChecklistItem(taskId, index) {
         showToast("Error updating checklist");
     }
 }
+async function addPartToTask(taskId) {
+    const partId = document.getElementById('dt-part-select').value;
+    const qtyUsed = parseInt(document.getElementById('dt-part-qty').value);
+    
+    if (!partId) return alert("Please select a part");
+    if (qtyUsed <= 0) return alert("Quantity must be at least 1");
+
+    const part = state.parts.find(p => p.id === partId);
+    if (!part) return;
+
+    if (part.qty < qtyUsed) {
+        alert(`Not enough stock. Only ${part.qty} available.`);
+        return;
+    }
+
+    const usage = {
+        id: uid(),
+        task_id: taskId,
+        part_id: partId,
+        part_name: part.name,
+        qty_used: qtyUsed,
+        unit_cost: part.cost || 0,
+        line_total: (part.cost || 0) * qtyUsed,
+        used_by: currentUser.name,
+        used_at: new Date().toISOString()
+    };
+
+    try {
+        // Save usage record
+        await window._mpdb.from('part_usage').insert(usage);
+        
+        // Subtract from stock
+        part.qty -= qtyUsed;
+        await persist('parts', 'upsert', part);
+
+        // Update local memory and refresh UI
+        state.partUsage.push(usage);
+        openTaskDetail(taskId); // Refresh the modal live
+        showToast("Part added ✓");
+        
+    } catch (e) {
+        console.error(e);
+        showToast("Error adding part");
+    }
+}
