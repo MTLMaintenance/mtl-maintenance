@@ -48,24 +48,23 @@
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .pin-dot {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background-color: #28a745; /* Green */
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-    transition: transform 0.1s ease;
-    animation: pop 0.2s ease-out;
+    border: 2px solid rgba(255, 255, 255, 0.3); /* Empty circle */
+    background: transparent;
+    transition: all 0.2s ease;
 }
 
 .pin-dot.filled {
-    background-color: #28a745 !important; /* Green */
+    background-color: #28a745 !important; /* Green filled circle */
     border-color: #28a745 !important;
     box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-    transform: scale(1.2);
+    transform: scale(1.1);
 }
 
 @keyframes pop {
