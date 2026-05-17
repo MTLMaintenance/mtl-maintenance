@@ -252,14 +252,19 @@ function backToNames() {
     document.getElementById('login-stage-pin').style.display = 'none';
 }
 function pressPin(num) {
+    console.log("Button pressed:", num); // Check your F12 console for this!
+
     if (num === 'clear') {
         enteredPin = "";
     } else {
-        
-        if (enteredPin.length < 30) {
+        // Allow up to 10 digits
+        if (enteredPin.length < 10) {
             enteredPin += num;
         }
     }
+
+    console.log("Current PIN:", enteredPin);
+    updatePinDots();
 }
     updatePinDots();
 function updatePinDisplay() {
@@ -316,25 +321,28 @@ async function verifyUserPin() {
 }
 function updatePinDots() {
     const container = document.getElementById('pin-display');
-    if (!container) return;
+    if (!container) {
+        console.error("Could not find 'pin-display' container in HTML!");
+        return;
+    }
 
-    // 1. Clear the container
-    container.innerHTML = '';
-
-    // 2. Add one "filled" dot for every number currently typed
+    // This creates one green dot for every character in the PIN string
+    let dotHtml = "";
     for (let i = 0; i < enteredPin.length; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'pin-dot filled';
-        container.appendChild(dot);
+        dotHtml += '<div class="pin-dot filled"></div>';
     }
 
-    // 3. Add one "empty" dot if nothing is typed yet (optional, for visual feedback)
+    // If they haven't typed anything, show 4 empty circles as a hint
     if (enteredPin.length === 0) {
-        const placeholder = document.createElement('div');
-        placeholder.className = 'pin-dot';
-        placeholder.style.opacity = "0.3";
-        container.appendChild(placeholder);
+        dotHtml = `
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+        `;
     }
+
+    container.innerHTML = dotHtml;
 }
 function backToNames() {
     enteredPin = "";
