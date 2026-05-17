@@ -573,7 +573,42 @@
   </div>
 </div> 
 <!-- ===== MODALS ===== -->
-<!---- PROFILE---->
+
+ <!-- TASK PIN VERIFICATION MODAL -->
+<div class="modal-backdrop" id="task-pin-modal" style="display:none">
+  <div class="modal" style="max-width:320px; text-align:center">
+    <div class="modal-header">
+      <span class="modal-title" id="task-pin-title">Verify PIN</span>
+      <button class="modal-close" onclick="closeModal('task-pin-modal')">✕</button>
+    </div>
+    
+    <div style="padding:20px">
+      <div id="task-pin-user-name" style="font-weight:bold; font-size:18px; margin-bottom:5px">Tanner</div>
+      <div id="task-pin-instruction" style="font-size:13px; color:var(--text2); margin-bottom:20px">Enter your PIN to sign off</div>
+      
+      <!-- Display for entered digits -->
+      <div id="task-pin-display" style="height:30px; font-size:24px; letter-spacing:8px; color:var(--accent); margin-bottom:20px"></div>
+
+      <div class="pin-pad-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">
+        <!-- Buttons 1-9 -->
+        <button class="pin-btn" onclick="pressTaskPin('1')">1</button>
+        <button class="pin-btn" onclick="pressTaskPin('2')">2</button>
+        <button class="pin-btn" onclick="pressTaskPin('3')">3</button>
+        <button class="pin-btn" onclick="pressTaskPin('4')">4</button>
+        <button class="pin-btn" onclick="pressTaskPin('5')">5</button>
+        <button class="pin-btn" onclick="pressTaskPin('6')">6</button>
+        <button class="pin-btn" onclick="pressTaskPin('7')">7</button>
+        <button class="pin-btn" onclick="pressTaskPin('8')">8</button>
+        <button class="pin-btn" onclick="pressTaskPin('9')">9</button>
+        <button class="pin-btn" onclick="pressTaskPin('clear')" style="color:var(--danger)">C</button>
+        <button class="pin-btn" onclick="pressTaskPin('0')">0</button>
+        <button class="pin-btn" onclick="verifyTaskPinAction()" style="background:var(--accent); color:white">✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+ <!---- PROFILE---->
  <div class="modal-backdrop" id="profile-modal" style="display:none">
   <div class="modal" style="max-width:450px">
     <div class="modal-header">
