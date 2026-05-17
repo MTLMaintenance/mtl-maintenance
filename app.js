@@ -2218,6 +2218,7 @@ async function openTaskDetail(id) {
       ${t.checklist ? t.checklist.map((c, i) => `<div class="check-item${c.done ? ' done' : ''}" onclick="toggleCheck('${t.id}',${i})">
         <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '&#10003;' : ''}</div><span class="check-label">${c.text}</span>
       </div>`).join('') : '<div style="color:var(--text3);font-size:13px">No checklist items</div>'}
+    <button class="btn-text-danger" onclick="deleteCheckItem('${t.id}', ${i})">🗑</button>
     </div>
 
     <div id="dt-parts" style="display:none">
@@ -2513,51 +2514,101 @@ function addWOComment(){
 // ============================================================
 // SAVE DATA
 // ============================================================
-async function saveTask(){
-  const name=document.getElementById('t-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const record={
-    id:uid(), name,
+async function saveTask() {
+  const name = document.getElementById('t-name').value.trim();
+  if (!name) { showToast('Please enter a name'); return; }
+
+  // 1. Build the Work Order Record
+  const record = {
+    id: uid(), // Note: If this is an EDIT function, you should use the existing ID instead
+    name: name,
     equipId: document.getElementById('t-equip').value,
-    assign:  document.getElementById('t-assign').value,
-    priority:document.getElementById('t-priority').value,
-    due:     document.getElementById('t-due').value,
-    cost:    woPartsAdded.length>0
-      ? woPartsAdded.reduce((sum,p)=>sum+(p.unit_cost||0)*p.qty_used, 0) + (parseFloat(document.getElementById('t-cost').value)||0)
-      : parseFloat(document.getElementById('t-cost').value)||0,
-    meter:   document.getElementById('t-meter').value,
-    status:  document.getElementById('t-status').value,
-    email_freq: parseInt(document.getElementById('t-email-freq')?.value||'7'),
-    notes:   document.getElementById('t-notes').value,
-    tools:   document.getElementById('t-tools')?.value||'',
-    photos:  pendingPhotos.task.slice(),
-    checklist: document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text=>{return {text,done:false}}),
+    assign: document.getElementById('t-assign').value,
+    priority: document.getElementById('t-priority').value,
+    due: document.getElementById('t-due').value,
+    cost: woPartsAdded.length > 0
+      ? woPartsAdded.reduce((sum, p) => sum + (p.unit_cost || 0) * p.qty_used, 0) + (parseFloat(document.getElementById('t-cost').value) || 0)
+      : parseFloat(document.getElementById('t-cost').value) || 0,
+    meter: document.getElementById('t-meter').value,
+    status: document.getElementById('t-status').value,
+    email_freq: parseInt(document.getElementById('t-email-freq')?.value || '7'),
+    notes: document.getElementById('t-notes').value,
+    tools: document.getElementById('t-tools')?.value || '',
+    photos: pendingPhotos.task.slice(),
+    checklist: document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => { return { text, done: false } }),
+    created_at: new Date().toISOString() // Added for your history requirement
   };
-  state.tasks.push(record);
-  await persist('tasks','upsert',record);
-  // Save part usage
-  for(const pu of woPartsAdded){
-    const usage={...pu, task_id:record.id, used_by:currentUser.name, used_at:new Date().toISOString(), unit_cost:pu.unit_cost||0, line_total:(pu.unit_cost||0)*pu.qty_used};
-    state.partUsage.push(usage);
-    await window._mpdb.from('part_usage').insert(usage);
-    // Decrement stock
-    const part=state.parts.find(p=>p.id===pu.part_id);
-    if(part){ part.qty=Math.max(0,part.qty-pu.qty_used); await persist('parts','upsert',part); }
+
+  try {
+    // 2. Persist to Database
+    await persist('tasks', 'upsert', record);
+
+    // 3. Update Local State (THE LIVE FIX)
+    const idx = state.tasks.findIndex(t => t.id === record.id);
+    if (idx > -1) {
+      state.tasks[idx] = record;
+    } else {
+      state.tasks.push(record);
+    }
+
+    // 4. Save part usage
+    for (const pu of woPartsAdded) {
+      const usage = { 
+        ...pu, 
+        task_id: record.id, 
+        used_by: currentUser.name, 
+        used_at: new Date().toISOString(), 
+        unit_cost: pu.unit_cost || 0, 
+        line_total: (pu.unit_cost || 0) * pu.qty_used 
+      };
+      state.partUsage.push(usage);
+      await window._mpdb.from('part_usage').insert(usage);
+
+      // Decrement stock
+      const part = state.parts.find(p => p.id === pu.part_id);
+      if (part) { 
+        part.qty = Math.max(0, part.qty - pu.qty_used); 
+        await persist('parts', 'upsert', part); 
+      }
+    }
+
+    // 5. Save pending comments
+    const commentBody = document.getElementById('wo-comment-input')?.value.trim();
+    if (commentBody) {
+      const comment = { 
+        id: uid(), 
+        task_id: record.id, 
+        author: currentUser.name, 
+        body: commentBody, 
+        created_at: new Date().toISOString() 
+      };
+      await window._mpdb.from('wo_comments').insert(comment);
+    }
+
+    // 6. CLEANUP & REFRESH UI
+    woPartsAdded = [];
+    pendingPhotos.task = [];
+    closeModal('task-modal');
+    
+    // Refresh all the relevant UI screens live
+    renderTasks(); 
+    renderDashboard();
+    if(window._currentDetailEquipId) renderFullHistoryList(window._currentDetailEquipId); // Update machine history live
+    
+    state.monthlyCosts = computeMonthlyCosts();
+    showToast("Work Order Saved ✓");
+
+    // 7. Reset form
+    ['t-name', 't-due', 't-cost', 't-meter', 't-checklist', 't-notes', 't-tools', 'wo-comment-input'].forEach(id => { 
+      const el = document.getElementById(id); if (el) el.value = ''; 
+    });
+    document.getElementById('task-photo-grid').innerHTML = '<div class="photo-add" onclick="document.getElementById(\'task-photo-input\').click()">+</div><input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,\'task\')"/>';
+    document.getElementById('wo-parts-list').innerHTML = '<div style="color:var(--text3);font-size:13px">No parts added yet</div>';
+
+  } catch (e) {
+    console.error("Save Task Error:", e);
+    showToast("Error saving work order");
   }
-  // Save pending comments
-  const commentBody=document.getElementById('wo-comment-input')?.value.trim();
-  if(commentBody){
-    const comment={id:uid(),task_id:record.id,author:currentUser.name,body:commentBody,created_at:new Date().toISOString()};
-    await window._mpdb.from('wo_comments').insert(comment);
-  }
-  woPartsAdded=[];
-  pendingPhotos.task=[];
-  closeModal('task-modal');
-  state.monthlyCosts=computeMonthlyCosts();
-  renderDashboard();
-  // Reset form
-  ['t-name','t-due','t-cost','t-meter','t-checklist','t-notes','t-tools','wo-comment-input'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('task-photo-grid').innerHTML='<div class="photo-add" onclick="document.getElementById(\'task-photo-input\').click()">+</div><input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,\'task\')"/>';
-  document.getElementById('wo-parts-list').innerHTML='<div style="color:var(--text3);font-size:13px">No parts added yet</div>';
 }
 
 
@@ -6523,16 +6574,31 @@ function updateCalEntryTypeButtons(type) {
         alert("Error: " + error.message);
     }
 }
- function renderFullHistoryList(equipId) {
+function renderFullHistoryList(equipId) {
     const container = document.getElementById('eq-history-list');
-    if(!container) return;
-    const tasks = state.tasks.filter(t => t.equipId === equipId).sort((a,b) => new Date(b.due) - new Date(a.due));
-    container.innerHTML = tasks.map(t => `
-        <div class="parts-row">
-            <div style="flex:1"><b>${t.name}</b><div style="font-size:11px">${fmtDate(t.due)}</div></div>
-            ${badge(t.status)}
-        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No history recorded</div>';
-} 
+    if (!container) return;
+
+    // Filter tasks for this machine that are Completed
+    const history = state.tasks.filter(t => t.equipId === equipId && t.status === 'Completed');
+
+    // Sort by date (Newest first)
+    history.sort((a, b) => new Date(b.due) - new Date(a.due));
+
+    if (!history.length) {
+        container.innerHTML = '<div style="padding:20px; color:var(--text3)">No completed history found.</div>';
+        return;
+    }
+
+    container.innerHTML = history.map(t => `
+        <div class="history-item" style="padding:12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between">
+            <div>
+                <div style="font-weight:600">${t.name}</div>
+                <div style="font-size:11px; color:var(--text3)">Finished: ${new Date(t.due).toLocaleString()}</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">Details</button>
+        </div>
+    `).join('');
+}
    function renderDocsList(equipId) {
     const container = document.getElementById('docs-list');
     if(!container) return;
@@ -8610,3 +8676,20 @@ async function verifyTaskPinAction() {
     renderTasks();
     showToast("Verification Successful ✓");
 } 
+function switchTaskTab(tabId, btn) {
+    // 1. Target the Work Order modal body
+    const body = document.getElementById('detail-body');
+    
+    // 2. Hide all divs that start with "dt-"
+    const sections = body.querySelectorAll('div[id^="dt-"]');
+    sections.forEach(s => s.style.display = 'none');
+
+    // 3. Show the clicked one
+    const target = document.getElementById(tabId);
+    if (target) target.style.display = 'block';
+
+    // 4. Update button highlights
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
