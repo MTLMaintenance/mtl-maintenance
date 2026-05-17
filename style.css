@@ -1927,3 +1927,26 @@ html {
 .interactive-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border); }
 .btn-delete-small { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; opacity: 0.6; }
 .btn-delete-small:hover { opacity: 1; }
+
+/* 1. Hide the Work Order modal sections by default */
+#task-modal,
+#wo-details, 
+#wo-checklist, 
+#wo-parts-tab, 
+#wo-comments {
+    display: none;
+}
+
+/* 2. Only show them when the modal itself is active */
+#task-modal.active,
+#task-modal.open {
+    display: flex !important;
+}
+
+/* 3. Ensure the internal tabs show up when the modal is open */
+#task-modal.active #wo-details,
+#task-modal.active #wo-checklist,
+#task-modal.active #wo-parts-tab,
+#task-modal.active #wo-comments {
+    /* We don't use 'block' here because our JS switcher handles the specific tab visibility */
+}
