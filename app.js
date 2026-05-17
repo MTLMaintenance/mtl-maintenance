@@ -2518,24 +2518,24 @@ async function saveTask() {
   if (!name) { showToast('Please enter a name'); return; }
 
   // 1. Build the Work Order Record
-  const record = {
-    id: uid(), // Note: If this is an EDIT function, you should use the existing ID instead
+ const record = {
+    id: uid(),
     name: name,
-    equipId: document.getElementById('t-equip').value,
-    assign: document.getElementById('t-assign').value,
+    equip_id: document.getElementById('t-equip').value, // Changed from equipId
+    assign:   document.getElementById('t-assign').value,
     priority: document.getElementById('t-priority').value,
-    due: document.getElementById('t-due').value,
-    cost: woPartsAdded.length > 0
-      ? woPartsAdded.reduce((sum, p) => sum + (p.unit_cost || 0) * p.qty_used, 0) + (parseFloat(document.getElementById('t-cost').value) || 0)
-      : parseFloat(document.getElementById('t-cost').value) || 0,
-    meter: document.getElementById('t-meter').value,
-    status: document.getElementById('t-status').value,
+    due:      document.getElementById('t-due').value,
+    cost:     parseFloat(document.getElementById('t-cost').value) || 0,
+    meter:    document.getElementById('t-meter').value,
+    status:   document.getElementById('t-status').value,
     email_freq: parseInt(document.getElementById('t-email-freq')?.value || '7'),
-    notes: document.getElementById('t-notes').value,
-    tools: document.getElementById('t-tools')?.value || '',
-    photos: pendingPhotos.task.slice(),
-    checklist: document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => { return { text, done: false } }),
-    created_at: new Date().toISOString() // Added for your history requirement
+    notes:    document.getElementById('t-notes').value,
+    tools:    document.getElementById('t-tools')?.value || '',
+    photos:   pendingPhotos.task.slice(),
+    checklist: document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => { 
+        return { text, done: false }; 
+    }),
+    created_at: new Date().toISOString()
   };
 
   try {
