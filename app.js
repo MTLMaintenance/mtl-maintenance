@@ -254,12 +254,14 @@ function backToNames() {
 function pressPin(num) {
     if (num === 'clear') {
         enteredPin = "";
-    } else if (enteredPin.length < 12) { // Set a max safety limit of 12
-        enteredPin += num;
+    } else {
+        
+        if (enteredPin.length < 30) {
+            enteredPin += num;
+        }
     }
-    
-    updatePinDisplay();
-}
+
+    updatePinDots();
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
     // Shows one asterisk for every digit typed
@@ -313,20 +315,27 @@ async function verifyUserPin() {
     }
 }
 function updatePinDots() {
-    // Look for the dots we just added to the HTML
-    for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById('pin-dot-' + i);
-        if (dot) {
-            // If the user has typed this many numbers, fill the dot
-            if (i < enteredPin.length) {
-                dot.classList.add('filled');
-            } else {
-                dot.classList.remove('filled');
-            }
-        }
+    const container = document.getElementById('pin-display');
+    if (!container) return;
+
+    // 1. Clear the container
+    container.innerHTML = '';
+
+    // 2. Add one "filled" dot for every number currently typed
+    for (let i = 0; i < enteredPin.length; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'pin-dot filled';
+        container.appendChild(dot);
+    }
+
+    // 3. Add one "empty" dot if nothing is typed yet (optional, for visual feedback)
+    if (enteredPin.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'pin-dot';
+        placeholder.style.opacity = "0.3";
+        container.appendChild(placeholder);
     }
 }
-
 function backToNames() {
     enteredPin = "";
     updatePinDisplay();
