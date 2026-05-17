@@ -1897,7 +1897,7 @@ async function deleteTask(id) {
   // 6. RE-RENDER UI
   renderTasks(); 
   renderDashboard();
-  
+  closeModal('detail-modal');
   // 7. HIDE SEARCH RESULTS
   const results = document.getElementById('search-results');
   if (results) results.style.display = 'none';
@@ -2178,10 +2178,8 @@ async function openTaskDetail(id) {
   const t = state.tasks.find(x => x.id === id); 
   if (!t) return;
 
-  // 1. ROLE CHECK: Is the person looking at this a Manager?
   const isManager = (currentUser.role === 'admin' || currentUser.role === 'manager');
 
-  // 2. DATA LOADING
   let comments = [];
   try { 
     const { data } = await window._mpdb.from('wo_comments').select('*').eq('task_id', id).order('created_at', { ascending: true }); 
@@ -2193,47 +2191,39 @@ async function openTaskDetail(id) {
   const totalCheck = t.checklist ? t.checklist.length : 0;
   const photoHtml = t.photos && t.photos.length ? `<div class="photo-grid">${t.photos.map(src => `<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>` : '';
 
-  // 3. BUILD SIGN-OFF HISTORY (Visible only to Managers)
+  // 3. BUILD SIGN-OFF HISTORY
   let signoffHtml = '';
   if (isManager && (t.tech_user_name || t.manager_user_name)) {
       signoffHtml = `
         <div style="margin-top:15px; padding:12px; background:rgba(0,0,0,0.03); border-radius:var(--radius); border:1px solid var(--border)">
-            <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:8px">🔐 Sign-off History (Manager Only)</div>
+            <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:8px">🔐 Sign-off History</div>
             ${t.tech_user_name ? `<div style="font-size:12px; margin-bottom:5px"><b>Tech:</b> ${t.tech_user_name} <span style="color:var(--text3); font-size:10px">${new Date(t.tech_signed_at).toLocaleString()}</span></div>` : ''}
             ${t.manager_user_name ? `<div style="font-size:12px"><b>Appr:</b> ${t.manager_user_name} <span style="color:var(--text3); font-size:10px">${new Date(t.manager_signed_at).toLocaleString()}</span></div>` : ''}
-        </div>
-      `;
+        </div>`;
   }
 
-  // 4. ACTION BUTTON LOGIC
-  let actionButton = '';
-  if (t.status === 'Completed') {
-      actionButton = `<span class="badge bs" style="padding:8px 15px">Finalized ✓</span>`;
-  } else if (t.status === 'Pending Approval') {
-      // Button for Managers to Approve
-      actionButton = `<button class="btn btn-primary" style="background:#f59e0b !important" onclick="openTaskSignoff('${t.id}')">🛡 Approve Work (PIN)</button>`;
-  } else {
-      // Standard Complete button for Techs
-      actionButton = `<button class="btn btn-primary" onclick="openTaskSignoff('${t.id}')">✓ Mark Complete (PIN)</button>`;
-  }
+  // 4. ACTION BUTTON
+  let actionButton = t.status === 'Completed' 
+    ? `<span class="badge bs" style="padding:8px 15px">Finalized ✓</span>`
+    : `<button class="btn btn-primary" onclick="openTaskSignoff('${t.id}')">${t.status === 'Pending Approval' ? '🛡 Approve Work' : '✓ Mark Complete'}</button>`;
 
   document.getElementById('detail-title').textContent = t.name;
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar">
-      <button class="tab active" onclick="switchDetailTab('dt-info',this)">Info</button>
-      <button class="tab" onclick="switchDetailTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
-      <button class="tab" onclick="switchDetailTab('dt-parts',this)">Parts (${partsUsed.length})</button>
-      <button class="tab" onclick="switchDetailTab('dt-comments',this)">Comments (${comments.length})</button>
-      ${photoHtml ? `<button class="tab" onclick="switchDetailTab('dt-photos',this)">Photos</button>` : ''}
+      <!-- CHANGED switchDetailTab to switchTaskTab -->
+      <button class="tab active" onclick="switchTaskTab('dt-info',this)">Info</button>
+      <button class="tab" onclick="switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
+      <button class="tab" onclick="switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
+      <button class="tab" onclick="switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
+      ${photoHtml ? `<button class="tab" onclick="switchTaskTab('dt-photos',this)">Photos</button>` : ''}
     </div>
 
     <div id="dt-info">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
-        <div><span style="color:var(--text2)">Equipment:</span> <b>${typeof equipName === 'function' ? equipName(t.equipId) : t.equipId}</b></div>
+        <div><span style="color:var(--text2)">Equipment:</span> <b>${typeof equipName === 'function' ? equipName(t.equipId || t.equip_id) : t.name}</b></div>
         <div><span style="color:var(--text2)">Assigned:</span> ${t.assign || '—'}</div>
         <div><span style="color:var(--text2)">Priority:</span> ${badge(t.priority)}</div>
-        <div><span style="color:var(--text2)">Status:</span> ${badge(t.status === 'Pending Approval' ? 'Waiting for Manager' : t.status)}</div>
-        <div><span style="color:var(--text2)">Due:</span> <span style="color:${isOverdue(t.due) && t.status !== 'Completed' ? 'var(--danger)' : 'inherit'}">${fmtDate(t.due)}</span></div>
+        <div><span style="color:var(--text2)">Status:</span> ${badge(t.status)}</div>
         <div><span style="color:var(--text2)">Cost:</span> <b>$${(t.cost || 0).toLocaleString()}</b></div>
         <div><span style="color:var(--text2)">Meter:</span> ${t.meter || '—'}</div>
       </div>
@@ -2242,34 +2232,44 @@ async function openTaskDetail(id) {
     </div>
 
     <div id="dt-checklist" style="display:none">
-      ${t.checklist ? t.checklist.map((c, i) => `<div class="check-item${c.done ? ' done' : ''}" onclick="toggleCheck('${t.id}',${i})">
-        <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '&#10003;' : ''}</div><span class="check-label">${c.text}</span>
-      </div>`).join('') : '<div style="color:var(--text3);font-size:13px">No checklist items</div>'}
+      ${t.checklist ? t.checklist.map((c, i) => `
+      <div class="check-item" style="display:flex; justify-content:space-between; align-items:center">
+        <div style="display:flex; align-items:center" onclick="toggleCheck('${t.id}',${i})">
+            <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '&#10003;' : ''}</div>
+            <span class="check-label ${c.done ? 'done' : ''}">${c.text}</span>
+        </div>
+        <button class="btn btn-sm" style="color:var(--danger); background:none; border:none" onclick="deleteChecklistItem('${t.id}', ${i})">🗑</button>
+      </div>`).join('') : '<div style="color:var(--text3)">No items</div>'}
     </div>
 
     <div id="dt-parts" style="display:none">
-      ${partsUsed.map(p => `<div class="parts-row">
-        <div style="flex:1"><div style="font-weight:500">${p.part_name}</div><div style="font-size:11px;color:var(--text2)">Used by ${p.used_by || '—'} · ${new Date(p.used_at).toLocaleDateString()}</div></div>
-        <span class="badge bg">Qty: ${p.qty_used}</span>
-      </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No parts logged</div>'}
+      ${partsUsed.map(p => `
+      <div class="parts-row" style="display:flex; justify-content:space-between; align-items:center">
+        <div style="flex:1">
+            <div style="font-weight:500">${p.part_name}</div>
+            <div style="font-size:11px;color:var(--text2)">Qty: ${p.qty_used} · ${new Date(p.used_at).toLocaleDateString()}</div>
+        </div>
+        <button class="btn btn-sm" style="color:var(--danger); background:none; border:none" onclick="removePartUsage('${p.id}', '${t.id}')">🗑</button>
+      </div>`).join('') || '<div style="color:var(--text3)">No parts logged</div>'}
     </div>
 
     <div id="dt-comments" style="display:none">
       <div id="dt-comment-list">
-        ${comments.map(c => `<div class="comment"><div class="comment-author">${c.author_name || c.author || 'Unknown'}<span class="comment-time">${new Date(c.created_at).toLocaleString()}</span></div><div class="comment-body">${c.body}</div></div>`).join('') || '<div style="color:var(--text3);font-size:13px;margin-bottom:12px">No comments yet</div>'}
+        ${comments.map(c => `<div class="comment"><div class="comment-author">${c.author}<span class="comment-time">${new Date(c.created_at).toLocaleString()}</span></div><div class="comment-body">${c.body}</div></div>`).join('')}
       </div>
       <textarea class="form-textarea" id="dt-comment-input" placeholder="Add a comment..." style="margin-top:8px"></textarea>
       <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="postDetailComment('${t.id}')">Post Comment</button>
     </div>
-    ${photoHtml ? `<div id="dt-photos" style="display:none">${photoHtml}</div>` : ''}
     
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">
-      ${actionButton}
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      ${isManager ? `<button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Delete Work Order</button>` : ''}
       <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
+      ${actionButton}
     </div>`;
 
   openModal('detail-modal');
 }
+
 function switchDetailTab(tab, btn){
   const modal = document.getElementById('detail-modal');
   if(!modal) return;
@@ -6556,31 +6556,33 @@ function updateCalEntryTypeButtons(type) {
         console.error("Save failed:", error.message);
         alert("Error: " + error.message);
     }
-}
 function renderFullHistoryList(equipId) {
     const container = document.getElementById('eq-history-list');
     if (!container) return;
 
-    // Filter tasks for this machine that are Completed
-    const history = state.tasks.filter(t => t.equipId === equipId && t.status === 'Completed');
+    // Filter tasks for THIS machine that are FINISHED
+    const history = state.tasks.filter(t => 
+        (t.equipId === equipId || t.equip_id === equipId) && 
+        t.status === 'Completed'
+    );
 
-    // Sort by date (Newest first)
-    history.sort((a, b) => new Date(b.due) - new Date(a.due));
-
-    if (!history.length) {
-        container.innerHTML = '<div style="padding:20px; color:var(--text3)">No completed history found.</div>';
-        return;
-    }
+    // Sort Newest to Oldest
+    history.sort((a, b) => new Date(b.manager_signed_at || b.created_at) - new Date(a.manager_signed_at || a.created_at));
 
     container.innerHTML = history.map(t => `
-        <div class="history-item" style="padding:12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between">
+        <div style="padding:12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
             <div>
-                <div style="font-weight:600">${t.name}</div>
-                <div style="font-size:11px; color:var(--text3)">Finished: ${new Date(t.due).toLocaleString()}</div>
+                <b style="display:block; font-size:14px">${t.name}</b>
+                <span style="font-size:11px; color:var(--text3)">
+                    Completed: ${new Date(t.manager_signed_at || t.tech_signed_at || t.created_at).toLocaleString()}
+                </span>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">Details</button>
+            <div style="text-align:right">
+                <div style="font-weight:bold; color:var(--success)">$${(t.cost || 0).toLocaleString()}</div>
+                <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">View</button>
+            </div>
         </div>
-    `).join('');
+    `).join('') || '<div style="padding:20px; color:var(--text3); text-align:center">No work order history.</div>';
 }
    function renderDocsList(equipId) {
     const container = document.getElementById('docs-list');
@@ -8660,19 +8662,101 @@ async function verifyTaskPinAction() {
     showToast("Verification Successful ✓");
 } 
 function switchTaskTab(tabId, btn) {
-    // 1. Target the Work Order modal body
-    const body = document.getElementById('detail-body');
-    
-    // 2. Hide all divs that start with "dt-"
-    const sections = body.querySelectorAll('div[id^="dt-"]');
-    sections.forEach(s => s.style.display = 'none');
+    // 1. Hide all content areas inside the Work Order detail
+    const sections = ['dt-info', 'dt-checklist', 'dt-parts', 'dt-comments', 'dt-photos'];
+    sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 
-    // 3. Show the clicked one
+    // 2. Show the specific tab clicked
     const target = document.getElementById(tabId);
     if (target) target.style.display = 'block';
 
-    // 4. Update button highlights
-    const parent = btn.parentElement;
-    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    // 3. Update the active button look
+    const tabBar = btn.parentElement;
+    tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
+}
+async function toggleTaskCheck(taskId, index) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Toggle the done state
+    task.checklist[index].done = !task.checklist[index].done;
+
+    // Save to Database
+    await persist('tasks', 'upsert', task);
+
+    // RE-RENDER THE MODAL LIVE (This keeps the user on the current tab)
+    openTaskDetail(taskId); 
+    
+    // Log the action for accountability
+    logAuditAction("Checklist Update", `Marked item "${task.checklist[index].text}" as ${task.checklist[index].done ? 'Done' : 'Incomplete'}`);
+}
+async function addPartToActiveTask(taskId) {
+    const partId = prompt("Enter Part ID or Scan QR:"); // You can replace this with a dropdown later
+    if (!partId) return;
+
+    const qty = parseInt(prompt("How many used?")) || 1;
+    const part = state.parts.find(p => p.id === partId || p.num === partId);
+
+    if (!part) return alert("Part not found in inventory.");
+
+    const usage = {
+        id: uid(),
+        task_id: taskId,
+        part_id: part.id,
+        part_name: part.name,
+        qty_used: qty,
+        used_by: currentUser.name,
+        used_at: new Date().toISOString()
+    };
+
+    // 1. Save usage
+    state.partUsage.push(usage);
+    await window._mpdb.from('part_usage').insert(usage);
+
+    // 2. Update stock
+    part.qty = Math.max(0, part.qty - qty);
+    await persist('parts', 'upsert', part);
+
+    // 3. Refresh the modal view
+    openTaskDetail(taskId);
+    showToast("Part logged live ✓");
+}
+async function removePartUsage(usageId, taskId) {
+    if (!confirm("Remove this part and return it to stock?")) return;
+
+    const usage = state.partUsage.find(u => u.id === usageId);
+    if (!usage) return;
+
+    try {
+        // 1. Return the quantity to inventory
+        const part = state.parts.find(p => p.id === usage.part_id);
+        if (part) {
+            part.qty = (part.qty || 0) + usage.qty_used;
+            await persist('parts', 'upsert', part);
+        }
+
+        // 2. Delete the usage record from DB and State
+        await window._mpdb.from('part_usage').delete().eq('id', usageId);
+        state.partUsage = state.partUsage.filter(u => u.id !== usageId);
+
+        // 3. Update the task cost (subtracting this part's line total)
+        const task = state.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.cost = Math.max(0, (task.cost || 0) - (usage.line_total || 0));
+            await persist('tasks', 'upsert', task);
+        }
+
+        // 4. Refresh UI
+        openTaskDetail(taskId); // Re-renders the current modal
+        renderTasks();         // Re-renders the main table
+        showToast("Part returned to stock");
+
+    } catch (e) {
+        console.error(e);
+        showToast("Error removing part");
+    }
 }
