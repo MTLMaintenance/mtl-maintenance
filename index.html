@@ -698,36 +698,114 @@
  <!-- Work Order Modal -->
 <div class="modal-backdrop" id="task-modal">
   <div class="modal" style="max-width:640px">
-   <input type="hidden" id="task-edit-id"> 
-   <div class="modal-header"><span class="modal-title" id="task-modal-title">New Work Order</span><button class="modal-close" onclick="closeModal('task-modal')">✕</button></div>
-    <div class="tab-bar">
-      <button class="tab active" onclick="switchWOTab('details',this)">Details</button>
-      <button class="tab" onclick="switchWOTab('checklist',this)">Checklist</button>
-      <button class="tab" onclick="switchWOTab('parts-tab',this)">Parts Used</button>
-      <button class="tab" onclick="switchWOTab('comments',this)">Comments</button>
-      <button class="tab" onclick="switchWOTab('attachments',this)">Attachments</button>
+    <input type="hidden" id="task-edit-id"> 
+    <div class="modal-header">
+      <span class="modal-title" id="task-modal-title">New Work Order</span>
+      <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
     </div>
-    <div id="wo-details">
+
+    <!-- TAB NAVIGATION -->
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchWOTab('wo-details',this)">Details</button>
+      <button class="tab" onclick="switchWOTab('wo-checklist',this)">Checklist</button>
+      <button class="tab" onclick="switchWOTab('wo-parts-tab',this)">Parts Used</button>
+      <button class="tab" onclick="switchWOTab('wo-comments',this)">Comments</button>
+    </div>
+
+    <!-- 1. DETAILS TAB (Required fields marked with *) -->
+    <div id="wo-details" class="wo-tab-content">
       <div class="form-grid">
-        <div class="form-group full"><label class="form-label">Work Order Name *</label><input class="form-input" id="t-name" placeholder="e.g. Oil filter replacement"/></div>
-        <div class="form-group"><label class="form-label">Equipment *</label><select class="form-select" id="t-equip"></select></div>
-        <div class="form-group"><label class="form-label">Assigned To</label><select class="form-select" id="t-assign"></select></div>
-      <div class="form-group full" id="tpl-selector-wrap" style="display:none">
-        <label class="form-label">Apply Inspection Template</label>
-        <div style="display:flex;gap:8px">
-          <select class="form-select" id="tpl-selector" style="flex:1"></select>
-          <button class="btn btn-secondary btn-sm" onclick="applyTemplate()">Apply</button>
+        <div class="form-group full">
+          <label class="form-label">Work Order Name *</label>
+          <input class="form-input" id="t-name" placeholder="e.g. Oil filter replacement"/>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Equipment *</label>
+          <select class="form-select" id="t-equip">
+            <option value="" disabled selected>-- Select Equipment --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Priority *</label>
+          <select class="form-select" id="t-priority">
+            <option value="" disabled selected>-- Select Priority --</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Due Date *</label>
+          <input class="form-input" id="t-due" type="date"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Meter Reading *</label>
+          <input class="form-input" id="t-meter" placeholder="e.g. 4320 hrs"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Assigned To</label>
+          <select class="form-select" id="t-assign">
+             <option value="">-- Unassigned --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estimated Labor Cost ($)</label>
+          <input class="form-input" id="t-cost" type="number" min="0" placeholder="0"/>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">Notes</label>
+          <textarea class="form-textarea" id="t-notes" placeholder="Additional notes..." style="height:60px"></textarea>
+        </div>
+        
+        <div class="form-group full">
+          <label class="form-label">Tools Required</label>
+          <input class="form-input" id="t-tools" placeholder="e.g. 3/4 socket set, torque wrench..."/>
         </div>
       </div>
-        <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="t-priority"><option>Low</option><option>Medium</option><option selected>High</option><option>Critical</option></select></div>
-        <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="t-due" type="date"/></div>
-        <div class="form-group"><label class="form-label">Estimated Cost ($)</label>
-          <input class="form-input" id="t-cost" type="number" min="0" placeholder="0" oninput="updateTotalCostDisplay()"/>
-          <div id="t-cost-breakdown" style="font-size:11px;color:var(--text2);margin-top:4px;display:none">
-            Parts: <span id="t-parts-cost">$0.00</span> + Labour/Other: <span id="t-other-cost">$0.00</span> = <b id="t-total-cost">$0.00</b>
-          </div>
+    </div>
+
+    <!-- 2. CHECKLIST TAB -->
+    <div id="wo-checklist" class="wo-tab-content" style="display:none">
+      <label class="form-label">Task Steps (One per line)</label>
+      <textarea class="form-textarea" id="t-checklist" placeholder="Check oil level&#10;Replace filter&#10;Clean spill" style="height:200px"></textarea>
+    </div>
+
+    <!-- 3. PARTS TAB (Uses your existing woPartsAdded logic) -->
+    <div id="wo-parts-tab" class="wo-tab-content" style="display:none">
+      <div style="background:var(--bg2); padding:15px; border-radius:8px; margin-bottom:15px">
+        <label class="form-label">Add Part from Inventory</label>
+        <div style="display:flex; gap:8px">
+          <select class="form-select" id="wo-part-search" style="flex:1"></select>
+          <input type="number" class="form-input" id="wo-part-qty" value="1" style="width:70px">
+          <button class="btn btn-secondary btn-sm" onclick="addPartToWO()">Add</button>
         </div>
-        <div class="form-group"><label class="form-label">Meter Reading</label><input class="form-input" id="t-meter" placeholder="e.g. 4320 hrs"/></div>
+      </div>
+      <div id="wo-parts-list" style="max-height:150px; overflow-y:auto">
+        <div style="color:var(--text3); font-size:13px">No parts added yet</div>
+      </div>
+    </div>
+
+    <!-- 4. COMMENTS TAB -->
+    <div id="wo-comments" class="wo-tab-content" style="display:none">
+      <label class="form-label">Initial Comments</label>
+      <textarea class="form-textarea" id="wo-comment-input" placeholder="Any details to share with the tech..." style="height:150px"></textarea>
+    </div>
+
+    <!-- MODAL FOOTER -->
+    <div class="form-row" style="margin-top:20px; justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('task-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Work Order</button>
+    </div>
+  </div>
+</div>
         
         <!-- UPDATED STATUS DROPDOWN -->
         <div class="form-group"><label class="form-label">Status</label>
