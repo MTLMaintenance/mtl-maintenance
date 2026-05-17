@@ -25,6 +25,9 @@ let currentTargetTaskId = null;
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
+window.deleteChecklistItem = deleteChecklistItem; 
+window.deleteTaskComment = deleteTaskComment;
+window.removePartUsage = removePartUsage;
 
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
@@ -8806,11 +8809,13 @@ async function usePartOnTask(taskId) {
   showToast("Part added to Work Order ✓");
 }
 async function deleteTaskComment(commentId, taskId) {
-  if(!confirm("Delete this comment?")) return;
-  await window._mpdb.from('wo_comments').delete().eq('id', commentId);
-  openTaskDetail(taskId); // Refresh
+    if(!confirm("Delete this comment?")) return;
+    try {
+        await window._mpdb.from('wo_comments').delete().eq('id', commentId);
+        // Refresh the modal to show it's gone
+        openTaskDetail(taskId);
+    } catch(e) { console.error(e); }
 }
-
 async function removePartFromTask(usageId, taskId) {
   if(!confirm("Remove part and return to stock?")) return;
   const usage = state.partUsage.find(u => u.id === usageId);
@@ -8834,4 +8839,33 @@ async function addTaskCheckItem(taskId) {
   t.checklist.push({ text: input.value.trim(), done: false });
   await persist('tasks', 'upsert', t);
   openTaskDetail(taskId);
+}
+async function deleteChecklistItem(taskId, index) {
+    // 1. Confirm with user
+    if (!confirm("Remove this item from the checklist?")) return;
+
+    // 2. Find the task in local memory
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task || !task.checklist) return;
+
+    // 3. Remove the specific item from the array
+    task.checklist.splice(index, 1);
+
+    try {
+        // 4. Update the database
+        await persist('tasks', 'upsert', task);
+        
+        // 5. Log the action for accountability
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Checklist Item Removed", `Deleted a step from task: ${task.name}`);
+        }
+
+        // 6. Refresh the modal live so the item vanishes
+        openTaskDetail(taskId);
+        showToast("Item removed ✓");
+
+    } catch (e) {
+        console.error("Failed to delete checklist item:", e);
+        showToast("Error updating checklist");
+    }
 }
