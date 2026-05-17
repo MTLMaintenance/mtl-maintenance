@@ -2218,7 +2218,6 @@ async function openTaskDetail(id) {
       ${t.checklist ? t.checklist.map((c, i) => `<div class="check-item${c.done ? ' done' : ''}" onclick="toggleCheck('${t.id}',${i})">
         <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '&#10003;' : ''}</div><span class="check-label">${c.text}</span>
       </div>`).join('') : '<div style="color:var(--text3);font-size:13px">No checklist items</div>'}
-    <button class="btn-text-danger" onclick="deleteCheckItem('${t.id}', ${i})">🗑</button>
     </div>
 
     <div id="dt-parts" style="display:none">
