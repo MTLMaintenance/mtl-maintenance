@@ -1921,3 +1921,9 @@ html {
 .dot-lunch     { background-color: #007bff; }
 .dot-shop      { background-color: #6c757d; }
   
+.dt-section { padding: 15px 0; display: none; }
+.dt-section.active { display: block; }
+.comment-box { background: var(--bg2); padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); }
+.interactive-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border); }
+.btn-delete-small { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; opacity: 0.6; }
+.btn-delete-small:hover { opacity: 1; }
