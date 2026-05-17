@@ -2193,18 +2193,6 @@ async function openTaskDetail(id) {
   const totalCheck = t.checklist ? t.checklist.length : 0;
   const photoHtml = t.photos && t.photos.length ? `<div class="photo-grid">${t.photos.map(src => `<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>` : '';
 
-  // 3. BUILD SIGN-OFF HISTORY
-  let signoffHtml = '';
-  if (isManager && (t.tech_user_name || t.manager_user_name)) {
-      signoffHtml = `
-        <div style="margin-top:15px; padding:12px; background:rgba(0,0,0,0.03); border-radius:var(--radius); border:1px solid var(--border)">
-            <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:8px">🔐 Sign-off History</div>
-            ${t.tech_user_name ? `<div style="font-size:12px; margin-bottom:5px"><b>Tech:</b> ${t.tech_user_name} <span style="color:var(--text3); font-size:10px">${new Date(t.tech_signed_at).toLocaleString()}</span></div>` : ''}
-            ${t.manager_user_name ? `<div style="font-size:12px"><b>Appr:</b> ${t.manager_user_name} <span style="color:var(--text3); font-size:10px">${new Date(t.manager_signed_at).toLocaleString()}</span></div>` : ''}
-        </div>`;
-  }
-
-  // 4. ACTION BUTTON
   let actionButton = t.status === 'Completed' 
     ? `<span class="badge bs" style="padding:8px 15px">Finalized ✓</span>`
     : `<button class="btn btn-primary" onclick="openTaskSignoff('${t.id}')">${t.status === 'Pending Approval' ? '🛡 Approve Work' : '✓ Mark Complete'}</button>`;
@@ -2212,58 +2200,75 @@ async function openTaskDetail(id) {
   document.getElementById('detail-title').textContent = t.name;
   document.getElementById('detail-body').innerHTML = `
     <div class="tab-bar">
-      <!-- CHANGED switchDetailTab to switchTaskTab -->
       <button class="tab active" onclick="switchTaskTab('dt-info',this)">Info</button>
       <button class="tab" onclick="switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
       <button class="tab" onclick="switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
       <button class="tab" onclick="switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
-      ${photoHtml ? `<button class="tab" onclick="switchTaskTab('dt-photos',this)">Photos</button>` : ''}
     </div>
 
-    <div id="dt-info">
+    <div id="dt-info" class="dt-section" style="display:block">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
         <div><span style="color:var(--text2)">Equipment:</span> <b>${typeof equipName === 'function' ? equipName(t.equipId || t.equip_id) : t.name}</b></div>
         <div><span style="color:var(--text2)">Assigned:</span> ${t.assign || '—'}</div>
         <div><span style="color:var(--text2)">Priority:</span> ${badge(t.priority)}</div>
         <div><span style="color:var(--text2)">Status:</span> ${badge(t.status)}</div>
+        <div><span style="color:var(--text2)">Due:</span> <span style="color:${isOverdue(t.due) && t.status !== 'Completed' ? 'var(--danger)' : 'inherit'}">${fmtDate(t.due)}</span></div>
         <div><span style="color:var(--text2)">Cost:</span> <b>$${(t.cost || 0).toLocaleString()}</b></div>
-        <div><span style="color:var(--text2)">Meter:</span> ${t.meter || '—'}</div>
       </div>
-      ${t.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${t.notes}</div>` : ''}
-      ${signoffHtml}
+      ${t.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:10px;border-radius:var(--radius);margin-bottom:12px">${t.notes}</div>` : ''}
     </div>
 
-    <div id="dt-checklist" style="display:none">
+    <div id="dt-checklist" class="dt-section" style="display:none">
+      <div style="display:flex; gap:8px; margin-bottom:15px">
+        <input type="text" id="new-check-item" class="form-input" placeholder="Add a task step...">
+        <button class="btn btn-primary btn-sm" onclick="addTaskCheckItem('${t.id}')">Add</button>
+      </div>
       ${t.checklist ? t.checklist.map((c, i) => `
-      <div class="check-item" style="display:flex; justify-content:space-between; align-items:center">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border)">
         <div style="display:flex; align-items:center" onclick="toggleCheck('${t.id}',${i})">
-            <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '&#10003;' : ''}</div>
-            <span class="check-label ${c.done ? 'done' : ''}">${c.text}</span>
+            <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '✓' : ''}</div>
+            <span class="${c.done ? 'done' : ''}" style="color:black; font-size:13px">${c.text}</span>
         </div>
-        <button class="btn btn-sm" style="color:var(--danger); background:none; border:none" onclick="deleteChecklistItem('${t.id}', ${i})">🗑</button>
-      </div>`).join('') : '<div style="color:var(--text3)">No items</div>'}
+        <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="deleteChecklistItem('${t.id}', ${i})">🗑</button>
+      </div>`).join('') : ''}
     </div>
 
-    <div id="dt-parts" style="display:none">
-      ${partsUsed.map(p => `
-      <div class="parts-row" style="display:flex; justify-content:space-between; align-items:center">
-        <div style="flex:1">
-            <div style="font-weight:500">${p.part_name}</div>
-            <div style="font-size:11px;color:var(--text2)">Qty: ${p.qty_used} · ${new Date(p.used_at).toLocaleDateString()}</div>
+    <div id="dt-parts" class="dt-section" style="display:none">
+      <div style="background:var(--bg2); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border)">
+        <div style="font-size:11px; font-weight:700; color:var(--text2); margin-bottom:8px">PULL FROM INVENTORY</div>
+        <div style="display:flex; gap:8px">
+          <select id="dt-part-select" class="form-select" style="flex:1; color:black">
+            <option value="">-- Select Part --</option>
+            ${state.parts.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`).join('')}
+          </select>
+          <input type="number" id="dt-part-qty" class="form-input" style="width:60px; color:black" value="1">
+          <button class="btn btn-primary btn-sm" onclick="addPartToTask('${t.id}')">Add</button>
         </div>
-        <button class="btn btn-sm" style="color:var(--danger); background:none; border:none" onclick="removePartUsage('${p.id}', '${t.id}')">🗑</button>
-      </div>`).join('') || '<div style="color:var(--text3)">No parts logged</div>'}
-    </div>
-
-    <div id="dt-comments" style="display:none">
-      <div id="dt-comment-list">
-        ${comments.map(c => `<div class="comment"><div class="comment-author">${c.author}<span class="comment-time">${new Date(c.created_at).toLocaleString()}</span></div><div class="comment-body">${c.body}</div></div>`).join('')}
       </div>
-      <textarea class="form-textarea" id="dt-comment-input" placeholder="Add a comment..." style="margin-top:8px"></textarea>
-      <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="postDetailComment('${t.id}')">Post Comment</button>
+      ${partsUsed.map(p => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border)">
+        <div style="color:black; font-size:13px"><b>${p.part_name}</b><br><small style="color:var(--text2)">Qty: ${p.qty_used} · $${(p.line_total || 0).toLocaleString()}</small></div>
+        <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="removePartUsage('${p.id}', '${t.id}')">🗑</button>
+      </div>`).join('') || '<div style="color:var(--text3); padding:10px">No parts logged</div>'}
+    </div>
+
+    <div id="dt-comments" class="dt-section" style="display:none">
+      <textarea class="form-textarea" id="dt-comment-input-large" placeholder="Add a detailed update..." style="margin-top:8px; height:80px; color:black"></textarea>
+      <button class="btn btn-primary btn-sm" style="margin-top:6px; margin-bottom:15px" onclick="addTaskComment('${t.id}')">Post Comment</button>
+      <div id="dt-comment-list">
+        ${comments.map(c => `
+          <div style="background:var(--bg2); padding:10px; border-radius:8px; margin-bottom:8px; border:1px solid var(--border)">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3)">
+              <b>${c.author}</b>
+              <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="deleteTaskComment('${c.id}', '${t.id}')">🗑</button>
+            </div>
+            <div style="color:black; font-size:13px; margin-top:4px">${c.body}</div>
+          </div>`).join('')}
+      </div>
     </div>
     
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+    <div style="display:flex; gap:8px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--border); padding-top:15px">
+      ${isManager ? `<button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Delete WO</button>` : ''}
       <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
       ${actionButton}
     </div>`;
@@ -8762,4 +8767,71 @@ async function removePartUsage(usageId, taskId) {
         console.error(e);
         showToast("Error removing part");
     }
+}
+async function usePartOnTask(taskId) {
+  const partId = document.getElementById('dt-part-select').value;
+  const qtyUsed = parseInt(document.getElementById('dt-part-qty').value);
+  if(!partId || qtyUsed <= 0) return;
+
+  const part = state.parts.find(p => p.id === partId);
+  if(part.qty < qtyUsed) return alert("Not enough stock!");
+
+  const usage = {
+    id: uid(),
+    task_id: taskId,
+    part_id: partId,
+    part_name: part.name,
+    qty_used: qtyUsed,
+    unit_cost: part.cost || 0,
+    line_total: (part.cost || 0) * qtyUsed,
+    used_by: currentUser.name,
+    used_at: new Date().toISOString()
+  };
+
+  // 1. Update Database
+  await window._mpdb.from('part_usage').insert(usage);
+  
+  // 2. Subtract from Inventory
+  part.qty -= qtyUsed;
+  await persist('parts', 'upsert', part);
+
+  // 3. Update Task Total Cost
+  const task = state.tasks.find(t => t.id === taskId);
+  task.cost = (task.cost || 0) + usage.line_total;
+  await persist('tasks', 'upsert', task);
+
+  // 4. Refresh UI
+  state.partUsage.push(usage);
+  openTaskDetail(taskId); 
+  showToast("Part added to Work Order ✓");
+}
+async function deleteTaskComment(commentId, taskId) {
+  if(!confirm("Delete this comment?")) return;
+  await window._mpdb.from('wo_comments').delete().eq('id', commentId);
+  openTaskDetail(taskId); // Refresh
+}
+
+async function removePartFromTask(usageId, taskId) {
+  if(!confirm("Remove part and return to stock?")) return;
+  const usage = state.partUsage.find(u => u.id === usageId);
+  
+  // Return to stock
+  const part = state.parts.find(p => p.id === usage.part_id);
+  if(part) {
+    part.qty += usage.qty_used;
+    await persist('parts', 'upsert', part);
+  }
+
+  await window._mpdb.from('part_usage').delete().eq('id', usageId);
+  state.partUsage = state.partUsage.filter(u => u.id !== usageId);
+  openTaskDetail(taskId);
+}
+
+async function addTaskCheckItem(taskId) {
+  const input = document.getElementById('new-check-item');
+  if(!input.value.trim()) return;
+  const t = state.tasks.find(x => x.id === taskId);
+  t.checklist.push({ text: input.value.trim(), done: false });
+  await persist('tasks', 'upsert', t);
+  openTaskDetail(taskId);
 }
