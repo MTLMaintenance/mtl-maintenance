@@ -51,19 +51,21 @@
     margin-bottom: 30px;
 }
 
+/* The Placeholder (Empty Outline) */
 .pin-dot {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.3); /* Empty circle */
+    border: 2px solid rgba(255, 255, 255, 0.2); /* Faint white outline */
     background: transparent;
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
 }
 
+/* The Filled State (Active) */
 .pin-dot.filled {
-    background-color: #28a745 !important; /* Green filled circle */
+    background-color: #28a745 !important; /* Solid Green */
     border-color: #28a745 !important;
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);
     transform: scale(1.1);
 }
 
