@@ -924,7 +924,10 @@ async function loadState() {
     ]);
 
     state.equipment       = eq.data||[];
-    state.tasks           = tk.data||[];
+   state.tasks = (tk.data || []).map(t => ({
+      ...t,
+      equipId: t.equip_id
+    }));
     state.schedules       = sc.data||[];
     state.parts           = pt.data||[];
     state.suppliers       = sup.data||[];
@@ -2518,23 +2521,20 @@ async function saveTask() {
   if (!name) { showToast('Please enter a name'); return; }
 
   // 1. Build the Work Order Record
- const record = {
-    id: uid(),
+const record = {
+    id: uid(), 
     name: name,
-    equip_id: document.getElementById('t-equip').value, // Changed from equipId
-    assign:   document.getElementById('t-assign').value,
-    priority: document.getElementById('t-priority').value,
-    due:      document.getElementById('t-due').value,
-    cost:     parseFloat(document.getElementById('t-cost').value) || 0,
-    meter:    document.getElementById('t-meter').value,
-    status:   document.getElementById('t-status').value,
-    email_freq: parseInt(document.getElementById('t-email-freq')?.value || '7'),
-    notes:    document.getElementById('t-notes').value,
-    tools:    document.getElementById('t-tools')?.value || '',
-    photos:   pendingPhotos.task.slice(),
-    checklist: document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => { 
-        return { text, done: false }; 
-    }),
+    equip_id:  document.getElementById('t-equip').value, // Use underscore
+    assign:    document.getElementById('t-assign').value,
+    priority:  document.getElementById('t-priority').value,
+    due:       document.getElementById('t-due').value,
+    cost:      parseFloat(document.getElementById('t-cost').value) || 0,
+    meter:     document.getElementById('t-meter').value,
+    status:    document.getElementById('t-status').value,
+    notes:     document.getElementById('t-notes').value,
+    tools:     document.getElementById('t-tools')?.value || '',
+    photos:    pendingPhotos.task.slice(),
+    checklist: document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => ({ text, done: false })),
     created_at: new Date().toISOString()
   };
 
