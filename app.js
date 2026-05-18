@@ -1847,7 +1847,6 @@ function renderTasks() {
       <td>${badge(t.priority)}</td>
       <td style="color:var(--text2)">${t.assign || '—'}</td>
       <td style="color:${isActuallyOverdue ? 'var(--danger)' : 'inherit'};font-size:12px">${fmtDate(t.due)}</td>
-      <td style="font-weight:600">$${(t.cost || 0).toLocaleString()}</td>
       <td style="font-size:12px">${pUsed ? pUsed + ' units' : '—'}</td>
       <td>${badge(statusLabel)}</td>
       <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Del</button></td>
@@ -1976,7 +1975,7 @@ function openAddPart() {
     document.getElementById('part-modal-title').textContent = "Add New Part";
 
     // 3. Clear the inputs
-    ['edit-p-name', 'p-num', 'p-cost', 'p-qty', 'p-reorder'].forEach(id => {
+    ['edit-p-name', 'p-num',  'p-qty', 'p-reorder'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = (id === 'p-cost' || id === 'p-qty') ? 0 : '';
     });
