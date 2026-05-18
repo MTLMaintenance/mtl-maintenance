@@ -1950,3 +1950,41 @@ html {
 #task-modal.active #wo-comments {
     /* We don't use 'block' here because our JS switcher handles the specific tab visibility */
 }
+/* 1. Force the Task PIN modal to the front row (higher than other modals) */
+#task-pin-modal {
+    z-index: 30000 !important;
+}
+
+/* 2. Style the PIN Modal specifically for high contrast on white */
+#task-pin-modal .modal {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+}
+
+/* 3. Force all text inside this modal to be black */
+#task-pin-modal #task-pin-title,
+#task-pin-modal #task-pin-user-name,
+#task-pin-modal #task-pin-instruction,
+#task-pin-modal .modal-header .modal-title {
+    color: #000000 !important;
+}
+
+/* 4. Style the buttons specifically for this modal */
+#task-pin-modal .pin-btn {
+    background: #f0f0f0 !important;
+    color: #000000 !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+}
+
+#task-pin-modal .pin-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+/* Special color for the checkmark button in the sign-off */
+#task-pin-modal .pin-btn[onclick*="verifyTaskPinAction"] {
+    background: var(--accent) !important;
+    color: white !important;
+    border: none !important;
+}
