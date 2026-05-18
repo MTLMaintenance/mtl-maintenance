@@ -8616,33 +8616,38 @@ function openAddPart() {
 function openTaskSignoff(taskId) {
     currentTargetTaskId = taskId;
     taskPinEntry = "";
-    document.getElementById('task-pin-display').textContent = "";
+    
+    // Clear the display
+    const display = document.getElementById('task-pin-display');
+    if (display) display.textContent = "";
     
     const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Update Text for Sign-off
+    document.getElementById('task-pin-user-name').textContent = currentUser.name;
     
     if (task.status === 'Pending Approval') {
         document.getElementById('task-pin-title').textContent = "Manager Approval";
         document.getElementById('task-pin-instruction').textContent = "Manager PIN required to finalize";
     } else {
         document.getElementById('task-pin-title').textContent = "Technician Sign-off";
-        document.getElementById('task-pin-instruction').textContent = "Enter PIN to request review";
+        document.getElementById('task-pin-instruction').textContent = "Enter your PIN to verify work";
     }
 
-    document.getElementById('task-pin-user-name').textContent = currentUser.name;
-    openModal('task-pin-modal');
-}
-
-// 2. Handle PIN button presses
-function pressTaskPin(num) {
-    if (num === 'clear') {
-        taskPinEntry = "";
-    } else {
-        if (taskPinEntry.length < 4) taskPinEntry += num;
+    // --- THE FIX ---
+    // Ensure the main detail modal stays open but sits behind the PIN pad
+    const detailModal = document.getElementById('detail-modal');
+    if (detailModal) {
+        detailModal.style.zIndex = "10000"; // Lower
     }
-    // Show asterisks for privacy
-    document.getElementById('task-pin-display').textContent = "•".repeat(taskPinEntry.length);
-}
 
+    const pinModal = document.getElementById('task-pin-modal');
+    if (pinModal) {
+        pinModal.style.display = 'flex';
+        pinModal.style.zIndex = "30000"; // Much Higher
+    }
+}
 // 3. Verify the PIN and update the Task
 async function verifyTaskPinAction() {
     const task = state.tasks.find(t => t.id === currentTargetTaskId);
