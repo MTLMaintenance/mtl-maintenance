@@ -678,7 +678,8 @@ async function startApp() {
 
       if(profile && profile.status === 'approved') {
         currentUser = { ...profile, name: profile.full_name || sessionData.username };
-        localStorage.setItem('mp_session', JSON.stringify(currentUser));
+       window._geminiKey = profile.gemini_key || localStorage.getItem('mp_gemini_key') || '';
+       localStorage.setItem('mp_session', JSON.stringify(currentUser));
         if (typeof applyUserPreferences === 'function') applyUserPreferences();
         await enterApp(); 
         return; 
@@ -5037,14 +5038,37 @@ async function deleteInvoice(invoiceId, equipId) {
 }
 
 // ── GEMINI KEY MANAGEMENT ─────────────────────────────────────
-function saveGeminiKey() {
-  const key = document.getElementById('gemini-key-input')?.value.trim();
-  if(!key || key.startsWith('•')) { showToast('Enter a valid API key'); return; }
+async function saveGeminiKey() {
+  const keyInput = document.getElementById('gemini-key-input');
+  const key = keyInput?.value.trim();
+  
+  if(!key || key.startsWith('•')) { 
+      showToast('Enter a valid API key'); 
+      return; 
+  }
+
+  // 1. Save to active memory
   window._geminiKey = key;
-  try { localStorage.setItem('mp_gemini_key', key); } catch(e) {}
-  document.getElementById('gemini-key-status').textContent = '✅ Gemini key saved';
-  document.getElementById('gemini-key-input').value = '••••••••••••••••';
-  showToast('Gemini API key saved ✓');
+
+  // 2. Save to LocalStorage (Instant)
+  localStorage.setItem('mp_gemini_key', key);
+
+  // 3. Save to Supabase (Permanent across all devices)
+  try {
+    const { error } = await window._mpdb
+      .from('profiles')
+      .update({ gemini_key: key })
+      .eq('id', currentUser.id);
+
+    if (error) throw error;
+    
+    document.getElementById('gemini-key-status').textContent = '✅ Gemini key synced to cloud';
+    keyInput.value = '••••••••••••••••';
+    showToast('Gemini API key saved & synced ✓');
+  } catch(e) {
+    console.error("Cloud sync failed:", e);
+    showToast('Saved locally, but cloud sync failed.');
+  }
 }
 
 // ── AI TOOL SUGGESTIONS ───────────────────────────────────────
