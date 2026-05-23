@@ -3913,15 +3913,22 @@ function renderChatMessages(msgs,container){
   container.innerHTML=html;
 }
 function buildChatMsgHtml(msg) {
-  // --- 1. STATUS DOT LOGIC ---
-  const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
-  const status = sender?.preferences?.status || 'Available';
-  const statusClean = status.replace(/\s+/g, '-');
-  const dotHtml = `<span class="chat-status-dot dot-${statusClean}"></span>`;
-
-  // --- 2. LAYOUT LOGIC ---
-  const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  // 1. Identify if the message is from the logged-in user
   const isMe = msg.author === currentUser.username;
+
+  // 2. STATUS DOT LOGIC 
+  // We look for the sender in the cache. If it's 'me', we use our own local live status.
+  const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
+  const status = (isMe ? currentUser.preferences?.status : sender?.preferences?.status) || 'Available';
+  
+  // Clean status name for CSS class (e.g. "In the Field" -> "In-the-Field")
+  const statusClean = status.replace(/\s+/g, '-');
+
+  // THE DOT: Added 'title' so it shows the status when you hover your mouse
+  const dotHtml = `<span class="chat-status-dot dot-${statusClean}" title="Status: ${status}"></span>`;
+
+  // 3. LAYOUT LOGIC
+  const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   
   let body = (msg.body || '').split('\n').join('<br>');
@@ -3935,21 +3942,19 @@ function buildChatMsgHtml(msg) {
   const canDelete = isMe || currentUser?.role === 'admin' || currentUser?.role === 'manager';
   const canBlock = !isMe && (currentUser?.role === 'admin' || currentUser?.role === 'manager');
 
-  // --- 3. THE HTML ---
   return `
   <div style="display:flex; gap:10px; padding:6px 0; align-items:flex-start; ${isMe ? 'flex-direction:row-reverse' : ''}" 
        onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" 
        onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
     
-    <!-- Initials Circle -->
-    <div style="width:32px; height:32px; border-radius:50%; background:${isMe ? 'var(--success-bg)' : 'var(--accent-bg)'}; color:${isMe ? 'var(--success-text)' : 'var(--accent-text)'}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0">
+    <div style="width:32px; height:32px; border-radius:50%; background:${isMe ? 'var(--accent)' : 'var(--bg3)'}; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0">
         ${initials}
     </div>
 
     <div style="flex:1; min-width:0; ${isMe ? 'align-items:flex-end; display:flex; flex-direction:column' : ''}">
       <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
         
-        <!-- THE NAME + STATUS DOT (Added color: #000 for readability) -->
+        <!-- THE NAME + STATUS DOT (Forced Black color for readability) -->
         <span style="font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px; color:#000 !important;">
             ${!isMe ? dotHtml : ''} 
             ${isMe ? 'You' : (msg.author_name || msg.author)}
@@ -3965,8 +3970,7 @@ function buildChatMsgHtml(msg) {
           </span>` : ''}
       </div>
 
-      <!-- Message Bubble -->
-      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px; color:black;">
+      <div style="background:${isMe ? '#eaf3de' : '#f0f0f0'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px; color:black;">
         ${body ? `<div style="font-size:13px; color:black; line-height:1.5; word-break:break-word">${body}</div>` : ''}
         ${photoHtml}
         ${equipTag || taskTag ? `<div style="margin-top:4px; display:flex; gap:4px; flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
