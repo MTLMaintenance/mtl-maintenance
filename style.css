@@ -1127,8 +1127,36 @@ body, html {
   padding: 0 !important;
   /* Keep the original app background from the primary #app rule above. */
 }
+@media screen and (max-width: 768px) {
+    #zerk-sidebar-container {
+        display: none !important;
+    }
+    .zerk-main-layout {
+        display: block !important; /* Stack vertically if needed, but sidebar is hidden anyway */
+    }
+}
 
-/* --- THE HEADER: FIXED TO TOP --- */
+/* 2. THE MOBILE-ONLY FLOATING CARD */
+#mobile-zerk-info-card {
+    display: none; /* Hidden by default */
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    right: 15px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 1000;
+    color: #000;
+    border: 1px solid #ddd;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
 
 
 /* ============================================================
