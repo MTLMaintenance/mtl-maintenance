@@ -6298,6 +6298,7 @@ function renderZerkTab(equipId) {
     const viewIdx = window._currentZerkViewIdx || 0;
     const currentMode = window.zerkPinMode || 'dot';
     const showAllLines = window.showZerkLines || false;
+    const isMobile = window.innerWidth <= 768; // Detection for the floating card
 
     if (modal) modal.classList.add('modal-zerk-wide');
     if (histBtn) histBtn.style.display = 'none';
@@ -6310,22 +6311,18 @@ function renderZerkTab(equipId) {
         return;
     }
 
-    // 1. IMPROVED MOBILE HEADER (Scrollable Buttons)
     const viewButtonsHtml = equip.zerk_photos.map((_, i) => {
         const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
-        return `<button class="btn ${viewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" style="flex:0 0 auto" onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')" ondblclick="renameZerkView(${i})">${name}</button>`;
+        return `<button class="btn ${viewIdx === i ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="window._currentZerkViewIdx=${i}; renderZerkTab('${equipId}')" ondblclick="renameZerkView(${i})">${name}</button>`;
     }).join('');
 
     switcher.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:12px; border-bottom:1px solid #ddd; padding-bottom:15px; margin-bottom:15px">
-        <!-- Views Row (Horizontal Scroll on Mobile) -->
-        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch">
+        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
             ${viewButtonsHtml}
             <button class="btn btn-secondary btn-sm" onclick="addZerkViewWithTitle()">+</button>
         </div>
-        
-        <!-- Tools Row -->
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
             <label style="font-size:11px; color:#666; display:flex; align-items:center; cursor:pointer">
                 <input type="checkbox" style="margin-right:5px" ${showAllLines ? 'checked' : ''} onchange="window.showZerkLines=this.checked; renderZerkTab('${equipId}')"> Show Lines
             </label>
@@ -6339,7 +6336,6 @@ function renderZerkTab(equipId) {
     const currentPhoto = equip.zerk_photos[viewIdx];
     const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
 
-    // 2. MAIN LAYOUT
     container.innerHTML = `
     <div class="zerk-main-layout">
         <!-- LEFT: THE MAP -->
@@ -6347,43 +6343,53 @@ function renderZerkTab(equipId) {
             <img id="zerk-map-img" src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
             
             <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50">
-                ${points.map(p => (p.lx && p.ly) ? `
-                    <line id="line-${p.id}" class="zerk-line" 
-                          x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" 
-                          style="opacity: ${showAllLines ? '0.3' : '0'}" />` : ''
-                ).join('')}
+                ${points.map(p => (p.lx && p.ly) ? `<line id="line-${p.id}" class="zerk-line" x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" style="opacity: ${showAllLines ? '0.3' : '0'}" />` : '').join('')}
             </svg>
 
             <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
                 ${points.map((p, idx) => {
                     const posX = (p.lx !== null) ? p.lx : p.x;
                     const posY = (p.ly !== null) ? p.ly : p.y;
+                    // IF MOBILE: Show card. IF PC: Open edit prompt.
+                    const action = isMobile ? `showMobileZerkCard('${p.id}', ${idx+1})` : `editZerkNote('${p.id}')`;
+                    
                     return `
                         <div id="dot-${p.id}" class="zerk-dot" style="left:${posX}%; top:${posY}%" 
-                             onmouseenter="highlightZerkLink('${p.id}', true)" 
-                             onmouseleave="highlightZerkLink('${p.id}', false)"
-                             onclick="event.stopPropagation(); editZerkNote('${p.id}')">
+                             onmouseenter="highlightZerkLink('${p.id}', true)" onmouseleave="highlightZerkLink('${p.id}', false)"
+                             onclick="event.stopPropagation(); ${action}">
                             ${idx + 1}
                         </div>`;
                 }).join('')}
             </div>
+
+            <!-- THE MOBILE FLOATING CARD (Hidden by default) -->
+            <div id="mobile-zerk-info-card" style="display:none; position:absolute; bottom:10px; left:10px; right:10px; background:white; border-radius:12px; padding:12px; box-shadow:0 8px 25px rgba(0,0,0,0.4); z-index:200; color:black;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px">
+                    <b id="m-card-title" style="color:var(--accent); font-size:13px">Point #1</b>
+                    <button onclick="event.stopPropagation(); closeMobileZerkCard()" style="background:none; border:none; font-size:18px; color:#999; cursor:pointer">×</button>
+                </div>
+                <div id="m-card-note" style="font-size:12px; margin-bottom:12px; line-height:1.4"></div>
+                <div style="display:flex; gap:8px">
+                    <button class="btn btn-secondary btn-sm" style="flex:1" id="m-card-edit-btn">Edit</button>
+                    <button class="btn btn-danger btn-sm" id="m-card-del-btn">🗑</button>
+                </div>
+            </div>
         </div>
 
-        <!-- RIGHT: THE SIDEBAR -->
+        <!-- RIGHT: THE SIDEBAR (CSS hides this on mobile automatically) -->
         <div id="zerk-sidebar-container">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
                 <h4 style="margin:0; font-size:14px; color:#333">Grease Points</h4>
                 <button class="btn btn-outline-danger btn-sm" style="font-size:10px" onclick="deleteZerkView()">Delete View</button>
             </div>
-            
             <div style="flex:1; overflow-y:auto">
-                <table class="zerk-sidebar-table" style="width:100%">
+                <table class="zerk-sidebar-table">
                     <thead><tr><th style="width:40px">#</th><th>Instructions</th><th style="width:30px"></th></tr></thead>
                     <tbody>
                         ${points.map((p, idx) => `
                             <tr onmouseenter="highlightZerkLink('${p.id}', true)" onmouseleave="highlightZerkLink('${p.id}', false)">
                                 <td><div class="zerk-num-list">${idx + 1}</div></td>
-                                <td style="font-weight:500; color:black !important; font-size:12px" onclick="editZerkNote('${p.id}')">${p.note || '<span style="color:#aaa">Add instructions...</span>'}</td>
+                                <td style="font-weight:500; color:black !important" onclick="editZerkNote('${p.id}')">${p.note || '<span style="color:#aaa">Add instructions...</span>'}</td>
                                 <td style="text-align:right">
                                     <button onclick="deleteZerk('${p.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:16px;">🗑</button>
                                 </td>
@@ -8964,3 +8970,37 @@ async function addPartToTask(taskId) {
         alert("Database Error: " + e.message);
     }
 }
+function showMobileZerkCard(pointId, displayNum) {
+    const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
+    const point = equip.zerk_points.find(p => p.id === pointId);
+    if (!point) return;
+
+    const card = document.getElementById('mobile-zerk-info-card');
+    if (!card) return;
+
+    // 1. Set the data
+    document.getElementById('m-zerk-title').textContent = `Grease Point #${displayNum}`;
+    document.getElementById('m-zerk-text').textContent = point.note || "No specific instructions.";
+
+    // 2. Link the buttons to your existing functions
+    document.getElementById('m-zerk-edit-btn').onclick = (e) => {
+        e.stopPropagation();
+        editZerkNote(pointId);
+    };
+    document.getElementById('m-zerk-del-btn').onclick = (e) => {
+        e.stopPropagation();
+        deleteZerk(pointId);
+        closeMobileZerkCard();
+    };
+
+    // 3. Show the card
+    card.style.display = 'block';
+}
+
+function closeMobileZerkCard() {
+    const card = document.getElementById('mobile-zerk-info-card');
+    if (card) card.style.display = 'none';
+}
+
+window.showMobileZerkCard = showMobileZerkCard;
+window.closeMobileZerkCard = closeMobileZerkCard;
