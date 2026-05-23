@@ -3914,15 +3914,12 @@ function renderChatMessages(msgs,container){
 }
 function buildChatMsgHtml(msg) {
   // --- 1. STATUS DOT LOGIC ---
-  // Find sender in our live-synced cache
   const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
   const status = sender?.preferences?.status || 'Available';
-  
-  // Clean status name for CSS class (e.g. "In the Field" -> "In-the-Field")
   const statusClean = status.replace(/\s+/g, '-');
   const dotHtml = `<span class="chat-status-dot dot-${statusClean}"></span>`;
 
-  // --- 2. EXISTING LAYOUT LOGIC ---
+  // --- 2. LAYOUT LOGIC ---
   const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const isMe = msg.author === currentUser.username;
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -3938,7 +3935,7 @@ function buildChatMsgHtml(msg) {
   const canDelete = isMe || currentUser?.role === 'admin' || currentUser?.role === 'manager';
   const canBlock = !isMe && (currentUser?.role === 'admin' || currentUser?.role === 'manager');
 
-  // --- 3. RETURN CORRECTED HTML (Fixes the left-shift) ---
+  // --- 3. THE HTML ---
   return `
   <div style="display:flex; gap:10px; padding:6px 0; align-items:flex-start; ${isMe ? 'flex-direction:row-reverse' : ''}" 
        onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" 
@@ -3952,14 +3949,14 @@ function buildChatMsgHtml(msg) {
     <div style="flex:1; min-width:0; ${isMe ? 'align-items:flex-end; display:flex; flex-direction:column' : ''}">
       <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
         
-        <!-- THE NAME + STATUS DOT -->
-        <span style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:5px">
+        <!-- THE NAME + STATUS DOT (Added color: #000 for readability) -->
+        <span style="font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px; color:#000 !important;">
             ${!isMe ? dotHtml : ''} 
             ${isMe ? 'You' : (msg.author_name || msg.author)}
             ${isMe ? dotHtml : ''}
         </span>
 
-        <span style="font-size:11px; color:var(--text3)">${time}</span>
+        <span style="font-size:10px; color:#888;">${time}</span>
         
         ${canDelete || canBlock ? `
           <span class="msg-actions" style="opacity:0; transition:opacity .15s; display:flex; gap:4px; margin-left:4px">
@@ -3969,8 +3966,8 @@ function buildChatMsgHtml(msg) {
       </div>
 
       <!-- Message Bubble -->
-      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px">
-        ${body ? `<div style="font-size:13px; color:var(--text); line-height:1.5; word-break:break-word">${body}</div>` : ''}
+      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px; color:black;">
+        ${body ? `<div style="font-size:13px; color:black; line-height:1.5; word-break:break-word">${body}</div>` : ''}
         ${photoHtml}
         ${equipTag || taskTag ? `<div style="margin-top:4px; display:flex; gap:4px; flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
       </div>
