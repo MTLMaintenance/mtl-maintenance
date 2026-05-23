@@ -1,3 +1,4 @@
+// CONFIG// ============================================================
 let chatSub = null;
 let chatChannel = null;
 let currentEditingToolId = null;
@@ -21,7 +22,7 @@ let _currentDocEditId = null;
 let _tempFileData = null; 
 let taskPinEntry = "";
 let currentTargetTaskId = null;
-// CONFIG// ============================================================
+
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
@@ -29,6 +30,8 @@ window.deleteChecklistItem = deleteChecklistItem;
 window.deleteTaskComment = deleteTaskComment;
 window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
+
+
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
     
@@ -834,7 +837,7 @@ async function doRegister() {
       full_name: name, 
       role: 'tech', 
       status: 'pending',
-      pin_code: pin // Saves directly to the new PIN column
+      pin_code: pin // Saves ly to the new PIN column
     });
 
     if (error) { 
@@ -1394,7 +1397,7 @@ function renderCostChart() {
     });
 
     container.innerHTML = costs.map((v, i) => `
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px">
+        <div style="flex:1; display:flex; flex-ion:column; align-items:center; gap:5px">
             <div style="font-size:11px; font-weight:700">$${v.toLocaleString()}</div>
             <div style="width:100%; border-radius:4px 4px 0 0; height:${Math.round(v / max * 100)}px; background:${colors[i]}"></div>
             <div style="font-size:11px; color:var(--text2)">${labels[i]}</div>
@@ -3771,7 +3774,7 @@ let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoDat
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
-  async function initChat() {
+ async function initChat() {
     // --- PART 1: LOAD EXISTING MESSAGES ---
     try {
         const { data } = await window._mpdb.from('chat_messages')
@@ -3784,38 +3787,32 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
         console.error("Chat load error:", e);
     }
 
-    // --- PART 2: SETUP REALTIME LISTENER ---
+    // --- PART 2: SETUP REALTIME LISTENERS ---
     try {
-        // FIX: If we already have a subscription, kill it before starting a new one
-        if (chatSub) {
-            window._mpdb.removeChannel(chatSub);
-            chatSub = null;
+        // Kill existing subscription if it exists to prevent duplicates
+        if (window.chatSub) {
+            window._mpdb.removeChannel(window.chatSub);
+            window.chatSub = null;
         }
 
-        // Create the channel
-        chatSub = window._mpdb.channel('chat-room-updates');
+        // 1. Create a Master Channel for Chat & Profiles
+        window.chatSub = window._mpdb.channel('chat-and-status-sync');
 
-        // Define the logic FIRST (The .on part)
-        chatSub.on('postgres_changes', {
+        // 2. LISTEN FOR NEW MESSAGES
+        window.chatSub.on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
             table: 'chat_messages'
         }, payload => {
             const msg = payload.new;
-            
-            // Avoid duplicates
             if (state.chatMessages.some(m => m.id === msg.id)) return;
-            
             state.chatMessages.unshift(msg);
 
-            // Handle @Mentions (Only if currentUser is set)
             if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
                 showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
             }
 
-            // Update UI
             if (msg.channel === currentChannel) {
-                // If it's not my own message, append it to the screen
                 if (msg.author !== currentUser?.username) {
                     if (typeof appendChatMessage === 'function') appendChatMessage(msg);
                 }
@@ -3825,13 +3822,42 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
             }
         });
 
-        // NOW call .subscribe() LAST
-        chatSub.subscribe((status) => {
-            if (status === 'SUBSCRIBED') console.log("Realtime Chat Connected ✓");
+        // 3. LISTEN FOR STATUS UPDATES (The Sync Fix)
+        window.chatSub.on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles'
+        }, payload => {
+            console.log("Live status change:", payload.new.username, payload.new.preferences?.status);
+
+            // A. Update local cache so Sidebar and Message dots know the new status
+            if (state.users_list_cache) {
+                const idx = state.users_list_cache.findIndex(u => u.username === payload.new.username);
+                if (idx !== -1) state.users_list_cache[idx] = payload.new;
+            }
+
+            // B. If YOU changed your status elsewhere, sync your Top Bar Pill
+            if (currentUser && payload.new.id === currentUser.id) {
+                currentUser.preferences = payload.new.preferences;
+                if (typeof applyUserPreferences === 'function') applyUserPreferences();
+            }
+
+            // C. Refresh the UI components that show dots
+            if (typeof renderDmList === 'function') renderDmList();
+            
+            // D. Refresh Chat messages so the dots next to names update live
+            if (currentPanel === 'chat' && typeof renderChat === 'function') {
+                renderChat(); 
+            }
+        });
+
+        // 4. ACTIVATE
+        window.chatSub.subscribe((status) => {
+            if (status === 'SUBSCRIBED') console.log("Realtime Chat & Status Connected ✓");
         });
 
     } catch (e) {
-        console.error("Chat subscription error:", e);
+        console.error("Realtime setup error:", e);
     }
 }
 async function renderChat() {
@@ -3917,10 +3943,10 @@ function buildChatMsgHtml(msg) {
   const canDelete = isMe || currentUser?.role === 'admin' || currentUser?.role === 'manager';
   const canBlock = !isMe && (currentUser?.role === 'admin' || currentUser?.role === 'manager');
 
-  return `<div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start;${isMe ? 'flex-direction:row-reverse' : ''}" onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
+  return `<div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start;${isMe ? 'flex-ion:row-reverse' : ''}" onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
     <div style="width:32px;height:32px;border-radius:50%;background:${isMe ? 'var(--success-bg)' : 'var(--accent-bg)'};color:${isMe ? 'var(--success-text)' : 'var(--accent-text)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${initials}</div>
-    <div style="flex:1;min-width:0;${isMe ? 'align-items:flex-end;display:flex;flex-direction:column' : ''}">
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;${isMe ? 'flex-direction:row-reverse' : ''}">
+    <div style="flex:1;min-width:0;${isMe ? 'align-items:flex-end;display:flex;flex-ion:column' : ''}">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;${isMe ? 'flex-ion:row-reverse' : ''}">
         
         <!-- ADDED: Status Dot next to name -->
         <span style="font-weight:600;font-size:13px;display:flex;align-items:center">
@@ -4013,7 +4039,7 @@ function updateMobileChatMenuLabel(channel, options){
     const knownOptions = options || [];
     const match = knownOptions.find(opt => opt.value === channel);
     if(match){ label.textContent = match.label; return; }
-    if(channel && channel.startsWith('dm-')) label.textContent = '@ direct message';
+    if(channel && channel.startsWith('dm-')) label.textContent = '@  message';
     else label.textContent = '# general';
 }
 function toggleMobileChatMenu(event){
@@ -4082,7 +4108,7 @@ function enforceChatMobileLayout(){
     if(!layout || !sidebar || !mainChat) return;
 
     if(isMobile){
-        layout.style.flexDirection = 'column';
+        layout.style.flexion = 'column';
         layout.style.height = 'calc(100vh - 210px)';
         layout.style.minHeight = 'calc(100vh - 210px)';
         layout.style.gap = '10px';
@@ -4147,7 +4173,7 @@ function enforceChatMobileLayout(){
         }
         if(headerTitle) headerTitle.style.display = 'none';
     } else {
-        layout.style.flexDirection = '';
+        layout.style.flexion = '';
         layout.style.height = '';
         layout.style.minHeight = '';
         layout.style.gap = '';
@@ -4211,7 +4237,7 @@ function switchChannel(channel, btn) {
                     const menuLabel = document.getElementById('chat-channel-menu-label')?.textContent || '';
                     dmName = menuLabel.replace(/^@\s*/, '').trim();
                 }
-                header.textContent = '@ ' + (dmName || 'direct message');
+                header.textContent = '@ ' + (dmName || ' message');
             } else {
                 header.textContent = '# ' + channel;
             }
@@ -4221,7 +4247,7 @@ function switchChannel(channel, btn) {
         const mobileMenuBtn = document.getElementById('chat-channel-menu-btn');
         if (mobileMenuBtn) {
             // This grabs the name we just set in the header above and puts it on the mobile button
-            const newLabel = header ? header.textContent : (channel.startsWith('dm-') ? '@ direct message' : '# ' + channel);
+            const newLabel = header ? header.textContent : (channel.startsWith('dm-') ? '@  message' : '# ' + channel);
             mobileMenuBtn.innerHTML = '☰ ' + newLabel;
         }
         // --- END OF NEW CODE ---
@@ -4278,8 +4304,6 @@ function updateUnreadBadge() {
 
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
-
-// ── BUG / SUGGESTION ─────────────────────────────────────────
 
 // ── PULLEQUIPSUPPLIERS with template selector ─────────────────
 function pullEquipSuppliers(){
@@ -4417,7 +4441,7 @@ async function enterApp() {
       applyUserPreferences(); 
   }
 
-  // 5. REDIRECT TO PREFERRED HOME PAGE
+  // 5. RE TO PREFERRED HOME PAGE
   const home = (currentUser.preferences && currentUser.preferences.startPage) 
                  ? currentUser.preferences.startPage 
                  : 'dashboard';
@@ -4470,17 +4494,18 @@ async function updateLastSeen(){
   }catch(e){}
 }
 
-// ── DIRECT MESSAGES ──────────────────────────────────────────
+// ──  MESSAGES ──────────────────────────────────────────
 let activeDmUser=null;
-function getDmChannel(u1,u2){return 'dm-'+[u1,u2].sort().join('-');}
-
-   async function renderDmList() {
+async function renderDmList() {
     const el = document.getElementById('dm-list');
     if (!el) return;
     
-    // Ensure we have users in the cache
+    // 1. Fetch fresh profiles (including preferences/status) if cache is empty
     if (!state.users_list_cache || state.users_list_cache.length === 0) {
-        const { data } = await window._mpdb.from('profiles').select('username, full_name').eq('status', 'approved');
+        const { data } = await window._mpdb
+            .from('profiles')
+            .select('username, full_name, preferences') // Added preferences
+            .eq('status', 'approved');
         state.users_list_cache = data || [];
     }
 
@@ -4488,13 +4513,24 @@ function getDmChannel(u1,u2){return 'dm-'+[u1,u2].sort().join('-');}
     
     el.innerHTML = otherUsers.map(u => {
         const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
+        
+        // 2. Determine the user's status and dot color
+        const status = u.preferences?.status || 'Available';
+        // Clean the status string for CSS (remove spaces/dots)
+        const dotClass = `dot-${status.replace(/\s+/g, '-')}`;
+
         return `
-        <button class="chat-channel-btn" id="btn-dm-${u.username}" data-channel="${ch}" onclick="switchChannel('${ch}', this)">
-            ${u.full_name} <span class="unread-dot" id="dot-dm-${ch}" style="display:none"></span>
+        <button class="chat-channel-btn" id="btn-dm-${u.username}" data-channel="${ch}" onclick="switchChannel('${ch}', this)" style="display:flex; align-items:center;">
+            <span class="dm-status-dot ${dotClass}"></span>
+            <span style="flex:1; text-align:left;">${u.full_name || u.username}</span>
+            <span class="unread-dot" id="dot-dm-${ch}" style="display:none"></span>
         </button>`;
     }).join('') || '<div style="color:rgba(255,255,255,0.4); font-size:11px; padding-left:12px">No users found</div>';
-    refreshMobileChatChannelOptions();
-} 
+
+    if (typeof refreshMobileChatChannelOptions === 'function') {
+        refreshMobileChatChannelOptions();
+    }
+}
 function switchToDm(username,fullName,btn){
   activeDmUser=username;currentChannel=getDmChannel(currentUser.username,username);
   document.querySelectorAll('.chat-channel-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
@@ -7049,7 +7085,7 @@ async function renderDowntimeStats() {
     const entries = Object.entries(machineMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
     const maxH = Math.max(...Object.values(machineMap), 1);
     chart.innerHTML = entries.map(([name, hrs]) => `
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px">
+        <div style="flex:1; display:flex; flex-ion:column; align-items:center; gap:4px">
             <div style="font-size:10px; font-weight:700">${hrs.toFixed(1)}h</div>
             <div style="width:100%; background:#E24B4A; height:${Math.round(hrs/maxH * 80)}px; border-radius:3px 3px 0 0"></div>
             <div style="font-size:9px; color:var(--text2); text-align:center; white-space:nowrap; overflow:hidden; width:100%">${name}</div>
@@ -7261,7 +7297,7 @@ async function renderAuditLogs() {
     container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
 
     try {
-        // 2. FETCH BOTH LOGS AND PROFILES DIRECTLY FROM SUPABASE
+        // 2. FETCH BOTH LOGS AND PROFILES LY FROM SUPABASE
         // This bypasses the 'state' variable entirely to ensure we see the names
         const [logsResponse, profilesResponse] = await Promise.all([
             window._mpdb.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
@@ -8086,7 +8122,7 @@ window.openReviewModal = async function(id) {
     const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
     let tool = localList.find(t => t.id === id);
 
-    // 2. THE FIX: If not found in memory, fetch it directly from Supabase
+    // 2. THE FIX: If not found in memory, fetch it ly from Supabase
     if (!tool) {
         console.warn("Tool not found in local memory. Fetching from Supabase...");
         try {
