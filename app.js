@@ -3913,21 +3913,16 @@ function renderChatMessages(msgs,container){
   container.innerHTML=html;
 }
 function buildChatMsgHtml(msg) {
-  // 1. Status Dot Logic
-  const sender = (state.profiles || []).find(p => p.username === msg.author);
+  // --- 1. STATUS DOT LOGIC ---
+  // Find sender in our live-synced cache
+  const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
   const status = sender?.preferences?.status || 'Available';
-  const dotColors = {
-      'Available': '#28a745',
-      'In the Field': '#f59e0b',
-      'At the Shop': '#6c757d',
-      'On Lunch': '#007bff',
-      'Busy': '#dc3545'
-  };
-  const dotColor = dotColors[status] || '#28a745';
-  const glow = status === 'Available' ? `box-shadow: 0 0 5px ${dotColor};` : '';
-  const statusDot = `<span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; display:inline-block; margin-right:5px; vertical-align:middle; ${glow}"></span>`;
+  
+  // Clean status name for CSS class (e.g. "In the Field" -> "In-the-Field")
+  const statusClean = status.replace(/\s+/g, '-');
+  const dotHtml = `<span class="chat-status-dot dot-${statusClean}"></span>`;
 
-  // 2. Existing Logic
+  // --- 2. EXISTING LAYOUT LOGIC ---
   const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const isMe = msg.author === currentUser.username;
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -3943,29 +3938,59 @@ function buildChatMsgHtml(msg) {
   const canDelete = isMe || currentUser?.role === 'admin' || currentUser?.role === 'manager';
   const canBlock = !isMe && (currentUser?.role === 'admin' || currentUser?.role === 'manager');
 
-  return `<div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start;${isMe ? 'flex-ion:row-reverse' : ''}" onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
-    <div style="width:32px;height:32px;border-radius:50%;background:${isMe ? 'var(--success-bg)' : 'var(--accent-bg)'};color:${isMe ? 'var(--success-text)' : 'var(--accent-text)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${initials}</div>
-    <div style="flex:1;min-width:0;${isMe ? 'align-items:flex-end;display:flex;flex-ion:column' : ''}">
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;${isMe ? 'flex-ion:row-reverse' : ''}">
+  // --- 3. RETURN CORRECTED HTML (Fixes the left-shift) ---
+  return `
+  <div style="display:flex; gap:10px; padding:6px 0; align-items:flex-start; ${isMe ? 'flex-direction:row-reverse' : ''}" 
+       onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" 
+       onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
+    
+    <!-- Initials Circle -->
+    <div style="width:32px; height:32px; border-radius:50%; background:${isMe ? 'var(--success-bg)' : 'var(--accent-bg)'}; color:${isMe ? 'var(--success-text)' : 'var(--accent-text)'}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0">
+        ${initials}
+    </div>
+
+    <div style="flex:1; min-width:0; ${isMe ? 'align-items:flex-end; display:flex; flex-direction:column' : ''}">
+      <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
         
-        <!-- ADDED: Status Dot next to name -->
-        <span style="font-weight:600;font-size:13px;display:flex;align-items:center">
-            ${!isMe ? statusDot : ''} 
-            ${isMe ? 'You' : msg.author_name || msg.author}
-            ${isMe ? `<span style="margin-left:5px">${statusDot}</span>` : ''}
+        <!-- THE NAME + STATUS DOT -->
+        <span style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:5px">
+            ${!isMe ? dotHtml : ''} 
+            ${isMe ? 'You' : (msg.author_name || msg.author)}
+            ${isMe ? dotHtml : ''}
         </span>
 
-        <span style="font-size:11px;color:var(--text3)">${time}</span>
-        ${canDelete || canBlock ? `<span class="msg-actions" style="opacity:0;transition:opacity .15s;display:flex;gap:4px;margin-left:4px">${canDelete ? `<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px" title="Delete">🗑</button>` : ''}${canBlock ? `<button onclick="blockChatUser('${msg.author}','${msg.author_name||msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px" title="Block">🚫</button>` : ''}</span>` : ''}
+        <span style="font-size:11px; color:var(--text3)">${time}</span>
+        
+        ${canDelete || canBlock ? `
+          <span class="msg-actions" style="opacity:0; transition:opacity .15s; display:flex; gap:4px; margin-left:4px">
+            ${canDelete ? `<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none; border:none; cursor:pointer; font-size:11px; color:var(--danger); padding:0 3px">🗑</button>` : ''}
+            ${canBlock ? `<button onclick="blockChatUser('${msg.author}','${msg.author_name || msg.author}')" style="background:none; border:none; cursor:pointer; font-size:11px; color:var(--warning); padding:0 3px">🚫</button>` : ''}
+          </span>` : ''}
       </div>
-      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'};border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'};padding:8px 12px">
-        ${body ? `<div style="font-size:13px;color:var(--text);line-height:1.5;word-break:break-word">${body}</div>` : ''}${photoHtml}
-        ${equipTag || taskTag ? `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
+
+      <!-- Message Bubble -->
+      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px">
+        ${body ? `<div style="font-size:13px; color:var(--text); line-height:1.5; word-break:break-word">${body}</div>` : ''}
+        ${photoHtml}
+        ${equipTag || taskTag ? `<div style="margin-top:4px; display:flex; gap:4px; flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
       </div>
     </div>
   </div>`;
 }
-function appendChatMessage(msg){const c=document.getElementById('chat-messages');if(!c)return;const d=document.createElement('div');d.innerHTML=buildChatMsgHtml(msg);c.appendChild(d.firstElementChild);c.scrollTop=c.scrollHeight;}
+function appendChatMessage(msg) {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+    
+    // Create a temporary div and get our HTML from the function above
+    const div = document.createElement('div');
+    div.innerHTML = buildChatMsgHtml(msg);
+    
+    // Append the actual child to the container
+    container.appendChild(div.firstElementChild);
+    
+    // Auto-scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
 async function sendChatMessage(){
   const input=document.getElementById('chat-input');const body=input?.value.trim();if(!body&&!chatPhotoData)return;
   if(!navigator.onLine){showToast('Offline');return;}
