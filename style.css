@@ -1942,12 +1942,12 @@ html {
     vertical-align: middle;
 }
 
-/* Colors based on status */
-.dot-available { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
-.dot-busy      { background-color: #dc3545; }
-.dot-field     { background-color: #f59e0b; }
-.dot-lunch     { background-color: #007bff; }
-.dot-shop      { background-color: #6c757d; }
+/* Matching the status strings from your dropdown */
+.dot-Available { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
+.dot-Busy      { background-color: #dc3545; }
+.dot-In-the-Field { background-color: #f59e0b; }
+.dot-At-the-Shop  { background-color: #6c757d; }
+.dot-On-Lunch   { background-color: #007bff; }
   
 .dt-section { padding: 15px 0; display: none; }
 .dt-section.active { display: block; }
