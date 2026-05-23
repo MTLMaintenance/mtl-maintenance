@@ -1933,6 +1933,13 @@ html {
     margin: 0 !important;
     text-align: center !important;
 }
+
+.chat-sender-name {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    font-size: 13px;
+}
+
 .chat-status-dot {
     width: 8px;
     height: 8px;
