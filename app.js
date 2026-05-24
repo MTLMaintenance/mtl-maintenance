@@ -3867,27 +3867,53 @@ function shouldStickChatToBottom(container){
 async function loadChatMessages(channel) {
   const container = document.getElementById('chat-messages');
   if (!container) return;
-  const shouldAutoScroll = !isMobileViewport() && shouldStickChatToBottom(container);
 
-  container.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Loading...</div>';
+  // 1. SHOW LOCAL DATA INSTANTLY (The "No-Lag" Fix)
+  // We look at the messages already in memory so the screen isn't blank
+  const localMsgs = (state.chatMessages || [])
+    .filter(m => m.channel === channel)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
+  if (localMsgs.length > 0) {
+    // Show what we have right now
+    renderChatMessages(localMsgs, container);
+    container.scrollTop = container.scrollHeight;
+  } else {
+    // Only show "Loading" if we have absolutely zero data for this channel
+    container.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Opening conversation...</div>';
+  }
+
+  // 2. FETCH LATEST FROM DATABASE (Background Sync)
   try {
-    const { data } = await window._mpdb
+    const { data, error } = await window._mpdb
       .from('chat_messages')
       .select('*')
       .eq('channel', channel)
       .order('created_at', { ascending: true })
       .limit(100);
 
-    renderChatMessages(data || [], container);
-    markChannelRead(channel);
-      setTimeout(() => {
-      if (shouldAutoScroll) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 100);
+    if (error) throw error;
+
+    if (data) {
+        // Update our master list with the fresh data from the server
+        // This ensures if someone sent a message while you were offline, you get it now
+        const otherChannels = state.chatMessages.filter(m => m.channel !== channel);
+        state.chatMessages = [...otherChannels, ...data];
+
+        // Final Render with the "Server Verified" data
+        renderChatMessages(data, container);
+        markChannelRead(channel);
+        
+        // Final Scroll to ensure we are at the bottom
+        setTimeout(() => {
+            container.scrollTop = container.scrollHeight;
+        }, 50);
+    }
   } catch (e) {
-    container.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Could not load messages</div>';
+    console.error("Fetch error:", e);
+    if (localMsgs.length === 0) {
+      container.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Could not connect to chat server</div>';
+    }
   }
 }
       
@@ -4243,44 +4269,66 @@ document.addEventListener('click', function(event){
 });
 function switchChannel(channel, btn) {
     try {
-        currentChannel = channel;
+        window.currentChannel = channel;
         
-        // Update button colors
+        // 1. CLEAR THE SCREEN INSTANTLY
+        // This prevents 'Ghost Messages' from the previous channel showing up
+        const container = document.getElementById('chat-messages');
+        if (container) {
+            container.innerHTML = '<div style="padding:40px; text-align:center; color:var(--text3); font-size:12px;">Loading conversations...</div>';
+        }
+
+        // 2. Update button highlights (Desktop Sidebar)
         document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
 
-        // Update the Header Title
+        // 3. Update the Header Title & Mobile Label
         const header = document.getElementById('chat-header-title');
-        if (header) {
-            if (channel.startsWith('dm-')) {
-                let dmName = '';
-                if (btn) dmName = (btn.innerText || '').split('\n')[0].trim();
-                if (!dmName) {
-                    const menuLabel = document.getElementById('chat-channel-menu-label')?.textContent || '';
-                    dmName = menuLabel.replace(/^@\s*/, '').trim();
-                }
-                header.textContent = '@ ' + (dmName || ' message');
-            } else {
-                header.textContent = '# ' + channel;
+        const mobileMenuLabel = document.getElementById('chat-channel-menu-label');
+        
+        let displayName = channel;
+
+        if (channel.startsWith('dm-')) {
+            // Find the other person's name for the header
+            const parts = channel.replace('dm-', '').split('-');
+            const otherUsername = parts.find(u => u !== currentUser.username);
+            const otherUser = (state.users_list_cache || []).find(u => u.username === otherUsername);
+            displayName = '@ ' + (otherUser ? (otherUser.full_name || otherUser.username) : 'User');
+        } else {
+            displayName = '# ' + channel;
+        }
+
+        if (header) header.textContent = displayName;
+        if (mobileMenuLabel) mobileMenuLabel.textContent = displayName;
+
+        // 4. Update the Mobile Toggle Button (The ☰ button)
+        const mobileMenuBtn = document.getElementById('chat-channel-menu-btn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.innerHTML = `<span style="font-size:15px;line-height:1">☰</span> ${displayName}`;
+        }
+
+        // 5. RUN THE DATA SYNC
+        if (typeof loadChatMessages === 'function') {
+            loadChatMessages(channel);
+        }
+        
+        if (typeof markChannelRead === 'function') {
+            markChannelRead(channel); // Clears the red unread dots
+        }
+
+        // 6. CLOSE SIDEBAR ON MOBILE
+        // If the user clicks a channel on their phone, hide the menu automatically
+        if (window.innerWidth <= 768 && typeof toggleChatSidebar === 'function') {
+            // Only close if it's currently open
+            const sidebar = document.getElementById('chat-sidebar');
+            if (sidebar && sidebar.style.display === 'block') {
+                toggleChatSidebar(); 
             }
         }
 
-        // --- NEW CODE ADDED HERE FOR MOBILE LABEL ---
-        const mobileMenuBtn = document.getElementById('chat-channel-menu-btn');
-        if (mobileMenuBtn) {
-            // This grabs the name we just set in the header above and puts it on the mobile button
-            const newLabel = header ? header.textContent : (channel.startsWith('dm-') ? '@  message' : '# ' + channel);
-            mobileMenuBtn.innerHTML = '☰ ' + newLabel;
-        }
-        // --- END OF NEW CODE ---
-
-        refreshMobileChatChannelOptions();
-        updateMobileChatMenuLabel(channel);
-
-        loadChatMessages(channel);
-        markChannelRead(channel); // Clears the red dots
-    } catch (e) { console.error("Switch error:", e); }
-
+    } catch (e) { 
+        console.error("Switch error:", e); 
+    }
 }
 
 function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-equip-name');const w=document.getElementById('chat-tag-equip');if(b)b.style.display='flex';if(n)n.textContent='🔧 '+equipName(id);if(w)w.style.display='inline-flex';document.getElementById('tag-equip-select').value='';}
