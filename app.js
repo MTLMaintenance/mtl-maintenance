@@ -8580,7 +8580,7 @@ function openProfileModal() {
         let displayRole = "Team Member";
         if (role === "Admin") displayRole = "System Administrator";
         else if (role === "Manager") displayRole = "Shop Manager";
-        else if (role === "Technician") displayRole = "Maintenance Technician";
+        else if (role === "Tech") displayRole = "Maintenance Technician";
         else if (role === "viewer") displayRole = "Guest Viewer";
         else displayRole = role;
 
