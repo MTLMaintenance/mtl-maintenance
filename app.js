@@ -3977,7 +3977,7 @@ function buildChatMsgHtml(msg) {
   </div>`;
 }
 function appendChatMessage(msg) {
-    const container = document.getElementById('chat-messages-container');
+    const container = document.getElementById('chat-messages');
     if (!container) return;
 
     // Build the HTML and add it
@@ -3994,27 +3994,24 @@ async function sendChatMessage() {
     const body = input.value.trim();
     if (!body || !currentUser) return;
 
-    // 1. Create a message object locally
+    // 1. Create message object
     const msg = {
         id: 'temp-' + Date.now(),
-        channel: currentChannel,
+        channel: window.currentChannel || 'general',
         author: currentUser.username,
         author_name: currentUser.name,
         body: body,
         created_at: new Date().toISOString()
     };
 
-    // 2. SHOW ON SCREEN IMMEDIATELY (This is what kills the 'Refresh' requirement)
-    input.value = ''; // Clear box
-    state.chatMessages.unshift(msg);
-    if (typeof appendChatMessage === 'function') {
-        appendChatMessage(msg);
-    }
+    // 2. SHOW ON SCREEN IMMEDIATELY
+    input.value = ''; // Clear the box
+    appendChatMessage(msg); // Put bubble on screen
 
-    // 3. Save to Database in the background
+    // 3. Save to Supabase in background
     try {
         const { error } = await window._mpdb.from('chat_messages').insert({
-            id: uid(), // Final unique ID
+            id: uid(),
             channel: msg.channel,
             author: msg.author,
             author_name: msg.author_name,
@@ -4022,7 +4019,7 @@ async function sendChatMessage() {
         });
         if (error) throw error;
     } catch (e) {
-        console.error("Database save failed:", e);
+        console.error("Sync error:", e);
     }
 }
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
