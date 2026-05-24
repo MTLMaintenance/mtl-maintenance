@@ -3924,40 +3924,25 @@ function renderChatMessages(msgs,container){
   container.innerHTML=html;
 }
 function buildChatMsgHtml(msg) {
-  // 1. Identify if the message is from the logged-in user
+  // 1. Identify the sender and their live status
   const isMe = msg.author === currentUser.username;
-
-  // 2. STATUS & EMOJI LOGIC 
   const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
+  
+  // Use local currentUser data for "Me" to ensure it's instant
   const status = (isMe ? currentUser.preferences?.status : sender?.preferences?.status) || 'Available';
   
-  // Mapping Emojis to match your Topbar Pill
-  const emojiMap = { 
-    'Available':'🟢', 
-    'In the Field':'🚜', 
-    'At the Shop':'🔧', 
-    'On Lunch':'🍔', 
-    'Busy':'🔴' 
-  };
-  const emoji = emojiMap[status] || '🟢';
-  
-  // Clean status name for CSS class (e.g. "In the Field" -> "In-the-Field")
+  // 2. Create the SINGLE Glowing Dot (Matches your Topbar style)
   const statusClean = status.replace(/\s+/g, '-');
+  const dotHtml = `<span class="chat-status-dot dot-${statusClean}" title="Status: ${status}"></span>`;
 
-  // THE ICON: Combines Emoji + Glowing Dot with a Hover Title
-  const identityIcons = `
-    <span style="font-size: 11px; margin-right: 3px;">${emoji}</span>
-    <span class="chat-status-dot dot-${statusClean}" title="Status: ${status}"></span>
-  `;
-
-  // 3. LAYOUT LOGIC
+  // 3. Formatting details
   const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   
-  // 4. SENDER IDENTITY (Strict Black color for readability)
+  // 4. Name Identity (Dot on left for others, Dot on right for "You")
   const identityHtml = isMe 
-    ? `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:3px;">You ${identityIcons}</span>` 
-    : `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:3px;">${identityIcons} ${msg.author_name || msg.author}</span>`;
+    ? `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px;">You ${dotHtml}</span>` 
+    : `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px;">${dotHtml} ${msg.author_name || msg.author}</span>`;
 
   let body = (msg.body || '').split('\n').join('<br>');
   body = body.replace(/@([\w]+)/g, '<span style="color:var(--accent);font-weight:600">@$1</span>');
@@ -3981,7 +3966,7 @@ function buildChatMsgHtml(msg) {
     </div>
 
     <div style="flex:1; min-width:0; ${isMe ? 'align-items:flex-end; display:flex; flex-direction:column' : ''}">
-      <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
+      <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
         
         ${identityHtml}
 
@@ -3989,8 +3974,8 @@ function buildChatMsgHtml(msg) {
         
         ${canDelete || canBlock ? `
           <span class="msg-actions" style="opacity:0; transition:opacity .15s; display:flex; gap:4px; margin-left:4px">
-            ${canDelete ? `<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none; border:none; cursor:pointer; font-size:11px; color:var(--danger); padding:0 3px">🗑</button>` : ''}
-            ${canBlock ? `<button onclick="blockChatUser('${msg.author}','${msg.author_name || msg.author}')" style="background:none; border:none; cursor:pointer; font-size:11px; color:var(--warning); padding:0 3px">🚫</button>` : ''}
+            ${canDelete ? `<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px">🗑</button>` : ''}
+            ${canBlock ? `<button onclick="blockChatUser('${msg.author}','${msg.author_name || msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px">🚫</button>` : ''}
           </span>` : ''}
       </div>
 
