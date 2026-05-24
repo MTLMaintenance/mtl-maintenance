@@ -8561,37 +8561,36 @@ function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. Standard Form Filling
-    document.getElementById('p-name').value = currentUser.name || "";
-    document.getElementById('p-status').value = p.status || 'Available';
-    document.getElementById('p-start-page').value = p.startPage || 'dashboard';
-    document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
-    document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
-    document.getElementById('p-notes').value = p.notes || '';
-
-    // 2. Update Header Name
-    const nameHeader = document.getElementById('p-preview-name');
-    if (nameHeader) nameHeader.textContent = currentUser.name || "User";
-
-    // 3. THE ROLE FIX (Aggressive version)
-    const roleEl = document.getElementById('p-preview-role');
-    const userRole = (currentUser.role || "").toLowerCase();
-    let roleTitle = "Team Member";
-
-    if (userRole === 'admin') roleTitle = "Administrator";
-    else if (userRole === 'manager') roleTitle = "Shop Manager";
-    else if (userRole === 'tech') roleTitle = "Maintenance Technician";
-
-    // Try updating by ID
-    if (roleEl) {
-        roleEl.textContent = roleTitle;
-        roleEl.style.color = "#888"; // Ensure it's visible grey
-    } 
-
-    // 4. Update the Avatar shape and color
-    updateAvatarPreview(); 
-    
+    // 1. First, open the modal using your standard function
     openModal('profile-modal');
+
+    // 2. "Double-Tap": Wait for the modal to be visible, then fill the labels
+    setTimeout(() => {
+        // Fill the form inputs
+        const nameInput = document.getElementById('p-name');
+        const roleLabel = document.getElementById('p-preview-role');
+        const nameHeader = document.getElementById('p-preview-name');
+
+        if (nameInput) nameInput.value = currentUser.name || "";
+        
+        // Fill the visible labels in the header
+        if (nameHeader) nameHeader.textContent = currentUser.name || "User";
+        
+        if (roleLabel) {
+            const role = (currentUser.role || "").toLowerCase();
+            roleLabel.textContent = role === 'admin' ? "Administrator" : "Maintenance Technician";
+        }
+
+        // Fill the rest of the dropdowns
+        document.getElementById('p-status').value = p.status || 'Available';
+        document.getElementById('p-start-page').value = p.startPage || 'dashboard';
+        document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
+        document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
+        document.getElementById('p-notes').value = p.notes || '';
+
+        // Update the visual look (shape and color)
+        updateAvatarPreview();
+    }, 50); // The 50ms delay is the key
 }
 
 function setAccent(color) {
@@ -9105,32 +9104,33 @@ window.closeMobileZerkCard = closeMobileZerkCard;
 
 // 1. Function to update the preview box in real-time
 function updateAvatarPreview() {
-    const name = document.getElementById('p-name').value || "U";
-    const styleClass = document.getElementById('p-avatar-style').value; // e.g., 'avatar-style-initial'
-    const color = document.getElementById('p-accent-color').value || '#3b82f6';
     const preview = document.getElementById('p-preview-avatar');
+    const nameInput = document.getElementById('p-name');
+    const styleSelect = document.getElementById('p-avatar-style');
+    const colorInput = document.getElementById('p-accent-color');
 
-    if (!preview) return;
+    if (!preview || !nameInput || !styleSelect) return;
 
-    // Set the letter
+    const name = nameInput.value || "User";
+    const style = styleSelect.value;
+    const color = colorInput.value || '#3b82f6';
+
+    // 1. Update Letter
     preview.textContent = name.charAt(0).toUpperCase();
 
-    // REMOVE all old style classes first
-    preview.classList.remove('avatar-style-initial', 'avatar-style-square', 'avatar-style-border');
-    
-    // ADD the new style class
-    preview.classList.add(styleClass);
+    // 2. Clear old classes and add new shape class
+    preview.className = 'user-avatar-circle ' + style;
 
-    // Apply colors based on the style
-    if (styleClass === 'avatar-style-border') {
-        preview.style.backgroundColor = 'transparent';
-        preview.style.border = `3px solid ${color}`;
-        preview.style.color = color;
+    // 3. Apply specific colors
+    if (style === 'avatar-style-border') {
+        preview.style.cssText = `background:transparent !important; border:3px solid ${color} !important; color:${color} !important;`;
     } else {
-        preview.style.backgroundColor = color;
-        preview.style.border = 'none';
-        preview.style.color = 'white';
+        preview.style.cssText = `background-color:${color} !important; border:none !important; color:white !important;`;
     }
+    
+    // Also update the name header while typing
+    const nameHeader = document.getElementById('p-preview-name');
+    if (nameHeader) nameHeader.textContent = name;
 }
 // 2. Updated setAccent to trigger the preview
 function setAccent(color, el) {
