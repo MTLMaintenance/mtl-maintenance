@@ -8561,36 +8561,35 @@ function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. First, open the modal using your standard function
+    // 1. Fill the form inputs
+    document.getElementById('p-name').value = currentUser.name || "";
+    document.getElementById('p-status').value = p.status || 'Available';
+    document.getElementById('p-start-page').value = p.startPage || 'dashboard';
+    document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
+    document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
+    document.getElementById('p-notes').value = p.notes || '';
+
+    // 2. Update the Large Name in the Header
+    document.getElementById('p-preview-name').textContent = currentUser.name || "User";
+    
+    // 3. THE ROLE FIX: Mapping your 4 specific roles
+    const roleEl = document.getElementById('p-preview-role');
+    if (roleEl) {
+        const rawRole = (currentUser.role || "").toLowerCase();
+        let displayRole = "Team Member";
+
+        if (rawRole === 'admin') displayRole = "Administrator";
+        else if (rawRole === 'manager') displayRole = "Shop Manager";
+        else if (rawRole === 'technician' || rawRole === 'tech') displayRole = "Maintenance Technician";
+        else if (rawRole === 'viewer') displayRole = "Guest Viewer";
+
+        roleEl.textContent = displayRole;
+    }
+
+    // 4. Update the visual avatar look
+    updateAvatarPreview(); 
+    
     openModal('profile-modal');
-
-    // 2. "Double-Tap": Wait for the modal to be visible, then fill the labels
-    setTimeout(() => {
-        // Fill the form inputs
-        const nameInput = document.getElementById('p-name');
-        const roleLabel = document.getElementById('p-preview-role');
-        const nameHeader = document.getElementById('p-preview-name');
-
-        if (nameInput) nameInput.value = currentUser.name || "";
-        
-        // Fill the visible labels in the header
-        if (nameHeader) nameHeader.textContent = currentUser.name || "User";
-        
-        if (roleLabel) {
-            const role = (currentUser.role || "").toLowerCase();
-            roleLabel.textContent = role === 'admin' ? "Administrator" : "Maintenance Technician";
-        }
-
-        // Fill the rest of the dropdowns
-        document.getElementById('p-status').value = p.status || 'Available';
-        document.getElementById('p-start-page').value = p.startPage || 'dashboard';
-        document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
-        document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
-        document.getElementById('p-notes').value = p.notes || '';
-
-        // Update the visual look (shape and color)
-        updateAvatarPreview();
-    }, 50); // The 50ms delay is the key
 }
 
 function setAccent(color) {
@@ -9104,33 +9103,34 @@ window.closeMobileZerkCard = closeMobileZerkCard;
 
 // 1. Function to update the preview box in real-time
 function updateAvatarPreview() {
+    const name = document.getElementById('p-name').value || "U";
+    const style = document.getElementById('p-avatar-style').value;
+    const color = document.getElementById('p-accent-color').value || '#3b82f6';
     const preview = document.getElementById('p-preview-avatar');
-    const nameInput = document.getElementById('p-name');
-    const styleSelect = document.getElementById('p-avatar-style');
-    const colorInput = document.getElementById('p-accent-color');
-
-    if (!preview || !nameInput || !styleSelect) return;
-
-    const name = nameInput.value || "User";
-    const style = styleSelect.value;
-    const color = colorInput.value || '#3b82f6';
-
-    // 1. Update Letter
+    
+    // Sync the header name while typing
+    document.getElementById('p-preview-name').textContent = name;
+    
+    // Update initial
     preview.textContent = name.charAt(0).toUpperCase();
 
-    // 2. Clear old classes and add new shape class
-    preview.className = 'user-avatar-circle ' + style;
-
-    // 3. Apply specific colors
-    if (style === 'avatar-style-border') {
-        preview.style.cssText = `background:transparent !important; border:3px solid ${color} !important; color:${color} !important;`;
+    // FORCE SHAPE CHANGE
+    if (style === 'avatar-style-square') {
+        preview.style.borderRadius = "12px"; // Rounded Square
     } else {
-        preview.style.cssText = `background-color:${color} !important; border:none !important; color:white !important;`;
+        preview.style.borderRadius = "50%"; // Circle
     }
-    
-    // Also update the name header while typing
-    const nameHeader = document.getElementById('p-preview-name');
-    if (nameHeader) nameHeader.textContent = name;
+
+    // Apply colors based on selection
+    if (style === 'avatar-style-border') {
+        preview.style.backgroundColor = 'transparent';
+        preview.style.border = `3px solid ${color}`;
+        preview.style.color = color;
+    } else {
+        preview.style.backgroundColor = color;
+        preview.style.border = 'none';
+        preview.style.color = 'white';
+    }
 }
 // 2. Updated setAccent to trigger the preview
 function setAccent(color, el) {
