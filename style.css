@@ -2076,3 +2076,27 @@ html {
 #profile-modal .modal-title {
     color: #000000 !important;
 }
+/* The Avatar Preview Box */
+#p-preview-avatar {
+    width: 54px !important;
+    height: 54px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-weight: 800 !important;
+    font-size: 22px !important;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* The 3 Styles */
+.avatar-style-initial { border-radius: 50% !important; border: none; }
+.avatar-style-square  { border-radius: 10px !important; border: none; }
+.avatar-style-border  { border-radius: 50% !important; border: 3px solid var(--accent) !important; background: transparent !important; color: var(--accent) !important; }
+
+/* Color Swatches - Add a border when selected */
+.color-swatch.active {
+    border: 2px solid #000 !important;
+    transform: scale(1.1);
+}
