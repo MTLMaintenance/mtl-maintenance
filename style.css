@@ -2021,3 +2021,54 @@ html {
     color: white !important;
     border: none !important;
 }
+/* Container for the emoji/dot */
+.status-hover-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+}
+
+/* The actual tooltip box */
+.status-tooltip {
+    visibility: hidden;
+    background-color: #333333;
+    color: #ffffff;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    
+    /* Position it above the emoji */
+    position: absolute;
+    z-index: 1000;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%);
+    
+    /* The Fade Effect - very fast */
+    opacity: 0;
+    transition: opacity 0.1s ease-in; 
+    pointer-events: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* The little arrow at the bottom of the tooltip */
+.status-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+/* SHOW INSTANTLY ON HOVER */
+.status-hover-wrap:hover .status-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
