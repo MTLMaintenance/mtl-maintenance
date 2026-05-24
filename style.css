@@ -1945,10 +1945,8 @@ html {
     height: 8px;
     border-radius: 50%;
     display: inline-block;
-    margin-right: 6px;
-    vertical-align: middle;
+    cursor: help; /* Shows a question mark cursor to prompt hovering */
 }
-
 /* Matching the status strings from your dropdown */
 .dot-Available { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
 .dot-Busy      { background-color: #dc3545; }
