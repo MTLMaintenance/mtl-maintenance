@@ -3928,21 +3928,31 @@ function buildChatMsgHtml(msg) {
   const isMe = msg.author === currentUser.username;
   const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
   
-  // Use local currentUser data for "Me" to ensure it's instant
+  // Use local currentUser data for "Me" to ensure it's instant, otherwise use the cache
   const status = (isMe ? currentUser.preferences?.status : sender?.preferences?.status) || 'Available';
   
-  // 2. Create the SINGLE Glowing Dot (Matches your Topbar style)
-  const statusClean = status.replace(/\s+/g, '-');
-  const dotHtml = `<span class="chat-status-dot dot-${statusClean}" title="Status: ${status}"></span>`;
+  // 2. MAP STATUS TO EMOJI (Matches your Topbar exactly)
+  const emojiMap = { 
+    'Available': '🟢', 
+    'In the Field': '🚜', 
+    'At the Shop': '🔧', 
+    'On Lunch': '🍔', 
+    'Busy': '🔴' 
+  };
+  const statusEmoji = emojiMap[status] || '🟢';
+
+  // THE STATUS ICON: We use the emoji and add the 'title' for the hover text
+  const statusHtml = `<span style="cursor:help; font-size:12px; margin: 0 4px;" title="Status: ${status}">${statusEmoji}</span>`;
 
   // 3. Formatting details
   const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   
-  // 4. Name Identity (Dot on left for others, Dot on right for "You")
+  // 4. Name Identity (Emoji on left for others, Emoji on right for "You")
+  // Forced Black text color (#000) for readability
   const identityHtml = isMe 
-    ? `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px;">You ${dotHtml}</span>` 
-    : `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px;">${dotHtml} ${msg.author_name || msg.author}</span>`;
+    ? `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center;">You ${statusHtml}</span>` 
+    : `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center;">${statusHtml} ${msg.author_name || msg.author}</span>`;
 
   let body = (msg.body || '').split('\n').join('<br>');
   body = body.replace(/@([\w]+)/g, '<span style="color:var(--accent);font-weight:600">@$1</span>');
@@ -3979,7 +3989,8 @@ function buildChatMsgHtml(msg) {
           </span>` : ''}
       </div>
 
-      <div style="background:${isMe ? '#eaf3de' : '#f0f0f0'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px; color:black;">
+      <!-- Message Bubble -->
+      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px; color:black;">
         ${body ? `<div style="font-size:13px; color:black; line-height:1.5; word-break:break-word">${body}</div>` : ''}
         ${photoHtml}
         ${equipTag || taskTag ? `<div style="margin-top:4px; display:flex; gap:4px; flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
@@ -3987,19 +3998,6 @@ function buildChatMsgHtml(msg) {
     </div>
   </div>`;
 }
-function appendChatMessage(msg) {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-
-    // Build the HTML and add it
-    const div = document.createElement('div');
-    div.innerHTML = buildChatMsgHtml(msg);
-    container.appendChild(div.firstElementChild);
-
-    // AUTO-SCROLL TO BOTTOM
-    container.scrollTop = container.scrollHeight;
-}
-
 async function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const body = input.value.trim();
