@@ -1945,7 +1945,7 @@ html {
     height: 8px;
     border-radius: 50%;
     display: inline-block;
-     cursor: help;
+    
 }
 /* Matching the status strings from your dropdown */
 .dot-Available { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
