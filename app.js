@@ -8561,7 +8561,7 @@ function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // Fill fields
+    // 1. Fill the form inputs
     document.getElementById('p-name').value = currentUser.name;
     document.getElementById('p-status').value = p.status || 'Available';
     document.getElementById('p-start-page').value = p.startPage || 'dashboard';
@@ -8569,13 +8569,19 @@ function openProfileModal() {
     document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
     document.getElementById('p-notes').value = p.notes || '';
 
-    // Update Preview
+    // 2. THE FIX: Update the Preview Header with real user data
     document.getElementById('p-preview-name').textContent = currentUser.name;
-    document.getElementById('p-preview-avatar').textContent = currentUser.name.charAt(0);
-    document.getElementById('p-preview-avatar').style.background = p.accentColor || '#3b82f6';
+    
+    // Map 'admin' to 'Administrator' for a cleaner look
+    const roleTitle = currentUser.role === 'admin' ? 'Administrator' : 'Maintenance Technician';
+    document.getElementById('p-preview-role').textContent = roleTitle;
 
+    // 3. Initialize the visual avatar look
+    updateAvatarPreview(); 
+    
     openModal('profile-modal');
 }
+
 
 function setAccent(color) {
     document.getElementById('p-accent-color').value = color;
@@ -9088,29 +9094,29 @@ window.closeMobileZerkCard = closeMobileZerkCard;
 
 // 1. Function to update the preview box in real-time
 function updateAvatarPreview() {
-    const avatar = document.getElementById('p-preview-avatar');
+    const nameInput = document.getElementById('p-name').value.trim() || "User";
     const style = document.getElementById('p-avatar-style').value;
     const color = document.getElementById('p-accent-color').value || '#3b82f6';
-    const name = document.getElementById('p-name').value || "U";
+    const previewBox = document.getElementById('p-preview-avatar');
+    
+    // Update the large name in the header live as you type
+    document.getElementById('p-preview-name').textContent = nameInput;
+    
+    // Update initial letter inside the blue box
+    previewBox.textContent = nameInput.charAt(0).toUpperCase();
 
-    // Set the letter
-    avatar.textContent = name.charAt(0).toUpperCase();
-
-    // Set the shape class
-    avatar.className = style;
-
-    // Apply color logic based on style
+    // Set the shape and color
+    previewBox.className = style; 
     if (style === 'avatar-style-border') {
-        avatar.style.backgroundColor = 'transparent';
-        avatar.style.borderColor = color;
-        avatar.style.color = color;
+        previewBox.style.backgroundColor = 'transparent';
+        previewBox.style.borderColor = color;
+        previewBox.style.color = color;
     } else {
-        avatar.style.backgroundColor = color;
-        avatar.style.color = 'white';
-        avatar.style.border = 'none';
+        previewBox.style.backgroundColor = color;
+        previewBox.style.color = 'white';
+        previewBox.style.border = 'none';
     }
 }
-
 // 2. Updated setAccent to trigger the preview
 function setAccent(color, el) {
     document.getElementById('p-accent-color').value = color;
