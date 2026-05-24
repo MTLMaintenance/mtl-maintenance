@@ -4017,9 +4017,11 @@ async function sendChatMessage() {
     const body = input.value.trim();
     if (!body || !currentUser) return;
 
-    // 1. Create a local temporary message object
+    // 1. Generate a unique ID here in JavaScript
+    const messageId = typeof uid === 'function' ? uid() : ('msg-' + Date.now() + Math.random().toString(36).substr(2, 5));
+
     const msg = {
-        id: 'temp-' + Date.now(), // Temp ID so state check doesn't block it
+        id: messageId, // Use the generated ID
         channel: currentChannel,
         author: currentUser.username,
         author_name: currentUser.name,
@@ -4027,29 +4029,33 @@ async function sendChatMessage() {
         created_at: new Date().toISOString()
     };
 
-    // 2. Clear input and show on screen IMMEDIATELY (Instant Feedback)
+    // 2. Optimistic UI: Show instantly
     input.value = '';
     state.chatMessages.unshift(msg);
     if (typeof appendChatMessage === 'function') {
         appendChatMessage(msg);
     }
 
-    // 3. Save to Supabase database in the background
+    // 3. Save to Supabase (INCLUDING THE ID)
     try {
-        const { error } = await window._mpdb.from('chat_messages').insert({
-            channel: msg.channel,
-            author: msg.author,
-            author_name: msg.author_name,
-            body: msg.body
-        });
-        if (error) throw error;
-        
+        const { error } = await window._mpdb
+            .from('chat_messages')
+            .insert({
+                id: msg.id, // <--- CRITICAL: You must send the ID here
+                channel: msg.channel,
+                author: msg.author,
+                author_name: msg.author_name,
+                body: msg.body
+            });
+
+        if (error) {
+            console.error("Supabase Error:", error.message);
+            alert("Database Error: " + error.message);
+        }
     } catch (e) {
-        console.error("Failed to sync message:", e);
-        showToast("Message failed to send.");
+        console.error("Critical Sync Error:", e);
     }
 }
-window.sendChatMessage = sendChatMessage;
 
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
