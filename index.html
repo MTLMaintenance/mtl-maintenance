@@ -700,7 +700,17 @@
   </div>
 </div>
     <!-- TAB NAVIGATION -->
-    <div class="tab-bar">
+  <div class="modal-backdrop" id="task-modal" style="display:none">
+  <div class="modal" style="max-width:640px; background: white !important; color: black !important;">
+    <input type="hidden" id="task-edit-id"> 
+    
+    <div class="modal-header" style="border-bottom: 1px solid #eee;">
+      <span class="modal-title" id="task-modal-title" style="color: black !important; font-weight: 800;">New Work Order</span>
+      <button class="modal-close" onclick="closeModal('task-modal')" style="color: black !important;">✕</button>
+    </div>
+
+    <!-- TAB NAVIGATION (Inside the Modal) -->
+    <div class="tab-bar" style="padding: 10px 20px; background: #fafafa; border-bottom: 1px solid #eee;">
       <button class="tab active" onclick="switchWOTab('wo-details',this)">Details</button>
       <button class="tab" onclick="switchWOTab('wo-checklist',this)">Checklist</button>
       <button class="tab" onclick="switchWOTab('wo-parts-tab',this)">Parts Used</button>
@@ -708,100 +718,102 @@
       <button class="tab" onclick="switchWOTab('wo-attachments',this)">Attachments</button>
     </div>
 
-    <!-- 1. DETAILS TAB -->
-    <div id="wo-details" class="wo-tab-content" style="display:block">
-      <div class="form-grid">
-        <div class="form-group full">
-          <label class="form-label">Work Order Name *</label>
-          <input class="form-input" id="t-name" placeholder="e.g. Oil filter replacement"/>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Equipment *</label>
-          <select class="form-select" id="t-equip">
-            <option value="" disabled selected>-- Select Equipment --</option>
-          </select>
-        </div>
+    <div style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+        <!-- 1. DETAILS TAB -->
+        <div id="wo-details" class="wo-tab-content" style="display:block">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label" style="color: #666 !important;">Work Order Name *</label>
+              <input class="form-input" id="t-name" placeholder="e.g. Oil filter replacement" style="color: black !important; border: 1px solid #ddd;">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" style="color: #666 !important;">Equipment *</label>
+              <select class="form-select" id="t-equip" style="color: black !important; border: 1px solid #ddd;">
+                <option value="" disabled selected>-- Select Equipment --</option>
+              </select>
+            </div>
 
-        <div class="form-group">
-          <label class="form-label">Assigned To</label>
-          <select class="form-select" id="t-assign">
-             <option value="">-- Unassigned --</option>
-          </select>
-        </div>
+            <div class="form-group">
+              <label class="form-label" style="color: #666 !important;">Priority *</label>
+              <select class="form-select" id="t-priority" style="color: black !important; border: 1px solid #ddd;">
+                <option value="" disabled selected>-- Select Priority --</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
 
-        <div class="form-group">
-          <label class="form-label">Priority *</label>
-          <select class="form-select" id="t-priority">
-            <option value="" disabled selected>-- Select Priority --</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
-        </div>
+            <div class="form-group">
+              <label class="form-label" style="color: #666 !important;">Due Date *</label>
+              <input class="form-input" id="t-due" type="date" style="color: black !important; border: 1px solid #ddd;">
+            </div>
 
-        <div class="form-group">
-          <label class="form-label">Due Date *</label>
-          <input class="form-input" id="t-due" type="date"/>
-        </div>
+            <div class="form-group">
+              <label class="form-label" style="color: #666 !important;">Meter Reading *</label>
+              <input class="form-input" id="t-meter" placeholder="e.g. 4320 hrs" style="color: black !important; border: 1px solid #ddd;">
+            </div>
 
-        <div class="form-group">
-          <label class="form-label">Meter Reading *</label>
-          <input class="form-input" id="t-meter" placeholder="e.g. 4320 hrs"/>
-        </div>
+            <div class="form-group">
+              <label class="form-label" style="color: #666 !important;">Assigned To</label>
+              <select class="form-select" id="t-assign" style="color: black !important; border: 1px solid #ddd;">
+                 <option value="">-- Unassigned --</option>
+              </select>
+            </div>
 
-        
-        <div class="form-group full">
-          <label class="form-label">Notes</label>
-          <textarea class="form-textarea" id="t-notes" placeholder="Additional notes..." style="height:60px"></textarea>
-        </div>
-        
-        <div class="form-group full">
-          <div style="display:flex; justify-content:space-between; align-items:center">
-            <label class="form-label">Tools Required</label>
-            <button class="btn btn-secondary btn-sm" onclick="suggestTools()" style="font-size:10px">✨ AI Suggest</button>
+            <div class="form-group full">
+              <label class="form-label" style="color: #666 !important;">Notes</label>
+              <textarea class="form-textarea" id="t-notes" placeholder="Additional notes..." style="height:60px; color: black !important; border: 1px solid #ddd;"></textarea>
+            </div>
+            
+            <div class="form-group full">
+              <div style="display:flex; justify-content:space-between; align-items:center">
+                <label class="form-label" style="color: #666 !important;">Tools Required</label>
+                <button class="btn btn-secondary btn-sm" onclick="suggestTools()" style="font-size:10px">✨ AI Suggest</button>
+              </div>
+              <input class="form-input" id="t-tools" placeholder="e.g. 3/4 socket set..." style="color: black !important; border: 1px solid #ddd;">
+            </div>
           </div>
-          <input class="form-input" id="t-tools" placeholder="e.g. 3/4 socket set, torque wrench..."/>
         </div>
-      </div>
-    </div>
 
-    <!-- 2. CHECKLIST TAB -->
-    <div id="wo-checklist" class="wo-tab-content" style="display:none">
-      <div class="form-group">
-        <label class="form-label">Task Steps (one per line)</label>
-        <textarea class="form-textarea" id="t-checklist" placeholder="Check oil level&#10;Replace filter" style="min-height:200px"></textarea>
-      </div>
-    </div>
+        <!-- 2. CHECKLIST TAB -->
+        <div id="wo-checklist" class="wo-tab-content" style="display:none">
+            <label class="form-label" style="color: #666 !important;">Task Steps (one per line)</label>
+            <textarea class="form-textarea" id="t-checklist" placeholder="Check oil level&#10;Replace filter" style="min-height:200px; color: black !important; border: 1px solid #ddd;"></textarea>
+        </div>
 
-    <!-- 3. PARTS TAB -->
-    <div id="wo-parts-tab" class="wo-tab-content" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap">
-        <div class="form-group" style="flex:1"><label class="form-label">Part</label><select class="form-select" id="wo-part-select"></select></div>
-        <div class="form-group" style="width:80px"><label class="form-label">Qty</label><input class="form-input" id="wo-part-qty" type="number" min="1" value="1"/></div>
-        <button class="btn btn-primary btn-sm" onclick="addPartToWO()">Add</button>
-      </div>
-      <div id="wo-parts-list"><div style="color:var(--text3);font-size:13px">No parts added yet</div></div>
-    </div>
+        <!-- 3. PARTS TAB -->
+        <div id="wo-parts-tab" class="wo-tab-content" style="display:none">
+          <div style="background:#f5f5f5; padding:15px; border-radius:8px; margin-bottom:15px">
+            <label class="form-label" style="color: #666 !important;">Add Part from Inventory</label>
+            <div style="display:flex; gap:8px">
+              <select class="form-select" id="wo-part-select" style="flex:1; color: black !important; border: 1px solid #ddd;"></select>
+              <input type="number" class="form-input" id="wo-part-qty" value="1" style="width:70px; color: black !important; border: 1px solid #ddd;">
+              <button class="btn btn-secondary btn-sm" onclick="addPartToWO()">Add</button>
+            </div>
+          </div>
+          <div id="wo-parts-list"><div style="color:#999; font-size:13px; text-align:center">No parts added yet</div></div>
+        </div>
 
-    <!-- 4. COMMENTS TAB -->
-    <div id="wo-comments" class="wo-tab-content" style="display:none">
-      <div id="wo-comment-list" style="margin-bottom:12px"><div style="color:var(--text3);font-size:13px">No comments yet</div></div>
-      <textarea class="form-textarea" id="wo-comment-input" placeholder="Add initial notes for the tech..."></textarea>
-    </div>
+        <!-- 4. COMMENTS TAB -->
+        <div id="wo-comments" class="wo-tab-content" style="display:none">
+          <div id="wo-comment-list" style="margin-bottom:12px; color: black !important;"><div style="color:#999; font-size:13px">No comments yet</div></div>
+          <textarea class="form-textarea" id="wo-comment-input" placeholder="Add initial notes for the tech..." style="color: black !important; border: 1px solid #ddd;"></textarea>
+        </div>
 
-    <!-- 5. ATTACHMENTS TAB -->
-    <div id="wo-attachments" class="wo-tab-content" style="display:none">
-      <label class="form-label">Photos</label>
-      <div class="photo-grid" id="task-photo-grid">
-        <div class="photo-add" onclick="document.getElementById('task-photo-input').click()">+</div>
-        <input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'task')"/>
-      </div>
+        <!-- 5. ATTACHMENTS TAB -->
+        <div id="wo-attachments" class="wo-tab-content" style="display:none">
+          <label class="form-label" style="color: #666 !important;">Photos</label>
+          <div class="photo-grid" id="task-photo-grid">
+            <div class="photo-add" onclick="document.getElementById('task-photo-input').click()">+</div>
+            <input type="file" id="task-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'task')"/>
+          </div>
+        </div>
     </div>
 
     <!-- MODAL FOOTER -->
-    <div class="form-row" style="margin-top:20px; justify-content:flex-end">
+    <div class="form-row" style="padding: 15px 20px; background: #f9f9f9; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; justify-content: flex-end;">
       <button class="btn btn-secondary" onclick="closeModal('task-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveTask()">Save Work Order</button>
     </div>
