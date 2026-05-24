@@ -3804,9 +3804,13 @@ async function initChat() {
         }, payload => {
             const msg = payload.new;
             
-            // Prevent duplicates (This is your safety net)
+            // Safety Net: Prevent duplicate cards on screen
             if (state.chatMessages.some(m => m.id === msg.id)) return;
             
+            // --- FIX: IF WE SENT THIS, IGNORE THE DATABASE COPY ---
+            // (We already added our own message locally in sendChatMessage() for speed)
+            if (currentUser && msg.author === currentUser.username) return;
+
             state.chatMessages.unshift(msg);
 
             if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
@@ -3814,11 +3818,8 @@ async function initChat() {
             }
 
             if (msg.channel === currentChannel) {
-                // FIXED: We removed the "author !== me" check. 
-                // Now, as soon as Supabase saves your message, it sends a 
-                // signal back, and the app "sees" it and puts it on the screen.
                 if (typeof appendChatMessage === 'function') {
-                    appendChatMessage(msg);
+                    appendChatMessage(msg); // Show their message live on our screen
                 }
                 markChannelRead(currentChannel);
             } else {
@@ -3834,7 +3835,7 @@ async function initChat() {
         }, payload => {
             console.log("Live status change:", payload.new.username, payload.new.preferences?.status);
 
-            // Update local cache
+            // Update local cache so Sidebar and Message dots know the new status
             if (state.users_list_cache) {
                 const idx = state.users_list_cache.findIndex(u => u.username === payload.new.username);
                 if (idx !== -1) state.users_list_cache[idx] = payload.new;
@@ -3850,7 +3851,6 @@ async function initChat() {
             if (typeof renderDmList === 'function') renderDmList();
             
             // Redraw current chat messages to update their status dots
-            // We use requestAnimationFrame to make the transition smooth
             if (window.currentPanel === 'chat') {
                 requestAnimationFrame(() => {
                     if (typeof renderChat === 'function') renderChat();
@@ -4011,14 +4011,15 @@ function appendChatMessage(msg) {
     // Auto-scroll to bottom
     container.scrollTop = container.scrollHeight;
 }
+
 async function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const body = input.value.trim();
     if (!body || !currentUser) return;
 
-    // 1. Create message object
+    // 1. Create a local temporary message object
     const msg = {
-        id: uid(),
+        id: 'temp-' + Date.now(), // Temp ID so state check doesn't block it
         channel: currentChannel,
         author: currentUser.username,
         author_name: currentUser.name,
@@ -4026,20 +4027,30 @@ async function sendChatMessage() {
         created_at: new Date().toISOString()
     };
 
-    
+    // 2. Clear input and show on screen IMMEDIATELY (Instant Feedback)
     input.value = '';
+    state.chatMessages.unshift(msg);
+    if (typeof appendChatMessage === 'function') {
+        appendChatMessage(msg);
+    }
 
+    // 3. Save to Supabase database in the background
     try {
-        // 3. Send to Supabase
-        const { error } = await window._mpdb.from('chat_messages').insert(msg);
+        const { error } = await window._mpdb.from('chat_messages').insert({
+            channel: msg.channel,
+            author: msg.author,
+            author_name: msg.author_name,
+            body: msg.body
+        });
         if (error) throw error;
-
-     
+        
     } catch (e) {
-        console.error("Message send failed:", e);
-        showToast("Failed to send message.");
+        console.error("Failed to sync message:", e);
+        showToast("Message failed to send.");
     }
 }
+window.sendChatMessage = sendChatMessage;
+
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
     const menu = document.getElementById('chat-channel-mobile-menu');
