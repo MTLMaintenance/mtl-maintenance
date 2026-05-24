@@ -2072,3 +2072,7 @@ html {
     visibility: visible;
     opacity: 1;
 }
+/* Fix the invisible title */
+#profile-modal .modal-title {
+    color: #000000 !important;
+}
