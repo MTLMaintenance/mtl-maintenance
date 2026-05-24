@@ -8561,7 +8561,7 @@ function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. Fill the form inputs
+    // 1. Fill inputs
     document.getElementById('p-name').value = currentUser.name || "";
     document.getElementById('p-status').value = p.status || 'Available';
     document.getElementById('p-start-page').value = p.startPage || 'dashboard';
@@ -8569,26 +8569,27 @@ function openProfileModal() {
     document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
     document.getElementById('p-notes').value = p.notes || '';
 
-    // 2. Update the Large Name in the Header
-    document.getElementById('p-preview-name').textContent = currentUser.name || "User";
+    // 2. Update Header Name
+    document.getElementById('p-preview-name').textContent = currentUser.name;
     
-    // 3. THE ROLE FIX: Mapping your 4 specific roles
+    // 3. THE FIX: Update the Role and FORCE visibility
     const roleEl = document.getElementById('p-preview-role');
     if (roleEl) {
-        const rawRole = (currentUser.role || "").toLowerCase();
+        const role = currentUser.role; // "Admin", "Manager", "Technician", "viewer"
+        
         let displayRole = "Team Member";
-
-        if (rawRole === 'admin') displayRole = "Administrator";
-        else if (rawRole === 'manager') displayRole = "Shop Manager";
-        else if (rawRole === 'technician' || rawRole === 'tech') displayRole = "Maintenance Technician";
-        else if (rawRole === 'viewer') displayRole = "Guest Viewer";
+        if (role === "Admin") displayRole = "System Administrator";
+        else if (role === "Manager") displayRole = "Shop Manager";
+        else if (role === "Technician") displayRole = "Maintenance Technician";
+        else if (role === "viewer") displayRole = "Guest Viewer";
+        else displayRole = role;
 
         roleEl.textContent = displayRole;
+        // FORCE visibility so it can't be white or hidden
+        roleEl.style.cssText = "color: #888 !important; display: block !important; font-size: 12px !important;";
     }
 
-    // 4. Update the visual avatar look
-    updateAvatarPreview(); 
-    
+    updateAvatarPreview();
     openModal('profile-modal');
 }
 
@@ -9143,18 +9144,4 @@ function setAccent(color, el) {
     updateAvatarPreview();
 }
 
-// 3. Updated openProfileModal to fill fields correctly
-function openProfileModal() {
-    if (!currentUser) return;
-    const p = currentUser.preferences || {};
 
-    document.getElementById('p-name').value = currentUser.name;
-    document.getElementById('p-status').value = p.status || 'Available';
-    document.getElementById('p-start-page').value = p.startPage || 'dashboard';
-    document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
-    document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
-    document.getElementById('p-notes').value = p.notes || '';
-
-    updateAvatarPreview();
-    openModal('profile-modal');
-}
