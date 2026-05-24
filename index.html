@@ -609,29 +609,36 @@
 </div>
  
  <!---- PROFILE---->
- <div class="modal-backdrop" id="profile-modal" style="display:none">
-  <div class="modal" style="max-width:450px">
-    <div class="modal-header">
-      <span class="modal-title">Personal Settings</span>
-      <button class="modal-close" onclick="closeModal('profile-modal')">✕</button>
+<div class="modal-backdrop" id="profile-modal" style="display:none">
+  <!-- Force white background and black text for this modal -->
+  <div class="modal" style="max-width:450px; background: white !important; color: black !important;">
+    <div class="modal-header" style="border-bottom: 1px solid #eee;">
+      <!-- Title forced to black -->
+      <span class="modal-title" style="color: black !important; font-weight: 800;">Personal Settings</span>
+      <button class="modal-close" onclick="closeModal('profile-modal')" style="color: black !important;">✕</button>
     </div>
 
-    <div style="display:flex; gap:15px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px">
-        <div id="p-preview-avatar" class="user-avatar-circle" style="width:50px; height:50px; font-size:20px">T</div>
+    <!-- Header / Preview Section -->
+    <div style="display:flex; gap:15px; margin-bottom:20px; border-bottom:1px solid #eee; padding: 20px; background: #fafafa;">
+        <!-- Preview Avatar -->
+        <div id="p-preview-avatar" class="avatar-style-initial" style="width:54px; height:54px; font-size:22px; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">T</div>
         <div>
-            <div id="p-preview-name" style="font-weight:bold; font-size:16px">Tanner</div>
-            <div id="p-preview-role" style="font-size:12px; color:var(--text3)">Administrator</div>
+            <!-- Header Name follows input live -->
+            <div id="p-preview-name" style="font-weight:bold; font-size:16px; color: black !important;">User</div>
+            <div id="p-preview-role" style="font-size:12px; color:#888;">Team Member</div>
         </div>
     </div>
 
-    <!-- Personalization Grid -->
-    <div class="form-grid">
-      <!-- 1. Name -->
-      <div class="form-group full"><label class="form-label">Full Name</label><input class="form-input" id="p-name"></div>
+    <div class="form-grid" style="padding: 0 20px 20px 20px;">
+      <!-- 1. Name with live input listener -->
+      <div class="form-group full">
+          <label class="form-label" style="color: #666 !important;">Full Name</label>
+          <input class="form-input" id="p-name" oninput="updateAvatarPreview()" style="color: black !important; border: 1px solid #ddd;">
+      </div>
       
-      <!-- 2. Status -->
-      <div class="form-group"><label class="form-label">Current Status</label>
-        <select class="form-select" id="p-status">
+      <div class="form-group">
+          <label class="form-label" style="color: #666 !important;">Current Status</label>
+          <select class="form-select" id="p-status" style="color: black !important; border: 1px solid #ddd;">
             <option value="Available">🟢 Available</option>
             <option value="In the Field">🚜 In the Field</option>
             <option value="At the Shop">🔧 At the Shop</option>
@@ -640,71 +647,58 @@
         </select>
       </div>
 
-      <!-- 3. Start Page -->
       <div class="form-group">
-  <label class="form-label">Home Screen</label>
-  <select class="form-select" id="p-start-page">
-      <option value="analytics">Analytics</option>
-      <option value="calendar">Calendar</option>
-      <option value="chat">Chat</option>
-      <option value="checklists">Checklists</option>
-      <option value="dashboard">Dashboard</option>
-      <option value="documents">Docs</option>
-      <option value="equipment">Equipment</option>
-      <option value="parts">Parts</option>
-      <option value="suppliers">Suppliers</option>
-      <option value="tools">Tool Crib</option>
-      <option value="tasks">Work Orders</option>
-      <option value="admin">Admin</option>
-  </select>
-</div>
+          <label class="form-label" style="color: #666 !important;">Home Screen</label>
+          <select class="form-select" id="p-start-page" style="color: black !important; border: 1px solid #ddd;">
+              <option value="analytics">Analytics</option>
+              <option value="calendar">Calendar</option>
+              <option value="chat">Chat</option>
+              <option value="checklists">Checklists</option>
+              <option value="dashboard">Dashboard</option>
+              <option value="documents">Docs</option>
+              <option value="equipment">Equipment</option>
+              <option value="parts">Parts</option>
+              <option value="suppliers">Suppliers</option>
+              <option value="tools">Tool Crib</option>
+              <option value="tasks">Work Orders</option>
+              <option value="admin">Admin</option>
+          </select>
+      </div>
 
-      <!-- 4. Accent Color -->
       <div class="form-group full">
-        <label class="form-label">Accent Theme</label>
+        <label class="form-label" style="color: #666 !important;">Accent Theme Color</label>
         <div style="display:flex; gap:10px; margin-top:5px">
-            <div class="color-swatch" onclick="setAccent('#3b82f6')" style="background:#3b82f6; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
-            <div class="color-swatch" onclick="setAccent('#10b981')" style="background:#10b981; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
-            <div class="color-swatch" onclick="setAccent('#f59e0b')" style="background:#f59e0b; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
-            <div class="color-swatch" onclick="setAccent('#ef4444')" style="background:#ef4444; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
-            <div class="color-swatch" onclick="setAccent('#a855f7')" style="background:#a855f7; width:25px; height:25px; border-radius:50%; cursor:pointer"></div>
+            <div class="color-swatch" onclick="setAccent('#3b82f6')" style="background:#3b82f6; width:28px; height:28px; border-radius:50%; cursor:pointer; border: 2px solid white; box-shadow: 0 0 0 1px #ddd;"></div>
+            <div class="color-swatch" onclick="setAccent('#10b981')" style="background:#10b981; width:28px; height:28px; border-radius:50%; cursor:pointer; border: 2px solid white; box-shadow: 0 0 0 1px #ddd;"></div>
+            <div class="color-swatch" onclick="setAccent('#f59e0b')" style="background:#f59e0b; width:28px; height:28px; border-radius:50%; cursor:pointer; border: 2px solid white; box-shadow: 0 0 0 1px #ddd;"></div>
+            <div class="color-swatch" onclick="setAccent('#ef4444')" style="background:#ef4444; width:28px; height:28px; border-radius:50%; cursor:pointer; border: 2px solid white; box-shadow: 0 0 0 1px #ddd;"></div>
+            <div class="color-swatch" onclick="setAccent('#a855f7')" style="background:#a855f7; width:28px; height:28px; border-radius:50%; cursor:pointer; border: 2px solid white; box-shadow: 0 0 0 1px #ddd;"></div>
         </div>
         <input type="hidden" id="p-accent-color">
       </div>
 
-      <!-- 5. Avatar Style -->
+      <!-- Avatar Style with live change listener -->
       <div class="form-group full">
-          <label class="form-label">Avatar Style</label>
-          <select class="form-select" id="p-avatar-style">
+          <label class="form-label" style="color: #666 !important;">Avatar Style</label>
+          <select class="form-select" id="p-avatar-style" onchange="updateAvatarPreview()" style="color: black !important; border: 1px solid #ddd;">
               <option value="avatar-style-initial">Circle</option>
               <option value="avatar-style-square">Rounded Square</option>
               <option value="avatar-style-border">Outline Only</option>
           </select>
       </div>
 
-      <!-- 6. Personal Note -->
       <div class="form-group full">
-          <label class="form-label">Private Sticky Note (Only you see this)</label>
-          <textarea class="form-textarea" id="p-notes" placeholder="Jot down reminders..." style="height:60px"></textarea>
+          <label class="form-label" style="color: #666 !important;">Private Sticky Note</label>
+          <textarea class="form-textarea" id="p-notes" placeholder="Jot down reminders..." style="height:60px; color: black !important; border: 1px solid #ddd;"></textarea>
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:20px">
+    <div class="form-row" style="margin-top:10px; padding: 20px; background: #f9f9f9; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; justify-content: flex-end;">
       <button class="btn btn-secondary" onclick="closeModal('profile-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveUserProfile()">Save Changes</button>
     </div>
   </div>
 </div>
- <!-- Work Order Modal -->
-<div class="modal-backdrop" id="task-modal" style="display:none">
-  <div class="modal" style="max-width:640px">
-    <input type="hidden" id="task-edit-id"> 
-    
-    <div class="modal-header">
-      <span class="modal-title" id="task-modal-title">New Work Order</span>
-      <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
-    </div>
-
     <!-- TAB NAVIGATION -->
     <div class="tab-bar">
       <button class="tab active" onclick="switchWOTab('wo-details',this)">Details</button>
