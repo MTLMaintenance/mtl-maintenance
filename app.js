@@ -8558,13 +8558,10 @@ function applyUserPreferences() {
     }
 }
 function openProfileModal() {
-    if (!currentUser) {
-        console.error("No user logged in.");
-        return;
-    }
+    if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. Fill the form inputs
+    // 1. Standard Form Filling
     document.getElementById('p-name').value = currentUser.name || "";
     document.getElementById('p-status').value = p.status || 'Available';
     document.getElementById('p-start-page').value = p.startPage || 'dashboard';
@@ -8572,25 +8569,26 @@ function openProfileModal() {
     document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
     document.getElementById('p-notes').value = p.notes || '';
 
-    // 2. Update the Header Name
-    document.getElementById('p-preview-name').textContent = currentUser.name || "User";
-    
-    // 3. THE FIX: Update the Role Title
+    // 2. Update Header Name
+    const nameHeader = document.getElementById('p-preview-name');
+    if (nameHeader) nameHeader.textContent = currentUser.name || "User";
+
+    // 3. THE ROLE FIX (Aggressive version)
     const roleEl = document.getElementById('p-preview-role');
+    const userRole = (currentUser.role || "").toLowerCase();
+    let roleTitle = "Team Member";
+
+    if (userRole === 'admin') roleTitle = "Administrator";
+    else if (userRole === 'manager') roleTitle = "Shop Manager";
+    else if (userRole === 'tech') roleTitle = "Maintenance Technician";
+
+    // Try updating by ID
     if (roleEl) {
-        // Convert to lowercase to make the check "case-insensitive"
-        const userRole = (currentUser.role || "").toLowerCase();
-        
-        let roleTitle = "Team Member"; // Default
-        if (userRole === 'admin') roleTitle = "Administrator";
-        else if (userRole === 'manager') roleTitle = "Shop Manager";
-        else if (userRole === 'tech' || userRole === 'technician') roleTitle = "Maintenance Technician";
-
         roleEl.textContent = roleTitle;
-        console.log("Current User Role:", userRole, "Displaying as:", roleTitle);
-    }
+        roleEl.style.color = "#888"; // Ensure it's visible grey
+    } 
 
-    // 4. Update the visual avatar
+    // 4. Update the Avatar shape and color
     updateAvatarPreview(); 
     
     openModal('profile-modal');
@@ -9107,27 +9105,31 @@ window.closeMobileZerkCard = closeMobileZerkCard;
 
 // 1. Function to update the preview box in real-time
 function updateAvatarPreview() {
-    const nameInput = document.getElementById('p-name').value.trim() || "User";
-    const style = document.getElementById('p-avatar-style').value;
+    const name = document.getElementById('p-name').value || "U";
+    const styleClass = document.getElementById('p-avatar-style').value; // e.g., 'avatar-style-initial'
     const color = document.getElementById('p-accent-color').value || '#3b82f6';
-    const previewBox = document.getElementById('p-preview-avatar');
-    
-    // Update the large name in the header live as you type
-    document.getElementById('p-preview-name').textContent = nameInput;
-    
-    // Update initial letter inside the blue box
-    previewBox.textContent = nameInput.charAt(0).toUpperCase();
+    const preview = document.getElementById('p-preview-avatar');
 
-    // Set the shape and color
-    previewBox.className = style; 
-    if (style === 'avatar-style-border') {
-        previewBox.style.backgroundColor = 'transparent';
-        previewBox.style.borderColor = color;
-        previewBox.style.color = color;
+    if (!preview) return;
+
+    // Set the letter
+    preview.textContent = name.charAt(0).toUpperCase();
+
+    // REMOVE all old style classes first
+    preview.classList.remove('avatar-style-initial', 'avatar-style-square', 'avatar-style-border');
+    
+    // ADD the new style class
+    preview.classList.add(styleClass);
+
+    // Apply colors based on the style
+    if (styleClass === 'avatar-style-border') {
+        preview.style.backgroundColor = 'transparent';
+        preview.style.border = `3px solid ${color}`;
+        preview.style.color = color;
     } else {
-        previewBox.style.backgroundColor = color;
-        previewBox.style.color = 'white';
-        previewBox.style.border = 'none';
+        preview.style.backgroundColor = color;
+        preview.style.border = 'none';
+        preview.style.color = 'white';
     }
 }
 // 2. Updated setAccent to trigger the preview
