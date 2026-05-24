@@ -3796,7 +3796,7 @@ async function initChat() {
 
         window.chatSub = window._mpdb.channel('chat-and-status-sync');
 
-        // 2. LISTEN FOR NEW MESSAGES
+        // A. LISTEN FOR NEW MESSAGES
         window.chatSub.on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
@@ -3804,22 +3804,22 @@ async function initChat() {
         }, payload => {
             const msg = payload.new;
             
-            // Safety Net: Prevent duplicate cards on screen
+            // 1. Prevent duplicate messages from appearing
             if (state.chatMessages.some(m => m.id === msg.id)) return;
             
-            // --- FIX: IF WE SENT THIS, IGNORE THE DATABASE COPY ---
-            // (We already added our own message locally in sendChatMessage() for speed)
-            if (currentUser && msg.author === currentUser.username) return;
-
+            // 2. Add message to global memory
             state.chatMessages.unshift(msg);
 
+            // 3. Notify if mentioned
             if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
                 showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
             }
 
+            // 4. Update UI live
             if (msg.channel === currentChannel) {
                 if (typeof appendChatMessage === 'function') {
-                    appendChatMessage(msg); // Show their message live on our screen
+                    // This puts the bubble on your screen as soon as Supabase saves it
+                    appendChatMessage(msg); 
                 }
                 markChannelRead(currentChannel);
             } else {
@@ -3827,41 +3827,34 @@ async function initChat() {
             }
         });
 
-        // 3. LISTEN FOR STATUS UPDATES (The Sync Fix)
+        // B. LISTEN FOR STATUS UPDATES (Topbar and Dot Sync)
         window.chatSub.on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
             table: 'profiles'
         }, payload => {
-            console.log("Live status change:", payload.new.username, payload.new.preferences?.status);
-
-            // Update local cache so Sidebar and Message dots know the new status
+            // Update the 'Phone Book'
             if (state.users_list_cache) {
                 const idx = state.users_list_cache.findIndex(u => u.username === payload.new.username);
                 if (idx !== -1) state.users_list_cache[idx] = payload.new;
             }
 
-            // Sync your own Topbar
+            // If YOU updated your status, sync your topbar 🟢 pill
             if (currentUser && payload.new.id === currentUser.id) {
                 currentUser.preferences = payload.new.preferences;
                 if (typeof applyUserPreferences === 'function') applyUserPreferences();
             }
 
-            // Update Sidebar Dots
+            // Refresh the Sidebar dots and red dots
             if (typeof renderDmList === 'function') renderDmList();
             
-            // Redraw current chat messages to update their status dots
-            if (window.currentPanel === 'chat') {
-                requestAnimationFrame(() => {
-                    if (typeof renderChat === 'function') renderChat();
-                });
+            // Refresh current chat view so message dots change color live
+            if (window.currentPanel === 'chat' && typeof renderChat === 'function') {
+                renderChat();
             }
         });
 
-        window.chatSub.subscribe((status) => {
-            if (status === 'SUBSCRIBED') console.log("Realtime Chat & Status Connected ✓");
-        });
-
+        window.chatSub.subscribe();
     } catch (e) {
         console.error("Realtime setup error:", e);
     }
@@ -4000,15 +3993,13 @@ function buildChatMsgHtml(msg) {
 function appendChatMessage(msg) {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
-    
-    // Create a temporary div and get our HTML from the function above
+
+    // Build the HTML and add it
     const div = document.createElement('div');
     div.innerHTML = buildChatMsgHtml(msg);
-    
-    // Append the actual child to the container
     container.appendChild(div.firstElementChild);
-    
-    // Auto-scroll to bottom
+
+    // AUTO-SCROLL TO BOTTOM
     container.scrollTop = container.scrollHeight;
 }
 
@@ -4017,11 +4008,9 @@ async function sendChatMessage() {
     const body = input.value.trim();
     if (!body || !currentUser) return;
 
-    // 1. Generate a unique ID here in JavaScript
-    const messageId = typeof uid === 'function' ? uid() : ('msg-' + Date.now() + Math.random().toString(36).substr(2, 5));
-
+    // 1. Create a "Local Copy" so it appears on your screen IMMEDIATELY
     const msg = {
-        id: messageId, // Use the generated ID
+        id: 'temp-' + Date.now(), // Fake ID until DB gives us a real one
         channel: currentChannel,
         author: currentUser.username,
         author_name: currentUser.name,
@@ -4029,31 +4018,26 @@ async function sendChatMessage() {
         created_at: new Date().toISOString()
     };
 
-    // 2. Optimistic UI: Show instantly
+    // 2. Clear the box and add to your screen right now
     input.value = '';
     state.chatMessages.unshift(msg);
     if (typeof appendChatMessage === 'function') {
         appendChatMessage(msg);
     }
 
-    // 3. Save to Supabase (INCLUDING THE ID)
+    // 3. Save to Supabase in the background
     try {
-        const { error } = await window._mpdb
-            .from('chat_messages')
-            .insert({
-                id: msg.id, // <--- CRITICAL: You must send the ID here
-                channel: msg.channel,
-                author: msg.author,
-                author_name: msg.author_name,
-                body: msg.body
-            });
-
-        if (error) {
-            console.error("Supabase Error:", error.message);
-            alert("Database Error: " + error.message);
-        }
+        const { error } = await window._mpdb.from('chat_messages').insert({
+            id: uid(), // This ensures no 'null ID' error
+            channel: msg.channel,
+            author: msg.author,
+            author_name: msg.author_name,
+            body: msg.body
+        });
+        if (error) throw error;
     } catch (e) {
-        console.error("Critical Sync Error:", e);
+        console.error("Failed to sync message:", e);
+        showToast("Connection lost. Message saved locally but not on server.");
     }
 }
 
