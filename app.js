@@ -3774,7 +3774,7 @@ let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoDat
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
- async function initChat() {
+async function initChat() {
     // --- PART 1: LOAD EXISTING MESSAGES ---
     try {
         const { data } = await window._mpdb.from('chat_messages')
@@ -3789,13 +3789,11 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
 
     // --- PART 2: SETUP REALTIME LISTENERS ---
     try {
-        // Kill existing subscription if it exists to prevent duplicates
         if (window.chatSub) {
             window._mpdb.removeChannel(window.chatSub);
             window.chatSub = null;
         }
 
-        // 1. Create a Master Channel for Chat & Profiles
         window.chatSub = window._mpdb.channel('chat-and-status-sync');
 
         // 2. LISTEN FOR NEW MESSAGES
@@ -3805,7 +3803,10 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
             table: 'chat_messages'
         }, payload => {
             const msg = payload.new;
+            
+            // Prevent duplicates (This is your safety net)
             if (state.chatMessages.some(m => m.id === msg.id)) return;
+            
             state.chatMessages.unshift(msg);
 
             if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
@@ -3813,12 +3814,15 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
             }
 
             if (msg.channel === currentChannel) {
-                if (msg.author !== currentUser?.username) {
-                    if (typeof appendChatMessage === 'function') appendChatMessage(msg);
+                // FIXED: We removed the "author !== me" check. 
+                // Now, as soon as Supabase saves your message, it sends a 
+                // signal back, and the app "sees" it and puts it on the screen.
+                if (typeof appendChatMessage === 'function') {
+                    appendChatMessage(msg);
                 }
-                if (typeof markChannelRead === 'function') markChannelRead(currentChannel);
+                markChannelRead(currentChannel);
             } else {
-                if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
+                updateUnreadBadge();
             }
         });
 
@@ -3830,28 +3834,30 @@ const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',
         }, payload => {
             console.log("Live status change:", payload.new.username, payload.new.preferences?.status);
 
-            // A. Update local cache so Sidebar and Message dots know the new status
+            // Update local cache
             if (state.users_list_cache) {
                 const idx = state.users_list_cache.findIndex(u => u.username === payload.new.username);
                 if (idx !== -1) state.users_list_cache[idx] = payload.new;
             }
 
-            // B. If YOU changed your status elsewhere, sync your Top Bar Pill
+            // Sync your own Topbar
             if (currentUser && payload.new.id === currentUser.id) {
                 currentUser.preferences = payload.new.preferences;
                 if (typeof applyUserPreferences === 'function') applyUserPreferences();
             }
 
-            // C. Refresh the UI components that show dots
+            // Update Sidebar Dots
             if (typeof renderDmList === 'function') renderDmList();
             
-            // D. Refresh Chat messages so the dots next to names update live
-            if (currentPanel === 'chat' && typeof renderChat === 'function') {
-                renderChat(); 
+            // Redraw current chat messages to update their status dots
+            // We use requestAnimationFrame to make the transition smooth
+            if (window.currentPanel === 'chat') {
+                requestAnimationFrame(() => {
+                    if (typeof renderChat === 'function') renderChat();
+                });
             }
         });
 
-        // 4. ACTIVATE
         window.chatSub.subscribe((status) => {
             if (status === 'SUBSCRIBED') console.log("Realtime Chat & Status Connected ✓");
         });
@@ -3916,23 +3922,40 @@ function buildChatMsgHtml(msg) {
   // 1. Identify if the message is from the logged-in user
   const isMe = msg.author === currentUser.username;
 
-  // 2. STATUS DOT LOGIC 
-  // We look for the sender in the cache. If it's 'me', we use our own local live status.
+  // 2. STATUS & EMOJI LOGIC 
   const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
   const status = (isMe ? currentUser.preferences?.status : sender?.preferences?.status) || 'Available';
+  
+  // Mapping Emojis to match your Topbar Pill
+  const emojiMap = { 
+    'Available':'🟢', 
+    'In the Field':'🚜', 
+    'At the Shop':'🔧', 
+    'On Lunch':'🍔', 
+    'Busy':'🔴' 
+  };
+  const emoji = emojiMap[status] || '🟢';
   
   // Clean status name for CSS class (e.g. "In the Field" -> "In-the-Field")
   const statusClean = status.replace(/\s+/g, '-');
 
-  // THE DOT: Added 'title' so it shows the status when you hover your mouse
-  const dotHtml = `<span class="chat-status-dot dot-${statusClean}" title="Status: ${status}"></span>`;
+  // THE ICON: Combines Emoji + Glowing Dot with a Hover Title
+  const identityIcons = `
+    <span style="font-size: 11px; margin-right: 3px;">${emoji}</span>
+    <span class="chat-status-dot dot-${statusClean}" title="Status: ${status}"></span>
+  `;
 
   // 3. LAYOUT LOGIC
   const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   
+  // 4. SENDER IDENTITY (Strict Black color for readability)
+  const identityHtml = isMe 
+    ? `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:3px;">You ${identityIcons}</span>` 
+    : `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center; gap:3px;">${identityIcons} ${msg.author_name || msg.author}</span>`;
+
   let body = (msg.body || '').split('\n').join('<br>');
-  body = body.replace(/@([\w]+)/g, '<span style="color:var(--accent);font-weight:500">@$1</span>');
+  body = body.replace(/@([\w]+)/g, '<span style="color:var(--accent);font-weight:600">@$1</span>');
   
   const equipTag = msg.equip_id ? `<div style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent-text);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openEquipDetail('${msg.equip_id}')">🔧 ${equipName(msg.equip_id)}</div>` : '';
   const taskN = state.tasks.find(t => t.id === msg.task_id)?.name || 'Work Order';
@@ -3947,19 +3970,15 @@ function buildChatMsgHtml(msg) {
        onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" 
        onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
     
+    <!-- Initials Avatar -->
     <div style="width:32px; height:32px; border-radius:50%; background:${isMe ? 'var(--accent)' : 'var(--bg3)'}; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0">
         ${initials}
     </div>
 
     <div style="flex:1; min-width:0; ${isMe ? 'align-items:flex-end; display:flex; flex-direction:column' : ''}">
-      <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
+      <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
         
-        <!-- THE NAME + STATUS DOT (Forced Black color for readability) -->
-        <span style="font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px; color:#000 !important;">
-            ${!isMe ? dotHtml : ''} 
-            ${isMe ? 'You' : (msg.author_name || msg.author)}
-            ${isMe ? dotHtml : ''}
-        </span>
+        ${identityHtml}
 
         <span style="font-size:10px; color:#888;">${time}</span>
         
@@ -3992,40 +4011,35 @@ function appendChatMessage(msg) {
     // Auto-scroll to bottom
     container.scrollTop = container.scrollHeight;
 }
-async function sendChatMessage(){
-  const input=document.getElementById('chat-input');const body=input?.value.trim();if(!body&&!chatPhotoData)return;
-  if(!navigator.onLine){showToast('Offline');return;}
-  try{const{data:p}=await window._mpdb.from('profiles').select('blocked_from_chat').eq('username',currentUser.username).single();if(p?.blocked_from_chat){showToast('You have been blocked from sending messages. Contact your admin.');return;}}catch(e){}
-  const mentions=[];const re=/@([\w]+)/g;let m;while((m=re.exec(body||''))!==null)mentions.push(m[1]);
-  const msg={id:uid(),channel:currentChannel,author:currentUser.username,author_name:currentUser.name,body:body||null,photo:chatPhotoData||null,equip_id:chatTagEquipId||null,task_id:chatTagTaskId||null,mentions,created_at:new Date().toISOString()};
- appendChatMessage(msg);
-  if(input) input.value='';
-  clearTag('equip');
-  clearTag('task');
-  chatPhotoData=null;
-  
-  // 1. Safe way to clear the photo preview
-  try { 
-    if(document.getElementById('chat-photo-preview')) {
-      document.getElementById('chat-photo-preview').textContent=''; 
-    }
-  } catch(e) {}
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const body = input.value.trim();
+    if (!body || !currentUser) return;
 
-  // 2. THE PART THAT SAVES (This is what was likely missing)
-  try {
-    const { error } = await window._mpdb.from('chat_messages').insert([msg]);
-    if (error) {
-      console.error("Supabase Save Error:", error.message);
-      showToast('Message failed to save');
-    } else {
-      console.log("Message saved successfully!");
-    }
-  } catch(e) {
-    console.error("Critical Save Error:", e);
-    showToast('Connection error');
-  }
-} // This is the end of the function
+    // 1. Create message object
+    const msg = {
+        id: uid(),
+        channel: currentChannel,
+        author: currentUser.username,
+        author_name: currentUser.name,
+        body: body,
+        created_at: new Date().toISOString()
+    };
 
+    
+    input.value = '';
+
+    try {
+        // 3. Send to Supabase
+        const { error } = await window._mpdb.from('chat_messages').insert(msg);
+        if (error) throw error;
+
+     
+    } catch (e) {
+        console.error("Message send failed:", e);
+        showToast("Failed to send message.");
+    }
+}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
     const menu = document.getElementById('chat-channel-mobile-menu');
