@@ -8558,30 +8558,43 @@ function applyUserPreferences() {
     }
 }
 function openProfileModal() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.error("No user logged in.");
+        return;
+    }
     const p = currentUser.preferences || {};
 
     // 1. Fill the form inputs
-    document.getElementById('p-name').value = currentUser.name;
+    document.getElementById('p-name').value = currentUser.name || "";
     document.getElementById('p-status').value = p.status || 'Available';
     document.getElementById('p-start-page').value = p.startPage || 'dashboard';
     document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
     document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
     document.getElementById('p-notes').value = p.notes || '';
 
-    // 2. THE FIX: Update the Preview Header with real user data
-    document.getElementById('p-preview-name').textContent = currentUser.name;
+    // 2. Update the Header Name
+    document.getElementById('p-preview-name').textContent = currentUser.name || "User";
     
-    // Map 'admin' to 'Administrator' for a cleaner look
-    const roleTitle = currentUser.role === 'admin' ? 'Administrator' : 'Maintenance Technician';
-    document.getElementById('p-preview-role').textContent = roleTitle;
+    // 3. THE FIX: Update the Role Title
+    const roleEl = document.getElementById('p-preview-role');
+    if (roleEl) {
+        // Convert to lowercase to make the check "case-insensitive"
+        const userRole = (currentUser.role || "").toLowerCase();
+        
+        let roleTitle = "Team Member"; // Default
+        if (userRole === 'admin') roleTitle = "Administrator";
+        else if (userRole === 'manager') roleTitle = "Shop Manager";
+        else if (userRole === 'tech' || userRole === 'technician') roleTitle = "Maintenance Technician";
 
-    // 3. Initialize the visual avatar look
+        roleEl.textContent = roleTitle;
+        console.log("Current User Role:", userRole, "Displaying as:", roleTitle);
+    }
+
+    // 4. Update the visual avatar
     updateAvatarPreview(); 
     
     openModal('profile-modal');
 }
-
 
 function setAccent(color) {
     document.getElementById('p-accent-color').value = color;
