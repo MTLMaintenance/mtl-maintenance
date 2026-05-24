@@ -9085,3 +9085,55 @@ function closeMobileZerkCard() {
 
 window.showMobileZerkCard = showMobileZerkCard;
 window.closeMobileZerkCard = closeMobileZerkCard;
+
+// 1. Function to update the preview box in real-time
+function updateAvatarPreview() {
+    const avatar = document.getElementById('p-preview-avatar');
+    const style = document.getElementById('p-avatar-style').value;
+    const color = document.getElementById('p-accent-color').value || '#3b82f6';
+    const name = document.getElementById('p-name').value || "U";
+
+    // Set the letter
+    avatar.textContent = name.charAt(0).toUpperCase();
+
+    // Set the shape class
+    avatar.className = style;
+
+    // Apply color logic based on style
+    if (style === 'avatar-style-border') {
+        avatar.style.backgroundColor = 'transparent';
+        avatar.style.borderColor = color;
+        avatar.style.color = color;
+    } else {
+        avatar.style.backgroundColor = color;
+        avatar.style.color = 'white';
+        avatar.style.border = 'none';
+    }
+}
+
+// 2. Updated setAccent to trigger the preview
+function setAccent(color, el) {
+    document.getElementById('p-accent-color').value = color;
+    
+    // UI: Highlight the active swatch
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    if(el) el.classList.add('active');
+    
+    updateAvatarPreview();
+}
+
+// 3. Updated openProfileModal to fill fields correctly
+function openProfileModal() {
+    if (!currentUser) return;
+    const p = currentUser.preferences || {};
+
+    document.getElementById('p-name').value = currentUser.name;
+    document.getElementById('p-status').value = p.status || 'Available';
+    document.getElementById('p-start-page').value = p.startPage || 'dashboard';
+    document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
+    document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
+    document.getElementById('p-notes').value = p.notes || '';
+
+    updateAvatarPreview();
+    openModal('profile-modal');
+}
