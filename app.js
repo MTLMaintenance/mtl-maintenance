@@ -3783,17 +3783,11 @@ async function initChat() {
             .limit(100);
         state.chatMessages = data || [];
         if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
-    } catch (e) {
-        console.error("Chat load error:", e);
-    }
+    } catch (e) { console.error("Chat load error:", e); }
 
     // --- PART 2: SETUP REALTIME LISTENERS ---
     try {
-        if (window.chatSub) {
-            window._mpdb.removeChannel(window.chatSub);
-            window.chatSub = null;
-        }
-
+        if (window.chatSub) window._mpdb.removeChannel(window.chatSub);
         window.chatSub = window._mpdb.channel('chat-and-status-sync');
 
         // A. LISTEN FOR NEW MESSAGES
@@ -3804,22 +3798,23 @@ async function initChat() {
         }, payload => {
             const msg = payload.new;
             
-            // 1. Prevent duplicate messages from appearing
+            // --- STEP 2: THE FIX ---
+            // If I am the author, I already put this on my screen in sendChatMessage().
+            // We return here so we don't show the same message twice.
+            if (currentUser && msg.author === currentUser.username) return;
+
+            // Prevent duplicate IDs from others
             if (state.chatMessages.some(m => m.id === msg.id)) return;
             
-            // 2. Add message to global memory
             state.chatMessages.unshift(msg);
 
-            // 3. Notify if mentioned
             if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
                 showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
             }
 
-            // 4. Update UI live
             if (msg.channel === currentChannel) {
                 if (typeof appendChatMessage === 'function') {
-                    // This puts the bubble on your screen as soon as Supabase saves it
-                    appendChatMessage(msg); 
+                    appendChatMessage(msg); // Show their message live
                 }
                 markChannelRead(currentChannel);
             } else {
@@ -3827,37 +3822,28 @@ async function initChat() {
             }
         });
 
-        // B. LISTEN FOR STATUS UPDATES (Topbar and Dot Sync)
+        // B. LISTEN FOR STATUS UPDATES
         window.chatSub.on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
             table: 'profiles'
         }, payload => {
-            // Update the 'Phone Book'
             if (state.users_list_cache) {
                 const idx = state.users_list_cache.findIndex(u => u.username === payload.new.username);
                 if (idx !== -1) state.users_list_cache[idx] = payload.new;
             }
-
-            // If YOU updated your status, sync your topbar 🟢 pill
             if (currentUser && payload.new.id === currentUser.id) {
                 currentUser.preferences = payload.new.preferences;
-                if (typeof applyUserPreferences === 'function') applyUserPreferences();
+                applyUserPreferences();
             }
-
-            // Refresh the Sidebar dots and red dots
             if (typeof renderDmList === 'function') renderDmList();
-            
-            // Refresh current chat view so message dots change color live
             if (window.currentPanel === 'chat' && typeof renderChat === 'function') {
                 renderChat();
             }
         });
 
         window.chatSub.subscribe();
-    } catch (e) {
-        console.error("Realtime setup error:", e);
-    }
+    } catch (e) { console.error("Realtime setup error:", e); }
 }
 async function renderChat() {
     console.log("Loading Chat...");
@@ -4008,9 +3994,9 @@ async function sendChatMessage() {
     const body = input.value.trim();
     if (!body || !currentUser) return;
 
-    // 1. Create a "Local Copy" so it appears on your screen IMMEDIATELY
+    // 1. Create a message object locally
     const msg = {
-        id: 'temp-' + Date.now(), // Fake ID until DB gives us a real one
+        id: 'temp-' + Date.now(),
         channel: currentChannel,
         author: currentUser.username,
         author_name: currentUser.name,
@@ -4018,17 +4004,17 @@ async function sendChatMessage() {
         created_at: new Date().toISOString()
     };
 
-    // 2. Clear the box and add to your screen right now
-    input.value = '';
+    // 2. SHOW ON SCREEN IMMEDIATELY (This is what kills the 'Refresh' requirement)
+    input.value = ''; // Clear box
     state.chatMessages.unshift(msg);
     if (typeof appendChatMessage === 'function') {
         appendChatMessage(msg);
     }
 
-    // 3. Save to Supabase in the background
+    // 3. Save to Database in the background
     try {
         const { error } = await window._mpdb.from('chat_messages').insert({
-            id: uid(), // This ensures no 'null ID' error
+            id: uid(), // Final unique ID
             channel: msg.channel,
             author: msg.author,
             author_name: msg.author_name,
@@ -4036,11 +4022,9 @@ async function sendChatMessage() {
         });
         if (error) throw error;
     } catch (e) {
-        console.error("Failed to sync message:", e);
-        showToast("Connection lost. Message saved locally but not on server.");
+        console.error("Database save failed:", e);
     }
 }
-
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
     const menu = document.getElementById('chat-channel-mobile-menu');
