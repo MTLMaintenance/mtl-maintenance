@@ -8578,9 +8578,9 @@ function openProfileModal() {
         const role = currentUser.role; // "Admin", "Manager", "Technician", "viewer"
         
         let displayRole = "Team Member";
-        if (role === "Admin") displayRole = "System Administrator";
+        if (role === "admin") displayRole = "System Administrator";
         else if (role === "Manager") displayRole = "Shop Manager";
-        else if (role === "Tech") displayRole = "Maintenance Technician";
+        else if (role === "tech") displayRole = "Maintenance Technician";
         else if (role === "viewer") displayRole = "Guest Viewer";
         else displayRole = role;
 
