@@ -8561,41 +8561,51 @@ function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // 1. Fill inputs
+    // Open modal
+    openModal('profile-modal');
+
+    // Fill form
     document.getElementById('p-name').value = currentUser.name || "";
     document.getElementById('p-status').value = p.status || 'Available';
     document.getElementById('p-start-page').value = p.startPage || 'dashboard';
     document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
     document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
     document.getElementById('p-notes').value = p.notes || '';
+    
+    // Sync the custom color picker input
+    document.getElementById('p-custom-color').value = p.accentColor || '#3b82f6';
+    document.getElementById('custom-swatch-visual').style.background = p.accentColor || '#3b82f6';
 
-    // 2. Update Header Name
+    // Update Header Name
     document.getElementById('p-preview-name').textContent = currentUser.name;
     
-    // 3. THE FIX: Update the Role and FORCE visibility
-    const roleEl = document.getElementById('p-preview-role');
-    if (roleEl) {
-        const role = currentUser.role; // "Admin", "Manager", "Technician", "viewer"
-        
+    // --- ROLE FIX: Case-Insensitive ---
+    const roleLabel = document.getElementById('p-preview-role');
+    if (roleLabel) {
+        const role = (currentUser.role || "").toLowerCase();
         let displayRole = "Team Member";
-        if (role === "admin") displayRole = "System Administrator";
-        else if (role === "Manager") displayRole = "Shop Manager";
-        else if (role === "tech") displayRole = "Maintenance Technician";
-        else if (role === "viewer") displayRole = "Guest Viewer";
-        else displayRole = role;
 
-        roleEl.textContent = displayRole;
-        // FORCE visibility so it can't be white or hidden
-        roleEl.style.cssText = "color: #888 !important; display: block !important; font-size: 12px !important;";
+        if (role === "admin") displayRole = "Administrator";
+        else if (role === "manager") displayRole = "Shop Manager";
+        else if (role === "technician") displayRole = "Maintenance Technician";
+        else if (role === "viewer") displayRole = "Guest Viewer";
+
+        roleLabel.textContent = displayRole;
+        roleLabel.style.cssText = "color: #888 !important; display: block !important; font-size: 12px !important;";
     }
 
+    // Refresh the visual preview box
     updateAvatarPreview();
-    openModal('profile-modal');
 }
-
 function setAccent(color) {
     document.getElementById('p-accent-color').value = color;
-    document.getElementById('p-preview-avatar').style.background = color;
+    
+    // Update the visual of the 'Custom' swatch to show what they picked
+    const customVisual = document.getElementById('custom-swatch-visual');
+    if (customVisual) customVisual.style.background = color;
+
+    // Trigger the avatar preview update
+    updateAvatarPreview();
 }
 
 async function saveUserProfile() {
@@ -9104,44 +9114,31 @@ window.closeMobileZerkCard = closeMobileZerkCard;
 
 // 1. Function to update the preview box in real-time
 function updateAvatarPreview() {
+    const preview = document.getElementById('p-preview-avatar');
     const name = document.getElementById('p-name').value || "U";
     const style = document.getElementById('p-avatar-style').value;
     const color = document.getElementById('p-accent-color').value || '#3b82f6';
-    const preview = document.getElementById('p-preview-avatar');
-    
-    // Sync the header name while typing
-    document.getElementById('p-preview-name').textContent = name;
-    
-    // Update initial
-    preview.textContent = name.charAt(0).toUpperCase();
 
-    // FORCE SHAPE CHANGE
+    if (!preview) return;
+
+    preview.textContent = name.charAt(0).toUpperCase();
+    document.getElementById('p-preview-name').textContent = name;
+
+    // APPLY SHAPE
     if (style === 'avatar-style-square') {
-        preview.style.borderRadius = "12px"; // Rounded Square
+        preview.style.borderRadius = "12px";
     } else {
-        preview.style.borderRadius = "50%"; // Circle
+        preview.style.borderRadius = "50%";
     }
 
-    // Apply colors based on selection
+    // APPLY COLOR
     if (style === 'avatar-style-border') {
-        preview.style.backgroundColor = 'transparent';
+        preview.style.background = 'transparent';
         preview.style.border = `3px solid ${color}`;
         preview.style.color = color;
     } else {
-        preview.style.backgroundColor = color;
+        preview.style.background = color;
         preview.style.border = 'none';
         preview.style.color = 'white';
     }
 }
-// 2. Updated setAccent to trigger the preview
-function setAccent(color, el) {
-    document.getElementById('p-accent-color').value = color;
-    
-    // UI: Highlight the active swatch
-    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-    if(el) el.classList.add('active');
-    
-    updateAvatarPreview();
-}
-
-
