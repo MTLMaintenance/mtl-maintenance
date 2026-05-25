@@ -8561,10 +8561,7 @@ function openProfileModal() {
     if (!currentUser) return;
     const p = currentUser.preferences || {};
 
-    // Open modal
-    openModal('profile-modal');
-
-    // Fill form
+    // Fill inputs
     document.getElementById('p-name').value = currentUser.name || "";
     document.getElementById('p-status').value = p.status || 'Available';
     document.getElementById('p-start-page').value = p.startPage || 'dashboard';
@@ -8572,9 +8569,8 @@ function openProfileModal() {
     document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
     document.getElementById('p-notes').value = p.notes || '';
     
-    // Sync the custom color picker input
+    // Set the color picker input to current color
     document.getElementById('p-custom-color').value = p.accentColor || '#3b82f6';
-    document.getElementById('custom-swatch-visual').style.background = p.accentColor || '#3b82f6';
 
     // Update Header Name
     document.getElementById('p-preview-name').textContent = currentUser.name;
@@ -8585,7 +8581,7 @@ function openProfileModal() {
         const role = (currentUser.role || "").toLowerCase();
         let displayRole = "Team Member";
 
-        if (role === "admin") displayRole = "Administrator";
+        if (role === "admin") displayRole = "System Administrator";
         else if (role === "manager") displayRole = "Shop Manager";
         else if (role === "technician") displayRole = "Maintenance Technician";
         else if (role === "viewer") displayRole = "Guest Viewer";
@@ -8594,19 +8590,19 @@ function openProfileModal() {
         roleLabel.style.cssText = "color: #888 !important; display: block !important; font-size: 12px !important;";
     }
 
-    // Refresh the visual preview box
     updateAvatarPreview();
+    openModal('profile-modal');
 }
 function setAccent(color) {
     document.getElementById('p-accent-color').value = color;
     
-    // Update the visual of the 'Custom' swatch to show what they picked
+    // Show a preview on the rainbow button too
     const customVisual = document.getElementById('custom-swatch-visual');
-    if (customVisual) customVisual.style.background = color;
+    if (customVisual) customVisual.style.borderColor = color;
 
-    // Trigger the avatar preview update
     updateAvatarPreview();
 }
+
 
 async function saveUserProfile() {
     const newName = document.getElementById('p-name').value.trim();
@@ -9121,17 +9117,14 @@ function updateAvatarPreview() {
 
     if (!preview) return;
 
+    // Update initial and header name
     preview.textContent = name.charAt(0).toUpperCase();
     document.getElementById('p-preview-name').textContent = name;
 
-    // APPLY SHAPE
-    if (style === 'avatar-style-square') {
-        preview.style.borderRadius = "12px";
-    } else {
-        preview.style.borderRadius = "50%";
-    }
+    // FORCE SHAPE CHANGE
+    preview.style.borderRadius = (style === 'avatar-style-square') ? "12px" : "50%";
 
-    // APPLY COLOR
+    // FORCE COLOR CHANGE
     if (style === 'avatar-style-border') {
         preview.style.background = 'transparent';
         preview.style.border = `3px solid ${color}`;
