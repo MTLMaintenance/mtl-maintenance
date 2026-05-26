@@ -253,13 +253,6 @@ table tbody td {
     font-weight: 500;
 }
 
-/* Keep the 'Status' colors working (Red for 'Out', Green for 'In') */
-/* This prevents the black rule from 'killing' your status colors */
-table tbody td .badge,
-table tbody td span[style*="color"] {
-    color: inherit !important;
-}
-
 /* Optional: Make the zebra stripes slightly more visible for easier reading */
 table tbody tr:nth-child(even) {
     background-color: rgba(0, 0, 0, 0.03) !important;
@@ -542,15 +535,7 @@ input::-webkit-calendar-picker-indicator {
   background: #ffffff !important;
   color: #1a1a18 !important;
 }
-    /* Observation Severity Colors */
-.badge.obs-info { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; }
-.badge.obs-watch { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }
-.badge.obs-critical { background: #FCEBEB; color: #A32D2D; border: 1px solid #E24B4A; }
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
+ 
 /* Zerk Map UI tweaks */
 #btn-delete-view { margin-top: 10px; display: none; }
   /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
@@ -575,12 +560,6 @@ input::-webkit-calendar-picker-indicator {
 /* 2. Force text inside any card/table to be Black/Dark */
 .card *, .metric-card *, .table-wrap * {
     color: #1a1a18 !important;
-}
-
-/* 3. EXCEPTION: Don't turn colored badges black */
-/* This keeps your Green/Red/Blue status badges looking correct */
-.badge, .badge *, .badge-accent, .badge-accent * {
-    color: white !important;
 }
 
 /* 4. Modals (Popups) - Matches the card look but cleaner */
@@ -661,11 +640,8 @@ body.dark-mode .modal * {
 }
 
 .stat-row:last-child { border-bottom: none; }
-    .badge.b-progress { background: #E6F1FB; color: #0C447C; border: 1px solid #185FA5; } /* In Progress - Blue */
-.badge.b-parts { background: #FAEEDA; color: #854F0B; border: 1px solid #BA7517; }    /* Waiting for Parts - Orange */
-    /* --- CALENDAR BELLS & WHISTLES --- */
-
-
+   
+   
 /* 2. Lower the Calendar layer so it doesn't block popups */
 #panel-calendar.active {
     z-index: 100 !important; /* Lowered from 999 to 100 */
@@ -1032,18 +1008,42 @@ td:first-child{padding-left:16px}
 tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 /* BADGES */
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
-.bd{background:var(--danger-bg);color:var(--danger-text)}
-.bw{background:var(--warning-bg);color:var(--warning-text)}
-.bs{background:var(--success-bg);color:var(--success-text)}
-.bi{background:var(--accent-bg);color:var(--accent-text)}
-.bg{background:var(--bg3);color:var(--text2)}
-/* ALERTS */
-.alert{display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:var(--radius);font-size:13px;margin-bottom:8px}
-.alert-d{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger)}
-.alert-w{background:var(--warning-bg);color:var(--warning-text);border:1px solid var(--warning)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;animation:pulse 1.6s infinite;flex-shrink:0}
+.badge {
+    display: inline-block;
+    padding: 4px 10px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 1 !important; /* Forces them not to be faded */
+    color: white !important; /* Keeps text white for contrast */
+}
+/* SUCCESS: Operational / OK */
+.bs, .badge.obs-info { 
+    background-color: #28a745 !important; 
+    border: none !important;
+}
+/* WARNING: Watch / Pending / Waiting */
+.bw, .badge.obs-watch, .badge.b-parts { 
+    background-color: #f59e0b !important; 
+    border: none !important;
+}
+/* DANGER: Critical / Overdue / Out */
+.bd, .badge.obs-critical { 
+    background-color: #dc3545 !important; 
+    border: none !important;
+}
+/* INFO: In Progress / Blue */
+.bi, .badge.b-progress { 
+    background-color: #007bff !important; 
+    border: none !important;
+}
+/* NEUTRAL: The Grey ones (like "0 total") */
+.bg { 
+    background-color: #6c757d !important; 
+    color: white !important;
+}
 /* FORMS */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-group{display:flex;flex-direction:column;gap:4px}
