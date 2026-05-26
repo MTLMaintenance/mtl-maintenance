@@ -1165,7 +1165,41 @@ body, html {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+/* 1. HIDE SIDEBAR ON MOBILE */
+@media screen and (max-width: 768px) {
+    /* Target the sidebar by ID and force it to hide */
+    div#zerk-sidebar-container {
+        display: none !important;
+    }
 
+    /* Force the layout to stack and fill width */
+    .zerk-main-layout {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    div#zerk-map-container {
+        width: 100% !important;
+        max-height: 75vh !important;
+        margin: 0 !important;
+    }
+}
+
+/* 2. THE FLOATING CARD (Visible on both, but only triggered on mobile) */
+#mobile-zerk-info-card {
+    display: none; 
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    z-index: 1000; /* Stays on top of dots */
+    color: #000 !important;
+    border: 1px solid #ddd;
+}
 /* ============================================================
    3. SHARED COMPONENTS (Dots & Buttons)
    ============================================================ */
