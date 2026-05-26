@@ -77,7 +77,37 @@
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+#panel-tools .card, 
+#panel-tools .table-wrap {
+    background: transparent !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: none !important;
+}
 
+/* 2. Fix the "No tools" message color */
+#panel-tools .card div {
+    color: white !important;
+}
+
+/* 3. Ensure the table headers stay readable */
+#panel-tools table thead th {
+    color: rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 4. Fix the specific white background issue for ALL tables outside of modals */
+.panel:not(#panel-dashboard) .card {
+    background: rgba(255, 255, 255, 0.03) !important; /* Very subtle dark tint */
+    color: white !important;
+}
+
+/* 5. Keep the Dashboard metrics as white boxes (as they were in your screenshot) */
+#panel-dashboard .metric-card, 
+#panel-dashboard .card {
+    background: #f8f9fa !important;
+    color: #333 !important;
+}
 /* ============================================================
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
