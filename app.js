@@ -2338,17 +2338,27 @@ function switchDetailTab(tab, btn) {
   if (tab === 'eq-docs') renderDocsList(id);
 }
 function renderObservationsList(equipId) {
-    const container = document.getElementById(`obs-list-${equipId}`);
+    const container = document.getElementById('eq-obs');
     if (!container) return;
-    const obs = state.observations.filter(o => o.equip_id === equipId);
-    
-    container.innerHTML = obs.map(o => `
-        <div style="padding:10px; border-bottom:1px solid #eee; color:black">
-            <span class="badge ${o.severity === 'critical' ? 'bd' : 'bw'}">${o.severity}</span>
-            <div style="margin-top:5px"><b>${o.body}</b></div>
-            <small style="color:#666">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</small>
-        </div>
-    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No health logs</div>';
+
+    const obs = (state.observations || []).filter(o => o.equip_id === equipId);
+
+    // This HTML matches the "Vibrant Badge" and "Black Text" look you wanted
+    container.innerHTML = `
+        <h4 style="margin-bottom:15px; color:black">Health History</h4>
+        ${obs.map(o => `
+            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:flex-start; gap:12px">
+                <span class="badge ${o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bg'}">${o.severity}</span>
+                <div style="flex:1">
+                    <div style="font-weight:600; color:black; font-size:13px">${o.body}</div>
+                    <div style="font-size:11px; color:#888; margin-top:4px">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
+                </div>
+                <div style="display:flex; gap:8px">
+                    <button class="btn btn-secondary btn-sm" onclick="editObservation('${o.id}', '${equipId}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}', '${equipId}')">🗑</button>
+                </div>
+            </div>`).join('') || '<div style="color:#999; padding:20px; text-align:center">No observations yet</div>'}
+    `;
 }
 
 // Small helper for the downtime display logic inside the detail view
@@ -3459,79 +3469,63 @@ function applyTemplate(){
 // ── OBSERVATIONS ─────────────────────────────────────────────
 // 2. THE ACTION: Handles adding a new observation and sending alerts
 async function addObservation(equipId) {
-    const body = document.getElementById('obs-input-'+equipId)?.value.trim();
-    const severity = document.getElementById('obs-severity-'+equipId)?.value || 'info';
+    const bodyEl = document.getElementById(`obs-input-${equipId}`);
+    const sevEl = document.getElementById(`obs-severity-${equipId}`);
     
-    // SAFE CHECK: This prevents the 'length' error
-    const hasPhoto = (pendingPhotos && pendingPhotos.obs && pendingPhotos.obs.length > 0);
-    
-    if(!body && !hasPhoto) {
-        showToast("Please enter a note or attach a photo");
-        return;
-    }
+    const body = bodyEl.value.trim();
+    const severity = sevEl.value;
 
-    const obs = {
+    if (!body) return showToast("Please enter a description");
+
+    const record = {
         id: uid(),
         equip_id: equipId,
         author: currentUser.name,
-        body: body || "",
+        body: body,
         severity: severity,
-        photo: hasPhoto ? pendingPhotos.obs[0] : null,
         created_at: new Date().toISOString()
     };
 
     try {
-        const { error } = await window._mpdb.from('observations').insert(obs);
+        // 1. Save to Supabase
+        const { error } = await window._mpdb.from('observations').insert(record);
         if (error) throw error;
 
-        state.observations.unshift(obs);
-        
-        if (severity === 'critical') {
-            await sendCriticalObsEmail(obs, equipId);
-        }
+        // 2. Update Local State (This is what makes it "Live")
+        state.observations.unshift(record);
 
-        // Cleanup
-        if(pendingPhotos.obs) pendingPhotos.obs = [];
-        const input = document.getElementById('obs-input-'+equipId);
-        if(input) input.value = '';
-        
-        refreshObsList(equipId);
-        showToast('Observation saved ✓');
-        renderDashboard();
-    } catch(e) {
+        // 3. Log it for accountability
+        logAuditAction("New Observation", `${severity.toUpperCase()} log for ${equipName(equipId)}`);
+
+        // 4. Refresh the UI immediately
+        renderObservationsList(equipId);
+        renderDashboard(); // Update the main dashboard list too
+
+        // 5. Clear inputs
+        bodyEl.value = '';
+        showToast("Observation posted ✓");
+
+    } catch (e) {
         console.error(e);
-        showToast('Failed to save');
+        showToast("Failed to save observation");
     }
 }
-
- async function editObservation(obsId, equipId) {
+async function editObservation(obsId, equipId) {
     const o = state.observations.find(x => x.id === obsId);
     if(!o) return;
 
     const newText = prompt("Update your observation:", o.body);
-    if (newText === null) return; // User clicked cancel
-
-    const newSev = prompt("Update Severity (info, watch, or critical):", o.severity);
-    if (newSev === null) return;
+    if (newText === null || newText.trim() === "") return;
 
     try {
-        const { error } = await window._mpdb.from('observations').update({
-            body: newText || o.body,
-            severity: newSev || o.severity
-        }).eq('id', obsId);
-
-        if (error) throw error;
-
+        await window._mpdb.from('observations').update({ body: newText }).eq('id', obsId);
+        
         // Update local memory
-        o.body = newText || o.body;
-        o.severity = newSev || o.severity;
+        o.body = newText;
 
-        refreshObsList(equipId);
+        renderObservationsList(equipId);
         showToast("Updated ✓");
-        renderDashboard();
-    } catch(e) {
-        showToast("Update failed");
-    }
+    } catch(e) { showToast("Update failed"); }
 }
   function refreshObsList(equipId) {
     const container = document.getElementById('obs-list-' + equipId);
@@ -4819,13 +4813,19 @@ function updateTotalCostDisplay() {
 // ── EDIT OBSERVATION ─────────────────────────────────────────
 
 async function deleteObservation(obsId, equipId) {
-    if(!confirm("Delete this observation?")) return;
+    if (!confirm("Permanently delete this observation?")) return;
+
     try {
         await window._mpdb.from('observations').delete().eq('id', obsId);
+        
+        // Remove from local memory
         state.observations = state.observations.filter(o => o.id !== obsId);
-        refreshObsList(equipId);
-        showToast("Observation deleted");
-    } catch(e) { showToast("Failed"); }
+        
+        // Refresh UI
+        renderObservationsList(equipId);
+        renderDashboard();
+        showToast("Deleted ✓");
+    } catch (e) { showToast("Delete failed"); }
 }
 
 async function saveEditObservation(obsId, equipId) {
