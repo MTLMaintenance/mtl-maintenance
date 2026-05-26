@@ -9109,16 +9109,37 @@ function updateAvatarPreview() {
     }
 }
 function editObservation(obsId) {
-    // 1. Find the data in your app's memory
-    const obs = state.observations.find(o => o.id === obsId);
-    
-    // 2. Pre-fill the boxes in the card
-    document.getElementById('edit-id').value = obsId;
-    document.getElementById('edit-sev').value = obs.severity;
-    document.getElementById('edit-body').value = obs.body;
+    // 1. Diagnostic Alert (Delete this once it works)
+    console.log("Edit clicked for ID:", obsId);
 
-    // 3. Bring the card up
-    openModal('edit-obs-modal');
+    // 2. Find the data
+    const obs = (state.observations || []).find(o => o.id === obsId);
+    if (!obs) {
+        console.error("Could not find observation with ID:", obsId);
+        return;
+    }
+
+    // 3. Find the elements
+    const idField = document.getElementById('edit-id');
+    const sevField = document.getElementById('edit-sev');
+    const bodyField = document.getElementById('edit-body');
+
+    if (!idField || !sevField || !bodyField) {
+        alert("ERROR: One of the edit boxes is missing from your HTML. Check your IDs!");
+        return;
+    }
+
+    // 4. Fill the boxes
+    idField.value = obsId;
+    sevField.value = obs.severity;
+    bodyField.value = obs.body;
+
+    // 5. Open the modal
+    if (typeof openModal === 'function') {
+        openModal('edit-obs-modal');
+    } else {
+        document.getElementById('edit-obs-modal').style.display = 'flex';
+    }
 }
 async function saveObsEdit() {
     const id = document.getElementById('edit-id').value;
@@ -9138,3 +9159,5 @@ async function saveObsEdit() {
     closeModal('edit-obs-modal');
     showToast("Updated ✓");
 }
+window.editObservation = editObservation;
+window.saveObsEdit = saveObsEdit;
