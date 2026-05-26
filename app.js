@@ -2299,28 +2299,43 @@ function switchDetailTab(tab, btn) {
   const modal = document.getElementById('detail-modal');
   if (!modal) return;
 
-  // 1. Hide all contents
+  // 1. RESET MODAL WIDTH
+  // If we are leaving the Zerk Map, shrink the modal back to normal size
+  if (tab !== 'eq-zerks') {
+      modal.classList.remove('modal-zerk-wide');
+      const histBtn = document.getElementById('btn-history-report');
+      if (histBtn) histBtn.style.display = 'block';
+  }
+
+  // 2. HIDE ALL TAB CONTENT
+  // We look for every div with the class 'tab-content' and hide it
   const contents = modal.querySelectorAll('.tab-content');
-  contents.forEach(c => c.style.display = 'none');
+  contents.forEach(c => {
+      c.style.display = 'none';
+      c.classList.remove('active');
+  });
 
-  // 2. Show the specific tab
+  // 3. SHOW THE CLICKED TAB
   const el = document.getElementById(tab);
-  if (el) el.style.display = 'block';
+  if (el) {
+      el.style.display = 'block';
+      el.classList.add('active');
+  }
 
-  // 3. Highlight button
+  // 4. UPDATE BUTTON HIGHLIGHTS
   modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
+  // 5. TRIGGER DATA RELOADS
   const id = window._currentDetailEquipId;
   if (!id) return;
 
-  // 4. TRIGGER DATA RELOADS (Matched to your HTML IDs)
   if (tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
-  if (tab === 'eq-zerks') renderZerkTab(id);
-  if (tab === 'eq-history') renderFullHistoryList(id);  // Targets eq-history-list
-  if (tab === 'eq-obs') renderObservationsList(id);     // Targets obs-list-${id}
-  if (tab === 'eq-invoices') renderInvoicesList(id);   // Targets invoices-list
-  if (tab === 'eq-docs') renderDocsList(id);           // Targets docs-list
+  if (tab === 'eq-zerks') renderZerkTab(id); // This function will handle widening the modal
+  if (tab === 'eq-history') renderFullHistoryList(id);
+  if (tab === 'eq-obs') renderObservationsList(id);
+  if (tab === 'eq-invoices') renderInvoicesList(id);
+  if (tab === 'eq-docs') renderDocsList(id);
 }
 function renderObservationsList(equipId) {
     const container = document.getElementById(`obs-list-${equipId}`);
@@ -2434,15 +2449,13 @@ function openEquipDetail(id){
       </div>
     </div>
 
-  <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
-<div id="eq-zerks" class="tab-content" style="display:none">
-    
-  </div>
 
- <!-- TAB: ZERK MAP -->
-<div id="tab-zerk" class="tab-pane">
-  <!-- 1. The Switcher Buttons Area -->
+<!-- 2. ZERK MAP VIEW -->
+<div id="eq-zerks" class="tab-content" style="display:none">
   <div id="zerk-view-switcher" style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap"></div>
+  <div id="tab-content-zerk"></div>
+  <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
+</div> 
 
   <!-- 2. The Master Container (This is where the JS pours Area 2) -->
   <div id="tab-content-zerk"></div>
@@ -6384,6 +6397,7 @@ function renderZerkTab(equipId) {
         if (switcher) switcher.innerHTML = `<button class="btn btn-primary" onclick="addZerkViewWithTitle()">+ Add Photo Map</button>`;
         container.innerHTML = `<div style="text-align:center; padding:60px; color:var(--text3); border:2px dashed var(--border); border-radius:12px; margin-top:15px">No photo maps added.</div>`;
         return;
+     if (tabWrapper && tabWrapper.style.display === 'none') return;
     }
 
     const viewButtonsHtml = equip.zerk_photos.map((_, i) => {
