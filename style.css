@@ -23,7 +23,6 @@ html, body {
 
 .section-title, 
 .section-header span,
-#panel-tools h2,
 #panel-tasks h2 {
   color: #ffffff !important;
 }
@@ -1496,9 +1495,11 @@ select.form-select:focus {
 }
 
 #panel-tools.active {
-    display: block !important;
     background: transparent !important;
-    padding: 20px !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 20px !important; /* Spacing from the edges of the screen */
 }
 #panel-tools .tab {
     background: transparent !important;
@@ -1510,6 +1511,13 @@ select.form-select:focus {
     cursor: pointer;
     border-radius: 8px;
 }
+#panel-tools .card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
 #panel-tools .tab.active {
     background: white !important;
     color: black !important;
@@ -1528,12 +1536,14 @@ select.form-select:focus {
 /* C. Make the actual Inventory area the White Card */
 #tool-inventory-view, 
 #tool-wishlist-view, 
-#tool-denied-view {
-    background: rgba(255, 255, 255, 0.95) !important; /* The white glossy card */
+#tool-denied-view,
+#panel-tools .table-wrap {
+    background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 15px;
-    padding: 20px;
     border-top: 4px solid var(--accent);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    padding: 0 !important; /* Removes the white 'gap' inside the card */
+    overflow: hidden;
     color: black !important;
 }
 
