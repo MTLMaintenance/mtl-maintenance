@@ -6417,45 +6417,45 @@ function renderZerkTab(equipId) {
     const currentPhoto = equip.zerk_photos[viewIdx];
     const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
 
-    container.innerHTML = `
-    <div class="zerk-main-layout">
-        <!-- LEFT: THE MAP -->
-        <div id="zerk-map-container" style="position:relative; background:#000; border-radius:8px; overflow:hidden" onclick="handleZerkMapClick(event, ${viewIdx})">
-            <img id="zerk-map-img" src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
-            
-            <svg id="zerk-svg-layer" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50">
-                ${points.map(p => (p.lx && p.ly) ? `<line id="line-${p.id}" class="zerk-line" x1="${p.x}%" y1="${p.y}%" x2="${p.lx}%" y2="${p.ly}%" style="opacity: ${showAllLines ? '0.3' : '0'}" />` : '').join('')}
-            </svg>
+  const isMobile = window.innerWidth <= 768;
 
-            <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
-                ${points.map((p, idx) => {
-                    const posX = (p.lx !== null) ? p.lx : p.x;
-                    const posY = (p.ly !== null) ? p.ly : p.y;
-                    // IF MOBILE: Show card. IF PC: Open edit prompt.
-                    const action = isMobile ? `showMobileZerkCard('${p.id}', ${idx+1})` : `editZerkNote('${p.id}')`;
-                    
-                    return `
-                        <div id="dot-${p.id}" class="zerk-dot" style="left:${posX}%; top:${posY}%" 
-                             onmouseenter="highlightZerkLink('${p.id}', true)" onmouseleave="highlightZerkLink('${p.id}', false)"
-                             onclick="event.stopPropagation(); ${action}">
-                            ${idx + 1}
-                        </div>`;
-                }).join('')}
+container.innerHTML = `
+<div class="zerk-main-layout">
+    <div id="zerk-map-container" style="position:relative; background:#000; border-radius:8px; overflow:hidden" onclick="handleZerkMapClick(event, ${viewIdx})">
+        <img id="zerk-map-img" src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
+        
+        <svg id="zerk-svg-layer" ...> <!-- your existing svg logic --> </svg>
+
+        <!-- THE DOTS -->
+        <div id="zerk-dots-overlay" style="position:absolute; inset:0; z-index:100">
+            ${points.map((p, idx) => {
+                const posX = (p.lx !== null) ? p.lx : p.x;
+                const posY = (p.ly !== null) ? p.ly : p.y;
+                
+              
+                const action = isMobile ? `showMobileZerkCard('${p.id}', ${idx+1})` : `editZerkNote('${p.id}')`;
+                
+                return `
+                    <div id="dot-${p.id}" class="zerk-dot" style="left:${posX}%; top:${posY}%" 
+                         onclick="event.stopPropagation(); ${action}">
+                        ${idx + 1}
+                    </div>`;
+            }).join('')}
+        </div>
+
+        <!-- THE FLOATING CARD (Inject this into the map container) -->
+        <div id="mobile-zerk-info-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px">
+                <b id="m-card-title" style="color:var(--accent); font-size:14px">Point #1</b>
+                <button onclick="event.stopPropagation(); closeMobileZerkCard()" style="background:none; border:none; font-size:24px; color:#999; cursor:pointer; line-height:1">×</button>
             </div>
-
-            <!-- THE MOBILE FLOATING CARD (Hidden by default) -->
-            <div id="mobile-zerk-info-card" style="display:none; position:absolute; bottom:10px; left:10px; right:10px; background:white; border-radius:12px; padding:12px; box-shadow:0 8px 25px rgba(0,0,0,0.4); z-index:200; color:black;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px">
-                    <b id="m-card-title" style="color:var(--accent); font-size:13px">Point #1</b>
-                    <button onclick="event.stopPropagation(); closeMobileZerkCard()" style="background:none; border:none; font-size:18px; color:#999; cursor:pointer">×</button>
-                </div>
-                <div id="m-card-note" style="font-size:12px; margin-bottom:12px; line-height:1.4"></div>
-                <div style="display:flex; gap:8px">
-                    <button class="btn btn-secondary btn-sm" style="flex:1" id="m-card-edit-btn">Edit</button>
-                    <button class="btn btn-danger btn-sm" id="m-card-del-btn">🗑</button>
-                </div>
+            <div id="m-card-note" style="font-size:13px; color:#333; margin-bottom:15px; line-height:1.4"></div>
+            <div style="display:flex; gap:8px">
+                <button class="btn btn-secondary btn-sm" style="flex:1; padding:8px" id="m-card-edit-btn">Edit</button>
+                <button class="btn btn-danger btn-sm" id="m-card-del-btn" style="padding:8px 15px">🗑</button>
             </div>
         </div>
+    </div>
 
         <!-- RIGHT: THE SIDEBAR (CSS hides this on mobile automatically) -->
         <div id="zerk-sidebar-container">
@@ -9075,40 +9075,22 @@ async function addPartToTask(taskId) {
 }
 function showMobileZerkCard(pointId, displayNum) {
     const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
-    if (!equip || !equip.zerk_points) return;
-
     const point = equip.zerk_points.find(p => p.id === pointId);
     if (!point) return;
 
     const card = document.getElementById('mobile-zerk-info-card');
-    const title = document.getElementById('m-card-title');
-    const note = document.getElementById('m-card-note');
-    const editBtn = document.getElementById('m-card-edit-btn');
-    const delBtn = document.getElementById('m-card-del-btn');
-
-    if (!card || !title || !note) return;
-
-    // 1. Fill the card with the point's data
-    title.textContent = `Grease Point #${displayNum}`;
-    note.textContent = point.note || "No specific instructions provided.";
-
-    // 2. Link the buttons to your existing logic
-    editBtn.onclick = (e) => {
-        e.stopPropagation();
-        editZerkNote(pointId); // Re-uses your existing prompt logic
-    };
     
-    delBtn.onclick = (e) => {
-        e.stopPropagation();
-        deleteZerk(pointId); // Re-uses your existing delete logic
-        closeMobileZerkCard();
-    };
+    // 1. Set text
+    document.getElementById('m-card-title').textContent = `Grease Point #${displayNum}`;
+    document.getElementById('m-card-note').textContent = point.note || "No info provided.";
 
-    // 3. Show the card
+    // 2. Link buttons
+    document.getElementById('m-card-edit-btn').onclick = (e) => { e.stopPropagation(); editZerkNote(pointId); };
+    document.getElementById('m-card-del-btn').onclick = (e) => { e.stopPropagation(); deleteZerk(pointId); closeMobileZerkCard(); };
+
+    // 3. Show card
     card.style.display = 'block';
 }
-
-
 
 function closeMobileZerkCard() {
     const card = document.getElementById('mobile-zerk-info-card');
@@ -9117,6 +9099,8 @@ function closeMobileZerkCard() {
 
 window.showMobileZerkCard = showMobileZerkCard;
 window.closeMobileZerkCard = closeMobileZerkCard;
+
+
 
 // 1. Function to update the preview box in real-time
 function updateAvatarPreview() {
