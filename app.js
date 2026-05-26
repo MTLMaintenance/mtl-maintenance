@@ -9075,30 +9075,40 @@ async function addPartToTask(taskId) {
 }
 function showMobileZerkCard(pointId, displayNum) {
     const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
+    if (!equip || !equip.zerk_points) return;
+
     const point = equip.zerk_points.find(p => p.id === pointId);
     if (!point) return;
 
     const card = document.getElementById('mobile-zerk-info-card');
-    if (!card) return;
+    const title = document.getElementById('m-card-title');
+    const note = document.getElementById('m-card-note');
+    const editBtn = document.getElementById('m-card-edit-btn');
+    const delBtn = document.getElementById('m-card-del-btn');
 
-    // 1. Set the data
-    document.getElementById('m-zerk-title').textContent = `Grease Point #${displayNum}`;
-    document.getElementById('m-zerk-text').textContent = point.note || "No specific instructions.";
+    if (!card || !title || !note) return;
 
-    // 2. Link the buttons to your existing functions
-    document.getElementById('m-zerk-edit-btn').onclick = (e) => {
+    // 1. Fill the card with the point's data
+    title.textContent = `Grease Point #${displayNum}`;
+    note.textContent = point.note || "No specific instructions provided.";
+
+    // 2. Link the buttons to your existing logic
+    editBtn.onclick = (e) => {
         e.stopPropagation();
-        editZerkNote(pointId);
+        editZerkNote(pointId); // Re-uses your existing prompt logic
     };
-    document.getElementById('m-zerk-del-btn').onclick = (e) => {
+    
+    delBtn.onclick = (e) => {
         e.stopPropagation();
-        deleteZerk(pointId);
+        deleteZerk(pointId); // Re-uses your existing delete logic
         closeMobileZerkCard();
     };
 
     // 3. Show the card
     card.style.display = 'block';
 }
+
+
 
 function closeMobileZerkCard() {
     const card = document.getElementById('mobile-zerk-info-card');
