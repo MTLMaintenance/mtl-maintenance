@@ -2295,54 +2295,47 @@ async function openTaskDetail(id) {
 
  await openModal('detail-modal');
 }
-function switchDetailTab(tab, btn){
+function switchDetailTab(tab, btn) {
   const modal = document.getElementById('detail-modal');
-  if(!modal) return;
+  if (!modal) return;
 
-  // 1. Hide all tab-content divs
+  // 1. Hide all contents
   const contents = modal.querySelectorAll('.tab-content');
   contents.forEach(c => c.style.display = 'none');
 
-  // 2. Show the specific tab clicked
+  // 2. Show the specific tab
   const el = document.getElementById(tab);
-  if(el) el.style.display = 'block';
+  if (el) el.style.display = 'block';
 
   // 3. Highlight button
   modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // 4. TRIGGER DATA RELOADS
   const id = window._currentDetailEquipId;
-  if(!id) return;
+  if (!id) return;
 
-  if(tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
-  if(tab === 'eq-history') renderFullHistoryList(id);
-  if(tab === 'eq-obs') refreshObsList(id);
-  if(tab === 'eq-zerks') renderZerkTab(id);
-  if(tab === 'eq-invoices') renderInvoicesList(id);
-  if(tab === 'eq-docs') renderDocsList(id);
+  // 4. TRIGGER DATA RELOADS (Matched to your HTML IDs)
+  if (tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
+  if (tab === 'eq-zerks') renderZerkTab(id);
+  if (tab === 'eq-history') renderFullHistoryList(id);  // Targets eq-history-list
+  if (tab === 'eq-obs') renderObservationsList(id);     // Targets obs-list-${id}
+  if (tab === 'eq-invoices') renderInvoicesList(id);   // Targets invoices-list
+  if (tab === 'eq-docs') renderDocsList(id);           // Targets docs-list
 }
 function renderObservationsList(equipId) {
-    const container = document.getElementById('eq-obs');
+    const container = document.getElementById(`obs-list-${equipId}`);
     if (!container) return;
-
     const obs = state.observations.filter(o => o.equip_id === equipId);
-
-    container.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-            <h4 style="margin:0; font-size:14px; color:black">Health Observations</h4>
-            <button class="btn btn-primary btn-sm" onclick="openAddObsModal('${equipId}')">+ Add Observation</button>
+    
+    container.innerHTML = obs.map(o => `
+        <div style="padding:10px; border-bottom:1px solid #eee; color:black">
+            <span class="badge ${o.severity === 'critical' ? 'bd' : 'bw'}">${o.severity}</span>
+            <div style="margin-top:5px"><b>${o.body}</b></div>
+            <small style="color:#666">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</small>
         </div>
-        ${obs.map(o => `
-            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px">
-                <span class="badge ${o.severity === 'critical' ? 'bd' : 'bw'}">${o.severity}</span>
-                <div style="flex:1">
-                    <div style="font-weight:600; color:black">${o.body}</div>
-                    <div style="font-size:11px; color:#888">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
-                </div>
-            </div>`).join('') || '<div style="color:#999; padding:30px; text-align:center">No observations recorded.</div>'}
-    `;
+    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No health logs</div>';
 }
+
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
     const dtContent = document.getElementById('eq-downtime-content');
@@ -2443,10 +2436,6 @@ function openEquipDetail(id){
 
   <!-- 2. ZERK MAP VIEW (With Drawing Layer) -->
 <div id="eq-zerks" class="tab-content" style="display:none">
-  
-  <!-- HEADER TOOLBAR -->
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap">
-    <div id="zerk-view-switcher" style="display:flex; gap:4px; overflow-x:auto; flex:1"></div>
     
   </div>
 
@@ -5059,49 +5048,17 @@ async function saveInvoice() {
 }
 
 async function renderInvoicesList(equipId) {
-  const container = document.getElementById('eq-invoices');
-  if(!container) return;
-  
-  container.innerHTML = '<div style="padding:20px; text-align:center; color:#888">Loading invoices...</div>';
-
-  try {
-    const { data: invoices } = await window._mpdb.from('invoices')
-      .select('*')
-      .eq('equip_id', equipId)
-      .order('invoice_date', { ascending: false });
-
-    const total = (invoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
-
-    let html = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-        <h4 style="margin:0; font-size:14px; color:black">Invoices</h4>
-        <button class="btn btn-primary btn-sm" onclick="openAddInvoice('${equipId}')">+ Add Invoice</button>
-      </div>
-      <div style="display:flex; justify-content:space-between; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:12px; border:1px solid #ddd">
-        <span style="font-size:12px; font-weight:600; color:#555">${invoices?.length || 0} Total</span>
-        <span style="font-size:13px; font-weight:800; color:var(--accent)">Total Spend: $${total.toLocaleString()}</span>
-      </div>
-    `;
-
-    if(!invoices || !invoices.length) {
-      container.innerHTML = html + '<div style="color:#999; padding:20px; text-align:center">No invoices found for this machine.</div>';
-      return;
-    }
-
-    html += invoices.map(inv => `
-        <div style="background:#fff; border-radius:8px; padding:12px; margin-bottom:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
-          <div>
-            <div style="font-weight:700; font-size:14px; color:black">$${(inv.amount||0).toLocaleString()}</div>
-            <div style="font-size:12px; color:#333"><b>${inv.supplier || 'Unknown Supplier'}</b></div>
-            <div style="font-size:11px; color:#888">${new Date(inv.invoice_date).toLocaleDateString()}</div>
-          </div>
-          <button class="btn btn-secondary btn-sm" onclick="viewInvoicePhoto('${inv.photo}')">View</button>
-        </div>`).join('');
+    const container = document.getElementById('invoices-list');
+    if (!container) return;
+    // Fetch from state or DB
+    const invs = (state.invoices || []).filter(i => i.equip_id === equipId);
     
-    container.innerHTML = html;
-  } catch(e) {
-    container.innerHTML = '<div style="color:red; padding:20px">Error loading invoices</div>';
-  }
+    container.innerHTML = invs.map(i => `
+        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; color:black">
+            <span>${new Date(i.date).toLocaleDateString()} · <b>${i.supplier}</b></span>
+            <b>$${i.amount}</b>
+        </div>
+    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No invoices yet</div>';
 }
 
 // ── UNLOCK USER ───────────────────────────────────────────────
@@ -6727,57 +6684,33 @@ function updateCalEntryTypeButtons(type) {
     }
     }
 function renderFullHistoryList(equipId) {
-    const container = document.getElementById('eq-history');
+    const container = document.getElementById('eq-history-list');
     if (!container) return;
-
-    // Filter for COMPLETED tasks belonging to THIS machine
+    // Match against both naming conventions
     const history = state.tasks.filter(t => (t.equipId === equipId || t.equip_id === equipId) && t.status === 'Completed');
-
-    // Sort by Date (Newest at top)
-    history.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    container.innerHTML = `
-        <h4 style="margin-bottom:15px; font-size:14px; color:black">Service & Repair History</h4>
-        ${history.map(t => `
-            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
-                <div>
-                    <b style="color:black; display:block">${t.name}</b>
-                    <span style="font-size:11px; color:#888">Finished: ${new Date(t.created_at).toLocaleString()}</span>
-                </div>
-                <div style="text-align:right">
-                    <div style="font-weight:700; color:#28a745">$${(t.cost || 0).toLocaleString()}</div>
-                    <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">Details</button>
-                </div>
-            </div>`).join('') || '<div style="color:#999; padding:30px; text-align:center">No completed work orders found.</div>'}
-    `;
+    
+    container.innerHTML = history.map(t => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; color:black">
+            <div>
+                <b>${t.name}</b>
+                <div style="font-size:11px; color:#666">${new Date(t.created_at || Date.now()).toLocaleString()}</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">Details</button>
+        </div>
+    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No history recorded</div>';
 }
    
     function renderDocsList(equipId) {
-    const container = document.getElementById('eq-docs'); // Ensure this ID matches your HTML
-    if(!container) return;
-    
+    const container = document.getElementById('docs-list');
+    if (!container) return;
     const docs = state.documents.filter(d => d.equip_id === equipId);
-
-    container.innerHTML = `
-        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center">
-            <h4 style="margin:0; font-size:14px; color:black">Documents</h4>
-            <button class="btn btn-primary btn-sm" onclick="openEditDocModal()">+ Add Document</button>
+    
+    container.innerHTML = docs.map(d => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; color:black">
+            <div><b>${d.name}</b><div style="font-size:11px; color:#666">${d.type}</div></div>
+            <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
         </div>
-        <div class="docs-scroll-area">
-            ${docs.map(d => `
-                <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee; background:#fff; margin-bottom:6px; border-radius:8px; border:1px solid #ddd">
-                    <div class="doc-info" style="flex:1">
-                        <b style="display:block; color:black;">${d.name}</b>
-                        <span style="font-size:11px; color:#666">${d.type}</span>
-                    </div>
-                    <div class="doc-actions" style="display:flex; gap:5px">
-                        <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
-                        <button class="btn btn-secondary btn-sm" onclick="openEditDocModal('${d.id}')">Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteDoc('${d.id}')">Del</button>
-                    </div>
-                </div>`).join('') || '<div style="color:#888; padding:30px; text-align:center; border:2px dashed #eee; border-radius:10px">No documents found. Click Add to upload.</div>'}
-        </div>
-    `;
+    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No documents found</div>';
 }
 function openDocModal(docId = null) {
   _currentDocEditId = docId;
