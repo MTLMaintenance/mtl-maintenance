@@ -77,37 +77,7 @@
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
-#panel-tools .card, 
-#panel-tools .table-wrap {
-    background: transparent !important;
-    color: white !important;
-    border: none !important;
-    box-shadow: none !important;
-}
 
-/* 2. Fix the "No tools" message color */
-#panel-tools .card div {
-    color: white !important;
-}
-
-/* 3. Ensure the table headers stay readable */
-#panel-tools table thead th {
-    color: rgba(255, 255, 255, 0.6) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* 4. Fix the specific white background issue for ALL tables outside of modals */
-.panel:not(#panel-dashboard) .card {
-    background: rgba(255, 255, 255, 0.03) !important; /* Very subtle dark tint */
-    color: white !important;
-}
-
-/* 5. Keep the Dashboard metrics as white boxes (as they were in your screenshot) */
-#panel-dashboard .metric-card, 
-#panel-dashboard .card {
-    background: #f8f9fa !important;
-    color: #333 !important;
-}
 /* ============================================================
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
@@ -561,34 +531,42 @@ input::-webkit-calendar-picker-indicator {
 #btn-delete-view { margin-top: 10px; display: none; }
   /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
 
-/* --- TAB CONTRAST FIX --- */
-
-/* Tab styling handled by shared segmented-control rules above. */
-
-
-  /* 1. Main Cards */
 .card {
+  background: transparent !important; /* No white box by default */
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 20px !important;
+}
+
+/* 2. DASHBOARD ONLY: The Glossy White Look you like */
+/* This targets cards ONLY when they are inside the dashboard panel */
+#panel-dashboard .card, 
+#panel-dashboard .metric-card {
   background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  border-top: 4px solid var(--accent) !important; /* Universal Blue Bar */
+  border-top: 4px solid var(--accent) !important; 
   border-radius: var(--radius-lg);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
-  padding: 20px !important;
-  transition: transform 0.2s ease;
+  color: #1a1a18 !important; /* Dark text for readability on white */
 }
 
-/* 2. Top Metric Boxes (Equipment, Overdue, etc.) */
+/* 3. METRIC BOXES (Equipment, Overdue, etc. on Dashboard) */
 .metric-card {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  border-top: 4px solid var(--accent) !important; /* Universal Blue Bar */
+  border-top: 4px solid var(--accent) !important;
   border-radius: var(--radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  color: #1a1a18 !important;
 }
 
+/* 4. Fix table text in Tool Crib/Inventory now that background is dark */
+.panel:not(#panel-dashboard) table tbody td {
+    color: white !important; /* White text for dark background */
+}
 /* 3. Tables (Equipment Registry, Work Orders, etc.) */
 .table-wrap {
   background: rgba(255, 255, 255, 0.92) !important;
