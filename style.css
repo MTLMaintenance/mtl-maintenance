@@ -1559,6 +1559,33 @@ select.form-select:focus {
     height: 45px !important;
     border-bottom: 1px solid #ddd !important;
 }
+#tool-inventory-view, 
+#tool-wishlist-view, 
+#tool-denied-view {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    min-height: 0 !important; /* Removes the forced 400px height */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 2. Remove space below the table itself */
+#panel-tools table {
+    margin-bottom: 0 !important;
+}
+
+/* 3. This removes any 'zombie' padding from the panel container */
+#panel-tools.active {
+    padding-bottom: 20px !important; /* Only space at the very bottom of the screen */
+    background: transparent !important;
+}
+
+/* 4. Fix for the 'Empty' message container if it has white padding */
+#tool-inventory-view div, 
+#tool-wishlist-view div, 
+#tool-denied-view div {
+    margin-bottom: 0 !important;
+}
 /* Styling for each individual note in the list */
 .obs-note-card {
     background: #ffffff;
