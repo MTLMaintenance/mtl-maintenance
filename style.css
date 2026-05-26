@@ -523,7 +523,7 @@ input::-webkit-calendar-picker-indicator {
   background: rgba(0,0,0,0.38) !important;
   border-color: rgba(255,255,255,0.22) !important;
 }
-#panel-tools .tab,
+
 #panel-admin .tab,
 #panel-equipment .sub-toggle .btn,
 #panel-calendar .view-toggle .btn {
@@ -1500,27 +1500,41 @@ select.form-select:focus {
     background: transparent !important;
     padding: 20px !important;
 }
-
+#panel-tools .tab {
+    background: transparent !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+}
+#panel-tools .tab.active {
+    background: white !important;
+    color: black !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
 /* B. Style the Tabs (The buttons at the top of the Tool Crib) */
 #panel-tools .tab-bar {
-    display: flex !important;
-    gap: 10px;
+    display: inline-flex !important;
+    background: rgba(0, 0, 0, 0.3) !important; /* Dark background like your Filter image */
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 20px;
-    background: transparent !important;
 }
 
 /* C. Make the actual Inventory area the White Card */
 #tool-inventory-view, 
-#tool-wishlist-view,
+#tool-wishlist-view, 
 #tool-denied-view {
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(255, 255, 255, 0.95) !important; /* The white glossy card */
     border-radius: 15px;
     padding: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    color: #000 !important; /* Keep text black inside the white card */
+    border-top: 4px solid var(--accent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    color: black !important;
 }
 
 /* Ensure the table text inside these cards stays black */
