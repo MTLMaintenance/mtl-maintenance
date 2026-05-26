@@ -516,7 +516,7 @@ input::-webkit-calendar-picker-indicator {
   font-weight: 700 !important;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
 }
-#panel-tools .tab-bar,
+
 #panel-admin .tab-bar,
 #panel-equipment .sub-toggle,
 #panel-calendar .view-toggle {
@@ -529,14 +529,14 @@ input::-webkit-calendar-picker-indicator {
 #panel-calendar .view-toggle .btn {
   color: rgba(255,255,255,0.85) !important;
 }
-#panel-tools .tab:hover,
+
 #panel-admin .tab:hover,
 #panel-equipment .sub-toggle .btn:hover,
 #panel-calendar .view-toggle .btn:hover {
   color: #ffffff !important;
   background: rgba(255,255,255,0.18) !important;
 }
-#panel-tools .tab.active,
+
 #panel-admin .tab.active,
 #panel-equipment .sub-toggle .btn.active,
 #panel-calendar .view-toggle .btn.active {
@@ -1495,33 +1495,38 @@ select.form-select:focus {
     display: none !important;
 }
 
-
-/* FORCE TOOL CRIB LAYOUT */
 #panel-tools.active {
     display: block !important;
-    position: relative !important;
-    width: 95% !important;
-    max-width: 1200px;
-    margin: 20px auto !important;
-    z-index: 10 !important;
-    background: rgba(255, 255, 255, 0.95) !important; /* Semi-white background to see text */
+    background: transparent !important;
     padding: 20px !important;
+}
+
+/* B. Style the Tabs (The buttons at the top of the Tool Crib) */
+#panel-tools .tab-bar {
+    display: flex !important;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: transparent !important;
+}
+
+/* C. Make the actual Inventory area the White Card */
+#tool-inventory-view, 
+#tool-wishlist-view,
+#tool-denied-view {
+    background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 15px;
-    color: #000 !important; /* Force black text on the white card */
-    min-height: 400px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    color: #000 !important; /* Keep text black inside the white card */
 }
 
-/* Ensure the Inventory list is visible */
-#tool-inventory-view {
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* Force the table to have black text so you can read it */
+/* Ensure the table text inside these cards stays black */
 #panel-tools table, 
 #panel-tools td, 
-#panel-tools th, 
-#panel-tools b {
+#panel-tools th {
     color: #000000 !important;
 }
 
