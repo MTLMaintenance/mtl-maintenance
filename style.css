@@ -1,7 +1,32 @@
 
-/* ============================================================
-   2. SHARED COMPONENTS (Sync Dots, Widgets, Chat UI)
-   ============================================================ */
+
+html, body {
+  background-color: #001f3f !important; /* The Navy Blue */
+}
+
+.panel, 
+.panel.active,
+#app {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.card, .table-wrap, .metric-card {
+  background: rgba(255, 255, 255, 0.94) !important; /* Glossy White */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: #1a1a18 !important; /* Black text for readability */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+
+.section-title, 
+.section-header span,
+#panel-tools h2,
+#panel-tasks h2 {
+  color: #ffffff !important;
+}
 .sync-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
