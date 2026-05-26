@@ -1734,36 +1734,35 @@ async function deleteEquip(id) {
   const e = state.equipment.find(x => x.id === id);
   if (!e) return;
 
-  if (!confirm(`Permanently delete ${e.name}? This will also delete all its Work Orders, History, and Zerk Maps.`)) {
-    return;
-  }
- logAuditAction("Deleted Machine", `Removed ${e.name} (S/N: ${e.serial})`);
-  try {
-    // 1. Send delete command to Supabase
-    // Because of the SQL change in Step 1, this will now work!
-    const { error } = await window._mpdb
-      .from('equipment')
-      .delete()
-      .eq('id', id);
+  if (!confirm(`Permanently delete ${e.name}? This will also remove all observations and history.`)) return;
 
+  try {
+    // 1. Log the action FIRST while we still have data
+    logAuditAction("Deleted Machine", `Removed ${e.name} (S/N: ${e.serial || 'N/A'})`);
+
+    // 2. DELETE LINKED DATA FROM DATABASE (Clean up the ghosts!)
+    // This removes all observations associated with this equipment ID
+    await window._mpdb.from('observations').delete().eq('equip_id', id);
+    
+    // 3. DELETE EQUIPMENT FROM DATABASE
+    const { error } = await window._mpdb.from('equipment').delete().eq('id', id);
     if (error) throw error;
 
-    // 2. Remove from local memory
+    // 4. CLEAN LOCAL MEMORY (Remove from state arrays)
     state.equipment = state.equipment.filter(eq => eq.id !== id);
-    
-    // 3. Update Audit Log
-    if (typeof logAuditAction === 'function') {
-        logAuditAction("Deleted Machine", `${e.name} removed from fleet`);
-    }
+    state.observations = state.observations.filter(o => o.equip_id !== id);
+    // Also clear linked tasks if necessary
+    state.tasks = state.tasks.filter(t => t.equipId !== id);
 
-    // 4. Refresh UI
+    // 5. RE-RENDER UI
     renderEquipmentTable();
-    renderDashboard();
-    showToast(`${e.name} removed ✓`);
+    renderDashboard(); // This will now run with the cleaned state.observations
+    
+    showToast(`${e.name} and all data removed ✓`);
     
   } catch (e) {
     console.error("Delete failed:", e);
-    showToast("Error: Could not delete machine. Check Console.");
+    showToast("Delete failed. See console.");
   }
 }
 // Custom fields
@@ -3547,17 +3546,37 @@ function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all
 function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group_tag;if(g&&g!=='all'){setGroupFilter(g);setEquipGroupFilter(g);}}
 
 // ── RECENT OBS + FLEET HEALTH ────────────────────────────────
-function renderRecentObservations(){
-  const listEl=document.getElementById('recent-obs-list');const badgeEl=document.getElementById('obs-count-badge');if(!listEl)return;
-  let obs=[...(state.observations||[])];if(activeGroupFilter!=='all'){const ids=new Set(filteredEquipment(activeGroupFilter).map(e=>e.id));obs=obs.filter(o=>ids.has(o.equip_id));}
-  if(badgeEl)badgeEl.textContent=obs.length+' total';
-  if(!obs.length){listEl.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">No observations yet</div>';return;}
-  listEl.innerHTML=obs.slice(0,6).map(o=>`<div class="parts-row" style="cursor:pointer" onclick="openEquipDetail('${o.equip_id}')">
-    <span style="font-size:16px;flex-shrink:0">${o.severity==='critical'?'🚨':o.severity==='watch'?'👀':'ℹ'}</span>
-    <div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.body}</div>
-      <div style="font-size:11px;color:var(--text2)">${equipName(o.equip_id)} · ${o.author} · ${new Date(o.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
-    </div><span class="badge ${o.severity==='critical'?'bd':o.severity==='watch'?'bw':'bg'}">${o.severity}</span>
-  </div>`).join('');
+function renderRecentObservations() {
+  const listEl = document.getElementById('recent-obs-list');
+  const badgeEl = document.getElementById('obs-count-badge');
+  if (!listEl) return;
+
+  // 1. Filter out observations that belong to machines that no longer exist (Safety check)
+  const validEquipIds = new Set(state.equipment.map(e => e.id));
+  let obs = (state.observations || []).filter(o => validEquipIds.has(o.equip_id));
+
+  // 2. Handle Group Filtering
+  if (activeGroupFilter !== 'all') {
+    const ids = new Set(filteredEquipment(activeGroupFilter).map(e => e.id));
+    obs = obs.filter(o => ids.has(o.equip_id));
+  }
+
+  if (badgeEl) badgeEl.textContent = obs.length + ' total';
+  if (!obs.length) {
+    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px;text-align:center">No observations yet</div>';
+    return;
+  }
+
+  // 3. Render the list (Newest 6)
+  listEl.innerHTML = obs.slice(0, 6).map(o => `
+    <div class="parts-row" style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid var(--border)" onclick="openEquipDetail('${o.equip_id}')">
+      <span style="font-size:18px; flex-shrink:0">${o.severity === 'critical' ? '🔴' : o.severity === 'watch' ? '🟠' : '🔵'}</span>
+      <div style="flex:1; min-width:0">
+        <div style="font-weight:700; font-size:13px; color:black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${o.body}</div>
+        <div style="font-size:11px; color:var(--text2)">${equipName(o.equip_id)} · ${o.author}</div>
+      </div>
+      <span class="badge ${o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bg'}">${o.severity}</span>
+    </div>`).join('');
 }
 function renderFleetHealthDash(){
   const el=document.getElementById('fleet-health-dash');if(!el)return;
