@@ -9108,3 +9108,33 @@ function updateAvatarPreview() {
         preview.style.color = 'white';
     }
 }
+function editObservation(obsId) {
+    // 1. Find the data in your app's memory
+    const obs = state.observations.find(o => o.id === obsId);
+    
+    // 2. Pre-fill the boxes in the card
+    document.getElementById('edit-id').value = obsId;
+    document.getElementById('edit-sev').value = obs.severity;
+    document.getElementById('edit-body').value = obs.body;
+
+    // 3. Bring the card up
+    openModal('edit-obs-modal');
+}
+async function saveObsEdit() {
+    const id = document.getElementById('edit-id').value;
+    const body = document.getElementById('edit-body').value;
+    const sev = document.getElementById('edit-sev').value;
+
+    // 1. Update the Database
+    await window._mpdb.from('observations').update({ body: body, severity: sev }).eq('id', id);
+
+    // 2. Update the App Memory (Makes it "Live")
+    const obs = state.observations.find(o => o.id === id);
+    obs.body = body;
+    obs.severity = sev;
+
+    // 3. Refresh the screen and close
+    renderObservationsList(obs.equip_id);
+    closeModal('edit-obs-modal');
+    showToast("Updated ✓");
+}
