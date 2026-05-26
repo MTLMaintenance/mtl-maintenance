@@ -2338,27 +2338,34 @@ function switchDetailTab(tab, btn) {
   if (tab === 'eq-docs') renderDocsList(id);
 }
 function renderObservationsList(equipId) {
-    const container = document.getElementById('eq-obs');
-    if (!container) return;
+    // Target only the list container, NOT the whole tab
+    const listContainer = document.getElementById(`obs-list-${equipId}`);
+    if (!listContainer) return;
 
+    // Filter observations for this machine
     const obs = (state.observations || []).filter(o => o.equip_id === equipId);
 
-    // This HTML matches the "Vibrant Badge" and "Black Text" look you wanted
-    container.innerHTML = `
-        <h4 style="margin-bottom:15px; color:black">Health History</h4>
-        ${obs.map(o => `
-            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:flex-start; gap:12px">
-                <span class="badge ${o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bg'}">${o.severity}</span>
-                <div style="flex:1">
-                    <div style="font-weight:600; color:black; font-size:13px">${o.body}</div>
-                    <div style="font-size:11px; color:#888; margin-top:4px">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
+    // Sort newest first
+    obs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    listContainer.innerHTML = obs.map(o => `
+        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:flex-start; gap:12px">
+            <!-- Use the vibrant badges we fixed earlier -->
+            <span class="badge ${o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bg'}">${o.severity}</span>
+            
+            <div style="flex:1">
+                <div style="font-weight:600; color:black; font-size:13px">${o.body}</div>
+                <div style="font-size:11px; color:#888; margin-top:4px">
+                    ${o.author} · ${new Date(o.created_at).toLocaleDateString()}
                 </div>
-                <div style="display:flex; gap:8px">
-                    <button class="btn btn-secondary btn-sm" onclick="editObservation('${o.id}', '${equipId}')">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}', '${equipId}')">🗑</button>
-                </div>
-            </div>`).join('') || '<div style="color:#999; padding:20px; text-align:center">No observations yet</div>'}
-    `;
+            </div>
+
+            <!-- Add Edit and Delete buttons for every row -->
+            <div style="display:flex; gap:5px">
+                <button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="editObservation('${o.id}', '${equipId}')">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}', '${equipId}')">🗑</button>
+            </div>
+        </div>`).join('') || '<div style="color:#999; padding:20px; text-align:center">No history recorded yet.</div>';
 }
 
 // Small helper for the downtime display logic inside the detail view
@@ -3469,13 +3476,11 @@ function applyTemplate(){
 // ── OBSERVATIONS ─────────────────────────────────────────────
 // 2. THE ACTION: Handles adding a new observation and sending alerts
 async function addObservation(equipId) {
-    const bodyEl = document.getElementById(`obs-input-${equipId}`);
-    const sevEl = document.getElementById(`obs-severity-${equipId}`);
-    
-    const body = bodyEl.value.trim();
-    const severity = sevEl.value;
+    const input = document.getElementById(`obs-input-${equipId}`);
+    const severity = document.getElementById(`obs-severity-${equipId}`).value;
+    const body = input.value.trim();
 
-    if (!body) return showToast("Please enter a description");
+    if (!body) return showToast("Enter a note first");
 
     const record = {
         id: uid(),
@@ -3487,27 +3492,22 @@ async function addObservation(equipId) {
     };
 
     try {
-        // 1. Save to Supabase
-        const { error } = await window._mpdb.from('observations').insert(record);
-        if (error) throw error;
-
-        // 2. Update Local State (This is what makes it "Live")
+        await window._mpdb.from('observations').insert(record);
+        
+        // Add to local memory so it shows up live
         state.observations.unshift(record);
 
-        // 3. Log it for accountability
-        logAuditAction("New Observation", `${severity.toUpperCase()} log for ${equipName(equipId)}`);
-
-        // 4. Refresh the UI immediately
+        // Refresh ONLY the list part of the tab
         renderObservationsList(equipId);
-        renderDashboard(); // Update the main dashboard list too
+        
+        // Refresh the main dashboard
+        renderDashboard();
 
-        // 5. Clear inputs
-        bodyEl.value = '';
-        showToast("Observation posted ✓");
-
+        // Clear the input for the next note
+        input.value = '';
+        showToast("Observation added ✓");
     } catch (e) {
-        console.error(e);
-        showToast("Failed to save observation");
+        showToast("Error saving note");
     }
 }
 async function editObservation(obsId, equipId) {
