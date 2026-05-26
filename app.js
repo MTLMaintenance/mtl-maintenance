@@ -6417,7 +6417,7 @@ function renderZerkTab(equipId) {
     const currentPhoto = equip.zerk_photos[viewIdx];
     const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
 
-  const isMobile = window.innerWidth <= 768;
+  
 
 container.innerHTML = `
 <div class="zerk-main-layout">
