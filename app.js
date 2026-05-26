@@ -2322,7 +2322,27 @@ function switchDetailTab(tab, btn){
   if(tab === 'eq-invoices') renderInvoicesList(id);
   if(tab === 'eq-docs') renderDocsList(id);
 }
+function renderObservationsList(equipId) {
+    const container = document.getElementById('eq-obs');
+    if (!container) return;
 
+    const obs = state.observations.filter(o => o.equip_id === equipId);
+
+    container.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+            <h4 style="margin:0; font-size:14px; color:black">Health Observations</h4>
+            <button class="btn btn-primary btn-sm" onclick="openAddObsModal('${equipId}')">+ Add Observation</button>
+        </div>
+        ${obs.map(o => `
+            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px">
+                <span class="badge ${o.severity === 'critical' ? 'bd' : 'bw'}">${o.severity}</span>
+                <div style="flex:1">
+                    <div style="font-weight:600; color:black">${o.body}</div>
+                    <div style="font-size:11px; color:#888">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
+                </div>
+            </div>`).join('') || '<div style="color:#999; padding:30px; text-align:center">No observations recorded.</div>'}
+    `;
+}
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
     const dtContent = document.getElementById('eq-downtime-content');
@@ -5039,50 +5059,48 @@ async function saveInvoice() {
 }
 
 async function renderInvoicesList(equipId) {
-  const listEl = document.getElementById('invoices-list');
-  if(!listEl) return;
+  const container = document.getElementById('eq-invoices');
+  if(!container) return;
   
+  container.innerHTML = '<div style="padding:20px; text-align:center; color:#888">Loading invoices...</div>';
+
   try {
     const { data: invoices } = await window._mpdb.from('invoices')
       .select('*')
       .eq('equip_id', equipId)
       .order('invoice_date', { ascending: false });
 
+    const total = (invoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+        <h4 style="margin:0; font-size:14px; color:black">Invoices</h4>
+        <button class="btn btn-primary btn-sm" onclick="openAddInvoice('${equipId}')">+ Add Invoice</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:12px; border:1px solid #ddd">
+        <span style="font-size:12px; font-weight:600; color:#555">${invoices?.length || 0} Total</span>
+        <span style="font-size:13px; font-weight:800; color:var(--accent)">Total Spend: $${total.toLocaleString()}</span>
+      </div>
+    `;
+
     if(!invoices || !invoices.length) {
-      listEl.innerHTML = '<div style="color:var(--text3);font-size:13px">No invoices yet</div>';
+      container.innerHTML = html + '<div style="color:#999; padding:20px; text-align:center">No invoices found for this machine.</div>';
       return;
     }
-  
 
-    const total = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-
-    listEl.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;margin-bottom:8px;border-bottom:2px solid var(--border)">
-        <span style="font-size:13px;font-weight:600">${invoices.length} invoice${invoices.length!==1?'s':''}</span>
-        <span style="font-size:14px;font-weight:700;color:var(--accent)">Total: $${total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-      </div>
-      ${invoices.map(inv => `
-        <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;border:1px solid var(--border)">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-                <span style="font-weight:600;font-size:14px">$${(inv.amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-                ${inv.supplier?`<span style="font-size:13px;color:var(--text2)">${inv.supplier}</span>`:''}
-                ${inv.invoice_number?`<span class="badge bg" style="font-size:11px">#${inv.invoice_number}</span>`:''}
-              </div>
-              <div style="font-size:12px;color:var(--text3)">
-                ${inv.invoice_date?fmtDate(inv.invoice_date)+' · ':''}Added by ${inv.created_by}
-              </div>
-              ${inv.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${inv.notes}</div>`:''}
-            </div>
-            <div style="display:flex;gap:6px;flex-shrink:0">
-              ${inv.photo?`<button class="btn btn-secondary btn-sm" onclick="viewInvoicePhoto('${inv.photo}')">📎 Photo</button>`:''}
-              ${can('canDelete')?`<button class="btn btn-danger btn-sm" onclick="deleteInvoice('${inv.id}','${equipId}')">Delete</button>`:''}
-            </div>
+    html += invoices.map(inv => `
+        <div style="background:#fff; border-radius:8px; padding:12px; margin-bottom:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
+          <div>
+            <div style="font-weight:700; font-size:14px; color:black">$${(inv.amount||0).toLocaleString()}</div>
+            <div style="font-size:12px; color:#333"><b>${inv.supplier || 'Unknown Supplier'}</b></div>
+            <div style="font-size:11px; color:#888">${new Date(inv.invoice_date).toLocaleDateString()}</div>
           </div>
-        </div>`).join('')}`;
+          <button class="btn btn-secondary btn-sm" onclick="viewInvoicePhoto('${inv.photo}')">View</button>
+        </div>`).join('');
+    
+    container.innerHTML = html;
   } catch(e) {
-    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load invoices</div>';
+    container.innerHTML = '<div style="color:red; padding:20px">Error loading invoices</div>';
   }
 }
 
@@ -6709,60 +6727,55 @@ function updateCalEntryTypeButtons(type) {
     }
     }
 function renderFullHistoryList(equipId) {
-    const container = document.getElementById('eq-history-list');
+    const container = document.getElementById('eq-history');
     if (!container) return;
 
-    // Filter tasks for THIS machine that are FINISHED
-    const history = state.tasks.filter(t => 
-        (t.equipId === equipId || t.equip_id === equipId) && 
-        t.status === 'Completed'
-    );
+    // Filter for COMPLETED tasks belonging to THIS machine
+    const history = state.tasks.filter(t => (t.equipId === equipId || t.equip_id === equipId) && t.status === 'Completed');
 
-    // Sort Newest to Oldest
-    history.sort((a, b) => new Date(b.manager_signed_at || b.created_at) - new Date(a.manager_signed_at || a.created_at));
+    // Sort by Date (Newest at top)
+    history.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    container.innerHTML = history.map(t => `
-        <div style="padding:12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
-            <div>
-                <b style="display:block; font-size:14px">${t.name}</b>
-                <span style="font-size:11px; color:var(--text3)">
-                    Completed: ${new Date(t.manager_signed_at || t.tech_signed_at || t.created_at).toLocaleString()}
-                </span>
-            </div>
-            <div style="text-align:right">
-                <div style="font-weight:bold; color:var(--success)">$${(t.cost || 0).toLocaleString()}</div>
-                <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">View</button>
-            </div>
-        </div>
-    `).join('') || '<div style="padding:20px; color:var(--text3); text-align:center">No work order history.</div>';
+    container.innerHTML = `
+        <h4 style="margin-bottom:15px; font-size:14px; color:black">Service & Repair History</h4>
+        ${history.map(t => `
+            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
+                <div>
+                    <b style="color:black; display:block">${t.name}</b>
+                    <span style="font-size:11px; color:#888">Finished: ${new Date(t.created_at).toLocaleString()}</span>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-weight:700; color:#28a745">$${(t.cost || 0).toLocaleString()}</div>
+                    <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">Details</button>
+                </div>
+            </div>`).join('') || '<div style="color:#999; padding:30px; text-align:center">No completed work orders found.</div>'}
+    `;
 }
    
-     function renderDocsList(equipId) {
-    const container = document.getElementById('docs-list');
+    function renderDocsList(equipId) {
+    const container = document.getElementById('eq-docs'); // Ensure this ID matches your HTML
     if(!container) return;
     
-    // Get documents for THIS machine
     const docs = state.documents.filter(d => d.equip_id === equipId);
 
-    // Create the HTML
     container.innerHTML = `
-        <div style="margin-bottom:15px; display:flex; justify-content:flex-end">
+        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center">
+            <h4 style="margin:0; font-size:14px; color:black">Documents</h4>
             <button class="btn btn-primary btn-sm" onclick="openEditDocModal()">+ Add Document</button>
         </div>
         <div class="docs-scroll-area">
             ${docs.map(d => `
-                <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border); background:var(--bg2); margin-bottom:4px; border-radius:var(--radius)">
-                    <div class="doc-info" onclick="openDocDetail('${d.id}')" style="cursor:pointer; flex:1">
-                        <b style="display:block">${d.name}</b>
-                        <span style="font-size:11px; color:var(--text2)">${d.type}</span>
+                <div class="doc-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee; background:#fff; margin-bottom:6px; border-radius:8px; border:1px solid #ddd">
+                    <div class="doc-info" style="flex:1">
+                        <b style="display:block; color:black;">${d.name}</b>
+                        <span style="font-size:11px; color:#666">${d.type}</span>
                     </div>
                     <div class="doc-actions" style="display:flex; gap:5px">
                         <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
                         <button class="btn btn-secondary btn-sm" onclick="openEditDocModal('${d.id}')">Edit</button>
-                        <button class="btn btn-sm" style="background:#ff4444; color:white; border:none; padding:4px 8px" 
-                                onclick="event.stopPropagation(); deleteDoc('${d.id}')">Del</button>
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteDoc('${d.id}')">Del</button>
                     </div>
-                </div>`).join('') || '<div style="color:var(--text3); padding:20px; text-align:center">No documents found</div>'}
+                </div>`).join('') || '<div style="color:#888; padding:30px; text-align:center; border:2px dashed #eee; border-radius:10px">No documents found. Click Add to upload.</div>'}
         </div>
     `;
 }
