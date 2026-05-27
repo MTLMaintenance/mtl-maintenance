@@ -32,19 +32,15 @@ window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
 
 window.globalEditObs = function(id) {
-    console.log("Opening Edit for ID:", id);
-    
     const obs = state.observations.find(o => o.id === id);
-    if (!obs) {
-        alert("Error: Data not found for " + id);
-        return;
-    }
+    if (!obs) return;
 
-    // 1. Fill the fields
-    const idField = document.getElementById('edit-obs-id');
-    const sevField = document.getElementById('edit-obs-sev');
-    const bodyField = document.getElementById('edit-obs-body');
-    const backdrop = document.getElementById('obs-edit-modal-backdrop');
+    // Use the 'edit-obs-' IDs
+    document.getElementById('edit-obs-id').value = id;
+    document.getElementById('edit-obs-sev').value = obs.severity;
+    document.getElementById('edit-obs-body').value = obs.body;
+    
+    document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
 
     if (idField && sevField && bodyField && backdrop) {
         idField.value = id;
@@ -59,13 +55,28 @@ window.globalEditObs = function(id) {
 };
 
 window.saveObservationChange = async function() {
-    const id = document.getElementById('edit-obs-id').value;
-    const body = document.getElementById('edit-obs-body').value.trim();
-    const sev = document.getElementById('edit-obs-sev').value;
+    console.log("Saving changes...");
+
+    // 1. Get the elements (Using the 'obs-' prefix we added to the HTML)
+    const idEl = document.getElementById('edit-obs-id');
+    const bodyEl = document.getElementById('edit-obs-body');
+    const sevEl = document.getElementById('edit-obs-sev');
+
+    // 2. SAFETY CHECK: If any are missing, stop and tell us which one
+    if (!idEl || !bodyEl || !sevEl) {
+        console.error("Missing elements:", { idEl, bodyEl, sevEl });
+        alert("Error: The modal fields could not be found. Check console for details.");
+        return;
+    }
+
+    const id = idEl.value;
+    const body = bodyEl.value.trim();
+    const sev = sevEl.value;
 
     if (!body) return alert("Note cannot be empty.");
 
     try {
+        // 3. Update Supabase
         const { error } = await window._mpdb
             .from('observations')
             .update({ body: body, severity: sev })
@@ -73,25 +84,26 @@ window.saveObservationChange = async function() {
 
         if (error) throw error;
 
-        // Update local memory
+        // 4. Update the local data so it changes on the screen immediately
         const obs = state.observations.find(o => o.id === id);
         if (obs) {
             obs.body = body;
             obs.severity = sev;
+            
+            // Refresh the specific lists
+            if (obs.equip_id) renderObservationsList(obs.equip_id);
+            renderDashboard();
         }
 
-        // Refresh UI
-        if (obs && obs.equip_id) renderObservationsList(obs.equip_id);
-        renderDashboard();
-        
+        // 5. Hide the modal
         document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
         showToast("Updated successfully ✓");
 
     } catch (e) {
-        alert("Update Failed: " + e.message);
+        console.error("Update failed:", e);
+        alert("Update failed: " + e.message);
     }
 };
-
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
     
