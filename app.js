@@ -32,30 +32,64 @@ window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
 
 window.globalEditObs = function(id, eId) {
-    alert("Function found! ID: " + id); // We will remove this once we see it work
-
+    // Alert removed for a smooth experience
     const obs = state.observations.find(o => o.id === id);
-    if (!obs) return alert("Error: Observation not found in memory.");
+    if (!obs) return console.error("Observation not found.");
 
-    // Fill the fields in the modal we built earlier
-    const b = document.getElementById('edit-obs-body');
-    const s = document.getElementById('edit-obs-sev');
-    const i = document.getElementById('edit-obs-id');
+    document.getElementById('edit-obs-id').value = id;
+    document.getElementById('edit-obs-sev').value = obs.severity;
+    document.getElementById('edit-obs-body').value = obs.body;
+    
+    // Show the modal over everything else
+    document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
+};
+window.saveObservationChange = async function() {
+    // 1. Get the values from the dedicated modal
+    const id = document.getElementById('edit-obs-id').value;
+    const newBody = document.getElementById('edit-obs-body').value.trim();
+    const newSev = document.getElementById('edit-obs-sev').value;
 
-    if (b && i) {
-        i.value = id;
-        if (s) s.value = obs.severity;
-        b.value = obs.body;
+    if (!newBody) return alert("Please enter a note.");
+
+    try {
+        // 2. Update Supabase
+        const { error } = await window._mpdb
+            .from('observations')
+            .update({ 
+                body: newBody, 
+                severity: newSev 
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 3. Update the local memory (state)
+        const obs = state.observations.find(o => o.id === id);
+        if (obs) {
+            obs.body = newBody;
+            obs.severity = newSev;
+        }
+
+        // 4. UI Refresh: Find which machine this belonged to and refresh its list
+        if (obs && obs.equip_id) {
+            renderObservationsList(obs.equip_id);
+        }
         
-        // Show the modal
-        const modal = document.getElementById('obs-edit-modal-backdrop');
-        if (modal) modal.style.display = 'flex';
-        else alert("HTML Modal Missing!");
-    } else {
-        alert("Modal input fields not found!");
+        renderDashboard(); // Update the main screen too
+        
+        // 5. Hide the modal
+        document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
+        
+        showToast("Observation updated ✓");
+        
+        // Accountability Log
+        logAuditAction("Updated Observation", `Modified health log for machine.`);
+
+    } catch (e) {
+        console.error("Save Error:", e);
+        alert("Error saving to database: " + e.message);
     }
 };
-
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
     
