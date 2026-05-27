@@ -3160,11 +3160,7 @@ async function sendOverdueEmailBatch(tasks) {
 // Run email check on app load
 setTimeout(checkAndSendOverdueEmails, 3000);
 
-// ============================================================
-// PUSH NOTIFICATIONS
-// ============================================================
-// Check for overdue tasks and send push on load
-// ============================================================
+
 // QR CODES (Admin only)
 // ============================================================
 function printQRCode(equipId) {
@@ -3566,6 +3562,7 @@ window.editObservation = function(obsId, equipId) {
         alert("Developer Error: Edit Modal IDs (edit-id, edit-sev, edit-body) not found in HTML!");
     }
 };
+
   function refreshObsList(equipId) {
     const container = document.getElementById('obs-list-' + equipId);
     if (!container) return;
@@ -3593,6 +3590,7 @@ window.editObservation = function(obsId, equipId) {
         </div>`;
     }).join('') || '<div style="color:var(--text3); padding:20px; text-align:center">No observations yet.</div>';
 }
+
 // ── GROUPS ───────────────────────────────────────────────────
 let activeGroupFilter='all',equipGroupFilter='all';
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
@@ -3621,7 +3619,7 @@ function renderRecentObservations() {
     listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px;text-align:center">No observations yet</div>';
     return;
   }
-
+}
   
 function renderFleetHealthDash(){
   const el=document.getElementById('fleet-health-dash');if(!el)return;
