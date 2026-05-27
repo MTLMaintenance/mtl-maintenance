@@ -1611,28 +1611,26 @@
   </div>
 </div>
 
-<!-- DEDICATED EDIT OBSERVATION MODAL -->
-<div id="obs-edit-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:30000; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
-  <div style="background:white; color:black; width:95%; max-width:400px; padding:25px; border-radius:15px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
-    <h3 style="margin-top:0; color:black; font-weight:800;">Edit Observation</h3>
+<!-- DEDICATED EDIT MODAL -->
+<div id="obs-edit-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+  <div style="background:white; padding:25px; border-radius:15px; width:95%; max-width:400px; color:black; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+    <h3 style="margin-top:0; color:black;">Edit Observation</h3>
     
-    <!-- Tracking IDs -->
     <input type="hidden" id="edit-obs-id">
-    <input type="hidden" id="edit-obs-equip-id">
 
-    <label style="display:block; font-size:11px; color:#666; font-weight:700; text-transform:uppercase; margin-bottom:5px;">Severity</label>
-    <select id="edit-obs-sev" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:15px; color:black; background:white;">
+    <label style="display:block; font-size:11px; color:#666; font-weight:700; margin-bottom:5px;">SEVERITY</label>
+    <select id="edit-obs-sev" style="width:100%; padding:10px; margin-bottom:15px; color:black; background:white; border:1px solid #ddd; border-radius:8px;">
         <option value="info">Info</option>
         <option value="watch">Watch</option>
         <option value="critical">Critical</option>
     </select>
 
-    <label style="display:block; font-size:11px; color:#666; font-weight:700; text-transform:uppercase; margin-bottom:5px;">Notes</label>
-    <textarea id="edit-obs-body" style="width:100%; height:120px; padding:10px; border:1px solid #ddd; border-radius:8px; color:black; background:white; font-family:inherit; resize:none;"></textarea>
+    <label style="display:block; font-size:11px; color:#666; font-weight:700; margin-bottom:5px;">NOTES</label>
+    <textarea id="edit-obs-body" style="width:100%; height:120px; padding:10px; color:black; background:white; border:1px solid #ddd; border-radius:8px; font-family:sans-serif;"></textarea>
 
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-      <button class="btn btn-secondary" onclick="document.getElementById('obs-edit-modal-backdrop').style.display='none'">Cancel</button>
-      <button class="btn btn-primary" onclick="window.saveObservationChange()">Save Changes</button>
+      <button onclick="document.getElementById('obs-edit-modal-backdrop').style.display='none'" style="padding:10px 15px; border-radius:8px; border:1px solid #ccc; cursor:pointer;">Cancel</button>
+      <button onclick="window.saveObservationChange()" style="padding:10px 20px; border-radius:8px; background:black; color:white; border:none; cursor:pointer; font-weight:bold;">Save Changes</button>
     </div>
   </div>
 </div>
