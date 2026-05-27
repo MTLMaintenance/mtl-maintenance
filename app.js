@@ -58,20 +58,21 @@ window.globalEditObs = function(id) {
 };
 
 window.saveObservationChange = async function() {
-    // 1. Get elements using the CORRECT IDs from your HTML
-    const idEl = document.getElementById('edit-obs-id');
-    const bodyEl = document.getElementById('edit-obs-body');
-    const sevEl = document.getElementById('edit-obs-sev');
+    console.log("--- STARTING SAVE ---");
 
-    // 2. Safety check
-    if (!idEl || !bodyEl || !sevEl) {
-        alert("Error: Missing input fields in the modal.");
-        return;
-    }
+    // 1. Identify elements
+    const elId = document.getElementById('edit-obs-id');
+    const elSev = document.getElementById('edit-obs-sev');
+    const elBody = document.getElementById('edit-obs-body');
 
-    const id = idEl.value;
-    const body = bodyEl.value.trim();
-    const sev = sevEl.value;
+    // 2. DIAGNOSTIC: If the app crashes, this will tell us why in the console
+    if (!elId) { console.error("ID MISSING: edit-obs-id"); alert("System Error: ID field missing"); return; }
+    if (!elSev) { console.error("ID MISSING: edit-obs-sev"); alert("System Error: Severity field missing"); return; }
+    if (!elBody) { console.error("ID MISSING: edit-obs-body"); alert("System Error: Notes field missing"); return; }
+
+    const id = elId.value;
+    const body = elBody.value.trim();
+    const sev = elSev.value;
 
     if (!body) return alert("Please enter a note.");
 
@@ -90,13 +91,15 @@ window.saveObservationChange = async function() {
             obs.body = body;
             obs.severity = sev;
             
-            // 5. Refresh UI (Refresh the specific machine list)
+            // 5. Refresh the list (This uses the equip_id from the record we found)
             if (obs.equip_id) renderObservationsList(obs.equip_id);
             renderDashboard(); 
         }
 
-        // 6. Close Modal
-        document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
+        // 6. Close the modal
+        const modal = document.getElementById('obs-edit-modal-backdrop');
+        if (modal) modal.style.display = 'none';
+        
         showToast("Update saved ✓");
 
     } catch (e) {
