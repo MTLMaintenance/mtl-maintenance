@@ -3637,11 +3637,7 @@ function renderRecentObservations() {
         <div class="obs-row" onclick="openEquipDetail('${o.equip_id}')" 
              style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid var(--border); transition: background 0.2s;">
           
-          <!-- Severity Icon -->
-          <span style="font-size:18px; flex-shrink:0">
-            ${o.severity === 'critical' ? '🚨' : o.severity === 'watch' ? '👀' : 'ℹ️'}
-          </span>
-
+         
           <!-- Content -->
           <div style="flex:1; min-width:0">
             <div style="font-weight:700; font-size:13px; color:black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
