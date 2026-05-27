@@ -57,56 +57,7 @@ window.globalEditObs = function(id) {
     }
 };
 
-window.saveObservationChange = async function() {
-    console.log("--- STARTING SAVE ---");
 
-    // 1. Identify elements
-    const elId = document.getElementById('edit-obs-id');
-    const elSev = document.getElementById('edit-obs-sev');
-    const elBody = document.getElementById('edit-obs-body');
-
-    // 2. DIAGNOSTIC: If the app crashes, this will tell us why in the console
-    if (!elId) { console.error("ID MISSING: edit-obs-id"); alert("System Error: ID field missing"); return; }
-    if (!elSev) { console.error("ID MISSING: edit-obs-sev"); alert("System Error: Severity field missing"); return; }
-    if (!elBody) { console.error("ID MISSING: edit-obs-body"); alert("System Error: Notes field missing"); return; }
-
-    const id = elId.value;
-    const body = elBody.value.trim();
-    const sev = elSev.value;
-
-    if (!body) return alert("Please enter a note.");
-
-    try {
-        // 3. Update Supabase
-        const { error } = await window._mpdb
-            .from('observations')
-            .update({ body: body, severity: sev })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        // 4. Update Local Memory
-        const obs = state.observations.find(o => o.id === id);
-        if (obs) {
-            obs.body = body;
-            obs.severity = sev;
-            
-            // 5. Refresh the list (This uses the equip_id from the record we found)
-            if (obs.equip_id) renderObservationsList(obs.equip_id);
-            renderDashboard(); 
-        }
-
-        // 6. Close the modal
-        const modal = document.getElementById('obs-edit-modal-backdrop');
-        if (modal) modal.style.display = 'none';
-        
-        showToast("Update saved ✓");
-
-    } catch (e) {
-        console.error("Save Error:", e);
-        alert("Failed to save changes: " + e.message);
-    }
-};
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
     
@@ -9212,40 +9163,55 @@ window.editObservation = function(obsId, equipId) {
     document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
 };
 
-// --- THE SAVE ---
 window.saveObservationChange = async function() {
-    const id = document.getElementById('edit-obs-id').value;
-    const equipId = document.getElementById('edit-obs-equip-id').value;
-    const body = document.getElementById('edit-obs-body').value.trim();
-    const sev = document.getElementById('edit-obs-sev').value;
+    console.log("--- SAVING OBSERVATION ---");
 
-    if (!body) return alert("Please enter a note.");
+    // 1. Try to find the elements (searching for both new and old IDs just in case)
+    const idEl   = document.getElementById('edit-obs-id')   || document.getElementById('edit-id');
+    const bodyEl = document.getElementById('edit-obs-body') || document.getElementById('edit-body');
+    const sevEl  = document.getElementById('edit-obs-sev')  || document.getElementById('edit-sev');
+
+    // 2. Stop if they are truly missing
+    if (!idEl || !bodyEl || !sevEl) {
+        console.error("Missing Elements:", { idEl, bodyEl, sevEl });
+        alert("CRITICAL ERROR: The app cannot find the edit boxes in your HTML. Check your IDs.");
+        return;
+    }
+
+    const obsId = idEl.value;
+    const newBody = bodyEl.value.trim();
+    const newSev = sevEl.value;
+
+    if (!newBody) return alert("Note cannot be empty.");
 
     try {
-        // 1. Update Supabase
+        // 3. Update Supabase
         const { error } = await window._mpdb
             .from('observations')
-            .update({ body: body, severity: sev })
-            .eq('id', id);
+            .update({ body: newBody, severity: newSev })
+            .eq('id', obsId);
 
         if (error) throw error;
 
-        // 2. Update local state
-        const obs = state.observations.find(o => o.id === id);
-        if (obs) {
-            obs.body = body;
-            obs.severity = sev;
+        // 4. Update the local memory (state)
+        const obsIndex = state.observations.findIndex(o => o.id === obsId);
+        if (obsIndex !== -1) {
+            state.observations[obsIndex].body = newBody;
+            state.observations[obsIndex].severity = newSev;
+            
+            // 5. Live UI Update
+            const equipId = state.observations[obsIndex].equip_id;
+            if (equipId) renderObservationsList(equipId);
+            renderDashboard(); 
         }
 
-        // 3. UI Refresh
-        renderObservationsList(equipId);
-        renderDashboard();
+        // 6. Close Modal
+        const modal = document.getElementById('obs-edit-modal-backdrop');
+        if (modal) modal.style.display = 'none';
         
-        // 4. Close the card
-        document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
-        showToast("Updated successfully ✓");
+        showToast("Update saved ✓");
 
     } catch (e) {
-        alert("Error saving: " + e.message);
+        alert("Save failed: " + e.message);
     }
 };
