@@ -3510,23 +3510,36 @@ async function addObservation(equipId) {
         showToast("Error saving note");
     }
 }
-async function editObservation(obsId, equipId) {
-    const o = state.observations.find(x => x.id === obsId);
-    if(!o) return;
+window.editObservation = function(obsId, equipId) {
+    console.log("Attempting to edit:", obsId, "for machine:", equipId);
 
-    const newText = prompt("Update your observation:", o.body);
-    if (newText === null || newText.trim() === "") return;
+    // 1. Find the data in local state
+    const obs = state.observations.find(o => o.id === obsId);
+    if (!obs) {
+        console.error("Observation not found in state");
+        return;
+    }
 
-    try {
-        await window._mpdb.from('observations').update({ body: newText }).eq('id', obsId);
+    // 2. Map the data to the Edit Modal fields
+    // We use IDs that match the simple modal we built
+    const idField = document.getElementById('edit-id');
+    const sevField = document.getElementById('edit-sev');
+    const bodyField = document.getElementById('edit-body');
+
+    if (idField && sevField && bodyField) {
+        idField.value = obsId;
+        // We store the equipId in a temporary global so the SAVE function knows what to refresh
+        window._currentEditEquipId = equipId; 
         
-        // Update local memory
-        o.body = newText;
+        sevField.value = obs.severity;
+        bodyField.value = obs.body;
 
-        renderObservationsList(equipId);
-        showToast("Updated ✓");
-    } catch(e) { showToast("Update failed"); }
-}
+        // 3. Show the modal
+        openModal('edit-obs-modal');
+    } else {
+        alert("Developer Error: Edit Modal IDs (edit-id, edit-sev, edit-body) not found in HTML!");
+    }
+};
   function refreshObsList(equipId) {
     const container = document.getElementById('obs-list-' + equipId);
     if (!container) return;
@@ -9141,23 +9154,40 @@ function editObservation(obsId) {
         document.getElementById('edit-obs-modal').style.display = 'flex';
     }
 }
-async function saveObsEdit() {
+window.saveObsEdit = async function() {
     const id = document.getElementById('edit-id').value;
-    const body = document.getElementById('edit-body').value;
+    const body = document.getElementById('edit-body').value.trim();
     const sev = document.getElementById('edit-sev').value;
+    const equipId = window._currentEditEquipId;
 
-    // 1. Update the Database
-    await window._mpdb.from('observations').update({ body: body, severity: sev }).eq('id', id);
+    if (!body) return alert("Please enter a note.");
 
-    // 2. Update the App Memory (Makes it "Live")
-    const obs = state.observations.find(o => o.id === id);
-    obs.body = body;
-    obs.severity = sev;
+    try {
+        // 1. Update Database
+        const { error } = await window._mpdb
+            .from('observations')
+            .update({ body: body, severity: sev })
+            .eq('id', id);
 
-    // 3. Refresh the screen and close
-    renderObservationsList(obs.equip_id);
-    closeModal('edit-obs-modal');
-    showToast("Updated ✓");
-}
+        if (error) throw error;
+
+        // 2. Update Local State (memory)
+        const obs = state.observations.find(o => o.id === id);
+        if (obs) {
+            obs.body = body;
+            obs.severity = sev;
+        }
+
+        // 3. UI Refresh
+        renderObservationsList(equipId); // Refresh the list inside the card
+        renderDashboard();              // Refresh the main dashboard
+        closeModal('edit-obs-modal');
+        showToast("Observation updated ✓");
+
+    } catch (e) {
+        console.error("Update failed:", e);
+        showToast("Error updating database");
+    }
+};
 window.editObservation = editObservation;
 window.saveObsEdit = saveObsEdit;
