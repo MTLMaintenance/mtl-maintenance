@@ -32,40 +32,40 @@ window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
 
 window.globalEditObs = function(id) {
-    const obs = state.observations.find(o => o.id === id);
-    if (!obs) return;
-
-    // Use the 'edit-obs-' IDs
-    document.getElementById('edit-obs-id').value = id;
-    document.getElementById('edit-obs-sev').value = obs.severity;
-    document.getElementById('edit-obs-body').value = obs.body;
+    console.log("Opening Edit for ID:", id);
     
-    document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
+    const obs = state.observations.find(o => o.id === id);
+    if (!obs) return alert("Error: Observation data not found.");
 
-    if (idField && sevField && bodyField && backdrop) {
+    // 1. Define the elements FIRST (This fixes the 'idField' error)
+    const idField = document.getElementById('edit-obs-id');
+    const sevField = document.getElementById('edit-obs-sev');
+    const bodyField = document.getElementById('edit-obs-body');
+    const modalBackdrop = document.getElementById('obs-edit-modal-backdrop');
+
+    // 2. Check if they exist before setting values
+    if (idField && sevField && bodyField && modalBackdrop) {
         idField.value = id;
         sevField.value = obs.severity;
         bodyField.value = obs.body;
         
-        // 2. Show the modal
-        backdrop.style.display = 'flex';
+        // 3. Show the modal
+        modalBackdrop.style.display = 'flex';
     } else {
-        alert("Error: One of the Edit Modal HTML elements is missing.");
+        console.error("HTML Error: One or more IDs are missing from the page.");
+        alert("System error: Edit modal is not properly linked.");
     }
 };
 
 window.saveObservationChange = async function() {
-    console.log("Saving changes...");
-
-    // 1. Get the elements (Using the 'obs-' prefix we added to the HTML)
+    // 1. Get elements using the CORRECT IDs from your HTML
     const idEl = document.getElementById('edit-obs-id');
     const bodyEl = document.getElementById('edit-obs-body');
     const sevEl = document.getElementById('edit-obs-sev');
 
-    // 2. SAFETY CHECK: If any are missing, stop and tell us which one
+    // 2. Safety check
     if (!idEl || !bodyEl || !sevEl) {
-        console.error("Missing elements:", { idEl, bodyEl, sevEl });
-        alert("Error: The modal fields could not be found. Check console for details.");
+        alert("Error: Missing input fields in the modal.");
         return;
     }
 
@@ -73,7 +73,7 @@ window.saveObservationChange = async function() {
     const body = bodyEl.value.trim();
     const sev = sevEl.value;
 
-    if (!body) return alert("Note cannot be empty.");
+    if (!body) return alert("Please enter a note.");
 
     try {
         // 3. Update Supabase
@@ -84,24 +84,24 @@ window.saveObservationChange = async function() {
 
         if (error) throw error;
 
-        // 4. Update the local data so it changes on the screen immediately
+        // 4. Update Local Memory
         const obs = state.observations.find(o => o.id === id);
         if (obs) {
             obs.body = body;
             obs.severity = sev;
             
-            // Refresh the specific lists
+            // 5. Refresh UI (Refresh the specific machine list)
             if (obs.equip_id) renderObservationsList(obs.equip_id);
-            renderDashboard();
+            renderDashboard(); 
         }
 
-        // 5. Hide the modal
+        // 6. Close Modal
         document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
-        showToast("Updated successfully ✓");
+        showToast("Update saved ✓");
 
     } catch (e) {
-        console.error("Update failed:", e);
-        alert("Update failed: " + e.message);
+        console.error("Save Error:", e);
+        alert("Failed to save changes: " + e.message);
     }
 };
 async function refreshAllDropdowns() {
