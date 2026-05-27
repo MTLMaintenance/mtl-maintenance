@@ -31,6 +31,30 @@ window.deleteTaskComment = deleteTaskComment;
 window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
 
+window.globalEditObs = function(id, eId) {
+    alert("Function found! ID: " + id); // We will remove this once we see it work
+
+    const obs = state.observations.find(o => o.id === id);
+    if (!obs) return alert("Error: Observation not found in memory.");
+
+    // Fill the fields in the modal we built earlier
+    const b = document.getElementById('edit-obs-body');
+    const s = document.getElementById('edit-obs-sev');
+    const i = document.getElementById('edit-obs-id');
+
+    if (b && i) {
+        i.value = id;
+        if (s) s.value = obs.severity;
+        b.value = obs.body;
+        
+        // Show the modal
+        const modal = document.getElementById('obs-edit-modal-backdrop');
+        if (modal) modal.style.display = 'flex';
+        else alert("HTML Modal Missing!");
+    } else {
+        alert("Modal input fields not found!");
+    }
+};
 
 async function refreshAllDropdowns() {
     console.log("🚀 Pre-loading all dropdown data...");
@@ -2362,7 +2386,7 @@ function renderObservationsList(equipId) {
 
             <!-- Add Edit and Delete buttons for every row -->
             <div style="display:flex; gap:5px">
-                <button class="btn btn-secondary btn-sm" style="font-size:10px"  onclick="window.editObservation('${o.id}', '${equipId}')">Edit</button>
+                <button class="btn btn-secondary btn-sm" style="font-size:10px"  onclick="window.globalEditObs('${o.id}', '${equipId}')">Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}', '${equipId}')">🗑</button>
             </div>
         </div>`).join('') || '<div style="color:#999; padding:20px; text-align:center">No history recorded yet.</div>';
