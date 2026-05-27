@@ -1610,6 +1610,31 @@
     </table>
   </div>
 </div>
+
+ <div class="modal-backdrop" id="edit-obs-modal" style="display:none">
+  <div class="modal" style="max-width:400px; background:white; color:black; padding:20px; border-radius:12px;">
+    <h3 style="color:black">Edit Observation</h3>
+    
+    <!-- THE HIDDEN ID -->
+    <input type="hidden" id="edit-id"> 
+
+    <label class="form-label">Severity</label>
+    <select class="form-select" id="edit-sev" style="color:black; border:1px solid #ddd; width:100%; margin-bottom:15px;">
+        <option value="info">Info</option>
+        <option value="watch">Watch</option>
+        <option value="critical">Critical</option>
+    </select>
+
+    <label class="form-label">Notes</label>
+    <textarea class="form-textarea" id="edit-body" style="color:black; border:1px solid #ddd; width:100%; height:100px;"></textarea>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+      <button class="btn btn-secondary" onclick="closeModal('edit-obs-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveObsEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+ 
  <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1618,25 +1643,3 @@
 
 </body>
 </html>
-<div class="modal-backdrop" id="edit-obs-modal" style="display:none">
-  <div class="modal" style="max-width:400px; background: white !important; color: black !important; padding:20px; border-radius:15px;">
-    <h3 style="color:black; margin-bottom:15px;">Edit Observation</h3>
-    
-    <input type="hidden" id="edit-id"> <!-- Hidden ID tracker -->
-
-    <label class="form-label" style="color:#666 !important">Severity</label>
-    <select class="form-select" id="edit-sev" style="color:black !important; border:1px solid #ddd; width:100%; margin-bottom:15px;">
-        <option value="info">Info</option>
-        <option value="watch">Watch</option>
-        <option value="critical">Critical</option>
-    </select>
-
-    <label class="form-label" style="color:#666 !important">Notes</label>
-    <textarea class="form-textarea" id="edit-body" style="color:black !important; border:1px solid #ddd; width:100%; height:100px;"></textarea>
-
-    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
-      <button class="btn btn-secondary" onclick="closeModal('edit-obs-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveObsEdit()">Save Changes</button>
-    </div>
-  </div>
-</div>
