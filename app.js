@@ -2362,7 +2362,7 @@ function renderObservationsList(equipId) {
 
             <!-- Add Edit and Delete buttons for every row -->
             <div style="display:flex; gap:5px">
-                <button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="editObservation('${o.id}', '${equipId}')">Edit</button>
+                <button class="btn btn-secondary btn-sm" style="font-size:10px"  onclick="window.editObservation('${o.id}', '${equipId}')">Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}', '${equipId}')">🗑</button>
             </div>
         </div>`).join('') || '<div style="color:#999; padding:20px; text-align:center">No history recorded yet.</div>';
@@ -9121,49 +9121,33 @@ function updateAvatarPreview() {
         preview.style.color = 'white';
     }
 }
-function editObservation(obsId) {
-    // 1. Diagnostic Alert (Delete this once it works)
-    console.log("Edit clicked for ID:", obsId);
+// --- THE TRIGGER ---
+window.editObservation = function(obsId, equipId) {
+    // 1. Find the data
+    const obs = state.observations.find(o => o.id === obsId);
+    if (!obs) return alert("Observation not found.");
 
-    // 2. Find the data
-    const obs = (state.observations || []).find(o => o.id === obsId);
-    if (!obs) {
-        console.error("Could not find observation with ID:", obsId);
-        return;
-    }
+    // 2. Pre-fill the dedicated card
+    document.getElementById('edit-obs-id').value = obsId;
+    document.getElementById('edit-obs-equip-id').value = equipId;
+    document.getElementById('edit-obs-sev').value = obs.severity;
+    document.getElementById('edit-obs-body').value = obs.body;
 
-    // 3. Find the elements
-    const idField = document.getElementById('edit-id');
-    const sevField = document.getElementById('edit-sev');
-    const bodyField = document.getElementById('edit-body');
+    // 3. Force the card to show
+    document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
+};
 
-    if (!idField || !sevField || !bodyField) {
-        alert("ERROR: One of the edit boxes is missing from your HTML. Check your IDs!");
-        return;
-    }
-
-    // 4. Fill the boxes
-    idField.value = obsId;
-    sevField.value = obs.severity;
-    bodyField.value = obs.body;
-
-    // 5. Open the modal
-    if (typeof openModal === 'function') {
-        openModal('edit-obs-modal');
-    } else {
-        document.getElementById('edit-obs-modal').style.display = 'flex';
-    }
-}
-window.saveObsEdit = async function() {
-    const id = document.getElementById('edit-id').value;
-    const body = document.getElementById('edit-body').value.trim();
-    const sev = document.getElementById('edit-sev').value;
-    const equipId = window._currentEditEquipId;
+// --- THE SAVE ---
+window.saveObservationChange = async function() {
+    const id = document.getElementById('edit-obs-id').value;
+    const equipId = document.getElementById('edit-obs-equip-id').value;
+    const body = document.getElementById('edit-obs-body').value.trim();
+    const sev = document.getElementById('edit-obs-sev').value;
 
     if (!body) return alert("Please enter a note.");
 
     try {
-        // 1. Update Database
+        // 1. Update Supabase
         const { error } = await window._mpdb
             .from('observations')
             .update({ body: body, severity: sev })
@@ -9171,7 +9155,7 @@ window.saveObsEdit = async function() {
 
         if (error) throw error;
 
-        // 2. Update Local State (memory)
+        // 2. Update local state
         const obs = state.observations.find(o => o.id === id);
         if (obs) {
             obs.body = body;
@@ -9179,15 +9163,14 @@ window.saveObsEdit = async function() {
         }
 
         // 3. UI Refresh
-        renderObservationsList(equipId); // Refresh the list inside the card
-        renderDashboard();              // Refresh the main dashboard
-        closeModal('edit-obs-modal');
-        showToast("Observation updated ✓");
+        renderObservationsList(equipId);
+        renderDashboard();
+        
+        // 4. Close the card
+        document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
+        showToast("Updated successfully ✓");
 
     } catch (e) {
-        console.error("Update failed:", e);
-        showToast("Error updating database");
+        alert("Error saving: " + e.message);
     }
 };
-window.editObservation = editObservation;
-window.saveObsEdit = saveObsEdit;
