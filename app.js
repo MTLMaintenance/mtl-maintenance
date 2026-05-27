@@ -3622,17 +3622,7 @@ function renderRecentObservations() {
     return;
   }
 
-  // 3. Render the list (Newest 6)
-  listEl.innerHTML = obs.slice(0, 6).map(o => `
-    <div class="parts-row" style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid var(--border)" onclick="openEquipDetail('${o.equip_id}')">
-      <span style="font-size:18px; flex-shrink:0">${o.severity === 'critical' ? '🔴' : o.severity === 'watch' ? '🟠' : '🔵'}</span>
-      <div style="flex:1; min-width:0">
-        <div style="font-weight:700; font-size:13px; color:black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${o.body}</div>
-        <div style="font-size:11px; color:var(--text2)">${equipName(o.equip_id)} · ${o.author}</div>
-      </div>
-      <span class="badge ${o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bg'}">${o.severity}</span>
-    </div>`).join('');
-}
+  
 function renderFleetHealthDash(){
   const el=document.getElementById('fleet-health-dash');if(!el)return;
   const equip=filteredEquipment(activeGroupFilter).slice(0,6);
