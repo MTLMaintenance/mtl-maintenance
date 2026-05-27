@@ -1,5 +1,28 @@
 
+/* FORCE the edit modal to the absolute front */
+#obs-edit-modal-backdrop {
+    display: none; 
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    z-index: 50000 !important; /* Extremely high to beat other modals */
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
 
+/* Ensure the white box inside is visible and colored correctly */
+#obs-edit-modal-backdrop div {
+    background: white !important;
+    color: black !important;
+}
+
+#obs-edit-modal-backdrop select, 
+#obs-edit-modal-backdrop textarea {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+}
 html, body {
   background-color: #001f3f !important; /* The Navy Blue */
 }
