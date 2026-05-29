@@ -1295,26 +1295,30 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics() {
-    console.log("updateMetrics running...");
-    
     const tasks = state.tasks || [];
-    const openTasks = tasks.filter(t => t.status !== 'Completed');
-    
-    alert("Metrics Check: Found " + tasks.length + " total tasks and " + openTasks.length + " open tasks.");
+    const now = new Date().toISOString().split('T')[0]; // Today's date
 
+    // OPEN = Anything not completed
+    const openTasks = tasks.filter(t => t.status !== 'Completed');
+
+    // OVERDUE = Open AND date is older than today
+    const overdueTasks = openTasks.filter(t => t.due && t.due < now);
+
+    // Update the numbers on the screen
     const openEl = document.getElementById('m-open');
     const overdueEl = document.getElementById('m-overdue');
 
     if (openEl) openEl.textContent = openTasks.length;
-    
-    // Simple Overdue Check
-    const now = new Date().toISOString().split('T')[0];
-    const overdueCount = openTasks.filter(t => t.due && t.due < now).length;
-    
     if (overdueEl) {
-        overdueEl.textContent = overdueCount;
-        overdueEl.style.color = overdueCount > 0 ? "red" : "green";
+        overdueEl.textContent = overdueTasks.length;
+        // Make the number red if it's > 0, otherwise green
+        overdueEl.style.color = overdueTasks.length > 0 ? "#dc3545" : "#28a745";
+        overdueEl.style.fontWeight = "bold";
     }
+
+    // Update total equipment count
+    const totalEq = document.getElementById('m-total');
+    if (totalEq) totalEq.textContent = state.equipment.length;
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
@@ -6973,41 +6977,56 @@ async function saveCalendarEntry() {
 
     const equipId = document.getElementById('ce-equip').value;
     const date = document.getElementById('ce-date').value;
+    const notes = document.getElementById('ce-notes').value;
 
     if (currentCalEntryType === 'one-time') {
         const record = {
             id: uid(),
             name: name,
-            equip_id: equipId, // Match DB
-            due: date,         // Match DB
-            meter: '0',        // Default for required field
-            priority: 'Medium', // Default for required field
-            status: 'Open',
-            assign: document.getElementById('ce-assign').value || '',
+            equip_id: equipId,
+            due: date,
+            status: 'Open',    // Ensure status is set!
+            priority: 'Medium',
+            meter: '0',
+            notes: notes,
             created_at: new Date().toISOString()
         };
 
+        // 1. Save to the TASKS table
         const { error } = await window._mpdb.from('tasks').insert(record);
+        
         if (error) {
             alert("Database Error: " + error.message);
             return;
         }
-        
-        // Add to state and bridge the name
+
+        // 2. Add to the TASKS state (The Brain of the app)
+        // We add it to state.tasks so updateMetrics() can find it
         state.tasks.push({ ...record, equipId: record.equip_id });
-        showToast("Work Order added from Calendar ✓");
+
+        showToast("Work Order created ✓");
 
     } else {
-        // ... (Recurring logic stays the same) ...
+        // Recurring logic (keeps its own table)
+        const record = {
+            id: uid(),
+            name: name,
+            equip_id: equipId,
+            active: true,
+            next_due: date,
+            interval_unit: document.getElementById('ce-unit').value,
+            interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
+        };
+        await window._mpdb.from('recurrence_rules').insert(record);
+        state.recurrenceRules.push(record);
     }
 
     closeModal('calendar-entry-modal');
     
-    // Refresh everything
-    updateMetrics(); 
-    renderCalendar();
-    renderTasks();
-    renderDashboard();
+    // --- 3. RE-CALCULATE EVERYTHING ---
+    updateMetrics();   // The 0 will now jump to 1 or 2
+    renderTasks();     // The work order tab will now show the new items
+    renderCalendar();  // The calendar grid will update
 }
  function editTemplate(id) {
     const tpl = state.checklistTemplates.find(t => t.id === id);
