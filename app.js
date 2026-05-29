@@ -1570,66 +1570,74 @@ function renderMonthSchedList() {
             <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
-function calDayClick(dateStr) {
-    // 1. Setup the date display
-   console.log("Day Clicked:", dateStr);
 
-    // 1. Setup the date header in the modal
+    window.calDayClick = function(dateStr) {
+    console.log("Opening Day Card for:", dateStr);
+    
+    // 1. Store the date so the "+ Add" buttons inside the card know what day you are on
+    window.lastClickedDate = dateStr;
+
+    // 2. Update the Header in your HTML Card
     const dateObj = new Date(dateStr + "T00:00:00");
     const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    
-    const titleEl = document.getElementById('action-modal-readable');
-    if (titleEl) titleEl.textContent = readable;
+    const headerEl = document.getElementById('action-modal-readable');
+    if (headerEl) headerEl.textContent = readable;
 
-    // 2. Get the data for this day
+    // 3. Get the data for this specific day
     const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
     const dayAbs = (window.staffAbsences || []).filter(a => a.start_date && a.start_date.startsWith(dateStr));
 
-    // 3. Build the list for the "Day Card"
+    // 4. Find the list container in your HTML Card
     const listContainer = document.getElementById('day-items-list');
-    if (!listContainer) {
-        console.error("Could not find 'day-items-list'");
-        return;
-    }
+    if (!listContainer) return;
 
     let listHtml = "";
 
-    // Show Work Orders in the day card
+    // BUILD THE WORK ORDER ROWS
     dayTasks.forEach(t => {
         listHtml += `
-            <div style="background:rgba(0,0,0,0.03); padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--accent); margin-bottom:10px;">
-                <div style="color:black">
-                    <div style="font-weight:700;">🛠️ ${t.name}</div>
-                    <div style="font-size:11px; opacity:0.7">${t.status}</div>
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #444; margin-bottom:8px;">
+                <div style="flex:1; min-width:0">
+                    <div style="font-weight:700; color:white; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">🛠️ ${t.name}</div>
+                    <div style="font-size:10px; color:#aaa">${t.status}</div>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" 
-                        onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 100)">
-                    View / Edit
+                <button onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 100)" 
+                        style="background:var(--accent); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; margin-left:10px">
+                    View
                 </button>
             </div>`;
     });
 
-    // Show Absences in the day card
+    // BUILD THE ABSENCE ROWS
     dayAbs.forEach(a => {
         listHtml += `
-            <div style="background:rgba(0,0,0,0.03); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:10px;">
-                <span style="font-size:12px; color:black;">👤 ${a.user_name} Out</span>
-                <button type="button" class="btn btn-secondary btn-sm" 
-                        onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)">View</button>
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border-left:4px solid #ff9800; color:white; font-size:12px; margin-bottom:8px;">
+                👤 ${a.user_name} Out
             </div>`;
     });
 
-    listContainer.innerHTML = listHtml || `<div style="color:#888; padding:30px; text-align:center;">No entries for this day.</div>`;
+    // If nothing is scheduled, show a placeholder
+    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:12px; text-align:center; padding:20px;">Nothing scheduled for this day.</div>`;
 
-    // 4. Open the "Day Card" Modal
-    if (typeof openModal === 'function') {
-        openModal('cal-action-modal');
-    } else {
-        const modal = document.getElementById('cal-action-modal');
-        if (modal) modal.style.display = 'flex';
+    // 5. FINALLY, SHOW THE MODAL
+    const modal = document.getElementById('cal-action-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active'); // Matches our CSS Master rules
     }
 };
-    
+ window.triggerAddEntryFromCal = function() {
+    closeModal('cal-action-modal');
+    const dateInput = document.getElementById('t-due');
+    if (dateInput) dateInput.value = window.lastClickedDate;
+    openModal('task-modal');
+};
+
+window.triggerAbsenceFromCal = function() {
+    closeModal('cal-action-modal');
+    // Change 'absence-modal' to your actual absence modal ID
+    openModal('absence-modal'); 
+};   
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
