@@ -1295,35 +1295,26 @@ function handleDocUpload(input){
 // DASHBOARD
 // ============================================================
 function updateMetrics() {
-  const now = new Date().toISOString().split('T')[0]; // Today's date YYYY-MM-DD
-  
-  // 1. Calculate Overdue (Not completed AND date has passed)
-  const overdueCount = (state.tasks || []).filter(t => 
-    t.status !== 'Completed' && t.due && t.due < now
-  ).length;
+    console.log("updateMetrics running...");
+    
+    const tasks = state.tasks || [];
+    const openTasks = tasks.filter(t => t.status !== 'Completed');
+    
+    alert("Metrics Check: Found " + tasks.length + " total tasks and " + openTasks.length + " open tasks.");
 
-  // 2. Calculate Open (Anything that isn't completed)
-  const openCount = (state.tasks || []).filter(t => t.status !== 'Completed').length;
-  
-  const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
-  const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
+    const openEl = document.getElementById('m-open');
+    const overdueEl = document.getElementById('m-overdue');
 
-  const safeSet = (id, val) => {
-    const el = document.getElementById(id);
-    if(el) el.textContent = val;
-  };
-
-  safeSet('m-total', state.equipment.length);
-  safeSet('m-parts', lowCount);
-  safeSet('dash-low-parts', lowCount); // Syncing your dashboard low parts counter
-  safeSet('m-open', openCount);
-  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString());
-
-  const mo = document.getElementById('m-overdue'); 
-  if(mo) {
-    mo.textContent = overdueCount;
-    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : 'v-success');
-  }
+    if (openEl) openEl.textContent = openTasks.length;
+    
+    // Simple Overdue Check
+    const now = new Date().toISOString().split('T')[0];
+    const overdueCount = openTasks.filter(t => t.due && t.due < now).length;
+    
+    if (overdueEl) {
+        overdueEl.textContent = overdueCount;
+        overdueEl.style.color = overdueCount > 0 ? "red" : "green";
+    }
 }
 async function renderEquipListDash(){
   const el = document.getElementById('equip-list-dash');
@@ -2641,48 +2632,44 @@ function addWOComment(){
 // SAVE DATA
 // ============================================================
 async function saveTask() {
-  const name = document.getElementById('t-name')?.value.trim();
-  const equip = document.getElementById('t-equip')?.value;
-  const due = document.getElementById('t-due')?.value;
-  const meter = document.getElementById('t-meter')?.value;
-  const priority = document.getElementById('t-priority')?.value;
+    alert("Diagnostic: Save Button Clicked!");
 
-  if (!name || !equip || !due || !meter || !priority) {
-    alert("Please fill in all required fields: Name, Equipment, Due Date, Meter, and Priority.");
-    return;
-  }
+    try {
+        const record = {
+            id: uid(),
+            name: document.getElementById('t-name')?.value || "Untitled",
+            equip_id: document.getElementById('t-equip')?.value || null,
+            due: document.getElementById('t-due')?.value || null,
+            meter: document.getElementById('t-meter')?.value || '0',
+            priority: document.getElementById('t-priority')?.value || 'Medium',
+            status: 'Open'
+        };
 
-  const record = {
-    id: uid(),
-    name: name,
-    equip_id: equip,      // Match DB column
-    due: due,
-    meter: meter,
-    priority: priority,
-    assign: document.getElementById('t-assign')?.value || '',
-    status: document.getElementById('t-status')?.value || 'Open',
-    cost: parseFloat(document.getElementById('t-cost')?.value) || 0,
-    notes: document.getElementById('t-notes')?.value || '',
-    checklist: [], 
-    created_at: new Date().toISOString()
-  };
+        alert("Diagnostic: Attempting to send to Supabase...");
 
-  try {
-    const { error } = await window._mpdb.from('tasks').insert(record);
-    if (error) {
-        alert("Database Error: " + error.message);
-        return;
+        const { data, error } = await window._mpdb
+            .from('tasks')
+            .insert(record);
+
+        if (error) {
+            alert("STOP! DATABASE REJECTED SAVE: " + error.message);
+            console.error(error);
+            return;
+        }
+
+        alert("SUCCESS: Data saved to Supabase! Now updating counters.");
+
+        state.tasks.push({ ...record, equipId: record.equip_id });
+        
+        // This MUST be called here to change the 0 to 1
+        updateMetrics(); 
+        
+        renderTasks();
+        closeModal('task-modal');
+
+    } catch (err) {
+        alert("CRITICAL CRASH: " + err.message);
     }
-
-    // Update local memory (Bridge name for UI)
-    state.tasks.push({ ...record, equipId: record.equip_id });
-    
-    // Refresh UI
-    updateMetrics(); 
-    renderTasks();
-    closeModal('task-modal');
-    showToast("Work Order Saved ✓");
-  } catch (e) { console.error(e); }
 }
 
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
