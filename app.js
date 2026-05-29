@@ -1478,26 +1478,23 @@ async function renderCalendar() {
         const dayForecasts = state.equipment.filter(e => e._predictedDate === dateStr);
         const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
 
-        // --- THE FIX: event.stopPropagation() added to all inner clicks ---
+        // --- THE CHANGE: No 'onclick' on these items anymore ---
         const eventsHtml = [
-            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}" onclick="event.stopPropagation(); openTaskDetail('${t.id}')">${t.name}</div>`),
-            ...dayScheds.map(s => `<div class="cal-event scheduled" onclick="event.stopPropagation();">${s.name}</div>`),
-            ...dayForecasts.map(e => `<div class="cal-event forecast" onclick="event.stopPropagation();">📈 Forecast: ${e.name}</div>`),
+            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}">${t.name}</div>`),
+            ...dayScheds.map(s => `<div class="cal-event scheduled">${s.name}</div>`),
+            ...dayForecasts.map(e => `<div class="cal-event forecast">📈 Forecast: ${e.name}</div>`),
             ...dayAbs.map(a => {
-                const statusText = a.is_all_day 
-                    ? `👤 ${a.user_name} Out` 
-                    : `👤 ${a.user_name} @ ${formatTime(a.partial_time)}`;
-                    
-                return `<div class="cal-event" onclick="event.stopPropagation(); openAbsenceDetail('${a.id}')" 
-                        style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px;">
-                        ${statusText}</div>`;
+                const statusText = a.is_all_day ? `👤 ${a.user_name} Out` : `👤 ${a.user_name} @ ${formatTime(a.partial_time)}`;
+                return `<div class="cal-event" style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px;">${statusText}</div>`;
             })
         ].join('');
 
         cells += `
-            <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')">
+            <div class="cal-day${isToday ? ' today' : ''}" onclick="calDayClick('${dateStr}')" style="cursor:pointer">
                 <div class="cal-day-num">${d}</div>
-                <div class="cal-event-container">${eventsHtml}</div>
+                <div class="cal-event-container" style="pointer-events: none;"> <!-- Ensures labels don't block the click -->
+                    ${eventsHtml}
+                </div>
             </div>`;
     }
 
