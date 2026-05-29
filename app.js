@@ -9255,7 +9255,7 @@ window.saveObservationChange = async function() {
         alert("Save failed: " + e.message);
     }
 };
-function updateMetrics() {
+
 function updateMetrics() {
     const openTasks = state.tasks.filter(t => t.status !== 'Completed');
     
