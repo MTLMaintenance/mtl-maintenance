@@ -2641,59 +2641,52 @@ function addWOComment(){
 // SAVE DATA
 // ============================================================
 async function saveTask() {
-  const name = document.getElementById('t-name').value.trim();
-  const equip = document.getElementById('t-equip').value;
-  const priority = document.getElementById('t-priority').value;
-  const due = document.getElementById('t-due').value;
-  const meter = document.getElementById('t-meter').value.trim();
+  const name = document.getElementById('t-name')?.value.trim();
+  if (!name) { showToast('Please enter a name'); return; }
 
-  // 1. REQUIREMENT CHECK
-  if (!name || !equip || !priority || !due || !meter) {
-    showToast("⚠️ Name, Equipment, Priority, Due Date, and Meter are required.", "danger");
-    return; // Exit function and don't save
-  }
-
+  // GATHER DATA
   const record = {
     id: uid(),
     name: name,
-    equip_id: equip,
-    priority: priority,
-    due: due,
-    meter: meter,
-    // Optional fields (defaults to null if empty)
-    assign: document.getElementById('t-assign').value || null,
-    cost: parseFloat(document.getElementById('t-cost').value) || 0,
-    status: 'Open', 
-    notes: document.getElementById('t-notes')?.value.trim() || null,
-    tools: document.getElementById('t-tools')?.value.trim() || null,
-    
-    // Checklist: Grabs whatever they typed in the Checklist tab
-    checklist: document.getElementById('t-checklist')?.value 
-      ? document.getElementById('t-checklist').value.split('\n').filter(Boolean).map(text => ({ text, done: false })) 
-      : [],
-    
-    created_at: new Date().toISOString()
+    // CRITICAL: Supabase usually uses underscores (equip_id)
+    equip_id:   document.getElementById('t-equip')?.value || null, 
+    assign:     document.getElementById('t-assign')?.value || '',
+    priority:   document.getElementById('t-priority')?.value || 'Medium',
+    due:        document.getElementById('t-due')?.value || null,
+    cost:       parseFloat(document.getElementById('t-cost')?.value) || 0,
+    meter:      document.getElementById('t-meter')?.value || '',
+    status:     document.getElementById('t-status')?.value || 'Open',
+    notes:      document.getElementById('t-notes')?.value || '',
+    checklist:  [], // Start empty to prevent errors
   };
 
-  try {
-    const { error } = await window._mpdb.from('tasks').insert(record);
-    if (error) throw error;
+  console.log("Attempting to save to Supabase:", record);
 
-    // Update local state and UI
-    state.tasks.push({ ...record, equipId: record.equip_id });
-    renderTasks();
-    renderDashboard();
-    closeModal('task-modal');
-    showToast("Work Order Created ✓");
+  try {
+    const { data, error } = await window._mpdb
+      .from('tasks')
+      .insert(record); // Use .insert() for new records
+
+    if (error) {
+      console.error("SUPABASE REJECTED THE SAVE:", error);
+      // This alert will tell you exactly which column is missing!
+      alert("DATABASE ERROR: " + error.message); 
+      return;
+    }
+
+    console.log("SAVE SUCCESSFUL ✓");
+    state.tasks.push({ ...record, equipId: record.equip_id }); // Update local memory
     
-    // Reset the "Add" variable if you use one for parts
-    if (typeof woPartsAdded !== 'undefined') woPartsAdded = [];
+    updateMetrics();
+    renderTasks();
+    closeModal('task-modal');
+    showToast("Work Order Saved ✓");
 
   } catch (e) {
-    console.error(e);
-    showToast("Error saving task");
+    console.error("CRITICAL JS ERROR:", e);
   }
 }
+
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 async function savePart() {
@@ -6996,52 +6989,80 @@ async function saveCalendarEntry() {
     const equipId = document.getElementById('ce-equip').value;
     const date = document.getElementById('ce-date').value;
     const tech = document.getElementById('ce-assign').value;
+    const notes = document.getElementById('ce-notes').value;
 
-    if (currentCalEntryType === 'one-time') {
-        // --- FIX: Save to 'tasks' table so it shows in the Work Order tab ---
-        const record = {
-            id: uid(),
-            name: name,
-            equip_id: equipId,
-            due: date,
-            assign: tech,
-            status: 'Open',
-            priority: 'Medium',
-            created_at: new Date().toISOString()
-        };
+    try {
+        if (currentCalEntryType === 'one-time') {
+            // --- 1. BUILD THE TASK RECORD ---
+            const record = {
+                id: uid(),
+                name: name,
+                equip_id: equipId, // Database uses underscore
+                due: date,
+                assign: tech,
+                status: 'Open',
+                priority: 'Medium',
+                meter: '0',        // Added a default since it's required
+                notes: notes,
+                created_at: new Date().toISOString()
+            };
 
-        await persist('tasks', 'upsert', record);
+            // --- 2. SAVE DIRECTLY (Bypassing persist wrapper for debugging) ---
+            const { error } = await window._mpdb.from('tasks').insert(record);
+            
+            if (error) {
+                // This will tell you if 'meter' or 'equip_id' is missing/misnamed
+                alert("DATABASE REJECTED TASK: " + error.message);
+                return;
+            }
+
+            // --- 3. UPDATE LOCAL MEMORY ---
+            // Bridge the name from equip_id to equipId so the UI doesn't break
+            state.tasks.push({ ...record, equipId: record.equip_id });
+
+        } else {
+            // Build recurring rule record
+            const record = {
+                id: uid(),
+                name: name,
+                equip_id: equipId,
+                type: document.getElementById('ce-recur-type').value,
+                interval_unit: document.getElementById('ce-unit').value,
+                interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
+                runtime_hours: parseInt(document.getElementById('ce-runtime').value) || 500,
+                active: true,
+                priority: 'High',
+                notes: notes,
+                next_due: date || new Date().toISOString().split('T')[0],
+                template: { assign: tech }
+            };
+
+            const { error } = await window._mpdb.from('recurrence_rules').insert(record);
+            
+            if (error) {
+                alert("DATABASE REJECTED RULE: " + error.message);
+                return;
+            }
+
+            state.recurrenceRules.push(record);
+        }
+
+        // --- 4. REFRESH EVERYTHING ---
+        closeModal('calendar-entry-modal');
         
-        // Add to local state (with ID mapping for your UI)
-        state.tasks.push({ ...record, equipId: record.equip_id });
+        // This ensures the 0/0 counters update immediately
+        if (typeof updateMetrics === 'function') updateMetrics(); 
         
-        showToast("Work Order added ✓");
-    } else {
-        // Build recurring rule (stays in recurrence_rules table)
-        const record = {
-            id: uid(),
-            name: name,
-            equip_id: equipId,
-            type: document.getElementById('ce-recur-type').value,
-            interval_unit: document.getElementById('ce-unit').value,
-            interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
-            runtime_hours: parseInt(document.getElementById('ce-runtime').value) || 500,
-            active: true,
-            next_due: date || new Date().toISOString().split('T')[0],
-            template: { assign: tech }
-        };
-        await window._mpdb.from('recurrence_rules').insert(record);
-        state.recurrenceRules.push(record);
-        showToast("Recurring rule set ✓");
+        renderCalendar();
+        renderTasks();
+        renderDashboard();
+        
+        showToast("Added successfully ✓");
+
+    } catch (err) {
+        console.error("Critical Save Error:", err);
+        alert("System Error: " + err.message);
     }
-
-    closeModal('calendar-entry-modal');
-    
-    // --- REFRESH EVERYTHING ---
-    updateMetrics();      // Update the 0/0 counts
-    renderCalendar();    // Redraw calendar
-    renderTasks();       // Redraw Work Order tab (This is the sync!)
-    renderDashboard();   // Update dashboard lists
 }
  function editTemplate(id) {
     const tpl = state.checklistTemplates.find(t => t.id === id);
