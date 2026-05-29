@@ -1448,11 +1448,9 @@ async function renderCalendar() {
 
     titleEl.textContent = `${MONTHS[month]} ${year}`;
     
-    // 1. Set Headers
     headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
         .map(d => `<div class="cal-header" style="font-weight:600; padding:5px">${d}</div>`).join('');
     
-    // 2. Pre-Calculate Adaptive Forecasts
     for (let e of state.equipment) {
         try {
             const pred = await getAdaptivePrediction(e.id);
@@ -1461,34 +1459,30 @@ async function renderCalendar() {
         } catch(err) { e._predictedDate = null; }
     }
 
-    // 3. Month Calculation
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
     
     let cells = '';
 
-    // 4. Padding (Previous Month)
     for(let i = firstDay - 1; i >= 0; i--){
         cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
     }
 
-    // 5. Current Month Days
     for(let d = 1; d <= daysInMonth; d++){
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
         
-        // --- FETCH ALL DATA FOR THIS DAY ---
         const dayTasks = state.tasks.filter(t => t.due === dateStr);
         const dayScheds = state.schedules.filter(s => s.date === dateStr);
         const dayForecasts = state.equipment.filter(e => e._predictedDate === dateStr);
         const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
 
-        // --- MERGE EVERYTHING INTO THE HTML ARRAY ---
+        // --- THE FIX: event.stopPropagation() added to all inner clicks ---
         const eventsHtml = [
-            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}" onclick="openTaskDetail('${t.id}')">${t.name}</div>`),
-            ...dayScheds.map(s => `<div class="cal-event scheduled">${s.name}</div>`),
-            ...dayForecasts.map(e => `<div class="cal-event forecast">📈 Forecast: ${e.name}</div>`),
+            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}" onclick="event.stopPropagation(); openTaskDetail('${t.id}')">${t.name}</div>`),
+            ...dayScheds.map(s => `<div class="cal-event scheduled" onclick="event.stopPropagation();">${s.name}</div>`),
+            ...dayForecasts.map(e => `<div class="cal-event forecast" onclick="event.stopPropagation();">📈 Forecast: ${e.name}</div>`),
             ...dayAbs.map(a => {
                 const statusText = a.is_all_day 
                     ? `👤 ${a.user_name} Out` 
@@ -1509,20 +1503,16 @@ async function renderCalendar() {
 
     daysEl.innerHTML = cells;
 
-    // 6. Refresh Sidebars
     if (typeof renderMonthSchedList === 'function') {
-        try { renderMonthSchedList(); } catch(e) { console.warn("Side list failed"); }
+        try { renderMonthSchedList(); } catch(e) { }
     }
     if (typeof renderRecurList === 'function') {
-        try { renderRecurList(); } catch(e) { console.warn("Recur list failed"); }
+        try { renderRecurList(); } catch(e) { }
     }
   
-    // RUN ADAPTIVE MATH (BACKGROUND)
     if (typeof fillAdaptiveCalendarMarkers === 'function') {
         fillAdaptiveCalendarMarkers(year, month);
     }
-    
-    console.log("Calendar Render: Success ✓");
 }
 function formatTime(timeStr) {
     if(!timeStr) return '';
@@ -1582,72 +1572,71 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 function calDayClick(dateStr) {
+    // 1. Setup the date display
     if (window.event) window.event.stopPropagation(); 
     lastClickedDate = dateStr;
-    console.log("--- Day Click System ---");
 
     const dateObj = new Date(dateStr + "T00:00:00");
     const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     document.getElementById('action-modal-readable').textContent = readable;
 
-    // 1. DATA SOURCES
-    const allTasks = (window.state && window.state.tasks) ? window.state.tasks : (typeof state !== 'undefined' ? state.tasks : []);
-    const allAbsences = (window.staffAbsences) ? window.staffAbsences : (typeof staffAbsences !== 'undefined' ? staffAbsences : []);
-    const allSchedules = (window.state && window.state.schedules) ? window.state.schedules : (typeof state !== 'undefined' ? state.schedules : []);
+    // 2. Fetch Data
+    const allTasks = state.tasks || [];
+    const allAbsences = window.staffAbsences || [];
+    const allSchedules = state.schedules || [];
 
-    // 2. FILTERS
     const dayTasks = allTasks.filter(t => t.due && String(t.due).startsWith(dateStr));
     const dayAbs = allAbsences.filter(a => a.start_date && String(a.start_date).startsWith(dateStr));
     const dayScheds = allSchedules.filter(s => s.date && String(s.date).startsWith(dateStr));
 
-    // 3. BUILD THE HTML
+    // 3. Build the HTML
     const listContainer = document.getElementById('day-items-list');
     let listHtml = "";
 
-    // Loop through Work Orders (Blue)
+    // LOOP THROUGH WORK ORDERS
     dayTasks.forEach(t => {
         listHtml += `
-            <div class="cal-list-item work-order-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #007bff; margin-bottom:8px;">
-                <span style="font-size:12px; color:white;">🛠️ ${t.name}</span>
-                <div style="display:flex; gap:5px;">
-                    <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${t.id}')">Edit</button>
-                    <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${t.id}', 'tasks')">🗑️</button>
+            <div class="cal-list-item" style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid var(--accent); margin-bottom:10px;">
+                <div style="flex:1">
+                    <div style="font-size:13px; font-weight:700; color:white;">🛠️ ${t.name}</div>
+                    <div style="font-size:11px; color:#aaa">${t.status}</div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <!-- THE FIX: Close this modal, then open the Work Order detail -->
+                    <button type="button" class="btn btn-primary btn-sm" 
+                            onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 100)">
+                        View / Edit
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" 
+                            onclick="deleteTask('${t.id}')">🗑</button>
                 </div>
             </div>`;
     });
 
-    // Loop through Schedules (Grey/Calendar items)
+    // LOOP THROUGH SCHEDULES (One-time calendar items)
     dayScheds.forEach(s => {
         listHtml += `
-            <div class="cal-list-item" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #6c757d; margin-bottom:8px;">
-                <span style="font-size:12px; color:white;">📋 ${s.name}</span>
-                <div style="display:flex; gap:5px;">
-                    <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); jumpToTaskEdit('${s.id}')">Edit</button>
-                    <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${s.id}', 'schedules')">🗑️</button>
-                </div>
+            <div class="cal-list-item" style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #6c757d; margin-bottom:10px;">
+                <span style="font-size:13px; color:white;">📋 ${s.name}</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="alert('Viewing Schedule...')">View</button>
             </div>`;
     });
 
-    // Loop through Staff Absences (Yellow)
+    // LOOP THROUGH ABSENCES
     dayAbs.forEach(a => {
         const timeText = a.is_all_day ? "All Day" : (typeof formatTime === 'function' ? formatTime(a.partial_time) : a.partial_time);
         listHtml += `
-            <div class="cal-list-item absence-border" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:8px;">
-                <span style="font-size:12px; color:white;">👤 ${a.user_name} (${timeText})</span>
-                <div style="display:flex; gap:5px;">
-                    <button type="button" class="cal-edit-btn" onclick="event.stopPropagation(); closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 150)">Edit</button>
-                    <button type="button" class="cal-edit-btn" style="background:#d9534f;" onclick="event.stopPropagation(); deleteGeneralItem('${a.id}', 'absences')">🗑️</button>
-                </div>
+            <div class="cal-list-item" style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ffc107; margin-bottom:10px;">
+                <span style="font-size:13px; color:white;">👤 ${a.user_name} Out (${timeText})</span>
+                <button type="button" class="btn btn-secondary btn-sm" 
+                        onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)">View</button>
             </div>`;
     });
 
-    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:13px; font-style:italic; padding:15px; text-align:center;">Nothing scheduled.</div>`;
+    listContainer.innerHTML = listHtml || `<div style="color:#888; font-size:13px; font-style:italic; padding:30px; text-align:center;">Nothing scheduled for this day.</div>`;
 
-    const modal = document.getElementById('cal-action-modal');
-    if (modal) {
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-    }
+    // 4. Open the Day card
+    openModal('cal-action-modal');
 }
     
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
