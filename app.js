@@ -2642,49 +2642,47 @@ function addWOComment(){
 // ============================================================
 async function saveTask() {
   const name = document.getElementById('t-name')?.value.trim();
-  if (!name) { showToast('Please enter a name'); return; }
+  const equip = document.getElementById('t-equip')?.value;
+  const due = document.getElementById('t-due')?.value;
+  const meter = document.getElementById('t-meter')?.value;
+  const priority = document.getElementById('t-priority')?.value;
 
-  // GATHER DATA
+  if (!name || !equip || !due || !meter || !priority) {
+    alert("Please fill in all required fields: Name, Equipment, Due Date, Meter, and Priority.");
+    return;
+  }
+
   const record = {
     id: uid(),
     name: name,
-    // CRITICAL: Supabase usually uses underscores (equip_id)
-    equip_id:   document.getElementById('t-equip')?.value || null, 
-    assign:     document.getElementById('t-assign')?.value || '',
-    priority:   document.getElementById('t-priority')?.value || 'Medium',
-    due:        document.getElementById('t-due')?.value || null,
-    cost:       parseFloat(document.getElementById('t-cost')?.value) || 0,
-    meter:      document.getElementById('t-meter')?.value || '',
-    status:     document.getElementById('t-status')?.value || 'Open',
-    notes:      document.getElementById('t-notes')?.value || '',
-    checklist:  [], // Start empty to prevent errors
+    equip_id: equip,      // Match DB column
+    due: due,
+    meter: meter,
+    priority: priority,
+    assign: document.getElementById('t-assign')?.value || '',
+    status: document.getElementById('t-status')?.value || 'Open',
+    cost: parseFloat(document.getElementById('t-cost')?.value) || 0,
+    notes: document.getElementById('t-notes')?.value || '',
+    checklist: [], 
+    created_at: new Date().toISOString()
   };
 
-  console.log("Attempting to save to Supabase:", record);
-
   try {
-    const { data, error } = await window._mpdb
-      .from('tasks')
-      .insert(record); // Use .insert() for new records
-
+    const { error } = await window._mpdb.from('tasks').insert(record);
     if (error) {
-      console.error("SUPABASE REJECTED THE SAVE:", error);
-      // This alert will tell you exactly which column is missing!
-      alert("DATABASE ERROR: " + error.message); 
-      return;
+        alert("Database Error: " + error.message);
+        return;
     }
 
-    console.log("SAVE SUCCESSFUL ✓");
-    state.tasks.push({ ...record, equipId: record.equip_id }); // Update local memory
+    // Update local memory (Bridge name for UI)
+    state.tasks.push({ ...record, equipId: record.equip_id });
     
-    updateMetrics();
+    // Refresh UI
+    updateMetrics(); 
     renderTasks();
     closeModal('task-modal');
     showToast("Work Order Saved ✓");
-
-  } catch (e) {
-    console.error("CRITICAL JS ERROR:", e);
-  }
+  } catch (e) { console.error(e); }
 }
 
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
