@@ -721,7 +721,7 @@ async function startApp() {
   } catch(e) { 
     console.error("Startup error:", e);
     showPinLogin(); 
-  updateMetrics();
+ 
 
   }
 
@@ -1031,6 +1031,7 @@ if(templates && templates.length > 0) {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
   } catch(e) {}
+ updateMetrics();
 }
 function computeMonthlyCosts() {
   const now=new Date();
