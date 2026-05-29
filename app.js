@@ -1572,28 +1572,24 @@ function renderMonthSchedList() {
 }
 
     window.calDayClick = function(dateStr) {
-    console.log("Opening Day Card for:", dateStr);
-    
-    // 1. Store the date so the "+ Add" buttons inside the card know what day you are on
     window.lastClickedDate = dateStr;
 
-    // 2. Update the Header in your HTML Card
+    // 1. Update Header
     const dateObj = new Date(dateStr + "T00:00:00");
     const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const headerEl = document.getElementById('action-modal-readable');
-    if (headerEl) headerEl.textContent = readable;
+    document.getElementById('action-modal-readable').textContent = readable;
 
-    // 3. Get the data for this specific day
+    // 2. Fetch Data
     const dayTasks = (state.tasks || []).filter(t => t.due === dateStr);
+    // Ensure we are comparing dates correctly (YYYY-MM-DD)
     const dayAbs = (window.staffAbsences || []).filter(a => a.start_date && a.start_date.startsWith(dateStr));
 
-    // 4. Find the list container in your HTML Card
     const listContainer = document.getElementById('day-items-list');
     if (!listContainer) return;
 
     let listHtml = "";
 
-    // BUILD THE WORK ORDER ROWS
+    // BUILD WORK ORDER ROWS
     dayTasks.forEach(t => {
         listHtml += `
             <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #444; margin-bottom:8px;">
@@ -1601,31 +1597,42 @@ function renderMonthSchedList() {
                     <div style="font-weight:700; color:white; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">🛠️ ${t.name}</div>
                     <div style="font-size:10px; color:#aaa">${t.status}</div>
                 </div>
-                <button onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 100)" 
-                        style="background:var(--accent); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; margin-left:10px">
-                    View
-                </button>
+                <div style="display:flex; gap:5px;">
+                    <button onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 100)" 
+                            style="background:var(--accent); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
+                    <button onclick="deleteTask('${t.id}')" style="background:#ff4444; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">🗑</button>
+                </div>
             </div>`;
     });
 
-    // BUILD THE ABSENCE ROWS
+    // BUILD ABSENCE ROWS (Added Edit/Delete buttons)
     dayAbs.forEach(a => {
         listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border-left:4px solid #ff9800; color:white; font-size:12px; margin-bottom:8px;">
-                👤 ${a.user_name} Out
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #ff9800; margin-bottom:8px;">
+                <div style="flex:1">
+                    <div style="font-weight:700; color:white; font-size:13px;">👤 ${a.user_name} Out</div>
+                    <div style="font-size:10px; color:#aaa">${a.is_all_day ? 'All Day' : 'Partial Day'}</div>
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <!-- EDIT ABSENCE -->
+                    <button onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)" 
+                            style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">Edit</button>
+                    <!-- DELETE ABSENCE -->
+                    <button onclick="deleteAbsence('${a.id}')" 
+                            style="background:#ff4444; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">🗑</button>
+                </div>
             </div>`;
     });
 
-    // If nothing is scheduled, show a placeholder
     listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:12px; text-align:center; padding:20px;">Nothing scheduled for this day.</div>`;
 
-    // 5. FINALLY, SHOW THE MODAL
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.style.display = 'flex';
-        modal.classList.add('active'); // Matches our CSS Master rules
+        modal.classList.add('active');
     }
 };
+
  window.triggerAddEntryFromCal = function() {
     closeModal('cal-action-modal');
     const dateInput = document.getElementById('t-due');
@@ -1638,6 +1645,32 @@ window.triggerAbsenceFromCal = function() {
     // Change 'absence-modal' to your actual absence modal ID
     openModal('absence-modal'); 
 };   
+window.deleteAbsence = async function(id) {
+    if (!confirm("Are you sure you want to cancel this Time Off?")) return;
+
+    try {
+        // 1. Delete from Supabase
+        const { error } = await window._mpdb.from('absences').delete().eq('id', id);
+        if (error) throw error;
+
+        // 2. Log for accountability
+        logAuditAction("Time Off Cancelled", `Removed an absence record.`);
+
+        // 3. Update local state
+        window.staffAbsences = (window.staffAbsences || []).filter(a => a.id !== id);
+
+        // 4. Refresh UI
+        showToast("Time Off removed ✓");
+        renderCalendar(); // Refresh the grid
+        
+        // Re-run the day card logic to show it's gone
+        window.calDayClick(window.lastClickedDate); 
+
+    } catch (e) {
+        console.error("Delete absence failed:", e);
+        showToast("Error deleting time off");
+    }
+};
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 function calToday() { calDate = new Date(); renderCalendar(); }
@@ -1674,28 +1707,15 @@ function triggerAddEntryFromCal() {
 }
 
 // Function 2: Open the Absence Modal with the date filled
-function triggerAbsenceFromCal() {
-    console.log("Switching from Day Card to Absence Form...");
-
-    // 1. Close the day card popup
-    const actionModal = document.getElementById('cal-action-modal');
-    if (actionModal) actionModal.style.display = 'none';
-
-    // 2. Open the time off request modal
-    if (typeof openAbsenceModal === 'function') {
-        openAbsenceModal();
-    }
-
-    // 3. AUTO-FILL the date
-    const absDateInput = document.getElementById('abs-date');
-    if (absDateInput) {
-        absDateInput.value = lastClickedDate;
-        // Trigger the logic that shows the 'All Day / Partial' buttons
-        if (typeof checkDateSelection === 'function') {
-            checkDateSelection(lastClickedDate);
-        }
-    }
-}
+window.triggerAbsenceFromCal = function() {
+    closeModal('cal-action-modal');
+    
+    // Set the date in your Time Off modal automatically
+    const dateInput = document.getElementById('abs-start-date'); // Match your HTML ID
+    if (dateInput) dateInput.value = window.lastClickedDate;
+    
+    openModal('absence-modal'); // Match your Modal ID
+};
 function toggleRecurType(){
   const t=document.getElementById('r-type').value;
   document.getElementById('r-interval-group').style.display=t==='calendar'?'block':'none';
