@@ -721,6 +721,8 @@ async function startApp() {
   } catch(e) { 
     console.error("Startup error:", e);
     showPinLogin(); 
+  updateMetrics();
+
   }
 
   window.addEventListener('online', () => setSyncStatus('online'));
@@ -6983,44 +6985,61 @@ async function saveCalendarEntry() {
     const name = document.getElementById('ce-name').value.trim();
     if(!name) { showToast("Enter a name"); return; }
 
+    const equipId = document.getElementById('ce-equip').value;
+    const date = document.getElementById('ce-date').value;
+    const tech = document.getElementById('ce-assign').value;
+    const notes = document.getElementById('ce-notes').value;
+
     if (currentCalEntryType === 'one-time') {
-        // Build one-time job record
+        // --- FIX: Build as a Work Order (Task) instead of a Schedule ---
         const record = {
             id: uid(),
             name: name,
-            equipId: document.getElementById('ce-equip').value,
-            date: document.getElementById('ce-date').value,
-            tech: document.getElementById('ce-assign').value,
-            dur: parseInt(document.getElementById('ce-dur').value) || 1,
-            notes: document.getElementById('ce-notes').value
+            equip_id: equipId,
+            due: date,
+            assign: tech,
+            status: 'Open', // Set default status so it shows in counters
+            priority: 'Medium',
+            notes: notes,
+            created_at: new Date().toISOString()
         };
-        await persist('schedules', 'upsert', record);
-        state.schedules.push(record);
+
+        // 1. Save to the correct table (tasks)
+        await persist('tasks', 'upsert', record);
+        
+        // 2. Add to local state (using camelCase for your existing UI code)
+        state.tasks.push({ ...record, equipId: record.equip_id });
+        
     } else {
         // Build recurring rule record
-        const type = document.getElementById('ce-recur-type').value;
         const record = {
             id: uid(),
             name: name,
-            equip_id: document.getElementById('ce-equip').value,
-            type: type,
+            equip_id: equipId,
+            type: document.getElementById('ce-recur-type').value,
             interval_unit: document.getElementById('ce-unit').value,
             interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
             runtime_hours: parseInt(document.getElementById('ce-runtime').value) || 500,
             priority: 'High',
-            notes: document.getElementById('ce-notes').value,
+            notes: notes,
             active: true,
-            next_due: new Date().toISOString().split('T')[0],
-            template: { assign: document.getElementById('ce-assign').value }
+            next_due: date || new Date().toISOString().split('T')[0],
+            template: { assign: tech }
         };
         await window._mpdb.from('recurrence_rules').insert(record);
         state.recurrenceRules.push(record);
     }
 
+    // --- REFRESH EVERYTHING LIVE ---
     closeModal('calendar-entry-modal');
-    renderCalendar();
-    showToast("Added to Calendar ✓");
-}   
+    
+    renderCalendar();         // Refresh Calendar
+    renderTasks();            // Refresh Work Order Tab (Sync Fix)
+    updateMetrics();          // Update Dashboard Counters (Fix for 0/0)
+    renderDashboard();        // Update Dashboard Lists
+    
+    showToast("Work Order added ✓");
+}
  function editTemplate(id) {
     const tpl = state.checklistTemplates.find(t => t.id === id);
     if(!tpl) return;
@@ -9236,3 +9255,22 @@ window.saveObservationChange = async function() {
         alert("Save failed: " + e.message);
     }
 };
+function updateMetrics() {
+function updateMetrics() {
+    const openTasks = state.tasks.filter(t => t.status !== 'Completed');
+    
+    // Update counters
+    const overdueEl = document.getElementById('m-overdue');
+    const openEl = document.getElementById('m-open');
+    const equipEl = document.getElementById('m-total');
+
+    if (openEl) openEl.textContent = openTasks.length;
+    if (equipEl) equipEl.textContent = state.equipment.length;
+    
+    if (overdueEl) {
+        const now = new Date().toISOString().split('T')[0];
+        const overdueCount = openTasks.filter(t => t.due < now).length;
+        overdueEl.textContent = overdueCount;
+        overdueEl.style.color = overdueCount > 0 ? "#dc3545" : "#28a745";
+    }
+}
