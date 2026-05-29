@@ -1294,13 +1294,20 @@ function handleDocUpload(input){
 // ============================================================
 // DASHBOARD
 // ============================================================
-function updateMetrics(){
-  const overdueCount = (state.tasks || []).filter(t => t.status === 'Overdue').length;
-  const openCount = (state.tasks || []).filter(t => t.status === 'Open').length;
+function updateMetrics() {
+  const now = new Date().toISOString().split('T')[0]; // Today's date YYYY-MM-DD
+  
+  // 1. Calculate Overdue (Not completed AND date has passed)
+  const overdueCount = (state.tasks || []).filter(t => 
+    t.status !== 'Completed' && t.due && t.due < now
+  ).length;
+
+  // 2. Calculate Open (Anything that isn't completed)
+  const openCount = (state.tasks || []).filter(t => t.status !== 'Completed').length;
+  
   const lowCount = (state.parts || []).filter(p => p.qty <= p.reorder).length;
   const currentMonthCost = (state.monthlyCosts || [0,0,0,0])[3] || 0;
 
-  // SAFE HELPER: This prevents the app from crashing if a card is missing
   const safeSet = (id, val) => {
     const el = document.getElementById(id);
     if(el) el.textContent = val;
@@ -1308,14 +1315,14 @@ function updateMetrics(){
 
   safeSet('m-total', state.equipment.length);
   safeSet('m-parts', lowCount);
+  safeSet('dash-low-parts', lowCount); // Syncing your dashboard low parts counter
   safeSet('m-open', openCount);
-  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString()); // Update Analytics Spend
+  safeSet('r-month-cost', '$' + currentMonthCost.toLocaleString());
 
   const mo = document.getElementById('m-overdue'); 
   if(mo) {
-    const totalActive = openCount + overdueCount;
-    mo.textContent = totalActive;
-    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : totalActive > 0 ? 'v-warning' : 'v-success');
+    mo.textContent = overdueCount;
+    mo.className = 'metric-value ' + (overdueCount > 0 ? 'v-danger' : 'v-success');
   }
 }
 async function renderEquipListDash(){
@@ -6989,30 +6996,28 @@ async function saveCalendarEntry() {
     const equipId = document.getElementById('ce-equip').value;
     const date = document.getElementById('ce-date').value;
     const tech = document.getElementById('ce-assign').value;
-    const notes = document.getElementById('ce-notes').value;
 
     if (currentCalEntryType === 'one-time') {
-        // --- FIX: Build as a Work Order (Task) instead of a Schedule ---
+        // --- FIX: Save to 'tasks' table so it shows in the Work Order tab ---
         const record = {
             id: uid(),
             name: name,
             equip_id: equipId,
             due: date,
             assign: tech,
-            status: 'Open', // Set default status so it shows in counters
+            status: 'Open',
             priority: 'Medium',
-            notes: notes,
             created_at: new Date().toISOString()
         };
 
-        // 1. Save to the correct table (tasks)
         await persist('tasks', 'upsert', record);
         
-        // 2. Add to local state (using camelCase for your existing UI code)
+        // Add to local state (with ID mapping for your UI)
         state.tasks.push({ ...record, equipId: record.equip_id });
         
+        showToast("Work Order added ✓");
     } else {
-        // Build recurring rule record
+        // Build recurring rule (stays in recurrence_rules table)
         const record = {
             id: uid(),
             name: name,
@@ -7021,25 +7026,22 @@ async function saveCalendarEntry() {
             interval_unit: document.getElementById('ce-unit').value,
             interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
             runtime_hours: parseInt(document.getElementById('ce-runtime').value) || 500,
-            priority: 'High',
-            notes: notes,
             active: true,
             next_due: date || new Date().toISOString().split('T')[0],
             template: { assign: tech }
         };
         await window._mpdb.from('recurrence_rules').insert(record);
         state.recurrenceRules.push(record);
+        showToast("Recurring rule set ✓");
     }
 
-    // --- REFRESH EVERYTHING LIVE ---
     closeModal('calendar-entry-modal');
     
-    renderCalendar();         // Refresh Calendar
-    renderTasks();            // Refresh Work Order Tab (Sync Fix)
-    updateMetrics();          // Update Dashboard Counters (Fix for 0/0)
-    renderDashboard();        // Update Dashboard Lists
-    
-    showToast("Work Order added ✓");
+    // --- REFRESH EVERYTHING ---
+    updateMetrics();      // Update the 0/0 counts
+    renderCalendar();    // Redraw calendar
+    renderTasks();       // Redraw Work Order tab (This is the sync!)
+    renderDashboard();   // Update dashboard lists
 }
  function editTemplate(id) {
     const tpl = state.checklistTemplates.find(t => t.id === id);
@@ -9257,21 +9259,3 @@ window.saveObservationChange = async function() {
     }
 };
 
-function updateMetrics() {
-    const openTasks = state.tasks.filter(t => t.status !== 'Completed');
-    
-    // Update counters
-    const overdueEl = document.getElementById('m-overdue');
-    const openEl = document.getElementById('m-open');
-    const equipEl = document.getElementById('m-total');
-
-    if (openEl) openEl.textContent = openTasks.length;
-    if (equipEl) equipEl.textContent = state.equipment.length;
-    
-    if (overdueEl) {
-        const now = new Date().toISOString().split('T')[0];
-        const overdueCount = openTasks.filter(t => t.due < now).length;
-        overdueEl.textContent = overdueCount;
-        overdueEl.style.color = overdueCount > 0 ? "#dc3545" : "#28a745";
-    }
-}
