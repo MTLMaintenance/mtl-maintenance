@@ -477,19 +477,19 @@ async function deleteAbsence() {
     }
 }
 async function fetchAbsences() {
+    console.log("Fetching team absences...");
     const { data, error } = await window._mpdb
         .from('staff_absences')
         .select('*');
     
     if (data) {
-        // Force it into the GLOBAL window scope so everyone can find it
-        window.staffAbsences = data; 
-        console.log("Absences loaded:", data.length);
-         
-     if (typeof renderCalendar === 'function') {
+        window.staffAbsences = data;
+        console.log("Absences synced ✓");
+
+        // --- ADD THIS LINE ---
+        // This forces the calendar to redraw itself with the new data
+        if (typeof renderCalendar === 'function') {
             renderCalendar(); 
-        if (currentUser.role === 'admin') {
-            if (typeof checkUpcomingAbsences === 'function') checkUpcomingAbsences();
         }
     }
 }
