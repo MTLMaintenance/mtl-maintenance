@@ -716,7 +716,8 @@ async function startApp() {
        window._geminiKey = profile.gemini_key || localStorage.getItem('mp_gemini_key') || '';
        localStorage.setItem('mp_session', JSON.stringify(currentUser));
         if (typeof applyUserPreferences === 'function') applyUserPreferences();
-        await enterApp(); 
+        await fetchAbsences(); 
+       await enterApp(); 
         return; 
       }
     }
@@ -1577,20 +1578,28 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 
-   window.calDayClick = function(dateStr) {
+ window.calDayClick = function(dateStr) {
     window.lastClickedDate = dateStr;
 
     // 1. Update Header
     const dateObj = new Date(dateStr + "T00:00:00");
     const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const headerEl = document.getElementById('action-modal-readable');
-    if (headerEl) headerEl.textContent = readable;
+    document.getElementById('action-modal-readable').textContent = readable;
 
-    // 2. Filter Data (Using substring to match YYYY-MM-DD)
+    // 2. Filter Work Orders
     const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
     
-    // Use the array from your fetchAbsences function
-    const dayAbs = (window.staffAbsences || []).filter(a => a.start_date && a.start_date.substring(0, 10) === dateStr);
+    // 3. Filter Absences (The Fix)
+    // We check BOTH state.absences and window.staffAbsences to be safe
+    const allAbs = window.staffAbsences || [];
+    const dayAbs = allAbs.filter(a => {
+        if (!a.start_date) return false;
+        // This converts "2026-05-29T00:00:00" to "2026-05-29"
+        const dbDate = a.start_date.split('T')[0]; 
+        return dbDate === dateStr;
+    });
+
+    console.log(`Day Card for ${dateStr}: Found ${dayAbs.length} absences.`);
 
     const listContainer = document.getElementById('day-items-list');
     if (!listContainer) return;
@@ -1610,22 +1619,22 @@ function renderMonthSchedList() {
             </div>`;
     });
 
-    // Render Time Off (Linking to your existing openAbsenceDetail)
+    // Render Absences
     dayAbs.forEach(a => {
         listHtml += `
             <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ff9800; margin-bottom:8px;">
                 <div style="flex:1">
                     <div style="font-weight:700; color:white; font-size:13px;">👤 ${a.user_name} Out</div>
-                    <div style="font-size:10px; color:#aaa">${a.is_all_day ? 'All Day' : 'Partial Day'}</div>
+                    <div style="font-size:10px; color:#aaa">${a.is_all_day ? 'All Day' : 'Time Off'}</div>
                 </div>
                 <button onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)" 
-                        style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">View/Edit</button>
+                        style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
             </div>`;
     });
 
-    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:12px; text-align:center; padding:20px;">Nothing scheduled for today.</div>`;
+    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:12px; text-align:center; padding:20px;">Nothing scheduled for this day.</div>`;
 
-    // 3. Show the Card
+    // 4. Show the Card
     const modal = document.getElementById('cal-action-modal');
     if (modal) {
         modal.style.display = 'flex';
