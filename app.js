@@ -595,7 +595,8 @@ async function saveAbsence() {
 
         showToast("Request submitted ✓");
         closeAbsenceModal();
-        
+        document.getElementById('abs-end-date').value = "";
+document.getElementById('abs-public').value = "";
         // Refresh everything
         await fetchAbsences();
         if (typeof renderCalendar === 'function') renderCalendar();
@@ -1704,14 +1705,32 @@ function renderMonthSchedList() {
 };
 
 window.triggerAbsenceFromCal = function() {
+    // 1. Close the small day card
     closeModal('cal-action-modal');
+
+    // 2. --- THE FIX: Clear the inputs so they don't show old data ---
+    const startInp = document.getElementById('abs-start-date');
+    const endInp = document.getElementById('abs-end-date');
+    const reasonInp = document.getElementById('abs-public');
+    const privateInp = document.getElementById('abs-private');
+    const privateCheck = document.getElementById('abs-is-private');
+
+    // Reset End Date to empty (shows mm/dd/yyyy)
+    if (endInp) endInp.value = ""; 
     
-    // Look for the date input in your absence-modal
-    // If your input has a different ID, change 'abs-date' below
-    const dateInput = document.getElementById('abs-date') || document.querySelector('#absence-modal input[type="date"]');
-    if (dateInput) dateInput.value = window.lastClickedDate;
+    // Clear text and reasons
+    if (reasonInp) reasonInp.value = "";
+    if (privateInp) privateInp.value = "";
+    if (privateCheck) privateCheck.checked = false;
     
-    // Use your existing open function
+    // Ensure the private box is hidden
+    const privBox = document.getElementById('priv-box');
+    if (privBox) privBox.style.display = 'none';
+
+    // 3. Pre-fill the START date with the day you actually clicked
+    if (startInp) startInp.value = window.lastClickedDate;
+
+    // 4. Open the request modal
     openAbsenceModal(); 
 };
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
