@@ -550,44 +550,59 @@ function isUserOutOnDate(absence, targetDateStr) {
     return target >= start && target <= end;
 }
 async function saveAbsence() {
-    // 1. Get values from your specific HTML IDs
     const start = document.getElementById('abs-start-date').value;
     let end = document.getElementById('abs-end-date').value;
     const reason = document.getElementById('abs-public').value.trim();
-    const isPrivate = document.getElementById('abs-is-private').checked;
-    const privateReason = document.getElementById('abs-private').value.trim();
+    
+    // Safety check for optional fields
+    const isPrivateEl = document.getElementById('abs-is-private');
+    const privateReasonEl = document.getElementById('abs-private');
+    const timeEl = document.getElementById('abs-time');
 
-    // 2. Validation
     if (!start) return alert("Please select a start date.");
-    if (!end) end = start; // If blank, it's a single day
+    if (!end) end = start; 
 
+    // Construct the record to match your database exactly
     const record = {
         id: uid(),
         user_id: String(currentUser.id),
         user_name: currentUser.name,
-        author: currentUser.username,
+        author: currentUser.username, // <--- We just added this column in SQL
         start_date: start,
         end_date: end,
         reason_public: reason || "Time Off",
-        reason_private: isPrivate ? privateReason : null,
-        is_private: isPrivate,
-        is_all_day: (window._currentAbsType === 'all'),
-        partial_time: window._currentAbsType === 'all' ? null : document.getElementById('abs-time').value,
+        is_all_day: (window._currentAbsType !== 'partial'),
         created_at: new Date().toISOString()
     };
 
+    // Add private fields only if they exist in your HTML
+    if (isPrivateEl && isPrivateEl.checked) {
+        record.is_private = true;
+        record.reason_private = privateReasonEl ? privateReasonEl.value.trim() : "";
+    }
+
+    if (window._currentAbsType === 'partial' && timeEl) {
+        record.partial_time = timeEl.value;
+    }
+
     try {
         const { error } = await window._mpdb.from('staff_absences').insert(record);
-        if (error) throw error;
+        
+        if (error) {
+            console.error("Supabase Error:", error);
+            alert("Database Error: " + error.message);
+            return;
+        }
 
-        showToast("Request submitted ✓");
+        showToast("Time off request saved ✓");
         closeAbsenceModal();
         
-        // Refresh everything
-        await fetchAbsences();
-        renderCalendar();
+        // Refresh local memory and the UI
+        await fetchAbsences(); 
+        if (typeof renderCalendar === 'function') renderCalendar();
+
     } catch (e) {
-        alert("Error saving: " + e.message);
+        console.error("Save process failed:", e);
     }
 }
 // ── SESSION TOKEN ────────────────────────────────────────────
