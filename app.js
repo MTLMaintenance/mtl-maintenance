@@ -485,7 +485,9 @@ async function fetchAbsences() {
         // Force it into the GLOBAL window scope so everyone can find it
         window.staffAbsences = data; 
         console.log("Absences loaded:", data.length);
-        
+         
+     if (typeof renderCalendar === 'function') {
+            renderCalendar(); 
         if (currentUser.role === 'admin') {
             if (typeof checkUpcomingAbsences === 'function') checkUpcomingAbsences();
         }
@@ -1477,25 +1479,33 @@ async function renderCalendar() {
         cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
     }
 
-    for(let d = 1; d <= daysInMonth; d++){
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const isToday = new Date().toISOString().split('T')[0] === dateStr;
-        
-        const dayTasks = state.tasks.filter(t => t.due === dateStr);
-        const dayScheds = state.schedules.filter(s => s.date === dateStr);
-        const dayForecasts = state.equipment.filter(e => e._predictedDate === dateStr);
-        const dayAbs = (staffAbsences || []).filter(a => a.start_date.split('T')[0] === dateStr);
+  for(let d = 1; d <= daysInMonth; d++){
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = new Date().toISOString().split('T')[0] === dateStr;
+    
+    // --- FETCH DATA FOR THIS DAY ---
+    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
+    
+    // THE FIX: Use window.staffAbsences and the split('T')[0] logic
+    const allAbs = window.staffAbsences || [];
+    const dayAbs = allAbs.filter(a => {
+        if (!a.start_date) return false;
+        // Match the same logic used in the Day Card
+        return a.start_date.split('T')[0] === dateStr;
+    });
 
-        // --- THE CHANGE: No 'onclick' on these items anymore ---
-        const eventsHtml = [
-            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}">${t.name}</div>`),
-            ...dayScheds.map(s => `<div class="cal-event scheduled">${s.name}</div>`),
-            ...dayForecasts.map(e => `<div class="cal-event forecast">📈 Forecast: ${e.name}</div>`),
-            ...dayAbs.map(a => {
-                const statusText = a.is_all_day ? `👤 ${a.user_name} Out` : `👤 ${a.user_name} @ ${formatTime(a.partial_time)}`;
-                return `<div class="cal-event" style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px;">${statusText}</div>`;
-            })
-        ].join('');
+    // --- MERGE INTO HTML ---
+    const eventsHtml = [
+        ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}">${t.name}</div>`),
+        
+        // Ensure absences are mapped correctly for the grid view
+        ...dayAbs.map(a => {
+            const label = a.is_all_day ? `👤 ${a.user_name} Out` : `👤 ${a.user_name} Part`;
+            return `<div class="cal-event" 
+                    style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px; pointer-events:none;">
+                    ${label}</div>`;
+        })
+    ].join('');
 
        cells += `
     <div class="cal-day${isToday ? ' today' : ''}" 
