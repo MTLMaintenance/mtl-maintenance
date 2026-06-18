@@ -541,23 +541,25 @@ function togglePrivateReason(show) {
 function isUserOutOnDate(absence, targetDateStr) {
     if (!absence.start_date || !absence.end_date) return false;
 
-    // Convert everything to simple YYYY-MM-DD strings for comparison
+    // We only care about the YYYY-MM-DD part (first 10 characters)
     const target = targetDateStr.substring(0, 10);
     const start = absence.start_date.substring(0, 10);
     const end = absence.end_date.substring(0, 10);
 
-    // Standard string comparison works for YYYY-MM-DD
+    // If target is between start and end (inclusive), they are out
     return target >= start && target <= end;
 }
 async function saveAbsence() {
-     const start = document.getElementById('abs-start-date').value;
+    // 1. Get values from your specific HTML IDs
+    const start = document.getElementById('abs-start-date').value;
     let end = document.getElementById('abs-end-date').value;
-    const reason = document.getElementById('abs-reason').value;
+    const reason = document.getElementById('abs-public').value.trim();
+    const isPrivate = document.getElementById('abs-is-private').checked;
+    const privateReason = document.getElementById('abs-private').value.trim();
 
-    if (!start) return alert("Please select at least a start date.");
-    
-    // If no end date is picked, assume it's a single day
-    if (!end) end = start;
+    // 2. Validation
+    if (!start) return alert("Please select a start date.");
+    if (!end) end = start; // If blank, it's a single day
 
     const record = {
         id: uid(),
@@ -565,20 +567,28 @@ async function saveAbsence() {
         user_name: currentUser.name,
         author: currentUser.username,
         start_date: start,
-        end_date: end, // New Column
-        reason_public: reason,
-        is_all_day: true,
+        end_date: end,
+        reason_public: reason || "Time Off",
+        reason_private: isPrivate ? privateReason : null,
+        is_private: isPrivate,
+        is_all_day: (window._currentAbsType === 'all'),
+        partial_time: window._currentAbsType === 'all' ? null : document.getElementById('abs-time').value,
         created_at: new Date().toISOString()
     };
 
     try {
-        await window._mpdb.from('staff_absences').insert(record);
-        showToast("Vacation/Time Off requested ✓");
-        closeModal('absence-modal');
+        const { error } = await window._mpdb.from('staff_absences').insert(record);
+        if (error) throw error;
+
+        showToast("Request submitted ✓");
+        closeAbsenceModal();
         
-        await fetchAbsences(); // Refresh global list
-        renderCalendar();      // Redraw grid
-    } catch (e) { console.error(e); }
+        // Refresh everything
+        await fetchAbsences();
+        renderCalendar();
+    } catch (e) {
+        alert("Error saving: " + e.message);
+    }
 }
 // ── SESSION TOKEN ────────────────────────────────────────────
 function setSyncStatus(s) {
@@ -1513,7 +1523,7 @@ async function renderCalendar() {
     
     // THE FIX: Use window.staffAbsences and the split('T')[0] logic
     const allAbs = window.staffAbsences || [];
-  const dayAbs = (window.staffAbsences || []).filter(a => {
+const dayAbs = (window.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
     // This now checks if the specific calendar day is inside their vacation range
     return isUserOutOnDate(a, dateStr);
 });
