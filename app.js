@@ -482,11 +482,12 @@ async function fetchAbsences() {
         .select('*');
     
     if (data) {
-        staffAbsences = data;
+        // Force it into the GLOBAL window scope so everyone can find it
+        window.staffAbsences = data; 
+        console.log("Absences loaded:", data.length);
         
-        // Option B: Run the automatic reminder check for managers
         if (currentUser.role === 'admin') {
-            checkUpcomingAbsences();
+            if (typeof checkUpcomingAbsences === 'function') checkUpcomingAbsences();
         }
     }
 }
