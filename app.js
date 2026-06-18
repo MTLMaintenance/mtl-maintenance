@@ -1526,7 +1526,7 @@ async function renderCalendar() {
 const dayAbs = (window.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
     // This now checks if the specific calendar day is inside their vacation range
     return isUserOutOnDate(a, dateStr);
-});
+};
 
     // --- MERGE INTO HTML ---
     const eventsHtml = [
