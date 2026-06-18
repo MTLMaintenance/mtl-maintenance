@@ -419,61 +419,79 @@ async function checkUpcomingAbsences() {
 }
 
 function openAbsenceDetail(id) {
-    const abs = staffAbsences.find(a => a.id === id);
+    console.log("Opening details for absence:", id);
+    const abs = (window.staffAbsences || []).find(a => a.id === id);
     if (!abs) return;
     
-    currentDetailId = id; // Needed for deletion
-    
+    window.currentDetailId = id; // Store for deletion
+
+    // 1. Fill the Information
     document.getElementById('det-user').textContent = `👤 ${abs.user_name}`;
-    document.getElementById('det-reason').textContent = abs.reason_public;
+    document.getElementById('det-reason').textContent = abs.reason_public || "No reason provided.";
     
-    // Safely handle time formatting
-    const timeDisplay = abs.is_all_day ? "All Day" : (typeof formatTime === 'function' ? formatTime(abs.partial_time) : abs.partial_time);
+    const timeDisplay = abs.is_all_day ? "All Day" : (abs.partial_time || "Scheduled");
     document.getElementById('det-time').textContent = timeDisplay;
 
-    // Show private info only for admin
-    const privBox = document.getElementById('det-private-section');
-    if (abs.is_private && currentUser.role === 'admin') {
-        privBox.style.display = 'block';
-        document.getElementById('det-private-text').textContent = abs.reason_private || "";
-    } else {
-        privBox.style.display = 'none';
-    }
+    // 2. PERMISSION CHECK
+    // Only the creator OR an Admin can delete/edit
+    const isOwner = (abs.author === currentUser.username || abs.user_id === String(currentUser.id));
+    const isAdmin = (currentUser.role === 'Admin');
 
-    // Show delete button for owner/admin
     const delBtn = document.getElementById('det-delete-btn');
-    if (abs.user_id === String(currentUser.id) || currentUser.role === 'admin') {
-        delBtn.style.display = 'block';
-    } else {
-        delBtn.style.display = 'none';
+    if (delBtn) {
+        if (isOwner || isAdmin) {
+            delBtn.style.display = 'block';
+        } else {
+            delBtn.style.display = 'none'; // Hide if not their request
+        }
     }
 
+    // 3. Show Private Info (Admins Only)
+    const privBox = document.getElementById('det-private-section');
+    if (privBox) {
+        if (isAdmin) {
+            privBox.style.display = 'block';
+            document.getElementById('det-private-text').textContent = abs.reason_private || "None";
+        } else {
+            privBox.style.display = 'none';
+        }
+    }
+
+    // 4. Force Show the Modal
     const modal = document.getElementById('absence-detail-modal');
-    if(modal) modal.style.display = 'block';
+    if (modal) {
+        modal.style.display = 'flex'; // Use flex for centering
+        modal.classList.add('active'); 
+    }
 }
 
 async function deleteAbsence() {
-    if (!currentDetailId) return;
-    if (!confirm("Are you sure you want to delete this time off request?")) return;
+    if (!window.currentDetailId) return;
+    if (!confirm("Are you sure you want to cancel this request?")) return;
 
-    // Use 'staff_absences' to match your table name
-    const { error } = await window._mpdb
-        .from('staff_absences')
-        .delete()
-        .eq('id', currentDetailId);
+    try {
+        // 1. Delete from DB
+        const { error } = await window._mpdb
+            .from('staff_absences')
+            .delete()
+            .eq('id', window.currentDetailId);
 
-    if (error) {
-        alert("Error deleting: " + error.message);
-    } else {
-        // CLOSE BOTH MODALS
-        const detailModal = document.getElementById('absence-detail-modal');
-        if(detailModal) detailModal.style.display = 'none';
+        if (error) throw error;
+
+        // 2. Update local state
+        window.staffAbsences = window.staffAbsences.filter(a => a.id !== window.currentDetailId);
+
+        // 3. UI Cleanup
+        document.getElementById('absence-detail-modal').style.display = 'none';
+        renderCalendar(); // Redraw the grid
         
-        // REFRESH DATA AND UI
-        await fetchAbsences(); // This updates the staffAbsences array
-        renderCalendar();      // This redraws the grid
+        showToast("Request deleted ✓");
         
-        showToast("Time off deleted ✓");
+        // Log for accountability
+        logAuditAction("Absence Deleted", "User removed a time-off request.");
+
+    } catch (e) {
+        alert("Error: " + e.message);
     }
 }
 async function fetchAbsences() {
@@ -1625,7 +1643,7 @@ function renderMonthSchedList() {
                     <div style="font-weight:700; color:white; font-size:13px;">🛠️ ${t.name}</div>
                     <div style="font-size:10px; color:#aaa">${t.status}</div>
                 </div>
-                <button onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 100)" 
+                <button onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 150)" 
                         style="background:var(--accent); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
             </div>`;
     });
