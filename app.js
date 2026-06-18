@@ -1493,9 +1493,11 @@ async function renderCalendar() {
 
     titleEl.textContent = `${MONTHS[month]} ${year}`;
     
+    // 1. Set Headers
     headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
         .map(d => `<div class="cal-header" style="font-weight:600; padding:5px">${d}</div>`).join('');
     
+    // 2. Pre-Calculate Adaptive Forecasts
     for (let e of state.equipment) {
         try {
             const pred = await getAdaptivePrediction(e.id);
@@ -1510,57 +1512,52 @@ async function renderCalendar() {
     
     let cells = '';
 
+    // 4. Padding (Previous Month)
     for(let i = firstDay - 1; i >= 0; i--){
         cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
     }
 
-  for(let d = 1; d <= daysInMonth; d++){
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const isToday = new Date().toISOString().split('T')[0] === dateStr;
-    
-    // --- FETCH DATA FOR THIS DAY ---
-    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
-    
-    // THE FIX: Use window.staffAbsences and the split('T')[0] logic
-    const allAbs = window.staffAbsences || [];
-const dayAbs = (window.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
-    // This now checks if the specific calendar day is inside their vacation range
-    return isUserOutOnDate(a, dateStr);
-};
-
-    // --- MERGE INTO HTML ---
-    const eventsHtml = [
-        ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}">${t.name}</div>`),
+    // 5. Current Month Days
+    for(let d = 1; d <= daysInMonth; d++){
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = new Date().toISOString().split('T')[0] === dateStr;
         
-        // Ensure absences are mapped correctly for the grid view
-        ...dayAbs.map(a => {
-            const label = a.is_all_day ? `👤 ${a.user_name} Out` : `👤 ${a.user_name} Part`;
-            return `<div class="cal-event" 
-                    style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px; pointer-events:none;">
-                    ${label}</div>`;
-        })
-    ].join('');
+        // --- FETCH DATA FOR THIS DAY ---
+        const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
+        
+        // THE FIX: Simplified the absence filter into one clean line
+        const dayAbs = (window.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
 
-       cells += `
-    <div class="cal-day${isToday ? ' today' : ''}" 
-         onclick="window.calDayClick('${dateStr}')" 
-         style="cursor:pointer">
-        <div class="cal-day-num" style="pointer-events: none;">${d}</div>
-        <div class="cal-event-container" style="pointer-events: none;"> 
-            ${eventsHtml}
-        </div>
-    </div>`;
+        // --- MERGE INTO HTML ---
+        const eventsHtml = [
+            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}">${t.name}</div>`),
+            
+            ...dayAbs.map(a => {
+                const label = a.is_all_day ? `👤 ${a.user_name} Out` : `👤 ${a.user_name} Part`;
+                return `<div class="cal-event" 
+                        style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px; pointer-events:none;">
+                        ${label}</div>`;
+            })
+        ].join('');
+
+        cells += `
+            <div class="cal-day${isToday ? ' today' : ''}" onclick="window.calDayClick('${dateStr}')" style="cursor:pointer">
+                <div class="cal-day-num" style="pointer-events: none;">${d}</div>
+                <div class="cal-event-container" style="pointer-events: none;"> 
+                    ${eventsHtml}
+                </div>
+            </div>`;
     }
 
     daysEl.innerHTML = cells;
 
+    // 6. Refresh Sidebars/Logic
     if (typeof renderMonthSchedList === 'function') {
         try { renderMonthSchedList(); } catch(e) { }
     }
     if (typeof renderRecurList === 'function') {
         try { renderRecurList(); } catch(e) { }
     }
-  
     if (typeof fillAdaptiveCalendarMarkers === 'function') {
         fillAdaptiveCalendarMarkers(year, month);
     }
