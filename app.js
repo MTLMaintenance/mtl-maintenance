@@ -553,21 +553,16 @@ async function saveAbsence() {
     const start = document.getElementById('abs-start-date').value;
     let end = document.getElementById('abs-end-date').value;
     const reason = document.getElementById('abs-public').value.trim();
-    
-    // Safety check for optional fields
-    const isPrivateEl = document.getElementById('abs-is-private');
-    const privateReasonEl = document.getElementById('abs-private');
-    const timeEl = document.getElementById('abs-time');
 
     if (!start) return alert("Please select a start date.");
-    if (!end) end = start; 
+    if (!end) end = start;
 
-    // Construct the record to match your database exactly
+    // Build the record
     const record = {
-        id: uid(),
-        user_id: String(currentUser.id),
+        id: uid(), // This is the alphanumeric string the DB was rejecting
+        user_id: String(currentUser.id), 
         user_name: currentUser.name,
-        author: currentUser.username, // <--- We just added this column in SQL
+        author: currentUser.username,
         start_date: start,
         end_date: end,
         reason_public: reason || "Time Off",
@@ -575,30 +570,34 @@ async function saveAbsence() {
         created_at: new Date().toISOString()
     };
 
-    // Add private fields only if they exist in your HTML
-    if (isPrivateEl && isPrivateEl.checked) {
-        record.is_private = true;
-        record.reason_private = privateReasonEl ? privateReasonEl.value.trim() : "";
+    // Add optional fields only if they are being used
+    if (window._currentAbsType === 'partial') {
+        const timeInput = document.getElementById('abs-time');
+        record.partial_time = timeInput ? timeInput.value : null;
     }
 
-    if (window._currentAbsType === 'partial' && timeEl) {
-        record.partial_time = timeEl.value;
+    const isPrivate = document.getElementById('abs-is-private')?.checked;
+    if (isPrivate) {
+        record.is_private = true;
+        record.reason_private = document.getElementById('abs-private')?.value.trim();
     }
 
     try {
-        const { error } = await window._mpdb.from('staff_absences').insert(record);
-        
+        const { error } = await window._mpdb
+            .from('staff_absences')
+            .insert(record);
+
         if (error) {
-            console.error("Supabase Error:", error);
+            console.error("Database Error:", error);
             alert("Database Error: " + error.message);
             return;
         }
 
-        showToast("Time off request saved ✓");
+        showToast("Request submitted ✓");
         closeAbsenceModal();
         
-        // Refresh local memory and the UI
-        await fetchAbsences(); 
+        // Refresh everything
+        await fetchAbsences();
         if (typeof renderCalendar === 'function') renderCalendar();
 
     } catch (e) {
