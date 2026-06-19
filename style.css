@@ -2152,3 +2152,7 @@ html {
     border: 2px solid #000 !important;
     transform: scale(1.1);
 }
+.form-select {
+    position: relative;
+    z-index: 999;
+}
