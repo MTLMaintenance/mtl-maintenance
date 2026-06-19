@@ -449,12 +449,14 @@
   </div>
 
   <!-- 3. PERMISSIONS & ROLES -->
-  <div id="admin-permissions" style="display:none">
+<div id="admin-permissions" style="display:none">
     <div class="card">
       <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
       <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Permission</th><th style="text-align:center">Admin</th><th style="text-align:center">Manager</th><th style="text-align:center">Tech</th><th style="text-align:center">Viewer</th></tr></thead><tbody id="permissions-table-body"></tbody></table></div>
     </div>
-    <div class="card" style="margin-top:12px">
+
+    <!-- THE FIX IS ON THE LINE BELOW -->
+    <div class="card" style="margin-top:12px; overflow: visible !important;">
       <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
         <div class="form-group"><label class="form-label">User</label><select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select></div>
@@ -463,7 +465,7 @@
         <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
       </div>
     </div>
-  </div>
+</div>
 
   <!-- 4. DELETED MESSAGES -->
   <div id="admin-deleted-msgs" style="display:none">
