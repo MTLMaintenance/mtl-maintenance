@@ -450,44 +450,56 @@
 
  <div id="admin-permissions" style="display:none; overflow: visible !important;">
     
+    <!-- TOP CARD: Role Permissions Matrix -->
     <div class="card">
       <div class="card-header"><span class="card-title">Role Permissions Matrix</span></div>
       <div style="overflow-x:auto">
-          <table class="data-table">...</table>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Permission</th>
+              <th style="text-align:center">Admin</th>
+              <th style="text-align:center">Manager</th>
+              <th style="text-align:center">Tech</th>
+              <th style="text-align:center">Viewer</th>
+            </tr>
+          </thead>
+          <tbody id="permissions-table-body">
+            <!-- JS will fill this - Don't put "..." here -->
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- 2. Added overflow:visible AND a z-index to the card -->
-    <div class="card" style="margin-top:12px; overflow: visible !important; position: relative; z-index: 100;">
+    <!-- BOTTOM CARD: Change User Role & Group -->
+    <!-- The fix: overflow:visible allows the dropdown to pop out -->
+    <div class="card" style="margin-top:12px; overflow: visible !important; position: relative; z-index: 10;">
       <div class="card-header"><span class="card-title">Change User Role & Group</span></div>
       
-      <!-- 3. Added overflow:visible to the flex row -->
-      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; overflow: visible !important;">
+      <!-- We add padding-bottom to physically give the dropdown room to open -->
+      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; padding-bottom: 60px;">
         <div class="form-group">
-            <label class="form-label">User</label>
-            <select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select>
+          <label class="form-label">User</label>
+          <select class="form-select" id="role-user-select" style="min-width:160px" onchange="syncAdminRoleSelects()"></select>
         </div>
         <div class="form-group">
-            <label class="form-label">Role</label>
-            <select class="form-select" id="role-select">
-                <option value="manager">Manager</option>
-                <option value="tech" selected>Technician</option>
-                <option value="viewer">Viewer</option>
-            </select>
+          <label class="form-label">Role</label>
+          <select class="form-select" id="role-select">
+            <option value="manager">Manager</option>
+            <option value="tech" selected>Technician</option>
+            <option value="viewer">Viewer</option>
+          </select>
         </div>
         <div class="form-group">
-            <label class="form-label">Group</label>
-            <select class="form-select" id="group-select">
-                <option value="">None</option>
-                <option value="outside">Outside</option>
-                <option value="production">Production</option>
-            </select>
+          <label class="form-label">Group</label>
+          <select class="form-select" id="group-select">
+            <option value="">None</option>
+            <option value="outside">Outside</option>
+            <option value="production">Production</option>
+          </select>
         </div>
         <button class="btn btn-primary" onclick="changeUserRole()">Update</button>
       </div>
-      
-      <!-- 4. Added a 'spacer' so the panel has room for the dropdown -->
-      <div style="height: 100px;"></div> 
     </div>
 </div>
 
