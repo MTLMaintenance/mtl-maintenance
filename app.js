@@ -9307,25 +9307,28 @@ window.saveObservationChange = async function() {
 };
 
 function populateAdminUserSelect() {
-    const select = document.getElementById('role-user-select');
-    if (!select) return;
+    // We use a tiny timeout to ensure the HTML element exists in the DOM
+    setTimeout(() => {
+        const select = document.getElementById('role-user-select');
+        if (!select) return;
 
-    // Clear and add default
-    select.innerHTML = '<option value="">-- Select User --</option>';
+        // Save whatever was currently selected so it doesn't reset
+        const currentVal = select.value;
 
-    // Pull from your existing user cache
-    const users = state.users_list_cache || [];
-    
-    if (users.length === 0) {
-        console.warn("No users found in cache to populate admin dropdown.");
-    }
-
-    users.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.username;
-        opt.textContent = u.full_name || u.username;
-        select.appendChild(opt);
-    });
-    
-    console.log("Admin user dropdown populated with " + users.length + " names.");
+        const users = state.users_list_cache || [];
+        
+        // Rebuild the list
+        let html = '<option value="">-- Select User --</option>';
+        users.forEach(u => {
+            html += `<option value="${u.username}">${u.full_name || u.username}</option>`;
+        });
+        
+        select.innerHTML = html;
+        
+        // Put the selection back
+        if (currentVal) select.value = currentVal;
+        
+        console.log("Admin dropdown synced after refresh ✓");
+    }, 100); 
 }
+window.populateAdminUserSelect = populateAdminUserSelect;
