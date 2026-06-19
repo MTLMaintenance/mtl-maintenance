@@ -1028,7 +1028,7 @@ function uid() { return Date.now().toString(36)+Math.random().toString(36).slice
 async function loadState() {
   setSyncStatus('syncing');
   try {
-    // 1. Fetch all 10 main tables (Matches the order in state)
+    // 1. Fetch all main tables
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
@@ -1043,10 +1043,7 @@ async function loadState() {
     ]);
 
     state.equipment       = eq.data||[];
-   state.tasks = (tk.data || []).map(t => ({
-      ...t,
-      equipId: t.equip_id
-    }));
+    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules       = sc.data||[];
     state.parts           = pt.data||[];
     state.suppliers       = sup.data||[];
@@ -1056,28 +1053,28 @@ async function loadState() {
     state.tools           = tl.data||[];
     state.wishlist        = wl.data||[];
     
-    // 2. Load Profiles (Added 'show_sensitive_metrics' to the selection)
+    // 2. Load Profiles
     const { data: profiles } = await window._mpdb.from('profiles')
         .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
         .eq('status', 'approved');
     state.users_list_cache = profiles || [];
 
-    // --- DASHBOARD PRIVACY SYNC ---
-    // Find the current user in the profile list to get their preference
+    // --- THE FIX: Populate the Admin dropdown as soon as profiles arrive ---
+    if (typeof populateAdminUserSelect === 'function') {
+        populateAdminUserSelect();
+    }
+    // -----------------------------------------------------------------------
+
     const myProfile = state.users_list_cache.find(p => p.username === currentUser.username);
     if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
         currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
     }
-    // Apply the filter immediately so the UI knows what to hide
-    if (typeof applyPrivacyFilters === 'function') {
-        
+
+    const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
+    if(templates && templates.length > 0) {
+        state.checklistTemplates = templates;
     }
-    // ------------------------------
-const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
-if(templates && templates.length > 0) {
-    state.checklistTemplates = templates;
-}
-    // 3. Calculate metrics
+
     state.monthlyCosts = computeMonthlyCosts();
     setSyncStatus('online');
 
@@ -1086,12 +1083,18 @@ if(templates && templates.length > 0) {
     setSyncStatus('offline'); 
   }
 
-  // 4. Load observations (kept separate for better performance)
   try {
     const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
     state.observations = obs || [];
   } catch(e) {}
- updateMetrics();
+
+  updateMetrics();
+  
+  // --- FINAL SYNC NUDGE ---
+  // Sometimes the HTML isn't ready yet, so we try one more time after a short delay
+  setTimeout(() => {
+      if (typeof populateAdminUserSelect === 'function') populateAdminUserSelect();
+  }, 500);
 }
 function computeMonthlyCosts() {
   const now=new Date();
@@ -9307,28 +9310,15 @@ window.saveObservationChange = async function() {
 };
 
 function populateAdminUserSelect() {
-    // We use a tiny timeout to ensure the HTML element exists in the DOM
-    setTimeout(() => {
-        const select = document.getElementById('role-user-select');
-        if (!select) return;
+    const select = document.getElementById('role-user-select');
+    if (!select) return;
 
-        // Save whatever was currently selected so it doesn't reset
-        const currentVal = select.value;
-
-        const users = state.users_list_cache || [];
-        
-        // Rebuild the list
-        let html = '<option value="">-- Select User --</option>';
-        users.forEach(u => {
-            html += `<option value="${u.username}">${u.full_name || u.username}</option>`;
-        });
-        
-        select.innerHTML = html;
-        
-        // Put the selection back
-        if (currentVal) select.value = currentVal;
-        
-        console.log("Admin dropdown synced after refresh ✓");
-    }, 100); 
+    let html = '<option value="">-- Select User --</option>';
+    const users = state.users_list_cache || [];
+    
+    users.forEach(u => {
+        html += `<option value="${u.username}">${u.full_name || u.username}</option>`;
+    });
+    
+    select.innerHTML = html;
 }
-window.populateAdminUserSelect = populateAdminUserSelect;
