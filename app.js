@@ -8,7 +8,7 @@ import {
 } from './state.js';
 
 import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
-
+import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
@@ -587,91 +587,6 @@ document.getElementById('abs-public').value = "";
         console.error("Save process failed:", e);
     }
 }
-// ── SESSION TOKEN ────────────────────────────────────────────
-function setSyncStatus(s) {
-  const dot = document.getElementById('sync-dot'); 
-  if(!dot) return;
-  
-  // Reset classes
-  dot.className = 'sync-dot';
-  
-  if(s === 'syncing') {
-    dot.classList.add('syncing'); // This makes it pulse orange
-  } else if(s === 'offline') {
-    dot.classList.add('offline'); // This makes it red
-  }
-  // If 'online', it stays green (default)
-}
-    async function generateSessionToken() {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function createSession(username, userId) {
-  const token = await generateSessionToken();
-  const expiresAt = new Date(Date.now() + 8*60*60*1000).toISOString();
-  try {
-    await window._mpdb.from('app_sessions').insert({
-      token, username, user_id: userId,
-      expires_at: expiresAt, last_active: new Date().toISOString()
-    });
-    localStorage.setItem('mp_session_token', token);
-  } catch(e) { console.error('Session create failed:', e); }
-  return token;
-}
-
-async function validateSession() {
-  const token = localStorage.getItem('mp_session_token');
-  if(!token) return null;
-  try {
-    // 1. Fetch only the session data first
-    const { data: session, error: sErr } = await window._mpdb.from('app_sessions')
-      .select('*')
-      .eq('token', token)
-      .single();
-
-    if(!session || sErr) return null;
-
-    // Check expiry
-    if(new Date(session.expires_at) < new Date()) {
-      await window._mpdb.from('app_sessions').delete().eq('token', token);
-      localStorage.removeItem('mp_session_token');
-      localStorage.removeItem('mp_session');
-      return null;
-    }
-
-    // 2. Fetch the profile data separately using the username from the session
-    const { data: profile, error: pErr } = await window._mpdb.from('profiles')
-      .select('*')
-      .eq('username', session.username)
-      .single();
-
-    if(!profile || pErr) return null;
-
-    // Refresh last_active and extend expiry
-    const newExpiry = new Date(Date.now() + 8*60*60*1000).toISOString();
-    await window._mpdb.from('app_sessions').update({
-      last_active: new Date().toISOString(),
-      expires_at: newExpiry
-    }).eq('token', token);
-
-    // Return combined data so the rest of the app works as expected
-    return { ...session, profiles: profile };
-
-  } catch(e) { 
-    console.error("Session validation error:", e);
-    return null; 
-  }
-}
-
-async function destroySession() {
-  const token = localStorage.getItem('mp_session_token');
-  if(token) {
-    try { await window._mpdb.from('app_sessions').delete().eq('token', token); } catch(e) {}
-    localStorage.removeItem('mp_session_token');
-  }
-}
 
 async function hashPassword(password) {
   const msgBuffer = new TextEncoder().encode(password);
@@ -680,7 +595,6 @@ async function hashPassword(password) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
 // --- ZERK MAP UPLOAD LOGIC (PLACE AT TOP OF SCRIPT) ---
 async function uploadZerkView(input) {
     const file = input.files[0]; if(!file) return;
@@ -714,7 +628,6 @@ async function uploadZerkView(input) {
     }
     input.value = "";
 }
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 const ADMIN_USERNAME = 'tangal99';
 let currentUser = null;
 
@@ -2959,38 +2872,6 @@ try { offlineQueue = JSON.parse(localStorage.getItem('mp_offline_queue') || '[]'
 function saveOfflineQueue() {
   try { localStorage.setItem('mp_offline_queue', JSON.stringify(offlineQueue)); } catch(e) {}
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
-}
-
-async function persist(table, action, record) {
-  // Determine the actual ID string safely
-  const recordId = (typeof record === 'object' && record !== null) ? record.id : record;
-
-  if(!navigator.onLine) {
-    offlineQueue.push({ table, action, record, ts: Date.now() });
-    saveOfflineQueue();
-    showToast('Saved locally — will sync when online');
-    return;
-  }
-  try {
-    if(action==='upsert') {
-        await window._mpdb.from(table).upsert(record);
-    }
-    if(action==='delete') {
-        // Use recordId here instead of record.id
-        const { error, count } = await window._mpdb
-          .from(table)
-          .delete({ count: 'exact' })
-          .eq('id', recordId);
-        
-        console.log(`Deleted ${count} rows from ${table}`);
-    }
-    setSyncStatus('online'); showToast('Saved & synced ✓');
-  } catch(e) {
-    console.error("Persist error:", e);
-    offlineQueue.push({ table, action, record, ts: Date.now() });
-    saveOfflineQueue();
-    setSyncStatus('offline'); showToast('Saved locally — will sync when online');
-  }
 }
 
 async function syncOfflineQueue() {
