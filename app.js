@@ -13,6 +13,7 @@ import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
+import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1967,51 +1968,7 @@ function renderDocuments() {
   document.getElementById('warranty-list').innerHTML = warranties.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No warranties added</div>';
   document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
 }
-async function deleteDoc(id) {
-  if (!confirm("Are you sure?")) return;
 
-  // 1. WIPE FROM MEMORY (Variable)
-  state.documents = state.documents.filter(d => d.id !== id);
-
-  // 2. WIPE FROM LOCALSTORAGE (Browser Hard Drive)
-  // We need to update the saved state so it doesn't reload on refresh
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      try {
-        let val = JSON.parse(localStorage.getItem(key));
-        if (val && val.documents) {
-          val.documents = val.documents.filter(d => d.id !== id);
-          localStorage.setItem(key, JSON.stringify(val));
-          console.log("Cleaned LocalStorage key:", key);
-        }
-      } catch(e) {} // Not JSON, ignore
-    }
-  }
-
-  // 3. WIPE FROM OFFLINE QUEUE
-  if (window.offlineQueue) {
-    offlineQueue = offlineQueue.filter(q => {
-      const qId = (typeof q.record === 'object') ? q.record.id : q.record;
-      return qId !== id;
-    });
-    saveOfflineQueue();
-  }
-
-  // 4. UPDATE UI
-  renderDocuments();
-  if (window._currentDetailEquipId) renderDocsList(window._currentDetailEquipId);
-
-  // 5. WIPE FROM DATABASE
-  try {
-    const { error } = await window._mpdb.from('documents').delete().eq('id', id);
-    if (error) throw error;
-    showToast("Deleted from server ✓");
-  } catch (e) {
-    console.error("Server delete failed, adding to queue", e);
-    // If it fails, we put it in the queue to try again later
-    persist('documents', 'delete', id);
-  }
-}
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
   
@@ -2466,20 +2423,6 @@ function openSupplierDetail(id){
 
 }
 
-function openDocDetail(id){
-  const d=state.documents.find(x=>x.id===id); if(!d)return;
-  document.getElementById('detail-title').textContent=d.name;
-  document.getElementById('detail-body').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
-      <div><span style="color:var(--text2)">Type:</span> ${d.type}</div>
-      <div><span style="color:var(--text2)">Equipment:</span> ${d.equip_id?equipName(d.equip_id):'—'}</div>
-      <div><span style="color:var(--text2)">Expiry:</span> ${fmtDate(d.expiry_date)}</div>
-    </div>
-    ${d.notes?`<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${d.notes}</div>`:''}
-    ${d.file_data?`<div style="margin-top:12px">${d.file_type&&d.file_type.startsWith('image')?`<img src="${d.file_data}" style="max-width:100%;border-radius:var(--radius);cursor:pointer" onclick="viewPhoto('${d.file_data}')"/>`:`<a href="${d.file_data}" download="${d.name}" class="btn btn-secondary">⬇ Download File</a>`}</div>`:'<div style="color:var(--text3);font-size:13px">No file attached</div>'}
-    <div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
-  openModal('detail-modal');
-}
 
 // ============================================================
 // WO PARTS
@@ -2628,52 +2571,6 @@ async function saveSupplier(){
   ['sup-name','sup-contact','sup-email','sup-phone','sup-website','sup-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
-async function saveDoc() {
-  const name = document.getElementById('d-name').value.trim(); 
-  if (!name) { showToast('Please enter a name'); return; }
-
-  // Use the existing ID if editing, otherwise generate a new one
-  const docId = _currentDocEditId || uid();
-
-  const record = {
-    id: docId, 
-    name,
-    type:        document.getElementById('d-type').value,
-    equip_id:    document.getElementById('d-equip').value || null,
-    expiry_date: document.getElementById('d-expiry').value || null,
-    notes:       document.getElementById('d-notes').value,
-    file_data:   pendingDocFile?.data || null,
-    file_type:   pendingDocFile?.type || null,
-  };
-
-  if (_currentDocEditId) {
-    // EDIT: Find and update existing doc in the state array
-    const idx = state.documents.findIndex(d => d.id === _currentDocEditId);
-    if (idx !== -1) {
-        // Keep old file data if a new one wasn't uploaded during this edit
-        if (!record.file_data) {
-            record.file_data = state.documents[idx].file_data;
-            record.file_type = state.documents[idx].file_type;
-        }
-        state.documents[idx] = record;
-    }
-  } else {
-    state.documents.push(record);
-  }
-
-  await persist('documents', 'upsert', record);
-  _currentDocEditId = null;
-  pendingDocFile = null;
-  closeModal('doc-modal'); 
-  renderDocuments(); 
-  if (window._currentDetailEquipId) {
-      renderDocsList(window._currentDetailEquipId); 
-  }
-  ['d-name','d-expiry','d-notes'].forEach(id => { 
-    const el = document.getElementById(id); if(el) el.value = ''; 
-  });
-  document.getElementById('doc-file-preview').textContent = '';
-}
 
 function convertToTask(schedId){
   const s=state.schedules.find(x=>x.id===schedId); if(!s)return;
@@ -6319,60 +6216,6 @@ function openDocModal(docId = null) {
   }
 
   openModal('doc-modal');
-}
-function deleteDoc(docId) {
-    if (!confirm("Are you sure you want to delete this document?")) return;
-
-    state.documents = state.documents.filter(d => d.id !== docId);
-    renderDocsList(window._currentDetailEquipId);
-}
-// Opens a simple file picker
-function openDocDetail(docId) {
-    const doc = state.documents.find(d => d.id === docId);
-    if (!doc) return;
-
-    if (!doc.file_data) {
-        alert("No file attached to this document.");
-        return;
-    }
-
-    // Create a temporary link to view the file
-    const newWindow = window.open();
-    
-    // If it's a PDF
-    if (doc.file_data.includes('application/pdf') || doc.file_type === 'application/pdf') {
-        newWindow.document.write(`
-            <title>${doc.name}</title>
-            <body style="margin:0">
-                <embed src="${doc.file_data}" width="100%" height="100%" type="application/pdf">
-            </body>
-        `);
-    } 
-    // If it's an image
-    else {
-        newWindow.document.write(`
-            <title>${doc.name}</title>
-            <body style="margin:0; background:#222; display:flex; align-items:center; justify-content:center">
-                <img src="${doc.file_data}" style="max-width:100%; max-height:100%; object-fit:contain">
-            </body>
-        `);
-    }
-}
-function editDocName(docId) {
-    // Find the document in the state
-    const doc = state.documents.find(d => d.id === docId);
-    if (!doc) return;
-
-    // Ask user for new name
-    const newName = prompt("Enter new document name:", doc.name);
-    
-    // If user didn't cancel and name isn't empty
-    if (newName && newName.trim() !== "") {
-        doc.name = newName.trim();
-        
-        // Refresh the list
-        renderDocsList(window._currentDetailEquipId); 
-    }
 }
 
 function openAddDocModal() {
