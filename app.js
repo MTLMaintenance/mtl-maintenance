@@ -7,6 +7,8 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId 
 } from './state.js';
 
+import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
+
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
@@ -1007,7 +1009,7 @@ function quickLogHours(equipId) {
 // ============================================================
 let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
 
-function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
 
 async function loadState() {
   setSyncStatus('syncing');
@@ -1155,44 +1157,10 @@ async function runRecurrenceEngine() {
 // ============================================================
 const ICONS={Excavator:'🦾',Tractor:'🚜','Wheel Loader':'⚙','Skid Steer':'🔧',Compressor:'💨',Crane:'🏗',Compactor:'🔩',Truck:'🚛',Forklift:'🏭'};
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
-function fmtDate(d){ 
-  if(!d)return'—'; 
-  // Parse YYYY-MM-DD as local date to avoid UTC timezone shift
-  if(typeof d==='string' && /^\d{4}-\d{2}-\d{2}$/.test(d)){
-    const [y,m,day]=d.split('-').map(Number);
-    return new Date(y,m-1,day).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  }
-  return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); 
-}
-function isOverdue(d){ 
-  if(!d) return false;
-  if(typeof d==='string' && /^\d{4}-\d{2}-\d{2}$/.test(d)){
-    const [y,m,day]=d.split('-').map(Number);
-    return new Date(y,m-1,day)<TODAY;
-  }
-  return new Date(d)<TODAY;
-}
+
 function equipName(id){ const e=state.equipment.find(x=>x.id===id); return e?e.name:'—'; }
 function supplierName(id){ const s=state.suppliers.find(x=>x.id===id); return s?s.name:'—'; }
-function badge(s) {
-  const m = {
-    'Operational': 'bs',
-    'In Service': 'bi',
-    'Down': 'bd',
-    'Standby': 'bg',
-    'Completed': 'bs',
-    'Open': 'bi',
-    'Overdue': 'bd',
-    'Critical': 'bd',
-    'High': 'bw',
-    'Medium': 'bi',
-    'Low': 'bg',
-    // ADD THESE TWO LINES:
-    'In Progress': 'b-progress',
-    'Waiting for Parts': 'b-parts'
-  };
-  return `<span class="badge ${m[s] || 'bg'}">${s}</span>`;
-}
+
 function healthColor(score){ return score>=80?'#3B6D11':score>=50?'#BA7517':'#E24B4A'; }
 function calcHealth(equipId){
   const tasks=state.tasks.filter(t=>t.equipId===equipId);
@@ -1205,7 +1173,6 @@ function calcHealth(equipId){
   score-=open*5;
   return Math.max(0,Math.min(100,score));
 }
-function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
