@@ -15,6 +15,7 @@ import { healthColor, calcHealth, getLastService, updateEquipStatus } from './eq
 import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1862,52 +1863,7 @@ function renderParts() {
         </tr>`;
     }).join('');
 }
-// 1. THE DELETE FUNCTION
-window.deletePart = async function() {
-    // Get ID from the hidden field inside the modal
-    const id = document.getElementById('part-edit-id').value;
-    
-    if (!id) {
-        alert("No ID found. Close the modal and try again.");
-        return;
-    }
 
-    const part = state.parts.find(p => p.id === id);
-    if (!confirm(`Permanently delete "${part ? part.name : 'this part'}"?`)) return;
-
-    try {
-        await window._mpdb.from('parts').delete().eq('id', id);
-        
-        // Remove from local memory
-        state.parts = state.parts.filter(p => p.id !== id);
-        
-        showToast("Part deleted");
-        closeModal('part-modal');
-        renderParts();
-    } catch (e) {
-        alert("Delete failed: " + e.message);
-    }
-};
-
-function openAddPart() {
-    // 1. CLEAR the hidden ID (This is very important)
-    document.getElementById('part-edit-id').value = "";
-    
-    // 2. Reset the title
-    document.getElementById('part-modal-title').textContent = "Add New Part";
-
-    // 3. Clear the inputs
-    ['edit-p-name', 'p-num',  'p-qty', 'p-reorder'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = (id === 'p-cost' || id === 'p-qty') ? 0 : '';
-    });
-
-    // 4. Hide delete button for new parts
-    const delBtn = document.getElementById('btn-delete-part');
-    if (delBtn) delBtn.style.display = 'none';
-
-    openModal('part-modal');
-}
 // ============================================================
 // SUPPLIERS
 // ============================================================
@@ -2507,55 +2463,7 @@ async function saveTask() {
 }
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
-async function savePart() {
-    // 1. Get the ID from the hidden field
-    const existingId = document.getElementById('part-edit-id').value;
-    
-    // 2. Gather form data
-    const name = document.getElementById('edit-p-name').value.trim();
-    const partNum = document.getElementById('p-num').value.trim();
-    const unitCost = parseFloat(document.getElementById('p-cost').value) || 0;
-    const qty = parseInt(document.getElementById('p-qty').value) || 0;
-    const reorder = parseInt(document.getElementById('p-reorder').value) || 0;
-    const supplierId = document.getElementById('p-supplier-select').value || null;
 
-    if (!name) return alert("Part name is required");
-
-    // 3. Determine ID (Existing for Edit, New for Add)
-    const partId = (existingId && existingId !== "") ? existingId : uid();
-
-    // 4. Create record MATCHING your Supabase columns exactly
-    const record = {
-        id: partId,
-        name: name,
-        num: partNum,
-        qty: qty,
-        reorder: reorder,
-        cost: unitCost,
-        supplier_id: supplierId
-        // REMOVED updated_at because it doesn't exist in your DB
-    };
-
-    try {
-        const { error } = await window._mpdb
-            .from('parts')
-            .upsert(record);
-
-        if (error) throw error;
-
-        // Update Local State
-        const idx = state.parts.findIndex(p => p.id === partId);
-        if (idx !== -1) state.parts[idx] = record;
-        else state.parts.push(record);
-
-        showToast("Part saved ✓");
-        closeModal('part-modal');
-        renderParts();
-
-    } catch (e) {
-        alert("Error saving: " + e.message);
-    }
-}
 async function saveSupplier(){
   const name=document.getElementById('sup-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
   const record={
@@ -6820,52 +6728,6 @@ async function fetchAllProfiles() {
     }
 }
 
-
-window.editPart = function(id) {
-    const part = state.parts.find(p => p.id === id);
-    if (!part) return;
-
-    // --- THE FIX: Make sure this ID is set correctly ---
-    const idInput = document.getElementById('part-edit-id');
-    if (idInput) {
-        idInput.value = id;
-    } else {
-        console.error("Hidden input 'part-edit-id' not found in HTML!");
-    }
-
-    // Fill form
-    document.getElementById('part-modal-title').textContent = "Edit Part: " + part.name;
-    document.getElementById('edit-p-name').value = part.name || "";
-    document.getElementById('p-num').value = part.num || "";
-    document.getElementById('p-cost').value = part.cost || 0;
-    document.getElementById('p-qty').value = part.qty || 0;
-    document.getElementById('p-reorder').value = part.reorder || 0;
-    document.getElementById('p-supplier-select').value = part.supplier_id || "";
-
-    // Show delete button
-    const delBtn = document.getElementById('btn-delete-part');
-    if (delBtn) delBtn.style.display = 'block';
-
-    openModal('part-modal');
-};
-
-
-function resetPartForm() {
-    document.getElementById('part-modal-title').textContent = "Add New Part";
-    document.getElementById('part-edit-id').value = ""; 
-    const delBtn = document.getElementById('btn-delete-part');
-    if (delBtn) delBtn.style.display = 'none';
-    const ids = ['p-name', 'p-num', 'p-cost', 'p-qty', 'p-reorder', 'p-reorder-qty', 'p-supplier-select'];  
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            el.value = (id.includes('qty') || id.includes('reorder')) ? '0' : '';
-        }
-    });
-    
-    const autoReorder = document.getElementById('p-auto-reorder');
-    if (autoReorder) autoReorder.checked = false;
-}
 function updateDashboardParts() {
     const bigNumber = document.getElementById('dash-low-parts');
     const listContainer = document.getElementById('dash-low-parts-list');
@@ -7670,11 +7532,7 @@ function switchPartsTab(tabType) {
 // Also run it once when the app starts
 setTimeout(adjustMobileLayout, 500);
 
-function openAddPart() {
-    resetPartForm(); 
-    populateSupplierDropdown(); 
-    openModal('part-modal');
-}
+
 // 1. Open the modal
 function openTaskSignoff(taskId) {
     currentTargetTaskId = taskId;
