@@ -6,7 +6,8 @@ export const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
 export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 // 2. Initialize the Client
 export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+window._mpdb = supabase; 
+window.supabase = supabase; 
 // 3. Sync Status (The green/orange/red dot)
 export function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot'); 
