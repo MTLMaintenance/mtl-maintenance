@@ -10,6 +10,7 @@ import {
 import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
+import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1082,31 +1083,7 @@ function calcHealth(equipId){
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
-// MODALS
-// ============================================================
-function openModal(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = 'flex';
-        el.classList.add('open');
 
-        // Fill dropdowns if the modal needs them
-        if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            populateSelects();
-        }
-    } else {
-        console.error("Modal not found:", id);
-    }
-}
-
-function closeModal(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = 'none';
-        el.classList.remove('active'); // THE FIX: Removes the class so it's unclickable
-        el.classList.remove('open');
-    }
-}
 // --- THE DROPDOWN PAINTER ---
 
 function populateSelects() {
@@ -1166,17 +1143,6 @@ function switchWOTab(tabId, btn) {
     const parent = btn.parentElement;
     parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
-}
-function switchTab(group, tab, btn){
-  const modal=btn.closest('.modal');
-  modal.querySelectorAll('[id]').forEach(el=>{
-    if(['details-eq','custom-eq','assign-eq'].includes(el.id)) el.style.display='none';
-  });
-  const el=document.getElementById(tab); if(el) el.style.display='block';
-  modal.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if(tab==='assign-eq') renderAssignUsers();
-  if(tab==='custom-eq') renderCustomFields();
 }
 
 // ============================================================
@@ -4218,21 +4184,7 @@ function renderAlerts(){
   sec.innerHTML=h;
 }
 
-// ── OVERRIDDEN openModal ──────────────────────────────────────
-function openModal(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = 'flex';
-        el.classList.add('open');
 
-        // Fill dropdowns if the modal needs them
-        if (id === 'task-modal' || id === 'calendar-entry-modal') {
-            populateSelects();
-        }
-    } else {
-        console.error("Modal not found:", id);
-    }
-}
 async function enterApp() {
   console.log("Entering application...");
   
@@ -5786,82 +5738,7 @@ function insertMention(username, atPos) {
     hideMentionDropdown();
     input.focus();
 }
-// --- THE MASTER SWITCHBOARD ---
-async function showPanel(id) {
-    // 1. Reset view to top of page
-    window.scrollTo(0, 0);
 
-    // 2. Hide all panels and deactivate nav buttons
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(p => {
-        p.style.display = 'none';
-        p.classList.remove('active');
-    });
-
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
-
-    // 3. Show the requested panel
-    const targetPanel = document.getElementById('panel-' + id);
-    if (targetPanel) {
-        targetPanel.style.display = 'block';
-        targetPanel.classList.add('active');
-    } else {
-        console.warn("Panel not found:", 'panel-' + id);
-    }
-
-    // 4. Highlight the clicked button
-    navButtons.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
-            btn.classList.add('active');
-        }
-    });
-
-    // 5. THE SWITCHBOARD (Logic for every tab)
-    const renderMap = {
-        'dashboard': async () => { if (typeof renderDashboard === 'function') await renderDashboard(); },
-        'calendar': async () => { if (typeof renderCalendar === 'function') await renderCalendar(); },
-        'equipment': () => { if (typeof renderEquipmentTable === 'function') renderEquipmentTable(); },
-        'tasks': () => { if (typeof renderTasks === 'function') renderTasks(); },
-        
-        // --- CHANGED THIS LINE BELOW ---
-        'parts': () => { if (typeof switchPartsTab === 'function') switchPartsTab('inventory'); else if (typeof renderParts === 'function') renderParts(); },
-        // -------------------------------
-
-        'suppliers': () => { if (typeof renderSuppliers === 'function') renderSuppliers(); },
-        'documents': () => { if (typeof renderDocuments === 'function') renderDocuments(); },
-        'analytics': () => { if (typeof renderAnalytics === 'function') renderAnalytics(); },
-        'admin': () => { if (typeof renderAdminPanel === 'function') renderAdminPanel(); },
-        'checklists': () => { if (typeof renderChecklistTemplates === 'function') renderChecklistTemplates(); },
-        'chat': () => { 
-            if (typeof renderChat === 'function') renderChat(); 
-            if (typeof markChannelRead === 'function') markChannelRead(currentChannel); 
-        },
-        'tools': async () => { 
-            if (!state.tools || state.tools.length === 0) {
-                await fetchTools();
-            }
-            if (typeof switchToolTab === 'function') switchToolTab('inventory');
-            if (typeof renderTools === 'function') renderTools(); 
-        }
-    };
-
-    // 6. Execute the render if it exists
-    if (renderMap[id]) {
-        await renderMap[id]();
-    }
-
-    // 7. Post-render fixes
-    if (id === 'chat') {
-        requestAnimationFrame(() => { if (typeof applyDesktopChatHeight === 'function') applyDesktopChatHeight(); });
-    }
-    
-    if (id !== 'calendar') {
-        const calPanel = document.getElementById('panel-calendar');
-        if (calPanel) calPanel.style.overflowY = '';
-    }
-}
-  
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
      window.activeZerkId = zerkId; 
