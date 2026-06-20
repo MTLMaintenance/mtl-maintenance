@@ -1,3 +1,16 @@
+export let state = { 
+    equipment: [], 
+    tasks: [], 
+    schedules: [], 
+    parts: [], 
+    suppliers: [], 
+    documents: [], 
+    partUsage: [], 
+    tools: [], 
+    wishlist: [], 
+    observations: [] 
+};
+
 export let chatSub = null;
 export let chatChannel = null;
 export let currentEditingToolId = null;
