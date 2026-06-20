@@ -3,8 +3,7 @@ import { showToast } from './utils.js';
 
 // 1. Connection Config (Move these from your big file)
 export const SUPABASE_URL = 'https://ldxryhgovspckypqoqvf.supabase.co';
-export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Copy your full key here
-
+export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkeHJ5aGdvdnNwY2t5cHFvcXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODk2MTksImV4cCI6MjA4OTI2NTYxOX0.rI_PLHYbp_tat5vsXDHXbc0zbokhGrBq_Tg9vFrWuSc';
 // 2. Initialize the Client
 export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -50,4 +49,55 @@ export async function createSession(username, userId) {
     localStorage.setItem('mp_session_token', token);
   } catch(e) { console.error('Session create failed:', e); }
   return token;
+}
+export async function validateSession() {
+  const token = localStorage.getItem('mp_session_token');
+  if(!token) return null;
+  try {
+    // 1. Fetch only the session data first
+    const { data: session, error: sErr } = await window._mpdb.from('app_sessions')
+      .select('*')
+      .eq('token', token)
+      .single();
+
+    if(!session || sErr) return null;
+
+    // Check expiry
+    if(new Date(session.expires_at) < new Date()) {
+      await window._mpdb.from('app_sessions').delete().eq('token', token);
+      localStorage.removeItem('mp_session_token');
+      localStorage.removeItem('mp_session');
+      return null;
+    }
+
+    // 2. Fetch the profile data separately using the username from the session
+    const { data: profile, error: pErr } = await window._mpdb.from('profiles')
+      .select('*')
+      .eq('username', session.username)
+      .single();
+
+    if(!profile || pErr) return null;
+
+    // Refresh last_active and extend expiry
+    const newExpiry = new Date(Date.now() + 8*60*60*1000).toISOString();
+    await window._mpdb.from('app_sessions').update({
+      last_active: new Date().toISOString(),
+      expires_at: newExpiry
+    }).eq('token', token);
+
+    // Return combined data so the rest of the app works as expected
+    return { ...session, profiles: profile };
+
+  } catch(e) { 
+    console.error("Session validation error:", e);
+    return null; 
+  }
+}
+
+export async function destroySession() {
+  const token = localStorage.getItem('mp_session_token');
+  if(token) {
+    try { await window._mpdb.from('app_sessions').delete().eq('token', token); } catch(e) {}
+    localStorage.removeItem('mp_session_token');
+  }
 }
