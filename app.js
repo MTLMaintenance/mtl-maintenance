@@ -1004,11 +1004,6 @@ function computeMonthlyCosts() {
   });
 }
 
-function setSyncStatus(s) {
-  const dot=document.getElementById('sync-dot'); if(!dot) return;
-  dot.className='sync-dot'+(s==='syncing'?' syncing':s==='offline'?' offline':'');
-}
-
 // ============================================================
 // RECURRENCE ENGINE
 // ============================================================
