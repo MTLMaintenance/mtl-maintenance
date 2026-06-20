@@ -95,3 +95,32 @@ export async function handleWishAction(id, status, reason = "") {
         return false;
     }
 }
+export async function editToolObservation(obsId, state) {
+    const note = state.observations.find(o => o.id === obsId);
+    if (!note) {
+        console.error("Note not found in memory.");
+        return;
+    }
+
+    const edited = prompt('Edit note:', note.body || '');
+    if (edited === null) return; // User cancelled
+    
+    const body = edited.trim();
+    if (!body || body === note.body) return;
+
+    try {
+        // 1. Update Supabase
+        const { error } = await supabase.from('observations').update({ body }).eq('id', obsId);
+        if (error) throw error;
+
+        // 2. Update Local Memory
+        note.body = body;
+        
+        showToast('Note updated ✓');
+        return true;
+    } catch (e) {
+        console.error('Edit failed:', e);
+        showToast('Update failed');
+        return false;
+    }
+}
