@@ -921,12 +921,6 @@ function quickLogHours(equipId) {
   
   openModal('log-hours-modal');
 }
-// ============================================================
-// STATE
-// ============================================================
-let state = { equipment:[], tasks:[], schedules:[], parts:[], suppliers:[], documents:[], partUsage:[], recurrenceRules:[], monthlyCosts:[0,0,0,0], tools:[], wishlist: []}; 
-
-
 
 async function loadState() {
   setSyncStatus('syncing');
