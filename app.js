@@ -4,7 +4,7 @@ import {
     staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
     calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
-    _tempFileData, taskPinEntry, currentTargetTaskId 
+    _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
 import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
