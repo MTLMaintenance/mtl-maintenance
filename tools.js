@@ -124,3 +124,48 @@ export async function editToolObservation(obsId, state) {
         return false;
     }
 }
+export async function processReview(newStatus, currentReviewId) {
+    if (!currentReviewId) return;
+
+    const arrivalDate = document.getElementById('rev-date')?.value;
+    const denialReason = document.getElementById('rev-denial-reason')?.value;
+
+    // Validation
+    if (newStatus === 'ordered' && !arrivalDate) {
+        alert("Please select an expected arrival date.");
+        return false;
+    }
+    if (newStatus === 'denied' && !denialReason) {
+        alert("Please provide a reason for the denial.");
+        return false;
+    }
+
+    try {
+        const updates = { 
+            status: newStatus,
+            expected_arrival: newStatus === 'ordered' ? arrivalDate : null,
+            denial_reason: newStatus === 'denied' ? denialReason : null,
+            last_updated: new Date().toISOString()
+        };
+
+        // 1. Update Supabase
+        const { error } = await supabase
+            .from('tool_requests')
+            .update(updates)
+            .eq('id', currentReviewId);
+
+        if (error) throw error;
+
+        showToast(newStatus === 'ordered' ? "Tool Ordered! 📦" : "Request Denied ❌");
+        
+        closeModal('review-modal');
+        
+        // 2. Return true so the main app knows to refresh the tables
+        return true;
+
+    } catch (e) {
+        console.error("Review process failed:", e);
+        alert("Update failed: " + e.message);
+        return false;
+    }
+}
