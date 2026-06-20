@@ -14,6 +14,7 @@ import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
+import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction } from './tools.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -4906,72 +4907,6 @@ function renderTools() {
 }
 
 
-async function saveTool() {
-    console.log("--- SUBMITTING TOOL UPDATE ---");
-    try {
-        const idInput = document.getElementById('tool-edit-id');
-        const id = idInput ? idInput.value : '';
-        const nameInput = document.getElementById('tool-name');
-        
-        if(!nameInput || !nameInput.value.trim()) {
-            alert("Please enter a tool name");
-            return;
-        }
-
-        const toolName = nameInput.value.trim();
-        // Check if we are editing or creating new
-        const isEdit = (id && id.trim() !== "");
-
-        const tool = {
-            id: isEdit ? id : uid(),
-            name: toolName, 
-            tool_name: toolName, 
-            category: document.getElementById('tool-cat').value,
-            location: document.getElementById('tool-loc').value.trim(),
-            health: parseInt(document.getElementById('tool-health').value) || 100,
-            is_lost: document.getElementById('tool-lost').checked,
-            status: 'available', 
-            last_updated: new Date().toISOString()
-        };
-
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .upsert([tool]);
-
-        if (error) {
-            alert("Database Error: " + error.message);
-            return;
-        }
-
-        // --- IMPROVED LOGGING FOR ACCOUNTABILITY ---
-        if (typeof logAuditAction === 'function') {
-            const actionType = isEdit ? "Updated Tool" : "Added New Tool";
-            const details = `${tool.tool_name} (Health: ${tool.health}%, Status: ${tool.is_lost ? 'LOST' : 'Available'})`;
-            
-            // We use 'await' to make sure the log finishes before the modal closes
-            await logAuditAction(actionType, details);
-        }
-
-        if(tool.health <= 40 || tool.is_lost) {
-            if (typeof notifyManagers === 'function') {
-                await notifyManagers(`⚠️ TOOL ALERT: "${tool.tool_name}" ${tool.is_lost ? 'is LOST' : 'is CRITICAL ('+tool.health+'%)'}.`);
-            }
-        }
-
-        if (typeof fetchTools === 'function') {
-            await fetchTools();
-        }
-      
-        closeModal('tool-modal'); 
-        if (typeof renderTools === 'function') renderTools(); 
-        
-        showToast("Tool saved successfully ✓");
-
-    } catch (e) {
-        console.error("❌ Save Tool Error:", e);
-        showToast("Save failed. Check console.");
-    }
-}
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
@@ -5024,16 +4959,7 @@ function renderDeniedList() {
         </div>`).join('') || '<div style="color:var(--text3); padding:20px">No denied tools in history.</div>';
 }
 
-async function handleWish(id, status) {
-    let reason = "";
-    if (status === 'denied') { reason = prompt("Denial reason:"); if (reason === null) return; }
-    const req = state.wishlist.find(x => x.id === id);
-    await window._mpdb.from('tool_requests').update({status, denial_reason: reason}).eq('id', id);
-    req.status = status;
-    if (status === 'denied') await sendDM(req.requested_by, `❌ Tool request "${req.tool_name}" denied: ${reason}`);
-    else await notifyManagers(`✅ Tool approved: "${req.tool_name}" (Req by ${req.requested_by})`);
-    renderWishlist();
-}
+
 function updateWishCount() {
     const count = state.wishlist.filter(w => w.status === 'pending').length;
     const badge = document.getElementById('wish-count');
@@ -5121,62 +5047,8 @@ function switchToolModalTab(tab) {
     document.getElementById('btn-tool-details')?.classList.toggle('active', tab === 'details');
     document.getElementById('btn-tool-obs')?.classList.toggle('active', tab === 'observations');
 }
-function renderToolObsList() {
-    const toolId = document.getElementById('tool-edit-id').value;
-    const container = document.getElementById('tool-obs-list');
-    if(!toolId || !container) return;
 
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
 
-    // THE FIX: Check both equip_id and tool_id to find the notes
-    const obs = (state.observations || []).filter(o => o.tool_id === toolId || o.equip_id === toolId);
-    
-    const sortedObs = [...obs].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-
-    container.innerHTML = sortedObs.length ? sortedObs.map(o => {
-        const isAuthor = o.author === (currentUser.full_name || currentUser.username);
-        const canControl = isManager || isAuthor;
-
-        return `
-        <div class="note-card">
-            <div class="note-header">
-                <div class="note-author">👤 ${o.author}</div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="note-date">${new Date(o.created_at).toLocaleDateString()}</span>
-                    ${canControl ? `
-                        <button class="note-edit-btn" onclick="editToolObservation('${o.id}')">✎</button>
-                        <button class="note-del-btn" onclick="deleteToolObservation('${o.id}')">✕</button>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="note-body">${o.body}</div>
-        </div>`;
-    }).join('') : `<div style="color:#aaa; font-size:13px; padding:40px 20px; text-align:center; font-style:italic;">No notes recorded.</div>`;
-}
-
-// 3. Add an observation to a tool
-async function addToolObservation() {
-    const toolId = document.getElementById('tool-edit-id').value;
-    const body = document.getElementById('tool-obs-input').value.trim();
-    if(!toolId || !body) return;
-
-    const obs = {
-        id: uid(),
-        tool_id: toolId,
-        author: currentUser.name,
-        body: body,
-        severity: 'info',
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        await window._mpdb.from('observations').insert(obs);
-        state.observations.unshift(obs);
-        document.getElementById('tool-obs-input').value = '';
-        renderToolObsList();
-        showToast("Note added ✓");
-    } catch(e) { showToast("Failed to save note"); }
-}
 function resetToolForm() {
     console.log("Resetting Tool Form Safely...");
     
@@ -5259,59 +5131,7 @@ function resetToolForm() {
 
     console.log("✅ Edit form loaded for:", tool.tool_name || tool.name);
 }
-async function deleteTool() {
-    // 1. Get the ID of the tool we are currently editing
-    const id = document.getElementById('tool-edit-id').value;
-    if(!id) return;
 
-    // Find the name locally for the confirmation message
-    const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
-    const tool = localList.find(t => t.id === id);
-    const toolName = tool ? (tool.tool_name || tool.name) : 'this tool';
-
-    if(!confirm(`Are you sure you want to permanently delete "${toolName}"?`)) return;
-
-    try {
-        console.log("Deleting from database...");
-
-        // 2. Physical Delete from Supabase
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            alert("Database Error: " + error.message);
-            return;
-        }
-
-        // --- THE LIVE UPDATE FIX ---
-        
-        // 3. Remove the tool from local memory (Filter it out)
-        if (window.state && window.state.tools) {
-            window.state.tools = window.state.tools.filter(t => t.id !== id);
-        } else if (typeof state !== 'undefined' && state.tools) {
-            state.tools = state.tools.filter(t => t.id !== id);
-        }
-
-        console.log("✅ Tool removed from memory.");
-
-        // 4. Close the modal
-        closeModal('tool-modal');
-        
-        // 5. Redraw the table IMMEDIATELY
-        if (typeof renderTools === 'function') {
-            renderTools(); 
-            console.log("✅ UI Redrawn.");
-        }
-
-        showToast("Tool deleted successfully ✓");
-
-    } catch (e) {
-        console.error("Delete failed:", e);
-        showToast("Error deleting tool.");
-    }
-}
 async function editToolObservation(obsId) {
     const note = state.observations.find(o => o.id === obsId);
     if (!note) return;
@@ -5336,34 +5156,7 @@ async function editToolObservation(obsId) {
         showToast('Update failed');
     }
 }
-async function deleteToolObservation(obsId) {
-    if (!confirm("Are you sure you want to permanently delete this note?")) return;
 
-    try {
-        // 1. Remove from Supabase
-        const { error } = await window._mpdb
-            .from('observations')
-            .delete()
-            .eq('id', obsId);
-
-        if (error) throw error;
-
-        // 2. Remove from local memory
-        state.observations = state.observations.filter(o => o.id !== obsId);
-
-        // 3. Log the action to the audit log (optional but recommended)
-        if (typeof logAuditAction === 'function') {
-            logAuditAction("Deleted Tool Note", `A tool observation was removed by ${currentUser.name}`);
-        }
-
-        // 4. Refresh the list on screen
-        renderToolObsList();
-        showToast("Note deleted");
-    } catch (e) {
-        console.error("Delete failed:", e);
-        showToast("Error: Could not delete note");
-    }
-}
 async function handleWishApproval(id) {
     const req = state.wishlist.find(x => x.id === id);
     if (!req) return;
@@ -7019,38 +6812,6 @@ async function receiveTool() {
         showToast("Update failed");
     }
 }
-async function fetchTools() {
-    console.log("🔍 Checking connection to 'tool_requests' table...");
-    
-    try {
-        const { data, error } = await window._mpdb
-            .from('tool_requests')
-            .select('*');
-
-        if (error) {
-            console.error("❌ Supabase returned an error:", error.message);
-            return;
-        }
-
-        console.log("📦 RAW DATA RECEIVED:", data);
-
-        // Ensure the global state is ready
-        if (typeof window.state === 'undefined') window.state = {};
-        window.state.tools = data || [];
-
-        console.log(`✅ State updated. There are now ${window.state.tools.length} tools in memory.`);
-
-        // Force the draw
-        if (typeof renderTools === 'function') {
-            renderTools();
-        } else {
-            console.warn("⚠️ renderTools function not found!");
-        }
-
-    } catch (err) {
-        console.error("💥 Function crashed:", err);
-    }
-}
 
 async function fetchAllProfiles() {
     try {
@@ -7079,66 +6840,6 @@ async function fetchAllProfiles() {
 
     } catch (e) {
         console.error("Error loading team profiles:", e);
-    }
-}
-// --- TOOL NOTE ACTIONS ---
-
-async function addToolNote() {
-    const toolId = document.getElementById('tool-edit-id').value;
-    const input = document.getElementById('tool-notes-input');
-    const body = input ? input.value.trim() : "";
-
-    if (!toolId || !body) return;
-
-    const newNote = {
-        id: crypto.randomUUID(),
-        // THE FIX: Use 'equip_id' because your database requires it
-        equip_id: toolId, 
-        tool_id: toolId, // Including this too in case you have both columns
-        author: currentUser.full_name || currentUser.username,
-        body: body,
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        console.log("Sending note to Supabase:", newNote);
-        
-        const { error } = await window._mpdb.from('observations').insert([newNote]);
-        if (error) throw error;
-
-        // Update local memory
-        if (!state.observations) state.observations = [];
-        state.observations.push(newNote);
-
-        // Clear input and redraw list
-        input.value = "";
-        renderToolObsList();
-        showToast("Note added ✓");
-
-    } catch (e) {
-        console.error("Supabase Save Error:", e.message);
-        alert("Failed to save note: " + e.message);
-    }
-}
-
-async function deleteToolObservation(id) {
-    if (!confirm("Are you sure you want to delete this note?")) return;
-
-    try {
-        // 1. Delete from Supabase
-        const { error } = await window._mpdb.from('observations').delete().eq('id', id);
-        if (error) throw error;
-
-        // 2. Remove from local memory
-        state.observations = state.observations.filter(o => o.id !== id);
-
-        // 3. Redraw list
-        renderToolObsList();
-        showToast("Note deleted");
-
-    } catch (e) {
-        console.error(e);
-        showToast("Delete failed");
     }
 }
 
