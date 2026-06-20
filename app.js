@@ -14,7 +14,7 @@ import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
-import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction } from './tools.js';
+import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction,editToolObservation  } from './tools.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
