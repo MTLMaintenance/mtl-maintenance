@@ -264,11 +264,7 @@ function selectUserForLogin(user) {
     if (typeof updatePinDots === 'function') updatePinDots();
 }
 
-function backToNames() {
-    enteredPin = "";
-    document.getElementById('login-stage-names').style.display = 'block';
-    document.getElementById('login-stage-pin').style.display = 'none';
-}
+
 function pressPin(num) {
     console.log("Button pressed:", num); // Check your F12 console for this!
 
