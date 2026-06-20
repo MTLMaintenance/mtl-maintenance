@@ -12,6 +12,7 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
+import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -3614,29 +3615,7 @@ async function renderUsersTable() {
     }
 }
 
-async function approveUser(id,name){await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);showToast(name+' approved ✓');renderAdminPanel();}
-async function denyUser(id){await window._mpdb.from('profiles').update({status:'denied'}).eq('id',id);showToast('Denied');renderAdminPanel();}
-async function deleteUser(id) {
-    // Look up the name from the cache we saved in renderUsersTable
-    const user = state.users_list_cache ? state.users_list_cache.find(u => u.id === id) : null;
-    const name = user ? (user.full_name || user.username) : "User";
 
-    if (!confirm('Delete ' + name + '?')) return;
-
-    try {
-        await window._mpdb.from('profiles').delete().eq('id', id);
-        
-        if (typeof showToast === 'function') showToast(name + ' removed');
-        
-        // Refresh the UI
-        if (typeof renderUsersTable === 'function') renderUsersTable();
-        if (typeof renderAdminPanel === 'function') renderAdminPanel();
-        
-    } catch (e) {
-        console.error("Delete error:", e);
-        alert("Failed to delete user.");
-    }
-}
 async function saveUserPermissions() {
     if (!editingUserId) return;
 
@@ -5610,12 +5589,6 @@ async function renderAdminPanel(){
   } catch(e){ console.error(e); }
 }
 
-async function approveUser(id){
-  await window._mpdb.from('profiles').update({status:'approved'}).eq('id',id);
-  showToast('User approved ✓');
-  renderAdminPanel();
-}
-
 
 function handleChatInput(el) {
     // 1. Auto-resize textarea
@@ -6897,16 +6870,7 @@ function closeMarkupModal() {
     closeModal('markup-modal');
     isDrawing = false;
 }
-  async function logAuditAction(action, details) {
-  try {
-    await window._mpdb.from('audit_logs').insert({
-      user_name: currentUser?.name || 'System',
-      action: action,
-      details: details,
-      created_at: new Date().toISOString()
-    });
-  } catch(e) { console.warn("Audit log failed silently"); }
-}
+
 async function renderAuditLogs() {
     const container = document.getElementById('audit-log-list');
     const userFilter = document.getElementById('audit-filter-user');
@@ -8044,26 +8008,7 @@ window.deleteDoc = async function(id) {
     console.error("Delete execution failed:", err);
   }
 };
-async function logAuditAction(action, details) {
-  try {
-    // 1. Prepare the log entry
-    const logEntry = {
-      action: action,
-      details: details,
-      user_name: currentUser ? currentUser.name : 'Unknown User',
-      created_at: new Date().toISOString()
-    };
 
-    // 2. Save to Supabase
-    await window._mpdb.from('audit_logs').insert(logEntry);
-    
-    // 3. Refresh the log view if it's currently on screen
-    renderAuditLogs();
-    
-  } catch (e) {
-    console.error("Failed to log audit action:", e);
-  }
-}
 async function autoCleanupAuditLogs() {
     // Only run this if the current user is an Admin (optional safety check)
     if (currentUser && currentUser.role !== 'admin') return;
