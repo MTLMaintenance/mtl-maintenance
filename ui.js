@@ -1,0 +1,67 @@
+// ui.js - The App Skeleton (Modals, Panels, and Tabs)
+
+// 1. Open a Modal
+export function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        el.classList.add('open');
+        
+        // Safety: If the modal needs specific data loaded when it opens, 
+        // we can trigger that here or in the specific module.
+    } else {
+        console.error("Modal not found:", id);
+    }
+}
+
+// 2. Close a Modal
+export function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'none';
+        el.classList.remove('active');
+        el.classList.remove('open');
+    }
+}
+
+// 3. Switch between main screens (Dashboard, Calendar, etc.)
+export function showPanel(id) {
+    // Scroll to top
+    window.scrollTo(0, 0);
+
+    // Hide all panels
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p => {
+        p.style.display = 'none';
+        p.classList.remove('active');
+    });
+
+    // Deactivate all nav buttons
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(b => b.classList.remove('active'));
+
+    // Show the requested panel
+    const targetPanel = document.getElementById('panel-' + id);
+    if (targetPanel) {
+        targetPanel.style.display = 'block';
+        targetPanel.classList.add('active');
+    }
+
+    // Highlight the button
+    navButtons.forEach(btn => {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// 4. Switch Tabs inside a modal or panel
+export function switchTab(group, tabId, btn) {
+    const parent = btn.parentElement;
+    // Remove active class from all buttons in this tab group
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    // Add active class to clicked button
+    btn.classList.add('active');
+
+    // Logic to show/hide content could be added here or kept in modules
+}
