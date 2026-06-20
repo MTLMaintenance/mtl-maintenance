@@ -9,6 +9,8 @@ import {
 
 import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
+import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
+
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
@@ -3755,77 +3757,7 @@ let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoDat
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
-async function initChat() {
-    // --- PART 1: LOAD EXISTING MESSAGES ---
-    try {
-        const { data } = await window._mpdb.from('chat_messages')
-            .select('id, channel, created_at, author, body, author_name')
-            .order('created_at', { ascending: false })
-            .limit(100);
-        state.chatMessages = data || [];
-        if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
-    } catch (e) { console.error("Chat load error:", e); }
 
-    // --- PART 2: SETUP REALTIME LISTENERS ---
-    try {
-        if (window.chatSub) window._mpdb.removeChannel(window.chatSub);
-        window.chatSub = window._mpdb.channel('chat-and-status-sync');
-
-        // A. LISTEN FOR NEW MESSAGES
-        window.chatSub.on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_messages'
-        }, payload => {
-            const msg = payload.new;
-            
-            // --- STEP 2: THE FIX ---
-            // If I am the author, I already put this on my screen in sendChatMessage().
-            // We return here so we don't show the same message twice.
-            if (currentUser && msg.author === currentUser.username) return;
-
-            // Prevent duplicate IDs from others
-            if (state.chatMessages.some(m => m.id === msg.id)) return;
-            
-            state.chatMessages.unshift(msg);
-
-            if (currentUser && msg.body && msg.body.includes('@' + currentUser.username)) {
-                showToast(`🔔 ${msg.author_name} mentioned you in #${msg.channel}`);
-            }
-
-            if (msg.channel === currentChannel) {
-                if (typeof appendChatMessage === 'function') {
-                    appendChatMessage(msg); // Show their message live
-                }
-                markChannelRead(currentChannel);
-            } else {
-                updateUnreadBadge();
-            }
-        });
-
-        // B. LISTEN FOR STATUS UPDATES
-        window.chatSub.on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles'
-        }, payload => {
-            if (state.users_list_cache) {
-                const idx = state.users_list_cache.findIndex(u => u.username === payload.new.username);
-                if (idx !== -1) state.users_list_cache[idx] = payload.new;
-            }
-            if (currentUser && payload.new.id === currentUser.id) {
-                currentUser.preferences = payload.new.preferences;
-                applyUserPreferences();
-            }
-            if (typeof renderDmList === 'function') renderDmList();
-            if (window.currentPanel === 'chat' && typeof renderChat === 'function') {
-                renderChat();
-            }
-        });
-
-        window.chatSub.subscribe();
-    } catch (e) { console.error("Realtime setup error:", e); }
-}
 async function renderChat() {
     console.log("Loading Chat...");
     await renderDmList();     // 1. Load the DM names
@@ -3904,106 +3836,7 @@ function renderChatMessages(msgs,container){
   msgs.forEach(msg=>{const msgDate=new Date(msg.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});if(msgDate!==lastDate){html+=`<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div>${msgDate}<div style="flex:1;height:1px;background:var(--border)"></div></div>`;lastDate=msgDate;}html+=buildChatMsgHtml(msg);});
   container.innerHTML=html;
 }
-function buildChatMsgHtml(msg) {
-  const isMe = msg.author === currentUser.username;
-  const sender = (state.users_list_cache || []).find(p => p.username === msg.author);
-  const status = (isMe ? currentUser.preferences?.status : sender?.preferences?.status) || 'Available';
-  
-  const emojiMap = { 
-    'Available': '🟢', 
-    'In the Field': '🚜', 
-    'At the Shop': '🔧', 
-    'On Lunch': '🍔', 
-    'Busy': '🔴' 
-  };
-  const statusEmoji = emojiMap[status] || '🟢';
 
-  // --- THE NEW INSTANT TOOLTIP HTML ---
-  const statusHtml = `
-    <div class="status-hover-wrap">
-        <span style="font-size:12px; margin: 0 4px;">${statusEmoji}</span>
-        <div class="status-tooltip">${status}</div>
-    </div>`;
-
-  const initials = (msg.author_name || msg.author).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-  const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  
-  const identityHtml = isMe 
-    ? `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center;">You ${statusHtml}</span>` 
-    : `<span style="color:#000 !important; font-weight:700; font-size:13px; display:flex; align-items:center;">${statusHtml} ${msg.author_name || msg.author}</span>`;
-
-  let body = (msg.body || '').split('\n').join('<br>');
-  body = body.replace(/@([\w]+)/g, '<span style="color:var(--accent);font-weight:600">@$1</span>');
-  
-  const equipTag = msg.equip_id ? `<div style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent-text);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openEquipDetail('${msg.equip_id}')">🔧 ${equipName(msg.equip_id)}</div>` : '';
-  const taskN = state.tasks.find(t => t.id === msg.task_id)?.name || 'Work Order';
-  const taskTag = msg.task_id ? `<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);color:var(--text2);border-radius:4px;padding:1px 7px;font-size:11px;cursor:pointer" onclick="openTaskDetail('${msg.task_id}')">📋 ${taskN}</div>` : '';
-  const photoHtml = msg.photo ? `<img src="${msg.photo}" style="max-width:240px;border-radius:var(--radius);margin-top:6px;cursor:pointer;border:1px solid var(--border)" onclick="viewPhoto('${msg.photo}')"/>` : '';
-  
-  const canDelete = isMe || currentUser?.role === 'admin' || currentUser?.role === 'manager';
-  const canBlock = !isMe && (currentUser?.role === 'admin' || currentUser?.role === 'manager');
-
-  return `
-  <div style="display:flex; gap:10px; padding:6px 0; align-items:flex-start; ${isMe ? 'flex-direction:row-reverse' : ''}" 
-       onmouseenter="this.querySelector('.msg-actions')?.style.setProperty('opacity','1')" 
-       onmouseleave="this.querySelector('.msg-actions')?.style.setProperty('opacity','0')">
-    
-    <div style="width:32px; height:32px; border-radius:50%; background:${isMe ? 'var(--accent)' : 'var(--bg3)'}; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0">
-        ${initials}
-    </div>
-
-    <div style="flex:1; min-width:0; ${isMe ? 'align-items:flex-end; display:flex; flex-direction:column' : ''}">
-      <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px; ${isMe ? 'flex-direction:row-reverse' : ''}">
-        ${identityHtml}
-        <span style="font-size:10px; color:#888;">${time}</span>
-        ${canDelete || canBlock ? `
-          <span class="msg-actions" style="opacity:0; transition:opacity .15s; display:flex; gap:4px; margin-left:4px">
-            ${canDelete ? `<button onclick="deleteChatMessage('${msg.id}','${msg.channel}','${msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--danger);padding:0 3px">🗑</button>` : ''}
-            ${canBlock ? `<button onclick="blockChatUser('${msg.author}','${msg.author_name || msg.author}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--warning);padding:0 3px">🚫</button>` : ''}
-          </span>` : ''}
-      </div>
-
-      <div style="background:${isMe ? 'var(--success-bg)' : 'var(--bg2)'}; border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; padding:8px 12px; color:black;">
-        ${body ? `<div style="font-size:13px; color:black; line-height:1.5; word-break:break-word">${body}</div>` : ''}
-        ${photoHtml}
-        ${equipTag || taskTag ? `<div style="margin-top:4px; display:flex; gap:4px; flex-wrap:wrap">${equipTag}${taskTag}</div>` : ''}
-      </div>
-    </div>
-  </div>`;
-}
-async function sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const body = input.value.trim();
-    if (!body || !currentUser) return;
-
-    // 1. Create message object
-    const msg = {
-        id: 'temp-' + Date.now(),
-        channel: window.currentChannel || 'general',
-        author: currentUser.username,
-        author_name: currentUser.name,
-        body: body,
-        created_at: new Date().toISOString()
-    };
-
-    // 2. SHOW ON SCREEN IMMEDIATELY
-    input.value = ''; // Clear the box
-    appendChatMessage(msg); // Put bubble on screen
-
-    // 3. Save to Supabase in background
-    try {
-        const { error } = await window._mpdb.from('chat_messages').insert({
-            id: uid(),
-            channel: msg.channel,
-            author: msg.author,
-            author_name: msg.author_name,
-            body: msg.body
-        });
-        if (error) throw error;
-    } catch (e) {
-        console.error("Sync error:", e);
-    }
-}
 function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}}
 function refreshMobileChatChannelOptions(){
     const menu = document.getElementById('chat-channel-mobile-menu');
