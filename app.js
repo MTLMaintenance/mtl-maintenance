@@ -1,27 +1,11 @@
-// CONFIG// ============================================================
-let chatSub = null;
-let chatChannel = null;
-let currentEditingToolId = null;
-let selectedLoginUser = null;
-let enteredPin = "";
-let lastClickedDate = "";
-let currentDetailId = null;
-let selectedAbsenceType = 'all'; 
-let staffAbsences = [];
-let zerkPinMode = 'dot'; // 'dot' or 'line'
-let zerkDrawingStep = 1; 
-let currentWOTab = 'details'; 
-let woPartsTemp = [];
-let currentZerkView = 'side_1';
-let allMachineZerks = [];
-let tempZerkCoords = { x: 0, y: 0 };
-let calDate = new Date();
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
- let currentCalEntryType = 'one-time';   
-let _currentDocEditId = null; 
-let _tempFileData = null; 
-let taskPinEntry = "";
-let currentTargetTaskId = null;
+import { 
+    chatSub, chatChannel, currentEditingToolId, selectedLoginUser, 
+    enteredPin, lastClickedDate, currentDetailId, selectedAbsenceType, 
+    staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
+    woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
+    calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
+    _tempFileData, taskPinEntry, currentTargetTaskId 
+} from './state.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
