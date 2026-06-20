@@ -11,6 +11,7 @@ import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab } from './ui.js';
+import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1068,18 +1069,7 @@ const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 function equipName(id){ const e=state.equipment.find(x=>x.id===id); return e?e.name:'—'; }
 function supplierName(id){ const s=state.suppliers.find(x=>x.id===id); return s?s.name:'—'; }
 
-function healthColor(score){ return score>=80?'#3B6D11':score>=50?'#BA7517':'#E24B4A'; }
-function calcHealth(equipId){
-  const tasks=state.tasks.filter(t=>t.equipId===equipId);
-  const overdue=tasks.filter(t=>t.status==='Overdue').length;
-  const open=tasks.filter(t=>t.status==='Open').length;
-  const e=state.equipment.find(x=>x.id===equipId);
-  if (e?.status==='Down') return 20;
-  let score=100;
-  score-=overdue*20;
-  score-=open*5;
-  return Math.max(0,Math.min(100,score));
-}
+
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
@@ -1654,7 +1644,7 @@ function renderEquipmentTable(){
     </tr>`;
   }).join('');
 }
-function getLastService(id){ const d=state.tasks.filter(t=>t.equipId===id&&t.status==='Completed'); return d.length?fmtDate(d.sort((a,b)=>new Date(b.due)-new Date(a.due))[0].due):'—'; }
+
 function getNextDue(id){ const o=state.tasks.filter(t=>t.equipId===id&&t.status!=='Completed'); if(!o.length)return'—'; const n=o.sort((a,b)=>new Date(a.due)-new Date(b.due))[0]; return `<span style="color:${isOverdue(n.due)?'var(--danger)':'inherit'}">${fmtDate(n.due)}</span>`; }
 async function deleteEquip(id) {
   const e = state.equipment.find(x => x.id === id);
@@ -3218,58 +3208,7 @@ async function logStatusChange(equipId,oldStatus,newStatus){
   else if(oldStatus==='Down'){const open=state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);if(open){open.endedAt=now;open.status='resolved';open.downtimeMins=Math.round((new Date(now)-new Date(open.startedAt))/60000);showToast('Downtime: '+formatDuration(open.downtimeMins));}}
   try{localStorage.setItem('mp_downtime',JSON.stringify(state.downtimeLog));}catch(e){}
 }
-async function updateEquipStatus(equipId, newStatus) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if (!e) return;
 
-    const oldStatus = e.status;
-    e.status = newStatus;
-    const now = new Date().toISOString();
-
-    try {
-        // 1. Save the status change to the main equipment table
-        await persist('equipment', 'upsert', e);
-
-        // 2. DOWNTIME TRACKING LOGIC
-        if (newStatus === 'Down') {
-            // Started Downtime: Create a new log entry
-            await window._mpdb.from('downtime_logs').insert({
-                equip_id: equipId,
-                start_time: now,
-                reason: prompt("Brief reason for downtime? (e.g., Hydraulic leak, waiting for parts)") || "Unspecified"
-            });
-            showToast(`${e.name} marked as DOWN`);
-        } 
-        else if (oldStatus === 'Down' && (newStatus === 'Operational' || newStatus === 'Standby')) {
-            // Ended Downtime: Find the open log and close it
-            const { data: openLogs } = await window._mpdb
-                .from('downtime_logs')
-                .select('*')
-                .eq('equip_id', equipId)
-                .is('end_time', null)
-                .order('start_time', { ascending: false });
-
-            if (openLogs && openLogs.length > 0) {
-                const log = openLogs[0];
-                const start = new Date(log.start_time);
-                const end = new Date(now);
-                const diffMinutes = Math.round((end - start) / 60000);
-
-                await window._mpdb.from('downtime_logs').update({
-                    end_time: now,
-                    total_minutes: diffMinutes
-                }).eq('id', log.id);
-                
-                showToast(`Downtime ended: ${formatDuration(diffMinutes)}`);
-            }
-        }
-
-        renderEquipmentTable();
-        renderDashboard();
-    } catch (err) {
-        showToast("Status update failed");
-    }
-}
 function printMachineHistory(equipId){
   const e=state.equipment.find(x=>x.id===equipId);if(!e)return;
   const tasks=state.tasks.filter(t=>t.equipId===equipId).sort((a,b)=>new Date(b.due)-new Date(a.due));
@@ -5286,11 +5225,7 @@ function renderEquipTimeline(equipId) {
     </div>
   `).join('');
 }
-function healthColor(score) {
-    if (score <= 40) return '#E24B4A'; // Red
-    if (score <= 70) return '#BA7517'; // Orange
-    return '#3B6D11'; // Green
-}
+
 // Switches between Details and Observations inside the tool popup
 function switchToolModalTab(tab) {
     const details = document.getElementById('tool-tab-details');
