@@ -5132,30 +5132,7 @@ function resetToolForm() {
     console.log("✅ Edit form loaded for:", tool.tool_name || tool.name);
 }
 
-async function editToolObservation(obsId) {
-    const note = state.observations.find(o => o.id === obsId);
-    if (!note) return;
 
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    const isAuthor = String(note.author_id || note.author) === String(currentUser.id || currentUser.name);
-    if (!isManager && !isAuthor) return;
-
-    const edited = prompt('Edit note:', note.body || '');
-    if (edited === null) return;
-    const body = edited.trim();
-    if (!body || body === note.body) return;
-
-    try {
-        const { error } = await window._mpdb.from('observations').update({ body }).eq('id', obsId);
-        if (error) throw error;
-        note.body = body;
-        renderToolObsList();
-        showToast('Note updated ✓');
-    } catch (e) {
-        console.error('Edit failed:', e);
-        showToast('Update failed');
-    }
-}
 
 async function handleWishApproval(id) {
     const req = state.wishlist.find(x => x.id === id);
@@ -6843,34 +6820,7 @@ async function fetchAllProfiles() {
     }
 }
 
-async function editToolObservation(id) {
-    const note = state.observations.find(o => o.id === id);
-    if (!note) return;
 
-    const newBody = prompt("Edit your note:", note.body);
-    if (newBody === null || newBody.trim() === "" || newBody === note.body) return;
-
-    try {
-        // 1. Update Supabase
-        const { error } = await window._mpdb
-            .from('observations')
-            .update({ body: newBody.trim() })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        // 2. Update local memory
-        note.body = newBody.trim();
-
-        // 3. Redraw list
-        renderToolObsList();
-        showToast("Note updated ✓");
-
-    } catch (e) {
-        console.error(e);
-        showToast("Update failed");
-    }
-}
 window.editPart = function(id) {
     const part = state.parts.find(p => p.id === id);
     if (!part) return;
