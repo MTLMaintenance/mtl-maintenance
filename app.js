@@ -14,7 +14,7 @@ import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
-import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction,editToolObservation  } from './tools.js';
+import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -7180,23 +7180,6 @@ async function checkToolArrivals() {
     if (arrived.length > 0) await fetchTools();
 }
 
-async function processReview(newStatus) {
-    const id = window.currentReviewId;
-    const date = document.getElementById('rev-date').value;
-    const reason = document.getElementById('rev-denial-reason').value;
-
-    const updates = { status: newStatus };
-    if (newStatus === 'ordered') updates.expected_arrival = date;
-    if (newStatus === 'denied') updates.denial_reason = reason;
-
-    await window._mpdb.from('tool_requests').update(updates).eq('id', id);
-    closeModal('review-modal');
-    await fetchTools();
-    renderToolWishlist();
-    renderToolDeniedHistory();
-}
-window.currentReviewId = null;
-
 window.openReviewModal = async function(id) {
     console.log("🔍 Attempting to Review Tool ID:", id);
     
@@ -7254,77 +7237,7 @@ window.openReviewModal = async function(id) {
     
     console.log("✅ Review modal successfully loaded.");
 }
-async function processReview(newStatus) {
-    const id = window.currentReviewId;
-    if (!id) return;
 
-    const arrivalDate = document.getElementById('rev-date').value;
-    const denialReason = document.getElementById('rev-denial-reason').value;
-
-    // Validate based on choice
-    if (newStatus === 'ordered' && !arrivalDate) {
-        alert("Please select an expected arrival date.");
-        return;
-    }
-    if (newStatus === 'denied' && !denialReason) {
-        alert("Please provide a reason for the denial.");
-        return;
-    }
-
-    try {
-        showToast("Updating request...");
-        
-        const updates = { 
-            status: newStatus,
-            // If denied, it moves to the Denied tab. If ordered, it stays in Wishlist with a date.
-            expected_arrival: newStatus === 'ordered' ? arrivalDate : null,
-            denial_reason: newStatus === 'denied' ? denialReason : null,
-            last_updated: new Date().toISOString()
-        };
-
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .update(updates)
-            .eq('id', id);
-
-        if (error) throw error;
-
-        showToast(newStatus === 'ordered' ? "Tool Ordered! 📦" : "Request Denied ❌");
-        
-        // Close and Refresh everything
-        closeModal('review-modal');
-        await fetchTools();
-        renderToolWishlist();
-        renderToolDeniedHistory();
-
-    } catch (e) {
-        console.error("Review process failed:", e);
-        alert("Update failed: " + e.message);
-    }
-}
-// 1. OPEN THE EDIT VIEW
-window.editWishItem = function(id) {
-    const item = state.tools.find(t => t.id === id);
-    if (!item) return;
-
-    // 1. Open the Modal
-    openModal('wishlist-modal');
-
-    // 2. THE FIX: Force the Delete button to show for Admin/Author
-    const delBtn = document.getElementById('btn-delete-wish');
-    if (delBtn) {
-        delBtn.style.setProperty('display', 'block', 'important');
-    }
-
-    // 3. Set the text to 'Edit mode'
-    document.getElementById('wish-modal-title').textContent = "✎ Edit Suggestion";
-    document.getElementById('wish-submit-btn').textContent = "Update Suggestion";
-    
-    // 4. Fill the hidden ID and the inputs
-    document.getElementById('wish-edit-id').value = item.id;
-    document.getElementById('wish-name').value = item.tool_name || item.name || "";
-    document.getElementById('wish-reason').value = item.request_reason || item.notes || "";
-};
 async function saveWishRequest() {
     const editId = document.getElementById('wish-edit-id').value;
     const rawName = document.getElementById('wish-name').value.trim();
