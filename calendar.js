@@ -111,3 +111,8 @@ export function openAbsenceModal() {
     const modal = document.getElementById('absence-modal');
     if (modal) modal.style.setProperty('display', 'block', 'important');
 }
+
+function closeAbsenceModal() {
+    const modal = document.getElementById('absence-modal');
+    if (modal) modal.style.display = 'none';
+}
