@@ -112,7 +112,7 @@ export function openAbsenceModal() {
     if (modal) modal.style.setProperty('display', 'block', 'important');
 }
 
-function closeAbsenceModal() {
+export function closeAbsenceModal() {
     const modal = document.getElementById('absence-modal');
     if (modal) modal.style.display = 'none';
 }
