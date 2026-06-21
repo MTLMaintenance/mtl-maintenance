@@ -125,3 +125,31 @@ export function updatePinDots() {
     }
     container.innerHTML = html;
 }
+export async function renderAuditLogs() {
+    const container = document.getElementById('audit-log-list');
+    if (!container) return;
+
+    try {
+        const { data: logs, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) throw error;
+
+        container.innerHTML = logs.map(log => `
+            <div style="padding:12px; border-bottom:1px solid var(--border); display:flex; gap:12px;">
+                <div style="font-size:10px; color:var(--text3); width:70px;">
+                    ${new Date(log.created_at).toLocaleDateString()}
+                </div>
+                <div style="flex:1">
+                    <b style="color:var(--accent)">${log.user_name}</b> ${log.action}
+                    <div style="font-size:11px; color:var(--text2)">${log.details || ''}</div>
+                </div>
+            </div>`).join('') || '<div style="padding:20px; text-align:center;">No activity logged</div>';
+    } catch (e) { console.error("Audit log error:", e); }
+}
+
+export async function autoCleanupAuditLogs() {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 14); // 14 days ago
+    try {
+        await supabase.from('audit_logs').delete().lt('created_at', cutoff.toISOString());
+    } catch (e) { console.error("Cleanup failed", e); }
+}
