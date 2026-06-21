@@ -65,3 +65,31 @@ export function switchTab(group, tabId, btn) {
 
     // Logic to show/hide content could be added here or kept in modules
 }
+export async function refreshAllDropdowns() {
+    try {
+        const [supRes, equipRes, userRes] = await Promise.all([
+            window._mpdb.from('suppliers').select('id, name').order('name'),
+            window._mpdb.from('equipment').select('id, name').order('name'),
+            window._mpdb.from('profiles').select('id, full_name, username').eq('status', 'approved').order('full_name')
+        ]);
+
+        const supHTML = '<option value="">— Select Supplier —</option>' + 
+            supRes.data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        const equipHTML = '<option value="">— Select Equipment —</option>' + 
+            equipRes.data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        const userHTML = '<option value="">— Select User —</option>' + 
+            userRes.data.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
+
+        const selectors = {
+            'p-supplier-select': supHTML,
+            'task-equip-select': equipHTML,
+            'task-assign-select': userHTML,
+            'role-user-select': userHTML
+        };
+
+        for (const [id, html] of Object.entries(selectors)) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+    } catch (e) { console.error("Load Error:", e); }
+}
