@@ -18,7 +18,7 @@ import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, 
 import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
-import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate } from './calendar.js';
+import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -378,12 +378,7 @@ function checkDateSelection(val) {
     if(val) document.getElementById('abs-options').style.display = 'block';
 }
 
-function setAbsenceType(type) {
-    selectedAbsenceType = type;
-    document.getElementById('btn-all-day').classList.toggle('active', type === 'all');
-    document.getElementById('btn-partial').classList.toggle('active', type === 'partial');
-    document.getElementById('abs-time-container').style.display = type === 'partial' ? 'block' : 'none';
-}
+
 
 async function checkUpcomingAbsences() {
     const today = new Date().toISOString().split('T')[0];
@@ -458,52 +453,6 @@ function openAbsenceDetail(id) {
     }
 }
 
-async function deleteAbsence() {
-    if (!window.currentDetailId) return;
-    if (!confirm("Are you sure you want to cancel this request?")) return;
-
-    try {
-        // 1. Delete from DB
-        const { error } = await window._mpdb
-            .from('staff_absences')
-            .delete()
-            .eq('id', window.currentDetailId);
-
-        if (error) throw error;
-
-        // 2. Update local state
-        window.staffAbsences = window.staffAbsences.filter(a => a.id !== window.currentDetailId);
-
-        // 3. UI Cleanup
-        document.getElementById('absence-detail-modal').style.display = 'none';
-        renderCalendar(); // Redraw the grid
-        
-        showToast("Request deleted ✓");
-        
-        // Log for accountability
-        logAuditAction("Absence Deleted", "User removed a time-off request.");
-
-    } catch (e) {
-        alert("Error: " + e.message);
-    }
-}
-
-function openAbsenceModal() {
-    console.log("Attempting to open modal...");
-    const modal = document.getElementById('absence-modal');
-    if (modal) {
-        // This forces the display to 'block' even if CSS tries to hide it
-        modal.style.setProperty('display', 'block', 'important');
-        console.log("Modal is now set to display: block !important");
-    } else {
-        alert("HTML Error: Could not find id='absence-modal'");
-    }
-}
-
-function closeAbsenceModal() {
-    const modal = document.getElementById('absence-modal');
-    if (modal) modal.style.display = 'none';
-}
 function togglePrivateReason(show) {
     const privBox = document.getElementById('priv-box');
     if (privBox) {
