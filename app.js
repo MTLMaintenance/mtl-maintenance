@@ -12,13 +12,14 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditlogs } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
+import { exportCSV, exportPDF } from './reports.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1528,84 +1529,7 @@ function convertToTask(schedId){
   },50);
   openModal('task-modal');
 }
-// ============================================================
-// EXPORTS
-// ============================================================
-function exportCSV(){
-  const rows=[['Work Order','Equipment','Assign','Priority','Due','Cost','Status','Meter','Notes']];
-  state.tasks.forEach(t=>rows.push([t.name,equipName(t.equipId),t.assign,t.priority,t.due,t.cost,t.status,t.meter,t.notes]));
-  const csv=rows.map(r=>r.map(x=>`"${String(x||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='mtl-maintenance-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
-  showToast('CSV downloaded');
-}
 
-function exportHealthCSV(){
-  const rows=[['Equipment','Type','Serial','Hours','Status','Health Score','Overdue WOs','Open WOs']];
-  state.equipment.forEach(e=>{
-    const score=calcHealth(e.id);
-    const overdue=state.tasks.filter(t=>t.equipId===e.id&&t.status==='Overdue').length;
-    const open=state.tasks.filter(t=>t.equipId===e.id&&t.status==='Open').length;
-    rows.push([e.name,e.type,e.serial,e.hours,e.status,score+'%',overdue,open]);
-  });
-  const csv=rows.map(r=>r.map(x=>`"${String(x||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='mtl-health-scores-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
-  showToast('Health CSV downloaded');
-}
-
-function exportEquipCSV(){
-  const rows=[['Equipment','Type','Serial','Hours','Status','Operator','Health Score','Assigned Users','Last Service','Notes']];
-  state.equipment.forEach(e=>{
-    rows.push([e.name,e.type,e.serial,e.hours,e.status,e.op,calcHealth(e.id)+'%',(e.assigned_users||[]).join(';'),getLastService(e.id),e.notes]);
-  });
-  const csv=rows.map(r=>r.map(x=>`"${String(x||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='mtl-equipment-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
-  showToast('Equipment CSV downloaded');
-}
-
-function exportPDF(){
-  const completed=state.tasks.filter(t=>t.status==='Completed');
-  const totalCost=state.tasks.reduce((a,t)=>a+(t.cost||0),0);
-  const invValue=state.parts.reduce((a,p)=>a+(p.qty*p.cost),0);
-  const od=state.tasks.filter(t=>t.status==='Overdue');
-  const lp=state.parts.filter(p=>p.qty<=p.reorder);
-  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  const avgH=state.equipment.length?Math.round(state.equipment.reduce((a,e)=>a+calcHealth(e.id),0)/state.equipment.length):0;
-  
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MTL Maintenance Report</title>
-  <style>
-    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}
-    h1{font-size:22px;margin-bottom:3px}h2{font-size:14px;color:#185FA5;border-bottom:2px solid #185FA5;padding-bottom:4px;margin:22px 0 8px}
-    .meta{font-size:11px;color:#888;margin-bottom:18px}.kpis{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-    .kpi{background:#f5f5f3;border-radius:6px;padding:10px 14px;min-width:100px}.kpi-l{font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.4px}
-    .kpi-v{font-size:20px;font-weight:700;margin-top:2px}
-    table{width:100%;border-collapse:collapse;margin-bottom:6px}th{font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.4px;color:#888;padding:5px 7px;border-bottom:2px solid #eee}
-    td{padding:6px 7px;border-bottom:1px solid #eee;font-size:12px}
-    .alert{background:#FAEEDA;border:1px solid #FAC775;border-radius:4px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#854F0B}
-    @media print{.no-print{display:none} *{-webkit-print-color-adjust:exact}}
-    .btn-print{padding:10px 25px; font-weight:bold; cursor:pointer; background:#fff; border:2px solid #1a1a18; border-radius:8px; margin-top:30px}
-  </style></head><body>
-  <h1>⚙ MTL Maintenance Report</h1>
-  <div class="meta">Generated ${date} · ${currentUser?.name||'—'}</div>
-  <div class="kpis">
-    <div class="kpi"><div class="kpi-l">Equipment</div><div class="kpi-v">${state.equipment.length}</div></div>
-    <div class="kpi"><div class="kpi-l">Total Cost</div><div class="kpi-v">$${totalCost.toLocaleString()}</div></div>
-    <div class="kpi"><div class="kpi-l">Avg Health</div><div class="kpi-v">${avgH}%</div></div>
-  </div>
-  <h2>Work Orders</h2>
-  <table><thead><tr><th>Name</th><th>Equipment</th><th>Assigned</th><th>Due</th><th>Cost</th><th>Status</th></tr></thead><tbody>
-  ${state.tasks.map(t=>`<tr><td>${t.name}</td><td>${equipName(t.equipId)}</td><td>${t.assign||'—'}</td><td>${fmtDate(t.due)}</td><td>$${(t.cost||0).toLocaleString()}</td><td>${t.status}</td></tr>`).join('')}
-  </tbody></table>
-  <div class="no-print" style="text-align:center">
-    <button class="btn-print" onclick="window.print()">🖨 Print / Save as PDF</button>
-  </div>
-  </body></html>`;
-
-  const w=window.open('','_blank');
-  if(w){ w.document.write(html); w.document.close(); }
-}
 
 // ============================================================
 // DARK MODE
@@ -5386,116 +5310,7 @@ function closeMarkupModal() {
     isDrawing = false;
 }
 
-async function renderAuditLogs() {
-    const container = document.getElementById('audit-log-list');
-    const userFilter = document.getElementById('audit-filter-user');
-    const dateFilterInput = document.getElementById('audit-filter-date');
-    
-    if (!container || !userFilter) return;
 
-    // 1. Remember current selections
-    const selectedUserBeforeRefresh = userFilter.value;
-    const dateFilter = dateFilterInput ? dateFilterInput.value : '';
-
-    container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">Loading history...</div>';
-
-    try {
-        // 2. FETCH BOTH LOGS AND PROFILES LY FROM SUPABASE
-        // This bypasses the 'state' variable entirely to ensure we see the names
-        const [logsResponse, profilesResponse] = await Promise.all([
-            window._mpdb.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
-            window._mpdb.from('profiles').select('full_name, username').eq('status', 'approved')
-        ]);
-
-        if (logsResponse.error) throw logsResponse.error;
-
-        const logs = logsResponse.data || [];
-        const profiles = profilesResponse.data || [];
-
-        // --- 3. REBUILD THE DROPDOWN ---
-        const nameSet = new Set();
-        
-        // Add names from current approved profiles (Tanner, Test, etc.)
-        profiles.forEach(p => {
-            const name = p.full_name || p.username;
-            if (name) nameSet.add(name);
-        });
-
-        // Add names from logs (in case an old/deleted user did something)
-        logs.forEach(l => {
-            if (l.user_name) nameSet.add(l.user_name);
-        });
-        
-        // Sort alphabetically
-        const sortedNames = [...nameSet].sort();
-
-        // Inject into HTML
-        userFilter.innerHTML = '<option value="all">All People</option>';
-        sortedNames.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            userFilter.appendChild(opt);
-        });
-
-        // Restore what they were looking at
-        userFilter.value = selectedUserBeforeRefresh;
-
-        // --- 4. APPLY FILTERS TO THE LOGS ---
-        let filtered = logs;
-
-        if (userFilter.value !== 'all') {
-            filtered = filtered.filter(log => log.user_name === userFilter.value);
-        }
-
-        if (dateFilter) {
-            filtered = filtered.filter(log => {
-                const logDate = new Date(log.created_at).toISOString().split('T')[0];
-                return logDate === dateFilter;
-            });
-        }
-
-        // --- 5. RENDER THE LIST ---
-        if (filtered.length === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text3)">No matching activity found</div>';
-            return;
-        }
-
-        container.innerHTML = filtered.map(log => {
-            const dateObj = new Date(log.created_at);
-            return `
-            <div style="padding:12px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;">
-                <div style="font-size:10px; color:var(--text3); white-space:nowrap; text-align:center; width:70px; border-right:1px solid var(--border); padding-right:10px">
-                    <b style="color:var(--text)">${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</b><br>
-                    ${dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'})}
-                </div>
-                <div style="flex:1">
-                    <div style="font-size:13px; margin-bottom:3px">
-                        <span style="color:var(--accent); font-weight:bold">${log.user_name || 'System'}</span> 
-                        <span style="color:var(--text)">${log.action}</span>
-                    </div>
-                    <div style="font-size:11px; color:var(--text2); line-height:1.4">
-                        ${log.details || ''}
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
-
-    } catch (e) {
-        console.error("Audit Log Failure:", e);
-        container.innerHTML = '<div style="padding:20px; color:var(--danger)">Error loading logs</div>';
-    }
-}
-// Helper to clear filters
-function clearAuditFilters() {
-    document.getElementById('audit-filter-user').value = 'all';
-    document.getElementById('audit-filter-date').value = '';
-    renderAuditLogs();
-}
-
-// Make functions global
-window.renderAuditLogs = renderAuditLogs;
-window.clearAuditFilters = clearAuditFilters;
 
 
 function switchCalendarView(view) {
@@ -6272,35 +6087,7 @@ window.deleteDoc = async function(id) {
   }
 };
 
-async function autoCleanupAuditLogs() {
-    // Only run this if the current user is an Admin (optional safety check)
-    if (currentUser && currentUser.role !== 'admin') return;
 
-    console.log("Checking for old audit logs to purge...");
-
-    // 1. Calculate the date 14 days ago
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 14);
-    const isoCutoff = cutoffDate.toISOString();
-
-    try {
-        // 2. Delete rows where created_at is LESS THAN (older than) the cutoff
-        const { error, count } = await window._mpdb
-            .from('audit_logs')
-            .delete({ count: 'exact' })
-            .lt('created_at', isoCutoff);
-
-        if (error) throw error;
-
-        if (count > 0) {
-            console.log(`Successfully purged ${count} old audit logs.`);
-            // Log that a cleanup happened!
-            await logAuditAction("System Maintenance", `Auto-purged ${count} logs older than 14 days.`);
-        }
-    } catch (e) {
-        console.error("Auto-cleanup failed:", e);
-    }
-}
 // Global settings apply function
 function applyUserPreferences() {
     if (!currentUser) return;
