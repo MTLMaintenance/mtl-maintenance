@@ -27,6 +27,9 @@ import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './setting
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs } from './views.js';
+import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
+import { startQRScanner, stopQRScanner } from './scanner.js';
+
 
 window.deleteZerk = deleteZerk;
 window.handleZerkMapClick = handleZerkMapClick;
@@ -408,53 +411,6 @@ async function signOut() {
 }
  let html5QrCode = null;
 
-async function startQRScanner() {
-  openModal('scan-modal');
-  document.getElementById('qr-status').textContent = "Initializing camera...";
-  
-  // Create instance if it doesn't exist
-  if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("qr-reader");
-  }
-
-  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-  try {
-    await html5QrCode.start(
-      { facingMode: "environment" }, 
-      config, 
-      (decodedText) => {
-        const url = new URL(decodedText);
-        const equipId = url.searchParams.get("equip");
-        if (equipId) {
-          stopQRScanner();
-          (equipId);
-        } else {
-          showToast("Invalid QR Code");
-        }
-      }
-    );
-    document.getElementById('qr-status').textContent = "Camera active. Point at QR code.";
-  } catch (err) {
-    console.error("Camera error:", err);
-    document.getElementById('qr-status').textContent = "⚠️ Camera Error: " + err;
-  }
-}
-
-// Fixed stop function to ensure modal ALWAYS closes
-async function stopQRScanner() {
-  if (html5QrCode && html5QrCode.isScanning) {
-    try {
-      await html5QrCode.stop();
-    } catch (e) {
-      console.warn("Scanner was already stopped or failed to stop.");
-    }
-  }
-  closeModal('scan-modal');
-  // Clear the internal state of the reader
-  const reader = document.getElementById('qr-reader');
-  if(reader) reader.innerHTML = ""; 
-}
 
 async function loadState() {
   setSyncStatus('syncing');
@@ -919,9 +875,6 @@ function renderAssignUsers(){
 async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!==id); await persist('schedules','delete',{id}); renderSchedule(); renderCalendar(); }
 
 
-async function deleteSupplier(id){ if(!confirm('Delete this supplier?'))return; state.suppliers=state.suppliers.filter(s=>s.id!==id); await persist('suppliers','delete',{id}); renderSuppliers(); }
-
-
 
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
@@ -1097,38 +1050,6 @@ function addWOComment(){
 // ============================================================
 
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
-
-
-async function saveSupplier(){
-  const name=document.getElementById('sup-name').value.trim(); if(!name){ showToast('Please enter a name'); return; }
-  const record={
-    id:uid(), name,
-    contact: document.getElementById('sup-contact').value,
-    email:   document.getElementById('sup-email').value,
-    phone:   document.getElementById('sup-phone').value,
-    website: document.getElementById('sup-website').value,
-    notes:   document.getElementById('sup-notes').value,
-  };
-  state.suppliers.push(record);
-  await persist('suppliers','upsert',record);
-  closeModal('supplier-modal'); renderSuppliers();
-  ['sup-name','sup-contact','sup-email','sup-phone','sup-website','sup-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-}
-
-
-function convertToTask(schedId){
-  const s=state.schedules.find(x=>x.id===schedId); if(!s)return;
-  populateSelects();
-  setTimeout(()=>{
-    document.getElementById('t-name').value=s.name;
-    document.getElementById('t-due').value=s.date;
-    document.getElementById('t-notes').value=s.notes||'';
-    document.getElementById('t-equip').value=s.equipId||'';
-    if(s.tech){const assign=document.getElementById('t-assign');if(assign){Array.from(assign.options).forEach(o=>{if(o.text===s.tech)o.selected=true;});}}
-    pullEquipSuppliers();
-  },50);
-  openModal('task-modal');
-}
 
 async function handlePhotoUpload(input, key) {
   const files = Array.from(input.files);
@@ -2220,23 +2141,6 @@ function updateUnreadBadge() {
 
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
-
-// ── PULLEQUIPSUPPLIERS with template selector ─────────────────
-function pullEquipSuppliers(){
-  const equipId=document.getElementById('t-equip')?.value;const box=document.getElementById('equip-suppliers-box');const cont=document.getElementById('equip-suppliers-content');
-  const tplWrap=document.getElementById('tpl-selector-wrap');const tplSel=document.getElementById('tpl-selector');
-  if(equipId&&tplWrap&&tplSel){const equip=state.equipment.find(e=>e.id===equipId);const matches=state.checklistTemplates.filter(t=>(t.type&&equip?.type&&t.type.toLowerCase()===equip.type.toLowerCase())||(t.model&&equip?.name&&equip.name.toLowerCase().includes(t.model.toLowerCase())));const all=matches.length?matches:state.checklistTemplates;tplSel.innerHTML='<option value="">— Select a template —</option>'+all.map(t=>`<option value="${t.id}"${matches.find(m=>m.id===t.id)?' style="font-weight:600"':''}>${t.name}${matches.find(m=>m.id===t.id)?' ✓':''}</option>`).join('');tplWrap.style.display='block';}
-  if(!equipId){if(box)box.style.display='none';return;}
-  const equip=state.equipment.find(e=>e.id===equipId);const equipTaskIds=new Set(state.tasks.filter(t=>t.equipId===equipId).map(t=>t.id));const usageForEquip=state.partUsage.filter(p=>equipTaskIds.has(p.task_id));const supplierMap={};
-  usageForEquip.forEach(u=>{const part=state.parts.find(p=>p.id===u.part_id);if(!part||!part.supplier_id)return;if(!supplierMap[part.supplier_id])supplierMap[part.supplier_id]={};supplierMap[part.supplier_id][part.name]=(supplierMap[part.supplier_id][part.name]||0)+u.qty_used;});
-  state.parts.forEach(p=>{if(p.supplier_id&&!supplierMap[p.supplier_id])supplierMap[p.supplier_id]={};});
-  const hasHistory=Object.keys(supplierMap).length>0;let displayEntries=[];
-  if(hasHistory){displayEntries=Object.entries(supplierMap).map(([sid,pm])=>({supplier:state.suppliers.find(s=>s.id===sid),partsMap:pm})).filter(e=>e.supplier);}
-  else{displayEntries=state.suppliers.filter(s=>state.parts.some(p=>p.supplier_id===s.id)).map(s=>({supplier:s,partsMap:Object.fromEntries(state.parts.filter(p=>p.supplier_id===s.id).map(p=>[p.name,'in stock: '+p.qty]))}));}
-  if(!displayEntries.length){if(box)box.style.display='none';return;}
-  cont.innerHTML='<div style="margin-bottom:8px;font-size:12px">'+(hasHistory?'Parts used on <b>'+(equip?.name||'this machine')+'</b>:':'Available suppliers:')+'</div>'+displayEntries.map(({supplier:s,partsMap})=>{const pl=Object.entries(partsMap).map(([n,q])=>`<span style="display:inline-block;background:rgba(24,95,165,0.12);border-radius:3px;padding:1px 7px;margin:2px 3px 2px 0;font-size:11px">${n}${typeof q==='number'?' × '+q+' used':''}</span>`).join('');return`<div style="padding:8px 0;border-bottom:1px solid rgba(24,95,165,0.15)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="font-weight:600;flex:1">${s.name}</div>${s.phone?`<a href="tel:${s.phone}" style="color:var(--accent);font-size:12px;text-decoration:none">📞 ${s.phone}</a>`:''}${s.email?`<a href="mailto:${s.email}" style="color:var(--accent);font-size:12px;text-decoration:none;margin-left:6px">✉ Email</a>`:''}</div><div>${pl||'<span style="font-size:11px;color:var(--text3)">No parts linked yet</span>'}</div></div>`;}).join('');
-  if(box)box.style.display='block';
-}
 
 // ── LAZY IMAGES ──────────────────────────────────────────────
 const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){const img=entry.target;const src=img.getAttribute('data-src');if(src){img.src=src;img.removeAttribute('data-src');lazyObserver.unobserve(img);}}});},{rootMargin:'100px'});
@@ -4216,68 +4120,7 @@ function switchCalendarView(view) {
     // Refresh the data
     if(view === 'grid') renderCalendar(); else renderSchedule();
 }
-async function exportFullDatabase() {
-    // 1. UPDATED TABLE LIST (Added Calendar & Tool Crib)
-    const tables = [
-        'chat_messages', 
-        'profiles', 
-        'equipment', 
-        'parts', 
-        'suppliers',  
-        'staff_absences',
-        'tasks',
-        'schedules',        // This is your Calendar data
-        'tool_requests', 
-        'wo_comments',
-    ];
 
-    if (!confirm("Download a full snapshot of all data (including Calendar and Tool Crib)?")) return;
-
-    let fullBackup = {
-        metadata: {
-            app: "MTL Maintenance",
-            date: new Date().toLocaleString(),
-            timestamp: new Date().toISOString()
-        },
-        database_tables: {}
-    };
-
-    console.log("Starting Master Backup...");
-    if (typeof showToast === 'function') showToast("Generating system backup...");
-
-    try {
-        // 2. Fetch every table
-        for (const tableName of tables) {
-            console.log(`Backing up: ${tableName}...`);
-            const { data, error } = await window._mpdb.from(tableName).select('*');
-            
-            if (error) {
-                console.error(`Error on table ${tableName}:`, error.message);
-                fullBackup.database_tables[tableName] = { status: "FAILED", error: error.message };
-            } else {
-                fullBackup.database_tables[tableName] = data;
-            }
-        }
-
-        // 3. Create and download the file
-        const dataStr = JSON.stringify(fullBackup, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `MTL_FULL_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        alert("System backup downloaded successfully! Please upload this file to your Google Drive.");
-
-    } catch (err) {
-        console.error("Backup failed:", err);
-        alert("Critical Backup Error: " + err.message);
-    }
-}
 // Ensure the old renderSchedule function points to the new IDs
 function renderSchedule(){
   const nw = new Date(TODAY); nw.setDate(nw.getDate() + 7);
