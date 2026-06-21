@@ -10,7 +10,7 @@ import {
 import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns } from './ui.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditlogs } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
@@ -22,7 +22,12 @@ import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsence
 import { exportCSV, exportPDF } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
+import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
 
+
+window.deleteZerk = deleteZerk;
+window.handleZerkMapClick = handleZerkMapClick;
+window.renameZerkView = renameZerkView;
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
@@ -4170,187 +4175,7 @@ async function addZerkViewWithTitle() {
     };
     input.click();
 }
-async function handleZerkMapClick(event, viewIdx) {
-    if (currentUser.role !== 'admin' && currentUser.role !== 'manager') return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-
-    const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
-    if (!equip) return;
-
-    const mode = window.zerkPinMode || 'dot';
-
-    // --- MODE 1: SIMPLE DOT ---
-    if (mode === 'dot') {
-        const note = prompt("Grease Instructions:");
-        if (note === null) return;
-
-        if (!equip.zerk_points) equip.zerk_points = [];
-        equip.zerk_points.push({
-            id: uid(),
-            x: x.toFixed(2),
-            y: y.toFixed(2),
-            lx: null, // No label offset
-            ly: null,
-            note: note || "",
-            view_index: viewIdx
-        });
-    } 
-    // --- MODE 2: POINTER LINE (Two Clicks) ---
-    else {
-        if (!window.zerkDrawingStep || window.zerkDrawingStep === 1) {
-            // STEP 1: Setting the fitting location
-            window.tempZerkCoords = { x, y };
-            window.zerkDrawingStep = 2;
-            showToast("Fitting set! Now click where the number should sit.");
-            return; // Exit and wait for second click
-        } else {
-            // STEP 2: Setting the label location
-            const note = prompt("Grease Instructions:");
-            if (note === null) { window.zerkDrawingStep = 1; return; }
-
-            if (!equip.zerk_points) equip.zerk_points = [];
-            equip.zerk_points.push({
-                id: uid(),
-                x: window.tempZerkCoords.x.toFixed(2), // Line Start (Fitting)
-                y: window.tempZerkCoords.y.toFixed(2),
-                lx: x.toFixed(2),                      // Line End (Number)
-                ly: y.toFixed(2),
-                note: note || "",
-                view_index: viewIdx
-            });
-
-            window.zerkDrawingStep = 1; // Reset for next time
-            showToast("Pointer line added ✓");
-        }
-    }
-
-    // Save and Refresh
-    await persist('equipment', 'upsert', equip);
-    renderZerkTab(equip.id);
-}
-window.handleZerkMapClick = handleZerkMapClick;
-async function editZerkNote(id) {
-    const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
-    if (!equip || !equip.zerk_points) return;
-
-    // Find the point by ID instead of Index
-    const targetPoint = equip.zerk_points.find(p => p.id === id);
-    if (!targetPoint) {
-        console.error("Could not find zerk point with ID:", id);
-        return;
-    }
-
-    const newNote = prompt("Edit grease instructions:", targetPoint.note || "");
-    if (newNote === null) return; // User pressed cancel
-
-    // Update the note
-    targetPoint.note = newNote;
-
-    // Save the entire equipment object back to Supabase
-    await persist('equipment', 'upsert', equip);
-    renderZerkTab(equip.id);
-}
-window.editZerkNote = editZerkNote;
-
-async function deleteZerkView() {
-    const equipId = window._currentDetailEquipId;
-    const e = state.equipment.find(x => x.id === equipId);
-    const idx = window._currentZerkViewIdx;
-
-    if (!e || !e.zerk_photos || idx === undefined) return;
-
-    const viewName = (e.zerk_names && e.zerk_names[idx]) ? e.zerk_names[idx] : `View ${idx + 1}`;
-    if (!confirm(`Delete the view "${viewName}" and ALL its grease points?`)) return;
-
-    try {
-        // 1. Remove photo and name from local arrays
-        e.zerk_photos.splice(idx, 1);
-        if (e.zerk_names) e.zerk_names.splice(idx, 1);
-
-        // 2. Filter out all points attached to this view
-        if (e.zerk_points) {
-            e.zerk_points = e.zerk_points.filter(p => p.view_index !== idx);
-            // Re-index remaining points so they match new array positions
-            e.zerk_points.forEach(p => { if (p.view_index > idx) p.view_index--; });
-        }
-
-        // 3. Update Supabase (Only the equipment table!)
-        const { error } = await window._mpdb
-            .from('equipment')
-            .update({ 
-                zerk_photos: e.zerk_photos, 
-                zerk_names: e.zerk_names,
-                zerk_points: e.zerk_points 
-            })
-            .eq('id', equipId);
-
-        if (error) throw error;
-
-        showToast("View deleted ✓");
-
-        // 4. UI REFRESH
-        window._currentZerkViewIdx = 0; // Reset to first view
-        renderZerkTab(equipId); // FIXED: Changed from refreshZerkMap to renderZerkTab
-
-    } catch (err) { 
-        console.error("Delete view failed:", err);
-        showToast("Delete failed");     
-    }
-}
- async function deleteZerk(id) {
-    if (!id) return;
-    if (!confirm("Delete this grease point?")) return;
-
-    const equipId = window._currentDetailEquipId;
-    const equip = state.equipment.find(x => x.id === equipId);
-    
-    if (!equip || !equip.zerk_points) return;
-
-    try {
-        // 1. Remove the point from the local array
-        equip.zerk_points = equip.zerk_points.filter(p => p.id !== id);
-
-        // 2. Save the equipment record (which contains the zerk_points JSONB)
-        const { error } = await window._mpdb
-            .from('equipment')
-            .update({ zerk_points: equip.zerk_points })
-            .eq('id', equipId);
-
-        if (error) throw error;
-
-        // 3. UI Update
-        showToast("Point removed ✓");
-        renderZerkTab(equipId);
-
-    } catch (e) {
-        console.error("Delete failed:", e);
-        showToast("Error deleting point");
-    }
-}
-window.deleteZerk = deleteZerk;
-async function renameZerkView(idx) {
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    if (!equip) return;
-
-    const currentName = (equip.zerk_names && equip.zerk_names[idx]) ? equip.zerk_names[idx] : `View ${idx + 1}`;
-    const newName = prompt("Rename this view:", currentName);
-
-    if (newName && newName.trim() !== "") {
-        if (!equip.zerk_names) equip.zerk_names = [];
-        equip.zerk_names[idx] = newName.trim();
-
-        // Save to Database
-        await persist('equipment', 'upsert', equip);
-        
-        // Refresh UI
-        renderZerkTab(equip.id);
-        showToast("Renamed ✓");
-    }
-}
-window.renameZerkView = renameZerkView;
 
 function renderZerkDots() {
     const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
@@ -4681,39 +4506,7 @@ function setCalEntryType(type) {
 function updateCalEntryTypeButtons(type) {
     setCalEntryType(type);
 }
-    async function saveZerkPoint(label, x_label, y_label, x_target, y_target) {
-    const equipId = window._currentDetailEquipId;
-    
-    // This object MUST match the column names in your Supabase table
-    const newZerk = {
-        id: uid(), // Generates a text ID
-        equip_id: equipId,
-        view_name: window.currentZerkView || 'side_1',
-        label: label,
-        x_pos: x_label,
-        y_pos: y_label,
-        x_target: x_target,
-        y_target: y_target,
-        instructions: ""
-    };
-
-    // THE FIX: Wrap 'newZerk' in brackets [ ]
-    const { error } = await window._mpdb
-        .from('grease_points')
-        .insert([newZerk]); 
-
-    if (!error) {
-        // Add it to your local list so it shows up without a refresh
-        allMachineZerks.push(newZerk);
-        
-        // REDRAW THE DOTS IMMEDIATELY
-        renderZerkDots(); 
-        showToast("Point saved ✓");
-    } else {
-        console.error("Save failed:", error.message);
-        alert("Error: " + error.message);
-    }
-    }
+   
 function renderFullHistoryList(equipId) {
     const container = document.getElementById('eq-history-list');
     if (!container) return;
@@ -6437,33 +6230,6 @@ async function addPartToTask(taskId) {
         alert("Database Error: " + e.message);
     }
 }
-function showMobileZerkCard(pointId, displayNum) {
-    const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
-    const point = equip.zerk_points.find(p => p.id === pointId);
-    if (!point) return;
-
-    const card = document.getElementById('mobile-zerk-info-card');
-    
-    // 1. Set text
-    document.getElementById('m-card-title').textContent = `Grease Point #${displayNum}`;
-    document.getElementById('m-card-note').textContent = point.note || "No info provided.";
-
-    // 2. Link buttons
-    document.getElementById('m-card-edit-btn').onclick = (e) => { e.stopPropagation(); editZerkNote(pointId); };
-    document.getElementById('m-card-del-btn').onclick = (e) => { e.stopPropagation(); deleteZerk(pointId); closeMobileZerkCard(); };
-
-    // 3. Show card
-    card.style.display = 'block';
-}
-
-function closeMobileZerkCard() {
-    const card = document.getElementById('mobile-zerk-info-card');
-    if (card) card.style.display = 'none';
-}
-
-window.showMobileZerkCard = showMobileZerkCard;
-window.closeMobileZerkCard = closeMobileZerkCard;
-
 
 
 
