@@ -93,3 +93,30 @@ export async function refreshAllDropdowns() {
         }
     } catch (e) { console.error("Load Error:", e); }
 }
+export function showMobileZerkCard(pointId, displayNum) {
+    const equip = state.equipment.find(e => e.id === window._currentDetailEquipId);
+    const point = equip.zerk_points.find(p => p.id === pointId);
+    if (!point) return;
+
+    const card = document.getElementById('mobile-zerk-info-card');
+    
+    // 1. Set text
+    document.getElementById('m-card-title').textContent = `Grease Point #${displayNum}`;
+    document.getElementById('m-card-note').textContent = point.note || "No info provided.";
+
+    // 2. Link buttons
+    document.getElementById('m-card-edit-btn').onclick = (e) => { e.stopPropagation(); editZerkNote(pointId); };
+    document.getElementById('m-card-del-btn').onclick = (e) => { e.stopPropagation(); deleteZerk(pointId); closeMobileZerkCard(); };
+
+    // 3. Show card
+    card.style.display = 'block';
+}
+
+export function closeMobileZerkCard() {
+    const card = document.getElementById('mobile-zerk-info-card');
+    if (card) card.style.display = 'none';
+}
+
+window.showMobileZerkCard = showMobileZerkCard;
+window.closeMobileZerkCard = closeMobileZerkCard;
+
