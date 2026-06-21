@@ -7,11 +7,11 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
-import { uid, fmtDate, isOverdue, badge, showToast } from './utils.js';
+import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab } from './ui.js';
-import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns } from './ui.js';
+import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
@@ -55,147 +55,11 @@ window.globalEditObs = function(id) {
 };
 
 
-async function refreshAllDropdowns() {
-    console.log("🚀 Pre-loading all dropdown data...");
-    
-    try {
-        // 1. Fetch everything at once
-        const [supRes, equipRes, userRes] = await Promise.all([
-            window._mpdb.from('suppliers').select('id, name').order('name'),
-            window._mpdb.from('equipment').select('id, name').order('name'),
-            window._mpdb.from('profiles').select('id, full_name, username').eq('status', 'approved').order('full_name')
-        ]);
 
-        // 2. Map the data into HTML strings
-        const supHTML = '<option value="">— Select Supplier —</option>' + 
-            supRes.data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-            
-        const equipHTML = '<option value="">— Select Equipment —</option>' + 
-            equipRes.data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
 
-        const userHTML = '<option value="">— Select User —</option>' + 
-            userRes.data.map(u => `<option value="${u.id}">${u.full_name || u.username}</option>`).join('');
 
-        // 3. Find EVERY dropdown in the app and fill them NOW
-        // (Use the IDs from your 8,000 lines here)
-        const selectors = {
-            'p-supplier-select': supHTML,
-            'task-equip-select': equipHTML,
-            'task-assign-select': userHTML,
-            'role-user-select': userHTML
-        };
 
-        for (const [id, html] of Object.entries(selectors)) {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = html;
-        }
 
-        console.log("✅ All dropdowns are ready. No more flickering!");
-        
-    } catch (e) {
-        console.error("Global Load Error:", e);
-    }
-}
-async function populateSupplierDropdown() {
-    console.log("Loading suppliers into dropdown...");
-    try {
-        // 1. Fetch from Supabase
-        const { data: suppliers, error } = await window._mpdb
-            .from('suppliers')
-            .select('id, name')
-            .order('name', { ascending: true });
-
-        if (error) throw error;
-
-        // 2. THE FIX: Look for 'p-supplier-select' instead of 'part-supplier'
-        const dropdown = document.getElementById('p-supplier-select');
-
-        if (dropdown && suppliers) {
-            let html = '<option value="">— Select Supplier —</option>';
-            suppliers.forEach(sup => {
-                html += `<option value="${sup.id}">${sup.name}</option>`;
-            });
-            dropdown.innerHTML = html;
-            console.log(`✅ Loaded ${suppliers.length} suppliers into the dropdown.`);
-        } else {
-            console.warn("⚠️ Loader failed: Could not find element #p-supplier-select in the HTML.");
-        }
-    } catch (e) {
-        console.error("❌ Supplier Load Error:", e.message);
-    }
-}
-
-async function deleteGeneralItem(id, tableType) {
-    const tableMap = {
-        'tasks': 'tasks',
-        'schedules': 'schedules',
-        'absences': 'staff_absences'
-    };
-    
-    const tableName = tableMap[tableType];
-    if (!tableName) return;
-
-    if (!confirm("Are you sure you want to delete this?")) return;
-
-    try {
-        console.log(`Sending delete request to Supabase for ${tableName} (ID: ${id})`);
-        
-        const { error } = await window._mpdb
-            .from(tableName)
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error("Supabase Delete Error:", error.message);
-            alert("Database Error: " + error.message);
-            return;
-        }
-
-        console.log("✅ Database delete successful. Now clearing local memory...");
-
-        // --- CRITICAL: CLEAR LOCAL MEMORY ---
-        // We search through 'state' and 'staffAbsences' to remove the item manually
-        if (typeof state !== 'undefined') {
-            if (state.tasks) state.tasks = state.tasks.filter(item => item.id !== id);
-            if (state.schedules) state.schedules = state.schedules.filter(item => item.id !== id);
-        }
-        
-        if (typeof staffAbsences !== 'undefined') {
-            staffAbsences = staffAbsences.filter(item => item.id !== id);
-        }
-
-        // --- REFRESH UI ---
-        closeModal('cal-action-modal'); 
-        
-        // Force the background calendar to update immediately
-        if (typeof renderCalendar === 'function') {
-            await renderCalendar(); 
-            console.log("✅ UI Refreshed.");
-        }
-
-    } catch (e) {
-        console.error("Delete function crashed:", e);
-    }
-}
-async function promptResetPin(userId) {
-    if (!state.users_list_cache) return;
-    
-    const user = state.users_list_cache.find(u => u.id === userId);
-    const uName = user ? (user.full_name || user.username) : "User";
-
-    const newPin = prompt("Enter new PIN for " + uName + ":");
-    if (newPin === null || newPin.trim() === "") return;
-
-    try {
-        const { error } = await window._mpdb
-            .from('profiles')
-            .update({ pin_code: newPin.trim() })
-            .eq('id', userId);
-
-        if (error) { alert("Error: " + error.message); } 
-        else { alert("Success! PIN updated for " + uName); }
-    } catch (err) { console.error(err); }
-}
 
 
 function updatePinDisplay() {
@@ -303,39 +167,6 @@ function togglePrivateReason(show) {
     }
 }
 
-// --- ZERK MAP UPLOAD LOGIC (PLACE AT TOP OF SCRIPT) ---
-async function uploadZerkView(input) {
-    const file = input.files[0]; if(!file) return;
-    const equipId = window._currentDetailEquipId;
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e) return;
-
-    showToast("⚙️ Processing image...");
-    
-    try {
-        const base64 = await compressImage(await new Promise(res => {
-            const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file);
-        }), 1200, 0.8);
-
-        if(!e.zerk_photos) e.zerk_photos = [];
-        e.zerk_photos.push(base64);
-
-        // SAVE TO DATABASE
-        const { error } = await window._mpdb
-            .from('equipment')
-            .update({ zerk_photos: e.zerk_photos })
-            .eq('id', equipId);
-
-        if (error) throw error;
-
-        showToast("View added ✓");
-        refreshZerkMap(equipId);
-    } catch(err) { 
-        console.error(err);
-        showToast("Upload failed"); 
-    }
-    input.value = "";
-}
 const ADMIN_USERNAME = 'tangal99';
 let currentUser = null;
 
