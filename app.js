@@ -7,11 +7,12 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
+import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
-import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
+import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
@@ -22,7 +23,7 @@ import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTa
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
-import { exportCSV, exportPDF } from './reports.js';
+import { exportCSV, exportPDF, exportHealthCSV } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
@@ -51,6 +52,12 @@ window.deleteDoc = deleteDoc;
 window.quickLogHours = (id) => quickLogHours(id, state);
 window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
 window.addObservation = addObservation;
+window.runRecurrenceEngine = () => runRecurrenceEngine(state);
+window.exportHealthCSV = () => exportHealthCSV(state, calcHealth);
+window.createBulkWO = createBulkWO;
+
+
+
 window.globalEditObs = function(id) {
   
     console.log("Opening Edit for ID:", id);
@@ -496,59 +503,7 @@ function computeMonthlyCosts() {
   });
 }
 
-// ============================================================
-// RECURRENCE ENGINE
-// ============================================================
-async function runRecurrenceEngine() {
-  const today=new Date(); today.setHours(0,0,0,0);
-  for (const rule of state.recurrenceRules) {
-    if (!rule.active) continue;
-    let shouldGenerate=false;
-    let nextDue=new Date(rule.next_due||today);
-    if (rule.type==='calendar') {
-      if (!rule.next_due || new Date(rule.next_due)<=today) shouldGenerate=true;
-    } else if (rule.type==='hours') {
-      const equip=state.equipment.find(e=>e.id===rule.equip_id);
-      const lastHours=parseFloat(rule.last_generated_hours||0);
-      if (equip && equip.hours>=(lastHours+(rule.runtime_hours||500))) shouldGenerate=true;
-    }
-    if (shouldGenerate) {
-      // Create work order from template
-      const wo={
-        id: uid(),
-        name: rule.name,
-        equipId: rule.equip_id,
-        assign: rule.template?.assign||'',
-        priority: rule.priority||'High',
-        due: nextDue.toISOString().slice(0,10),
-        cost: 0, meter:'', status:'Open',
-        notes: (rule.notes||'')+'\n[Auto-generated from recurrence rule]',
-        photos:[], checklist:[],
-      };
-      // Check not already created for this period
-      const exists=state.tasks.find(t=>t.name===rule.name && t.due===wo.due && t.equipId===rule.equip_id);
-      if (!exists) {
-        state.tasks.push(wo);
-        await window._mpdb.from('tasks').upsert(wo);
-        // Update rule next_due
-        let next=new Date(nextDue);
-        if (rule.interval_unit==='day')   next.setDate(next.getDate()+rule.interval_value);
-        if (rule.interval_unit==='week')  next.setDate(next.getDate()+(rule.interval_value*7));
-        if (rule.interval_unit==='month') next.setMonth(next.getMonth()+rule.interval_value);
-        if (rule.interval_unit==='year')  next.setFullYear(next.getFullYear()+rule.interval_value);
-        const equip=state.equipment.find(e=>e.id===rule.equip_id);
-        await window._mpdb.from('recurrence_rules').update({
-          next_due: next.toISOString().slice(0,10),
-          last_generated: today.toISOString().slice(0,10),
-          last_generated_hours: equip?.hours||0,
-        }).eq('id', rule.id);
-        rule.next_due=next.toISOString().slice(0,10);
-      }
-    }
-  }
-}
-
-// ============================================================
+/// ============================================================
 // HELPERS
 // ============================================================
 const ICONS={Excavator:'🦾',Tractor:'🚜','Wheel Loader':'⚙','Skid Steer':'🔧',Compressor:'💨',Crane:'🏗',Compactor:'🔩',Truck:'🚛',Forklift:'🏭'};
@@ -1302,73 +1257,6 @@ function printQRCode(equipId) {
     }, 300);
   }
 })();
-
-// ============================================================
-// BULK WORK ORDERS
-// ============================================================
-function toggleBulkWO() {
-  const card = document.getElementById('bulk-wo-card');
-  const isHidden = card.style.display==='none';
-  card.style.display = isHidden ? 'block' : 'none';
-  if(isHidden) {
-    // Populate equipment checkboxes
-    document.getElementById('bulk-equip-list').innerHTML = state.equipment.map(e=>
-      `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)">
-        <input type="checkbox" value="${e.id}" style="cursor:pointer"/>
-        <span>${e.name}</span>
-      </label>`
-    ).join('');
-  }
-}
-
-async function createBulkWO() {
-  const name = document.getElementById('bulk-name').value.trim();
-  if(!name) { showToast('Please enter a work order name'); return; }
-  const checked = Array.from(document.querySelectorAll('#bulk-equip-list input:checked')).map(i=>i.value);
-  if(!checked.length) { showToast('Please select at least one equipment'); return; }
-  const priority = document.getElementById('bulk-priority').value;
-  const due = document.getElementById('bulk-due').value;
-  const notes = document.getElementById('bulk-notes').value;
-  let created = 0;
-  for(const equipId of checked) {
-    const record = { id:uid(), name, equipId, assign:'', priority, due, cost:0, meter:'', status:'Open', notes, photos:[], checklist:[] };
-    state.tasks.push(record);
-    await window._mpdb.from('tasks').upsert(record);
-    created++;
-  }
-  document.getElementById('bulk-wo-card').style.display='none';
-  ['bulk-name','bulk-due','bulk-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  state.monthlyCosts = computeMonthlyCosts();
-  renderDashboard();
-  showToast(created + ' work orders created ✓');
-}
-
-// ============================================================
-// COST BUDGET ALERTS (in analytics + dashboard)
-// ============================================================
-function checkBudgetAlerts() {
-  const now = new Date();
-  const alerts = [];
-  state.equipment.forEach(e=>{
-    if(!e.monthly_budget && !e.yearly_budget) return;
-    const monthCost = state.tasks.filter(t=>{
-      if(t.equipId!==e.id) return false;
-      const d=new Date(t.due||'');
-      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
-    }).reduce((a,t)=>a+(t.cost||0),0);
-    const yearCost = state.tasks.filter(t=>{
-      if(t.equipId!==e.id) return false;
-      return new Date(t.due||'').getFullYear()===now.getFullYear();
-    }).reduce((a,t)=>a+(t.cost||0),0);
-    if(e.monthly_budget && monthCost >= e.monthly_budget*0.9) {
-      alerts.push(`${e.name}: monthly budget ${monthCost>=e.monthly_budget?'EXCEEDED':'at 90%'} ($${monthCost.toLocaleString()} / $${e.monthly_budget.toLocaleString()})`);
-    }
-    if(e.yearly_budget && yearCost >= e.yearly_budget*0.9) {
-      alerts.push(`${e.name}: yearly budget ${yearCost>=e.yearly_budget?'EXCEEDED':'at 90%'} ($${yearCost.toLocaleString()} / $${e.yearly_budget.toLocaleString()})`);
-    }
-  });
-  return alerts;
-}
 
 // ============================================================
 // PATCH: saveEquipment — add budget fields
