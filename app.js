@@ -12,7 +12,7 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
@@ -196,176 +196,14 @@ async function promptResetPin(userId) {
         else { alert("Success! PIN updated for " + uName); }
     } catch (err) { console.error(err); }
 }
-async function showPinLogin() {
-    console.log('DEBUG: showPinLogin started');
-    
-    // 1. Force the containers to show
-    const loginView = document.getElementById('login-view');
-    const nameStage = document.getElementById('login-stage-names');
-    const list = document.getElementById('user-name-list');
-
-    if (loginView) loginView.style.display = 'block';
-    if (nameStage) nameStage.style.display = 'block';
-
-    if (!list) {
-        alert("CRITICAL ERROR: user-name-list NOT FOUND IN HTML");
-        return;
-    }
-
-    // 2. Clear and show "Checking Database..."
-    list.innerHTML = '<div style="color:white; grid-column:span 2;">Attempting to load names...</div>';
-
-    try {
-        // 3. The Fetch
-        const { data: users, error } = await window._mpdb
-            .from('profiles')
-            .select('*'); // Get everything to be safe
-
-        console.log("DEBUG: Database Data:", users);
-
-        if (error) {
-            list.innerHTML = `<div style="color:red; grid-column:span 2;">DB Error: ${error.message}</div>`;
-            return;
-        }
-
-        // 4. IF DATABASE IS EMPTY, SHOW A FAKE BUTTON (To test if UI works)
-        if (!users || users.length === 0) {
-            list.innerHTML = `
-                <div style="color:orange; grid-column:span 2; margin-bottom:10px;">No users in DB. Showing test button:</div>
-                <div onclick="alert('UI is working!')" style="background:#3b82f6; color:white; padding:15px; border-radius:10px; text-align:center; cursor:pointer;">
-                   UI TEST BUTTON
-                </div>`;
-            return;
-        }
-
-        // 5. Render real names
-        list.innerHTML = '';
-        users.forEach(user => {
-            // Check if status is correct
-            if (user.status !== 'approved') {
-                console.log(`User ${user.username} is NOT approved. Status: ${user.status}`);
-            }
-
-            const name = user.full_name || user.username;
-            const card = document.createElement('div');
-            card.style.cssText = "background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer;";
-            card.innerHTML = name;
-            card.onclick = () => selectUserForLogin(user);
-            list.appendChild(card);
-        });
-
-    } catch (e) {
-        console.error("Crash in showPinLogin:", e);
-    }
-}
-
-function selectUserForLogin(user) {
-    selectedLoginUser = user;
-    enteredPin = "";
-    
-    // Update display
-    const display = document.getElementById('selected-user-display');
-    if (display) display.textContent = "Hello, " + (user.full_name || user.username);
-
-    // Switch Stages
-    document.getElementById('login-stage-names').style.display = 'none';
-    document.getElementById('login-stage-pin').style.display = 'block';
-    
-    // Clear any dots if function exists
-    if (typeof updatePinDots === 'function') updatePinDots();
-}
 
 
-function pressPin(num) {
-    console.log("Button pressed:", num); // Check your F12 console for this!
-
-    if (num === 'clear') {
-        enteredPin = "";
-    } else {
-        // Allow up to 10 digits
-        if (enteredPin.length < 10) {
-            enteredPin += num;
-        }
-    }
-
-    console.log("Current PIN:", enteredPin);
-    updatePinDots();
-}
-    updatePinDots();
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
     // Shows one asterisk for every digit typed
     display.textContent = "•".repeat(enteredPin.length);
 }
-async function verifyUserPin() {
-    const { data, error } = await window._mpdb
-        .from('profiles')
-        .select('*') // Fetches everything, including the 'preferences' column
-        .eq('id', selectedLoginUser.id)
-        .eq('pin_code', enteredPin)
-        .single();
 
-    if (data) {
-        // 1. Success! Set the current user
-        // We include the 'preferences' from the database here
-        currentUser = {
-            ...data,
-            name: data.full_name || data.username
-        };
-
-        // 2. SAVE THE SESSION (Including preferences)
-        localStorage.setItem('mp_session', JSON.stringify(currentUser));
-
-        // 3. APPLY PREFERENCES IMMEDIATELY (This fixes the "LOADING" name issue)
-        if (typeof applyUserPreferences === 'function') {
-            applyUserPreferences();
-        }
-
-        // 4. ACCOUNTABILITY: Log the sign-in event
-        if (typeof logAuditAction === 'function') {
-            await logAuditAction("Sign In", `Logged into the workspace via PIN.`);
-        }
-
-        // 5. Create official session
-        if (typeof createSession === 'function') {
-            await createSession(data.username, data.id);
-        }
-
-        // 6. Enter the app
-        if (typeof fetchAbsences === 'function') await fetchAbsences();
-        await enterApp(); 
-
-        if (typeof renderAuditLogs === 'function') renderAuditLogs();
-
-    } else {
-        alert("Incorrect PIN");
-        enteredPin = "";
-        if (typeof updatePinDots === 'function') updatePinDots();
-        else if (typeof updatePinDisplay === 'function') updatePinDisplay();
-    }
-}
-function updatePinDots() {
-    const container = document.getElementById('pin-display');
-    if (!container) return;
-
-    // 1. We want at least 4 dots, or more if the user types more
-    const minDots = 4;
-    const currentLen = enteredPin.length;
-    const dotsCount = Math.max(minDots, currentLen);
-
-    let dotHtml = "";
-    for (let i = 0; i < dotsCount; i++) {
-        // 2. If the current index is less than what's typed, fill the dot
-        if (i < currentLen) {
-            dotHtml += '<div class="pin-dot filled"></div>';
-        } else {
-            // 3. Otherwise, show an empty outline
-            dotHtml += '<div class="pin-dot"></div>';
-        }
-    }
-
-    container.innerHTML = dotHtml;
-}
 
 function backToNames() {
     enteredPin = "";
