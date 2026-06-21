@@ -1,0 +1,85 @@
+// calendar.js - Calendar Grid, Absences, and Scheduling
+import { supabase, persist } from './db.js';
+import { fmtDate, showToast, uid } from './utils.js';
+import { openModal, closeModal } from './ui.js';
+import { MONTHS } from './state.js';
+
+// 1. Core Logic: Check if a user is out on a specific YYYY-MM-DD
+export function isUserOutOnDate(absence, targetDateStr) {
+    if (!absence.start_date || !absence.end_date) return false;
+    const target = targetDateStr.substring(0, 10);
+    const start = absence.start_date.substring(0, 10);
+    const end = absence.end_date.substring(0, 10);
+    return target >= start && target <= end;
+}
+
+// 2. Fetch all absences from Supabase
+export async function fetchAbsences() {
+    try {
+        const { data, error } = await supabase.from('staff_absences').select('*');
+        if (error) throw error;
+        window.state.staffAbsences = data || [];
+        return data;
+    } catch (e) {
+        console.error("Absence sync failed:", e);
+        return [];
+    }
+}
+
+// 3. Render the Actual Grid (The most complex part of the UI)
+export async function renderCalendar(calDate) {
+    const year = calDate.getFullYear();
+    const month = calDate.getMonth();
+    
+    const titleEl = document.getElementById('cal-title');
+    const daysEl = document.getElementById('cal-days');
+    if(!titleEl || !daysEl) return;
+
+    titleEl.textContent = `${MONTHS[month]} ${year}`;
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    let cells = '';
+
+    // Padding for previous month
+    for(let i = 0; i < firstDay; i++){
+        cells += `<div class="cal-day other-month"></div>`;
+    }
+
+    // Current Month Days
+    for(let d = 1; d <= daysInMonth; d++){
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = new Date().toISOString().split('T')[0] === dateStr;
+        
+        // Filter tasks and absences for this specific day
+        const dayTasks = (window.state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
+        const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
+
+        const eventsHtml = [
+            ...dayTasks.map(t => `<div class="cal-event work-order">${t.name}</div>`),
+            ...dayAbs.map(a => `<div class="cal-event absence">👤 ${a.user_name} Out</div>`)
+        ].join('');
+
+        cells += `
+            <div class="cal-day${isToday ? ' today' : ''}" onclick="window.calDayClick('${dateStr}')">
+                <div class="cal-day-num">${d}</div>
+                <div class="cal-event-container">${eventsHtml}</div>
+            </div>`;
+    }
+
+    daysEl.innerHTML = cells;
+}
+
+// 4. Save a Time-Off Request
+export async function saveAbsence(record) {
+    try {
+        const { error } = await supabase.from('staff_absences').insert(record);
+        if (error) throw error;
+        showToast("Request submitted ✓");
+        return true;
+    } catch (e) {
+        console.error("Absence save error:", e);
+        return false;
+    }
+}
