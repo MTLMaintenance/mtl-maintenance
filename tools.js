@@ -4,14 +4,26 @@ import { uid, showToast } from './utils.js';
 import { openModal, closeModal } from './ui.js';
 
 // 1. Fetch all tools from the database
-export async function fetchTools(state) {
+export async function fetchTools() {
+    // 1. Grab the global state automatically
+    const s = window.state;
+
     try {
+        console.log("Fetching tools from database...");
         const { data, error } = await supabase.from('tool_requests').select('*');
         if (error) throw error;
-        state.tools = data || [];
-        return state.tools;
+
+        // 2. Save the data into the Master Folder
+        if (s) {
+            s.tools = data || [];
+            console.log(`✅ Loaded ${s.tools.length} tools into state.`);
+        } else {
+            console.warn("⚠️ Global state object not found!");
+        }
+
+        return data || [];
     } catch (err) {
-        console.error("Fetch tools failed:", err);
+        console.error("❌ Fetch tools failed:", err);
         return [];
     }
 }
