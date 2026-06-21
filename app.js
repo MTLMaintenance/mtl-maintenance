@@ -24,7 +24,7 @@ import { exportCSV, exportPDF } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
-
+import { renderEquipmentTable, renderPartsTable, renderQuickSpecs } from './views.js';
 
 window.deleteZerk = deleteZerk;
 window.handleZerkMapClick = handleZerkMapClick;
@@ -36,6 +36,13 @@ window.deleteChecklistItem = deleteChecklistItem;
 window.deleteTaskComment = deleteTaskComment;
 window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
+window.openEquipDetail = openEquipDetail;
+window.editPart = editPart;
+window.savePart = savePart;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.showPanel = showPanel;
+window.deleteDoc = deleteDoc;
 
 window.globalEditObs = function(id) {
     console.log("Opening Edit for ID:", id);
@@ -860,38 +867,7 @@ function renderRecurList() {
             <button class="btn btn-danger btn-sm" onclick="deleteRecurRule('${r.id}')">✕</button>
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No rules set.</div>';
 }
-// ============================================================
-// EQUIPMENT
-// ============================================================
-function renderEquipmentTable(){
-  const equip = equipGroupFilter==='all' ? state.equipment : state.equipment.filter(e=>e.group_tag===equipGroupFilter||e.group_tag==='both');
-  document.getElementById('equip-table-body').innerHTML=equip.map(e=>{
-    const score=calcHealth(e.id);
-    const icon=e.photos&&e.photos.length?`<img src="${e.photos[0]}" style="width:100%;height:100%;object-fit:cover"/>` : (ICONS[e.type]||'⚙');
-    return `<tr onclick="openEquipDetail('${e.id}')">
-      <td><div style="display:flex;align-items:center;gap:9px">
-        <div class="equip-icon" style="width:32px;height:32px">${icon}</div>
-        <div><div style="font-weight:500">${e.name}</div><div style="font-size:11px;color:var(--text2)">${e.serial}</div></div>
-      </div></td>
-      <td>${badge(e.status)}</td>
-      <td><b>${e.hours.toLocaleString()}</b> hrs</td>
-      <td>
-        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
-        <span style="font-size:11px;color:${healthColor(score)};font-weight:600">${score}%</span>
-      </td>
-      <td style="color:var(--text2);font-size:12px">${(e.assigned_users||[]).join(', ')||e.op||'—'}</td>
-      <td style="font-size:12px;color:var(--text2)">${getLastService(e.id)}</td>
-      <td style="font-size:12px">${getNextDue(e.id)}</td>
-      <td onclick="event.stopPropagation()">
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
-          ${e.status!=='Down'?`<button class="btn btn-danger btn-sm" onclick="updateEquipStatus('${e.id}','Down')">↓ Down</button>`:`<button class="btn btn-success btn-sm" onclick="updateEquipStatus('${e.id}','Operational')">↑ Up</button>`}
-          ${currentUser?.role==='admin'?`<button class="btn btn-secondary btn-sm" onclick="printQRCode('${e.id}')">QR</button>`:''}
-          ${can('canDelete')?`<button class="btn btn-danger btn-sm" onclick="deleteEquip('${e.id}')">Del</button>`:''}
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
+
 
 function getNextDue(id){ const o=state.tasks.filter(t=>t.equipId===id&&t.status!=='Completed'); if(!o.length)return'—'; const n=o.sort((a,b)=>new Date(a.due)-new Date(b.due))[0]; return `<span style="color:${isOverdue(n.due)?'var(--danger)':'inherit'}">${fmtDate(n.due)}</span>`; }
 async function deleteEquip(id) {
@@ -951,110 +927,14 @@ function renderAssignUsers(){
 }
 
 // ============================================================
-// WORK ORDERS
-// ============================================================
-
-
-// ============================================================
 // SCHEDULE
 // ============================================================
 async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!==id); await persist('schedules','delete',{id}); renderSchedule(); renderCalendar(); }
 
-// ============================================================
-// PARTS
-// ============================================================
-function renderParts() {
-    const tableBody = document.getElementById('parts-table-body');
-    if (!tableBody) return;
 
-    if (!state.parts || state.parts.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#888;">No inventory found.</td></tr>';
-        return;
-    }
-
-    tableBody.innerHTML = state.parts.map(p => {
-        const qty = parseInt(p.qty) || 0;
-        const reorder = parseInt(p.reorder) || 0;
-        const out = qty === 0;
-        const low = qty <= reorder;
-
-        // Note: We removed the entire last <td> that had the button
-        return `
-        <tr onclick="window.editPart('${p.id}')" style="cursor:pointer;">
-            <td style="font-weight:600">${p.name || 'Unnamed'}</td>
-            <td style="font-size:12px; color:#666;">${p.num || '—'}</td>
-            <td>${typeof supplierName === 'function' ? supplierName(p.supplier_id) : '—'}</td>
-            <td style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${qty}</td>
-            <td>${reorder}</td>
-            <td>$${parseFloat(p.cost || 0).toFixed(2)}</td>
-            <td>$${(qty * parseFloat(p.cost || 0)).toLocaleString()}</td>
-            <td><span class="badge ${p.auto_reorder ? 'bs' : 'bg'}">${p.auto_reorder ? 'On' : 'Off'}</span></td>
-            <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
-        </tr>`;
-    }).join('');
-}
-
-// ============================================================
-// SUPPLIERS
-// ============================================================
-function renderSuppliers(){
-  document.getElementById('supplier-table-body').innerHTML=state.suppliers.map(s=>{
-    const partCount=state.parts.filter(p=>p.supplier_id===s.id).length;
-    return `<tr onclick="openSupplierDetail('${s.id}')">
-      <td style="font-weight:500">${s.name}</td>
-      <td style="color:var(--text2)">${s.contact||'—'}</td>
-      <td><a href="mailto:${s.email}" onclick="event.stopPropagation()" style="color:var(--accent)">${s.email||'—'}</a></td>
-      <td style="color:var(--text2)">${s.phone||'—'}</td>
-      <td><a href="${s.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--accent)">${s.website?'Visit':'—'}</a></td>
-      <td><span class="badge bg">${partCount} part${partCount!==1?'s':''}</span></td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-danger" onclick="deleteSupplier('${s.id}')">Del</button></td>
-    </tr>`;
-  }).join('');
-}
 async function deleteSupplier(id){ if(!confirm('Delete this supplier?'))return; state.suppliers=state.suppliers.filter(s=>s.id!==id); await persist('suppliers','delete',{id}); renderSuppliers(); }
 
-// ============================================================
-// DOCUMENTS
-// ============================================================
-function renderDocuments() {
-  const now = new Date(); 
-  const soon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  
-  // Alert logic remains the same
-  const expiring = state.documents.filter(d => d.expiry_date && new Date(d.expiry_date) <= soon);
-  document.getElementById('doc-expiry-alerts').innerHTML = expiring.map(d =>
-    `<div class="alert ${new Date(d.expiry_date) < now ? 'alert-d' : 'alert-w'}">
-      ${new Date(d.expiry_date) < now ? '⚠ EXPIRED:' : '📅 Expiring soon:'} <b>${d.name}</b> — ${fmtDate(d.expiry_date)}
-    </div>`
-  ).join('');
 
-  const warranties = state.documents.filter(d => d.type === 'warranty');
-  const others = state.documents.filter(d => d.type !== 'warranty');
-
-  const mkDoc = d => {
-    const equip = d.equip_id ? (typeof equipName === 'function' ? equipName(d.equip_id) : d.equip_id) : '';
-    const expired = d.expiry_date && new Date(d.expiry_date) < now;
-    
-    return `
-    <div class="doc-item" onclick="openDocDetail('${d.id}')">
-      <div class="doc-icon">${d.type === 'warranty' ? '🛡' : d.type === 'certificate' ? '📜' : d.type === 'manual' ? '📖' : '📄'}</div>
-      <div class="doc-info">
-        <div class="doc-name">${d.name}</div>
-        <div class="doc-meta">${equip ? equip + ' · ' : ''}${d.expiry_date ? 'Expires: ' + fmtDate(d.expiry_date) : 'No expiry'}</div>
-      </div>
-      ${expired ? '<span class="badge bd">Expired</span>' : d.expiry_date && new Date(d.expiry_date) <= soon ? '<span class="badge bw">Expiring</span>' : ''}
-      
-      <!-- ACTION BUTTONS -->
-      <div style="display:flex; gap:4px">
-          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openEditDocModal('${d.id}')">Edit</button>
-          <button class="btn btn-danger" onclick="event.stopPropagation(); window.deleteDoc('${d.id}')">Del</button>
-      </div>
-    </div>`;
-  };
-
-  document.getElementById('warranty-list').innerHTML = warranties.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No warranties added</div>';
-  document.getElementById('doc-list').innerHTML = others.map(mkDoc).join('') || '<div style="color:var(--text2);font-size:13px;padding:8px 0">No documents added</div>';
-}
 
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
@@ -2260,49 +2140,6 @@ async function changeUserRole() {
   } catch(e) {
     showToast("Failed to update user");
   }
-}
-async function renderUsersTable() {
-    console.log("--- RENDER USER TABLE START ---");
-    try {
-        const { data: profiles, error } = await window._mpdb.from('profiles').select('*').order('created_at', { ascending: false });
-        if (error || !profiles) {
-            console.error("Supabase Fetch Error:", error);
-            return;
-        }
-
-        state.users_list_cache = profiles;
-        const active = profiles.filter(p => p.status === 'approved');
-        
-        const tableBody = document.getElementById('users-table-body');
-        if (tableBody) {
-            const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
-            
-            tableBody.innerHTML = active.map(p => {
-                const uId = p.id;
-                // Note: We only use the ID in the onclicks to prevent quote crashes
-                return `
-                <tr>
-                    <td><b>${p.full_name || p.username}</b></td>
-                    <td>${p.username}</td>
-                    <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-                    <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
-                    <td>
-                      <div style="display:flex; gap:5px;">
-                        <button class="btn btn-secondary btn-sm" onclick="promptResetPin('${uId}')">🔑 PIN</button>
-                     <button class="btn btn-secondary btn-sm" onclick="openPermissionsCard('${uId}')">🛡️ Perms</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${uId}')">Delete</button>
-                      </div>
-                    </td>
-                </tr>`;
-            }).join('');
-            console.log("Table successfully rendered with 3 buttons.");
-        } else {
-            console.warn("Could not find element 'users-table-body'");
-        }
-
-    } catch(e) { 
-        console.error("User Table Render Error:", e); 
-    }
 }
 
 
@@ -4177,35 +4014,7 @@ function highlightZerk(id, shouldHighlight) {
 }
 window.highlightZerk = highlightZerk;
 
-function renderQuickSpecs(equipId) {
-    const container = document.getElementById('eq-quick-specs');
-    if(!container) return;
-    const e = state.equipment.find(x => x.id === equipId);
-    
-    const specs = e.custom_fields || {};
-    const entries = Object.entries(specs);
 
-    if (entries.length === 0) {
-        container.innerHTML = '<div style="color:var(--text3); font-style:italic; padding: 10px 0;">No specs added yet.</div>';
-        return;
-    }
-
-    container.innerHTML = entries.map(([key, val]) => `
-        <div class="spec-row" style="display:flex; align-items:center; gap:8px; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05)">
-            <!-- Clicking the text still triggers the edit -->
-            <div style="flex:1; display:flex; justify-content:space-between; cursor:pointer" onclick="editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">
-                <span style="color:var(--text2)">${key}:</span>
-                <b style="color:var(--text)">${val}</b>
-            </div>
-            
-            <!-- NEW: Dedicated Delete Button -->
-            <button class="btn btn-danger" 
-                    style="padding: 2px 6px; font-size: 10px; border-radius: 4px; line-height: 1" 
-                    onclick="deleteQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')" 
-                    title="Delete Spec">✕</button>
-        </div>
-    `).join('');
-}
 function renderDashboardObs(equipId) {
     const container = document.getElementById('eq-obs-list-dash');
     if(!container) return;
@@ -4217,19 +4026,8 @@ function renderDashboardObs(equipId) {
         </div>
     `).join('') || '<div style="color:var(--text3); font-size:11px">No notes</div>';
 }
-    function renderMiniTimeline(equipId) {
-    const container = document.getElementById('eq-timeline-content-mini');
-    if(!container) return;
-
-    const items = state.tasks.filter(t => t.equipId === equipId).slice(0, 5);
-    container.innerHTML = items.map(t => `
-        <div style="padding:8px 0; border-bottom: 1px solid var(--border); font-size: 12px">
-            <div style="color: var(--text3); font-size: 10px">${fmtDate(t.due)}</div>
-            <div style="font-weight: 600">${t.name}</div>
-            <div style="color: var(--text2)">${badge(t.status)}</div>
-        </div>
-    `).join('') || '<div style="color:var(--text3); font-size:12px">No recent activity</div>';
-}
+    
+   
 async function addQuickSpec(equipId) {
     // 1. Find the machine in our local list
     const e = state.equipment.find(x => x.id === equipId);
@@ -5117,32 +4915,6 @@ async function fetchConsumables() {
     } catch (e) { console.error(e); }
 }
 
-function renderConsumables() {
-    const body = document.getElementById('consumables-table-body');
-    if (!body || !state.consumables) return;
-
-    if (state.consumables.length === 0) {
-        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">No items found.</td></tr>';
-        return;
-    }
-
-    body.innerHTML = state.consumables.map(c => {
-        const isLow = c.qty <= c.reorder;
-        
-        // THE FIX: Added the <tr> tag with the onclick event
-        return `
-            <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
-                <td><b>${c.name}</b></td>
-                <td>${c.num || '—'}</td>
-                <td>${typeof supplierName === 'function' ? supplierName(c.supplier_id) : '—'}</td>
-                <td style="font-weight:700; color:${isLow ? '#dc3545' : 'inherit'};">${c.qty}</td>
-                <td>${c.reorder}</td>
-                <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
-                <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
-                <td><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
-            </tr>`;
-    }).join('');
-}
 // 1. OPEN THE MODAL (For New Items)
 window.openAddConsumable = function() {
     console.log("🚀 Opening Consumable Modal for new entry...");
