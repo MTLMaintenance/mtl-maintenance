@@ -7,6 +7,8 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
+import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
+import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
@@ -43,8 +45,11 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.showPanel = showPanel;
 window.deleteDoc = deleteDoc;
-
+window.quickLogHours = (id) => quickLogHours(id, state);
+window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
+window.addObservation = addObservation;
 window.globalEditObs = function(id) {
+  
     console.log("Opening Edit for ID:", id);
     
     const obs = state.observations.find(o => o.id === id);
@@ -449,24 +454,6 @@ async function stopQRScanner() {
   // Clear the internal state of the reader
   const reader = document.getElementById('qr-reader');
   if(reader) reader.innerHTML = ""; 
-}
-function quickLogHours(equipId) {
-  const e = state.equipment.find(x => x.id === equipId);
-  if (!e) return;
-
-  // Set up the modal fields
-  const idField = document.getElementById('lh-equip-id');
-  const dateField = document.getElementById('lh-date');
-  const valField = document.getElementById('lh-val');
-  
-  if (idField) idField.value = equipId;
-  if (dateField) dateField.value = new Date().toISOString().split('T')[0];
-  if (valField) valField.value = e.hours;
-  
-  const display = document.getElementById('lh-current-display');
-  if (display) display.textContent = `Current: ${e.hours.toLocaleString()} hrs`;
-  
-  openModal('log-hours-modal');
 }
 
 async function loadState() {
@@ -974,125 +961,7 @@ function openEditDocModal(docId = null) {
 // ============================================================
 // DETAIL VIEWS
 // ============================================================
-async function openTaskDetail(id) {
-  const t = state.tasks.find(x => x.id === id); 
-  if (!t) return;
 
-  // 1. Tab Memory
-  const activeTab = window._activeTaskTab || 'dt-info';
-  const isManager = (currentUser.role === 'admin' || currentUser.role === 'manager');
-
-  // 2. Data Helpers
-  // This helper replaces empty/null values with a grey "N/A"
-  const val = (data) => (data && data !== "" && data !== "—") ? data : '<span style="color:var(--text3); font-weight:400;">N/A</span>';
-
-  let comments = [];
-  try { 
-    const { data } = await window._mpdb.from('wo_comments').select('*').eq('task_id', id).order('created_at', { ascending: true }); 
-    comments = data || []; 
-  } catch (e) {}
-
-  const partsUsed = state.partUsage.filter(p => p.task_id === id);
-  const done = t.checklist ? t.checklist.filter(c => c.done).length : 0;
-  const totalCheck = t.checklist ? t.checklist.length : 0;
-  const photoHtml = t.photos && t.photos.length ? `<div class="photo-grid">${t.photos.map(src => `<img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')"/>`).join('')}</div>` : '';
-
-  let actionButton = t.status === 'Completed' 
-    ? `<span class="badge bs" style="padding:8px 15px">Finalized ✓</span>`
-    : `<button class="btn btn-primary" onclick="openTaskSignoff('${t.id}')">${t.status === 'Pending Approval' ? '🛡 Approve Work' : '✓ Mark Complete'}</button>`;
-
-  document.getElementById('detail-title').textContent = t.name;
-  document.getElementById('detail-body').innerHTML = `
-    <div class="tab-bar">
-      <button class="tab ${activeTab === 'dt-info' ? 'active' : ''}" onclick="switchTaskTab('dt-info',this)">Info</button>
-      <button class="tab ${activeTab === 'dt-checklist' ? 'active' : ''}" onclick="switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
-      <button class="tab ${activeTab === 'dt-parts' ? 'active' : ''}" onclick="switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
-      <button class="tab ${activeTab === 'dt-comments' ? 'active' : ''}" onclick="switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
-    </div>
-
-    <!-- INFO TAB -->
-    <div id="dt-info" class="dt-section" style="display:${activeTab === 'dt-info' ? 'block' : 'none'}">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;font-size:13px; color:black !important;">
-        <div><span style="color:var(--text2)">Equipment:</span> <b>${typeof equipName === 'function' ? equipName(t.equipId || t.equip_id) : t.name}</b></div>
-        <div><span style="color:var(--text2)">Assigned:</span> ${val(t.assign)}</div>
-        <div><span style="color:var(--text2)">Priority:</span> ${badge(t.priority)}</div>
-        <div><span style="color:var(--text2)">Status:</span> ${badge(t.status)}</div>
-        <div><span style="color:var(--text2)">Due:</span> <span style="color:${isOverdue(t.due) && t.status !== 'Completed' ? 'var(--danger)' : 'inherit'}; font-weight:bold">${fmtDate(t.due)}</span></div>
-        <div><span style="color:var(--text2)">Cost:</span> <b>$${(t.cost || 0).toLocaleString()}</b></div>
-        <div><span style="color:var(--text2)">Meter:</span> ${val(t.meter)}</div>
-      </div>
-      
-      <div style="margin-bottom:12px">
-        <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:4px">Notes</div>
-        <div style="font-size:13px; color:black; background:var(--bg2); padding:10px; border-radius:8px">${val(t.notes)}</div>
-      </div>
-      
-      <div style="margin-bottom:12px">
-        <div style="font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; margin-bottom:4px">Tools Required</div>
-        <div style="font-size:13px; color:black; background:var(--bg2); padding:10px; border-radius:8px">${val(t.tools)}</div>
-      </div>
-    </div>
-
-    <!-- CHECKLIST TAB -->
-    <div id="dt-checklist" class="dt-section" style="display:${activeTab === 'dt-checklist' ? 'block' : 'none'}">
-      <div style="display:flex; gap:8px; margin-bottom:15px">
-        <input type="text" id="new-check-item" class="form-input" placeholder="Add a task step..." style="color:black">
-        <button class="btn btn-primary btn-sm" onclick="addTaskCheckItem('${t.id}')">Add</button>
-      </div>
-      ${t.checklist && t.checklist.length ? t.checklist.map((c, i) => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border)">
-        <div style="display:flex; align-items:center" onclick="toggleCheck('${t.id}',${i})">
-            <div class="check-box" style="${c.done ? 'background:var(--text);border-color:var(--text);color:var(--bg)' : ''}">${c.done ? '✓' : ''}</div>
-            <span class="${c.done ? 'done' : ''}" style="color:black; font-size:13px">${c.text}</span>
-        </div>
-        <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="deleteChecklistItem('${t.id}', ${i})">🗑</button>
-      </div>`).join('') : '<div style="color:var(--text3); text-align:center; padding:20px;">No checklist items added.</div>'}
-    </div>
-
-    <!-- PARTS TAB -->
-    <div id="dt-parts" class="dt-section" style="display:${activeTab === 'dt-parts' ? 'block' : 'none'}">
-      <div style="background:var(--bg2); padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border)">
-        <div style="font-size:11px; font-weight:700; color:var(--text2); margin-bottom:8px">PULL FROM INVENTORY</div>
-        <div style="display:flex; gap:8px">
-          <select id="dt-part-select" class="form-select" style="flex:1; color:black">
-            <option value="">-- Select Part --</option>
-            ${state.parts.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`).join('')}
-          </select>
-          <input type="number" id="dt-part-qty" class="form-input" style="width:60px; color:black" value="1">
-          <button class="btn btn-primary btn-sm" onclick="addPartToTask('${t.id}')">Add</button>
-        </div>
-      </div>
-      ${partsUsed.length ? partsUsed.map(p => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border)">
-        <div style="color:black; font-size:13px"><b>${p.part_name}</b><br><small style="color:var(--text2)">Qty: ${p.qty_used} · $${(p.line_total || 0).toLocaleString()}</small></div>
-        <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="removePartUsage('${p.id}', '${t.id}')">🗑</button>
-      </div>`).join('') : '<div style="color:var(--text3); text-align:center; padding:20px;">No parts logged to this task.</div>'}
-    </div>
-
-    <!-- COMMENTS TAB -->
-    <div id="dt-comments" class="dt-section" style="display:${activeTab === 'dt-comments' ? 'block' : 'none'}">
-      <textarea class="form-textarea" id="dt-comment-input-large" placeholder="Add a detailed update..." style="margin-top:8px; height:80px; color:black"></textarea>
-      <button class="btn btn-primary btn-sm" style="margin-top:6px; margin-bottom:15px" onclick="addTaskComment('${t.id}')">Post Comment</button>
-      <div id="dt-comment-list">
-        ${comments.map(c => `
-          <div style="background:var(--bg2); padding:10px; border-radius:8px; margin-bottom:8px; border:1px solid var(--border)">
-            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3)">
-              <b>${c.author}</b>
-              <button style="background:none; border:none; color:var(--danger); cursor:pointer" onclick="deleteTaskComment('${c.id}', '${t.id}')">🗑</button>
-            </div>
-            <div style="color:black; font-size:13px; margin-top:4px">${c.body}</div>
-          </div>`).join('')}
-      </div>
-    </div>
-    
-    <div style="display:flex; gap:8px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--border); padding-top:15px">
-      ${isManager ? `<button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Delete WO</button>` : ''}
-      <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
-      ${actionButton}
-    </div>`;
-
- await openModal('detail-modal');
-}
 function switchDetailTab(tab, btn) {
   const modal = document.getElementById('detail-modal');
   if (!modal) return;
@@ -1135,36 +1004,6 @@ function switchDetailTab(tab, btn) {
   if (tab === 'eq-invoices') renderInvoicesList(id);
   if (tab === 'eq-docs') renderDocsList(id);
 }
-function renderObservationsList(equipId) {
-    // Target only the list container, NOT the whole tab
-    const listContainer = document.getElementById(`obs-list-${equipId}`);
-    if (!listContainer) return;
-
-    // Filter observations for this machine
-    const obs = (state.observations || []).filter(o => o.equip_id === equipId);
-
-    // Sort newest first
-    obs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    listContainer.innerHTML = obs.map(o => `
-        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:flex-start; gap:12px">
-            <!-- Use the vibrant badges we fixed earlier -->
-            <span class="badge ${o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bg'}">${o.severity}</span>
-            
-            <div style="flex:1">
-                <div style="font-weight:600; color:black; font-size:13px">${o.body}</div>
-                <div style="font-size:11px; color:#888; margin-top:4px">
-                    ${o.author} · ${new Date(o.created_at).toLocaleDateString()}
-                </div>
-            </div>
-
-            <!-- Add Edit and Delete buttons for every row -->
-            <div style="display:flex; gap:5px">
-                <button class="btn btn-secondary btn-sm" style="font-size:10px"  onclick="window.globalEditObs('${o.id}', '${equipId}')">Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteObservation('${o.id}', '${equipId}')">🗑</button>
-            </div>
-        </div>`).join('') || '<div style="color:#999; padding:20px; text-align:center">No history recorded yet.</div>';
-}
 
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
@@ -1186,135 +1025,8 @@ function renderDowntimeTab(equipId) {
     }
 }
 
-async function postDetailComment(taskId){
-  const body=document.getElementById('dt-comment-input').value.trim(); if(!body) return;
-  const comment={id:uid(),task_id:taskId,author:currentUser.name,body,created_at:new Date().toISOString()};
-  try {
-    await window._mpdb.from('wo_comments').insert(comment);
-    showToast('Comment posted');
-    openTaskDetail(taskId);
-  } catch(e){ showToast('Failed to post comment'); }
-}
-
-function openEquipDetail(id){
-  const e = state.equipment.find(x => x.id === id); 
-  if(!e) return;
-  
-  window._currentDetailEquipId = id;
-  const score = calcHealth(id);
-
-  document.getElementById('detail-title').textContent = e.name;
-  
-  document.getElementById('detail-body').innerHTML = `
-    <!-- QUICK NAVIGATION -->
-    <div class="tab-bar" style="overflow-x: auto; white-space: nowrap; margin-bottom: 15px; display: flex; gap: 4px;">
-      <button class="tab active" onclick="switchDetailTab('eq-overview',this)">Overview</button>
-      <button class="tab" onclick="switchDetailTab('eq-zerks',this)">Zerk Map</button>
-      <button class="tab" onclick="switchDetailTab('eq-history',this)">Full History</button>
-      <button class="tab" onclick="switchDetailTab('eq-obs',this)">Observations</button>
-      <button class="tab" onclick="switchDetailTab('eq-invoices',this)">Invoices</button>
-      <button class="tab" onclick="switchDetailTab('eq-docs',this)">Docs</button>
-    </div>
-
-    <!-- 1. OVERVIEW VIEW -->
-    <div id="eq-overview" class="tab-content">
-      <div class="eq-dash-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
-        
-        <!-- Widget: Machine Status -->
-        <div class="eq-widget" id="status-widget-${e.id}" style="background: ${e.is_locked ? '#FCEBEB' : 'var(--bg2)'}; border: 1px solid ${e.is_locked ? '#E24B4A' : 'var(--border)'}; border-radius: 8px; padding: 12px; transition: all 0.3s">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid ${e.is_locked ? 'rgba(226,75,74,0.2)' : 'var(--border)'}; padding-bottom: 5px;">
-            <span style="font-size: 11px; font-weight: 700; color: ${e.is_locked ? 'var(--danger-text)' : 'var(--text2)'}; text-transform: uppercase;">Status</span>
-            <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:10px; font-weight:700; color:${e.is_locked ? 'var(--danger-text)' : 'var(--text3)'}">
-                <input type="checkbox" ${e.is_locked ? 'checked' : ''} onchange="toggleLockout('${e.id}', this.checked)"/> 🚨 LOCKOUT
-            </label>
-          </div>
-          <div style="font-size: 13px; line-height: 2;">
-            <div id="lock-warning-${e.id}" style="display: ${e.is_locked ? 'block' : 'none'}; color:var(--danger-text); font-weight:700; margin-bottom:8px">⚠️ DANGER: ${e.lock_reason || ''}</div>
-            <div>Status: ${badge(e.status)}</div>
-            <div>Meter: <b>${e.hours.toLocaleString()} hrs</b></div>
-            <div id="adaptive-prediction-${e.id}"></div>
-          </div>
-          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border)">
-            ${e.manual_url ? 
-              `<button class="btn btn-primary btn-sm" style="width:100%" onclick="window.open('${e.manual_url}', '_blank')">📖 Open Manual</button>` : 
-              `<button class="btn btn-secondary btn-sm" style="width:100%" onclick="setManualLink('${e.id}')">🔗 Link Manual</button>`
-            }
-          </div>
-        </div>
-
-        <!-- Widget: Quick Specs -->
-        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
-            <span style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase;">Quick Specs</span>
-            <button class="btn btn-secondary btn-sm" style="font-size:10px; padding: 2px 6px" onclick="addQuickSpec('${e.id}')">+ Add</button>
-          </div>
-          <div id="eq-quick-specs"></div>
-        </div>
-
-        <!-- Widget: Recent Activity -->
-        <div class="eq-widget" style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Recent Activity</div>
-          <div id="eq-timeline-content-mini" style="max-height: 180px; overflow-y: auto;"></div>
-        </div>
-      </div>
-    </div>
 
 
-<!-- 2. ZERK MAP VIEW -->
-<div id="eq-zerks" class="tab-content" style="display:none">
-  <div id="zerk-view-switcher" style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap"></div>
-  <div id="tab-content-zerk"></div>
-  <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
-</div> 
-
-  <!-- 2. The Master Container (This is where the JS pours Area 2) -->
-  <div id="tab-content-zerk"></div>
-  
-  <!-- Hidden input for uploads -->
-  <input type="file" id="zerk-upload-input" style="display:none" onchange="uploadZerkView(this)"/>
-</div>
-    <!-- 3. FULL HISTORY VIEW -->
-    <div id="eq-history" class="tab-content" style="display:none"><div id="eq-history-list"></div></div>
-
-   <!-- Observations Tab -->
-    <div id="eq-obs" class="tab-content" style="display:none">
-      <div style="background:var(--bg2); padding:12px; border-radius:var(--radius); margin-bottom:12px; border:1px solid var(--border)">
-        <div style="margin-bottom:8px">
-          <label class="form-label" style="font-size:11px">Severity Level</label>
-          <!-- THE SEVERITY SELECTOR -->
-          <select class="form-select" id="obs-severity-${e.id}" style="width:100%; margin-top:4px">
-              <option value="info">ℹ️ Info / Maintenance Log</option>
-              <option value="watch">👀 Watch / Monitoring Required</option>
-              <option value="critical">🚨 Critical / Needs Immediate Action</option>
-          </select>
-        </div>
-
-        <textarea class="form-textarea" id="obs-input-${e.id}" placeholder="What do you see?" style="width:100%; min-height:60px; margin-bottom:8px"></textarea>
-        
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
-          <div style="display:flex; gap:6px; align-items:center">
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('obs-photo-input').click()">📸 Add Photo</button>
-            <input type="file" id="obs-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this,'obs')"/>
-            <span id="obs-photo-status" style="font-size:11px; color:var(--success); font-weight:600"></span>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="addObservation('${e.id}')">Post Observation</button>
-        </div>
-      </div>
-      <div id="obs-list-${e.id}">Loading history...</div>
-    </div>
-
-    <div id="eq-invoices" class="tab-content" style="display:none"><div id="invoices-list"></div><button class="btn btn-primary btn-sm" onclick="openAddInvoice()">+ Add Invoice</button></div>
-    <div id="eq-docs" class="tab-content" style="display:none"><div id="docs-list"></div></div>
-
-    <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; border-top: 1px solid var(--border); padding-top: 15px;">
-      <button class="btn btn-secondary" onclick="printMachineHistory('${e.id}')">🖨 History Report</button>
-      <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
-    </div>`;
-
-  openModal('detail-modal');
-  renderMiniTimeline(id);
-  renderQuickSpecs(id);
-}
 function openSupplierDetail(id){
   const s = state.suppliers.find(x => x.id === id); 
   if(!s) return;
@@ -1859,73 +1571,7 @@ function printMachineHistory(equipId){
   if(w){ w.document.write(html); w.document.close(); }
 }
 
-// ── OBSERVATIONS ─────────────────────────────────────────────
-// 2. THE ACTION: Handles adding a new observation and sending alerts
-async function addObservation(equipId) {
-    const input = document.getElementById(`obs-input-${equipId}`);
-    const severity = document.getElementById(`obs-severity-${equipId}`).value;
-    const body = input.value.trim();
 
-    if (!body) return showToast("Enter a note first");
-
-    const record = {
-        id: uid(),
-        equip_id: equipId,
-        author: currentUser.name,
-        body: body,
-        severity: severity,
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        await window._mpdb.from('observations').insert(record);
-        
-        // Add to local memory so it shows up live
-        state.observations.unshift(record);
-
-        // Refresh ONLY the list part of the tab
-        renderObservationsList(equipId);
-        
-        // Refresh the main dashboard
-        renderDashboard();
-
-        // Clear the input for the next note
-        input.value = '';
-        showToast("Observation added ✓");
-    } catch (e) {
-        showToast("Error saving note");
-    }
-}
-window.editObservation = function(obsId, equipId) {
-    console.log("Attempting to edit:", obsId, "for machine:", equipId);
-
-    // 1. Find the data in local state
-    const obs = state.observations.find(o => o.id === obsId);
-    if (!obs) {
-        console.error("Observation not found in state");
-        return;
-    }
-
-    // 2. Map the data to the Edit Modal fields
-    // We use IDs that match the simple modal we built
-    const idField = document.getElementById('edit-id');
-    const sevField = document.getElementById('edit-sev');
-    const bodyField = document.getElementById('edit-body');
-
-    if (idField && sevField && bodyField) {
-        idField.value = obsId;
-        // We store the equipId in a temporary global so the SAVE function knows what to refresh
-        window._currentEditEquipId = equipId; 
-        
-        sevField.value = obs.severity;
-        bodyField.value = obs.body;
-
-        // 3. Show the modal
-        openModal('edit-obs-modal');
-    } else {
-        alert("Developer Error: Edit Modal IDs (edit-id, edit-sev, edit-body) not found in HTML!");
-    }
-};
 
   function refreshObsList(equipId) {
     const container = document.getElementById('obs-list-' + equipId);
@@ -3064,19 +2710,6 @@ function handleInvoiceDrop(event) {
   handleInvoicePhoto(input);
 }
 
-async function renderInvoicesList(equipId) {
-    const container = document.getElementById('invoices-list');
-    if (!container) return;
-    // Fetch from state or DB
-    const invs = (state.invoices || []).filter(i => i.equip_id === equipId);
-    
-    container.innerHTML = invs.map(i => `
-        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; color:black">
-            <span>${new Date(i.date).toLocaleDateString()} · <b>${i.supplier}</b></span>
-            <b>$${i.amount}</b>
-        </div>
-    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No invoices yet</div>';
-}
 
 // ── UNLOCK USER ───────────────────────────────────────────────
 async function unlockUser(userId, userName) {
@@ -4134,35 +3767,9 @@ function updateCalEntryTypeButtons(type) {
     setCalEntryType(type);
 }
    
-function renderFullHistoryList(equipId) {
-    const container = document.getElementById('eq-history-list');
-    if (!container) return;
-    // Match against both naming conventions
-    const history = state.tasks.filter(t => (t.equipId === equipId || t.equip_id === equipId) && t.status === 'Completed');
-    
-    container.innerHTML = history.map(t => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; color:black">
-            <div>
-                <b>${t.name}</b>
-                <div style="font-size:11px; color:#666">${new Date(t.created_at || Date.now()).toLocaleString()}</div>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="openTaskDetail('${t.id}')">Details</button>
-        </div>
-    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No history recorded</div>';
-}
+
    
-    function renderDocsList(equipId) {
-    const container = document.getElementById('docs-list');
-    if (!container) return;
-    const docs = state.documents.filter(d => d.equip_id === equipId);
     
-    container.innerHTML = docs.map(d => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; color:black">
-            <div><b>${d.name}</b><div style="font-size:11px; color:#666">${d.type}</div></div>
-            <button class="btn btn-secondary btn-sm" onclick="openDocDetail('${d.id}')">View</button>
-        </div>
-    `).join('') || '<div style="color:#999; padding:20px; text-align:center">No documents found</div>';
-}
 function openDocModal(docId = null) {
   _currentDocEditId = docId;
   _tempFileData = null;
@@ -4223,25 +3830,6 @@ function openAddDocModal() {
     input.click();
 }
 
-async function saveQuickLogHours() {
-  const equipId = document.getElementById('lh-equip-id').value;
-  const date = document.getElementById('lh-date').value; 
-  const val = parseInt(document.getElementById('lh-val').value);
-  const e = state.equipment.find(x => x.id === equipId);
-  if (!e || isNaN(val)) return;
-
-  try {
-    await persist('equipment', 'upsert', e);
-    await window._mpdb.from('meter_history').insert({ equip_id: equipId, reading: val, created_at: new Date(date).toISOString() });
-    
-    // THE LOG
-    logAuditAction("Meter Update", `${e.name} set to ${val} hrs (Date: ${date})`);
-
-    closeModal('log-hours-modal');
-    renderDashboard();
-    showToast("Updated ✓");
-  } catch (err) { console.error(err); }
-}
 
 function toggleRecurFields() {
     const type = document.getElementById('ce-recur-type').value;
