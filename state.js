@@ -1,4 +1,4 @@
-export let state = { 
+const masterState = { 
     equipment: [], 
     tasks: [], 
     schedules: [], 
@@ -10,6 +10,12 @@ export let state = {
     wishlist: [], 
     observations: [] 
 };
+
+// 2. THE BRIDGE: Attach it to the window so ALL files see it as "state"
+window.state = masterState;
+
+// 3. Export it for the files that use imports
+export const state = masterState;
 
 export let chatSub = null;
 export let chatChannel = null;
