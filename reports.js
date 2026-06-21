@@ -36,3 +36,16 @@ export function exportPDF(state, currentUser) {
   const w = window.open('','_blank');
   if(w){ w.document.write(html); w.document.close(); }
 } 
+
+export function exportHealthCSV(state, calcHealthFunc) {
+  const rows = [['Equipment', 'Hours', 'Status', 'Health Score']];
+  state.equipment.forEach(e => {
+    const score = calcHealthFunc(e.id, state.tasks, state.equipment);
+    rows.push([e.name, e.hours, e.status, score + '%']);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'mtl-health-report.csv';
+  a.click();
+}
