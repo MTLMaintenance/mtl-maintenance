@@ -84,3 +84,14 @@ export async function getAdaptivePrediction(equipId) {
         predictedDate: new Date(Date.now() + (hoursRemaining / burnRate) * 86400000)
     };
 }
+export function renderRecentTasks(){
+  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
+  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
+  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
+    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
+    return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
+      <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
+      ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
