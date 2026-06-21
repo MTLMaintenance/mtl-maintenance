@@ -17,6 +17,7 @@ import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
+import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1166,149 +1167,9 @@ function handleDocUpload(input){
   reader.readAsDataURL(file); input.value='';
 }
 
-// ============================================================
-// DASHBOARD
-// ============================================================
-function updateMetrics() {
-    const tasks = state.tasks || [];
-    const now = new Date().toISOString().split('T')[0];
 
-    // OPEN = Anything not completed
-    const openTasks = tasks.filter(t => {
-        const s = (t.status || "").toLowerCase();
-        return s !== "completed" && s !== "";
-    });
 
-    // OVERDUE = Open AND date is older than today
-    const overdueTasks = openTasks.filter(t => t.due && t.due < now);
 
-    const openEl = document.getElementById('m-open');
-    const overdueEl = document.getElementById('m-overdue');
-    const totalEq = document.getElementById('m-total');
-
-    if (openEl) openEl.textContent = openTasks.length;
-    if (totalEq) totalEq.textContent = state.equipment.length;
-    
-    if (overdueEl) {
-        overdueEl.textContent = overdueTasks.length;
-        overdueEl.style.color = overdueTasks.length > 0 ? "#dc3545" : "#28a745";
-    }
-}
-async function renderEquipListDash(){
-  const el = document.getElementById('equip-list-dash');
-  if(!el) return;
-
-  // 1. Get the list of machines based on current group filter
-  const list = filteredEquipment(activeGroupFilter).slice(0, 8);
-  
-  // 2. Build the list rows
-  el.innerHTML = list.map(e => {
-    // Check if the machine is currently redlined (locked out)
-    const isLocked = e.is_locked === true;
-    
-    return `
-    <div class="equip-row" onclick="openEquipDetail('${e.id}')" 
-         style="cursor:pointer; ${isLocked ? 'background:rgba(226,75,74,0.12); border-left:4px solid var(--danger)' : ''}">
-      <div class="equip-info">
-        <div class="equip-name" style="${isLocked ? 'color:var(--danger-text); font-weight:800' : ''}">
-            ${isLocked ? '🚨 ' : ''}${e.name}
-        </div>
-        <div class="equip-meta">${e.hours.toLocaleString()} hrs · ${badge(e.status)}</div>
-        <div id="dash-predict-${e.id}" style="font-size:11px; margin-top:2px"></div>
-      </div>
-      <div style="text-align:right">
-        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); quickLogHours('${e.id}')">⏱ Log</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  // 3. Inject the Adaptive Predictions (Working Hours Left)
-  for (const e of list) {
-    try {
-        const res = await getAdaptivePrediction(e.id);
-        const pEl = document.getElementById(`dash-predict-${e.id}`);
-        if (pEl && res) {
-            if (res.status === 'ACTIVE') {
-                pEl.innerHTML = `<span style="color:var(--warning); font-weight:700">⚠️ ~${res.hoursRemaining} hrs until service</span>`;
-            } else if (res.status === 'OVERDUE') {
-                pEl.innerHTML = `<span style="color:var(--danger); font-weight:700">🚨 SERVICE OVERDUE</span>`;
-            } else if (res.status === 'PAUSED') {
-                pEl.innerHTML = `<span style="color:var(--text3); font-style:italic">Maintenance Paused</span>`;
-            }
-        }
-    } catch(err) { console.warn("Prediction failed for", e.name); }
-  }
-}
-function renderSchedDash(){
-  const el=document.getElementById('sched-list-dash');
-  // Combine scheduled maintenance + open/overdue work orders
-  const schedItems = state.schedules.filter(s=>{
-    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
-    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
-    return d>=TODAY;
-  }).map(s=>({...s, _type:'schedule'}));
-  
-  const woItems = state.tasks.filter(t=>t.status!=='Completed'&&t.due).map(t=>({
-    id:t.id, name:t.name, date:t.due, equipId:t.equipId,
-    tech:t.assign, _type:'wo', status:t.status, priority:t.priority
-  }));
-
-  const combined = [...schedItems, ...woItems]
-    .sort((a,b)=>{
-      const [ay,am,ad]=(a.date||'').split('-').map(Number);
-      const [by,bm,bd]=(b.date||'').split('-').map(Number);
-      return new Date(ay,am-1,ad)-new Date(by,bm-1,bd);
-    }).slice(0,6);
-
-  el.innerHTML=combined.map(s=>{
-    const [sy,sm,sd]=(s.date||'').split('-').map(Number);
-    const d=sy?new Date(sy,sm-1,sd):new Date(s.date);
-    const isWO = s._type==='wo';
-    const isOverdueItem = isWO && isOverdue(s.date);
-    return `<div class="sched-item" onclick="${isWO?`openTaskDetail('${s.id}')`:''}" style="${isWO?'cursor:pointer':''}">
-      <div class="sched-date" style="background:${isOverdueItem?'var(--danger-bg)':isWO?'var(--accent-bg)':'var(--bg2)'}">
-        <div class="sched-day" style="color:${isOverdueItem?'var(--danger)':isWO?'var(--accent)':''}">${d.getDate()}</div>
-        <div class="sched-month">${d.toLocaleString('default',{month:'short'})}</div>
-      </div>
-      <div class="sched-body">
-        <div class="sched-title">${s.name} ${isWO?`<span class="badge ${isOverdueItem?'bd':s.status==='Open'?'bi':'bg'}" style="font-size:10px">${isOverdueItem?'Overdue':s.status}</span>`:''}</div>
-        <div class="sched-detail">${equipName(s.equipId)} · ${s.tech||'Unassigned'}${isWO&&s.priority?' · '+s.priority:s.dur?' · '+s.dur+'h':''}</div>
-      </div>
-    </div>`;
-  }).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px 0">No upcoming maintenance or work orders</div>';
-}
-function renderRecentTasks(){
-  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
-  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
-  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
-    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
-    return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
-      <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
-      ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
-    </div>`;
-  }).join('');
-}
-function renderCostChart() {
-    const container = document.getElementById('cost-chart-large'); // The new ID in Analytics
-    if (!container) return;
-
-    const costs = state.monthlyCosts || [0, 0, 0, 0];
-    const max = Math.max(...costs, 1);
-    const colors = ['#B5D4F4', '#85B7EB', '#378ADD', '#185FA5'];
-    const now = new Date();
-    const labels = [3, 2, 1, 0].map(ago => {
-        const d = new Date(now.getFullYear(), now.getMonth() - ago, 1);
-        return MONTHS[d.getMonth()];
-    });
-
-    container.innerHTML = costs.map((v, i) => `
-        <div style="flex:1; display:flex; flex-ion:column; align-items:center; gap:5px">
-            <div style="font-size:11px; font-weight:700">$${v.toLocaleString()}</div>
-            <div style="width:100%; border-radius:4px 4px 0 0; height:${Math.round(v / max * 100)}px; background:${colors[i]}"></div>
-            <div style="font-size:11px; color:var(--text2)">${labels[i]}</div>
-        </div>
-    `).join('');
-}
 // ============================================================
 // CALENDAR
 // ============================================================
@@ -1841,49 +1702,6 @@ function openEditDocModal(docId = null) {
 
   openModal('doc-modal');
 }
-// ============================================================
-// ANALYTICS
-// ============================================================
-
-async function renderAnalytics() {
-  console.log("Analytics: Starting render...");
-  
-  // 1. Core Calculations
-  const completed = state.tasks.filter(t => t.status === 'Completed');
-  const totalYTD = state.tasks.reduce((a, t) => a + (t.cost || 0), 0);
-  const avgCost = completed.length ? Math.round(totalYTD / completed.length) : 0;
-  const invValue = state.parts.reduce((a, p) => a + (p.qty * p.cost), 0);
-  const totalPartsUsed = state.partUsage.reduce((a, p) => a + p.qty_used, 0);
-  const fleetHealth = state.equipment.length ? 
-    Math.round(state.equipment.reduce((a, e) => a + calcHealth(e.id), 0) / state.equipment.length) : 100;
-
-  // 2. Update Metric Cards Safely
-  const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-  safeSet('r-ytd', '$' + totalYTD.toLocaleString());
-  safeSet('r-avg', '$' + avgCost.toLocaleString());
-  safeSet('r-done', completed.length);
-  safeSet('r-inv', '$' + invValue.toLocaleString());
-  safeSet('r-parts-used', totalPartsUsed);
-  safeSet('r-health', fleetHealth + '%');
-
-  // 3. Run Sub-Renderers (The Specialists)
-  // Each of these handles its own specific chart or list
-  try {
-    renderCostChart();            // Monthly Spend Bars
-    renderCostByEquip();          // Horizontal Bars per machine
-    renderPlannedVsUnplanned();
-    renderTaskBreakdown();        // WO status bars
-    renderHealthScores();         // Individual machine health
-    renderTopPartsUsed();         // Most common parts
-    await renderDowntimeStats();  // NEW: Downtime & Uptime
-    await renderServiceForecast();// NEW: Adaptive 30-day projection
-  } catch (e) {
-    console.error("One or more charts failed to load:", e);
-  }
-}
-// ============================================================
-// ADMIN
-// ============================================================
 
 // ============================================================
 // DETAIL VIEWS
@@ -5760,46 +5578,6 @@ function openAddDocModal() {
     };
     
     input.click();
-}
-async function getAdaptivePrediction(equipId) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if (!e || e.status === 'Down') return { status: 'PAUSED' };
-
-    const { data: history } = await window._mpdb.from('meter_history')
-        .select('reading, created_at')
-        .eq('equip_id', equipId)
-        .order('created_at', { ascending: false }).limit(7);
-
-    if (!history || history.length < 2) return null;
-
-    const newest = history[0];
-    const oldest = history[history.length - 1];
-    
-    const totalHoursUsed = Number(newest.reading) - Number(oldest.reading);
-    
-    // Calculate time difference
-    const msDiff = new Date(newest.created_at) - new Date(oldest.created_at);
-    const daysPassed = msDiff / (1000 * 60 * 60 * 24);
-    
-    // If daysPassed is 0 (same day), we treat it as 1 day to avoid "0.00" error
-    const effectiveDays = daysPassed < 0.1 ? 0.1 : daysPassed;
-    const burnRate = totalHoursUsed / effectiveDays; 
-
-    const rule = state.recurrenceRules.find(r => r.equip_id === equipId && r.type.toLowerCase() === 'hours');
-    if (!rule) return null;
-
-    const nextServiceAt = Number(rule.last_generated_hours || 0) + Number(rule.runtime_hours || 500);
-    const hoursRemaining = nextServiceAt - e.hours;
-
-    if (hoursRemaining <= 0) return { status: 'OVERDUE', hours: hoursRemaining };
-    if (hoursRemaining > 40) return { status: 'HIDDEN' };
-
-    return {
-        status: 'ACTIVE',
-        hoursRemaining: Math.round(hoursRemaining * 10) / 10,
-        predictedDate: new Date(Date.now() + (hoursRemaining / burnRate) * 86400000),
-        burnRate: burnRate.toFixed(1)
-    };
 }
 
 async function saveQuickLogHours() {
