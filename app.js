@@ -7,6 +7,7 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
+import { scanInvoiceWithAI, submitBugReport } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
@@ -15,7 +16,7 @@ import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkV
 import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditlogs } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
@@ -3052,10 +3053,7 @@ function getPartsCatalogUrl(name,type,mfr){const text=((mfr||'')+' '+name+' '+(t
 function openPartsCatalog(equipId){if(window.innerWidth<768){showToast('Parts catalog is only available on desktop');return;}const e=state.equipment.find(x=>x.id===equipId);if(!e)return;window.open(getPartsCatalogUrl(e.name,e.type,e.manufacturer),'_blank');}
 
 // ── BUG REPORT ────────────────────────────────────────────────
-function updateReportType(){const isBug=document.getElementById('type-bug').checked;const tl=document.getElementById('bug-title-label'),dl=document.getElementById('bug-desc-label');const tw=document.getElementById('bug-title-wrap'),pw=document.getElementById('bug-page-wrap'),sw=document.getElementById('bug-steps-wrap'),sevw=document.getElementById('bug-severity-wrap');const de=document.getElementById('bug-desc'),bl=document.getElementById('type-bug-label'),sugl=document.getElementById('type-sug-label');if(isBug){if(tl)tl.textContent='What were you trying to do? *';if(dl)dl.textContent='What happened? *';if(de)de.placeholder='Describe what went wrong...';if(tw)tw.style.display='block';if(pw)pw.style.display='block';if(sw)sw.style.display='block';if(sevw)sevw.style.display='block';if(bl)bl.style.borderColor='var(--accent)';if(sugl)sugl.style.borderColor='var(--border2)';}else{if(dl)dl.textContent='What would you like to add or change in the app? *';if(de)de.placeholder='Describe your idea...';if(tw)tw.style.display='none';if(pw)pw.style.display='none';if(sw)sw.style.display='none';if(sevw)sevw.style.display='none';if(bl)bl.style.borderColor='var(--border2)';if(sugl)sugl.style.borderColor='var(--accent)';}}
-async function submitBugReport(){const isBug=document.getElementById('type-bug').checked;const desc=document.getElementById('bug-desc').value.trim();if(!desc){showToast('Please fill in the required fields');return;}const title=isBug?document.getElementById('bug-title').value.trim():'Suggestion';if(isBug&&!title){showToast('Please fill in the required fields');return;}const report={id:uid(),reporter:currentUser?.name||'Unknown',username:currentUser?.username||'',type:isBug?'bug':'suggestion',title,description:desc,page:isBug?document.getElementById('bug-page').value:'N/A',severity:isBug?document.getElementById('bug-severity').value:'suggestion',steps:isBug?(document.getElementById('bug-steps').value||''):'',created_at:new Date().toISOString()};try{await window._mpdb.from('bug_reports').insert(report);}catch(e){}try{emailjs.init('n5n6_xxmNNHqk0xrE');await emailjs.send('service_o320zzu','template_je3rl4j',{to_email:'tannergalloway75@gmail.com',message:(isBug?'🐛 BUG REPORT':'💡 SUGGESTION')+'\n\nBy: '+report.reporter+'\nTitle: '+title+'\n\nDetails:\n'+desc});}catch(e){}document.getElementById('bug-success').style.display='block';['bug-title','bug-desc','bug-steps'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});setTimeout(()=>{closeModal('bug-modal');document.getElementById('bug-success').style.display='none';},2500);}
 
-// ── PRINT TEMPLATE ────────────────────────────────────────────
 function printTemplate(id){const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tpl.name}</title><style>body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px;max-width:700px}h1{font-size:18px;margin:0 0 4px}.meta{font-size:11px;color:#888;margin-bottom:20px}.item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #eee}.checkbox{width:20px;height:20px;border:2px solid #333;border-radius:3px;flex-shrink:0;margin-top:1px}.num{width:20px;font-size:11px;color:#888;text-align:right;flex-shrink:0;margin-top:2px}.label{flex:1;font-size:13px;line-height:1.4}.notes{margin-top:6px;border:1px solid #ddd;border-radius:3px;min-height:30px}.footer{margin-top:28px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#aaa}.sign-row{display:flex;gap:24px;margin-top:24px}.sign-field{flex:1;border-bottom:1px solid #333;padding-bottom:4px;font-size:11px;color:#888}@media print{.no-print{display:none}}</style></head><body><h1>⚙ ${tpl.name}</h1><div class="meta">${tpl.model?'Model: '+tpl.model+' · ':''}${tpl.type?'Type: '+tpl.type+' · ':''}${tpl.items.length} items · MTL Maintenance</div><div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px"><div>Equipment: <span style="border-bottom:1px solid #333;display:inline-block;width:180px">&nbsp;</span></div><div>Date: <span style="border-bottom:1px solid #333;display:inline-block;width:120px">&nbsp;</span></div><div>Technician: <span style="border-bottom:1px solid #333;display:inline-block;width:140px">&nbsp;</span></div></div>${tpl.items.map((item,i)=>`<div class="item"><div class="num">${i+1}</div><div class="checkbox"></div><div class="label">${item}<div class="notes"></div></div></div>`).join('')}<div class="sign-row"><div class="sign-field">Technician signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div><div class="sign-field">Supervisor signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></div><div class="footer"><div>MTL Maintenance — ${tpl.name}</div><div>Printed ${date}</div></div><div class="no-print" style="text-align:center;padding:20px"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div><script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script></body></html>`;const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');}
 
 // ── PERMANENT DELETE MESSAGE ──────────────────────────────────
@@ -3104,32 +3102,6 @@ async function autoCreateCriticalWO(obs, equipId) {
 }
 
 // ── WO COST CALCULATOR ───────────────────────────────────────
-function updateWOCostFromParts() {
-  const partsCost = woPartsAdded.reduce((sum,p)=>sum+(p.unit_cost||0)*p.qty_used, 0);
-  const costEl = document.getElementById('t-cost');
-  const otherEl = document.getElementById('t-other-cost');
-  const partsEl = document.getElementById('t-parts-cost');
-  const totalEl = document.getElementById('t-total-cost');
-  const breakdown = document.getElementById('t-cost-breakdown');
-
-  if(!costEl) return;
-
-  // Get any manually entered other costs
-  const currentVal = parseFloat(costEl.value) || 0;
-  const prevPartsCost = parseFloat(costEl.dataset.partsCost || 0);
-  const otherCost = Math.max(0, currentVal - prevPartsCost);
-
-  // Update cost field with parts + other
-  const total = partsCost + otherCost;
-  costEl.value = total > 0 ? total.toFixed(2) : '';
-  costEl.dataset.partsCost = partsCost;
-
-  // Show breakdown if parts have been added
-  if(breakdown) breakdown.style.display = partsCost > 0 ? 'block' : 'none';
-  if(partsEl) partsEl.textContent = '$' + partsCost.toFixed(2);
-  if(otherEl) otherEl.textContent = '$' + otherCost.toFixed(2);
-  if(totalEl) totalEl.textContent = '$' + total.toFixed(2);
-}
 
 function updateTotalCostDisplay() {
   const costEl = document.getElementById('t-cost');
@@ -3242,25 +3214,7 @@ function openAddInvoice() {
   openModal('invoice-modal');
 }
 
-async function handleInvoicePhoto(input) {
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const dataUrl = e.target.result;
-    _invoicePhotoData = await compressImage(dataUrl, 1200, 0.85);
-    
-    // Show preview
-    document.getElementById('invoice-photo-preview-area').innerHTML=`
-      <img src="${_invoicePhotoData}" style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border)"/>
-      <div style="font-size:12px;color:var(--success);margin-top:8px;font-weight:500">✓ Photo ready — scanning now...</div>`;
-    document.getElementById('inv-clear-photo-wrap').style.display='block';
-    
-    // Auto-scan with Claude API
-    await scanInvoiceWithAI(_invoicePhotoData);
-  };
-  reader.readAsDataURL(file);
-  input.value='';
-}
+
 
 function handleInvoiceDrop(event) {
   event.preventDefault();
@@ -3271,131 +3225,6 @@ function handleInvoiceDrop(event) {
   dt.items.add(file);
   input.files = dt.files;
   handleInvoicePhoto(input);
-}
-
-async function scanInvoiceWithAI(imageData) {
-  document.getElementById('invoice-scanning').style.display='block';
-  
-  try {
-    const base64Data = imageData.split(',')[1];
-    const mediaType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
-    
-    
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              inline_data: { mime_type: mediaType, data: base64Data }
-            },
-            {
-              text: 'Extract invoice details from this image. Respond ONLY with a JSON object, no other text: {"supplier":"company name or empty string","invoice_number":"invoice/receipt number or empty string","date":"YYYY-MM-DD format or empty string","amount":total_amount_as_number_or_0,"notes":"brief summary of line items or empty string"}'
-            }
-          ]
-        }],
-        generationConfig: { maxOutputTokens: 500, temperature: 0 }
-      })
-    });
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    let extracted = {};
-    try {
-      const clean = text.replace(/```json|```/g, '').trim();
-      extracted = JSON.parse(clean);
-    } catch(e) {
-      // Try to extract with regex if JSON parse fails
-      const amountMatch = text.match(/"amount"\s*:\s*([\d.]+)/);
-      const supplierMatch = text.match(/"supplier"\s*:\s*"([^"]+)"/);
-      const dateMatch = text.match(/"date"\s*:\s*"([^"]+)"/);
-      const numMatch = text.match(/"invoice_number"\s*:\s*"([^"]+)"/);
-      const notesMatch = text.match(/"notes"\s*:\s*"([^"]+)"/);
-      if(amountMatch) extracted.amount = parseFloat(amountMatch[1]);
-      if(supplierMatch) extracted.supplier = supplierMatch[1];
-      if(dateMatch) extracted.date = dateMatch[1];
-      if(numMatch) extracted.invoice_number = numMatch[1];
-      if(notesMatch) extracted.notes = notesMatch[1];
-    }
-
-    // Populate form fields
-    if(extracted.supplier) document.getElementById('inv-supplier').value = extracted.supplier;
-    if(extracted.invoice_number) document.getElementById('inv-number').value = extracted.invoice_number;
-    if(extracted.date) document.getElementById('inv-date').value = extracted.date;
-    if(extracted.amount) document.getElementById('inv-amount').value = extracted.amount.toFixed(2);
-    if(extracted.notes) document.getElementById('inv-notes').value = extracted.notes;
-
-    document.getElementById('invoice-extracted-badge').style.display = 'block';
-    showToast('✅ Invoice details extracted');
-
-  } catch(e) {
-    console.error('Invoice scan error:', e);
-    showToast('Could not read invoice — please fill in manually');
-  } finally {
-    document.getElementById('invoice-scanning').style.display = 'none';
-  }
-}
-
-async function saveInvoice() {
-  const amount = parseFloat(document.getElementById('inv-amount').value) || 0;
-  const supplier = document.getElementById('inv-supplier').value.trim();
-  const date = document.getElementById('inv-date').value;
-  
-  if(!supplier && !amount) { showToast('Please fill in at least supplier or amount'); return; }
-  
-  const clearPhoto = document.getElementById('inv-clear-photo')?.checked;
-  let photoPath = null;
-
-  // Upload photo to Supabase Storage if not clearing
-  if(_invoicePhotoData && !clearPhoto) {
-    try {
-      const invoiceId = uid();
-      const fileName = 'invoice-' + invoiceId + '.jpg';
-      // Convert base64 to blob
-      const base64Data = _invoicePhotoData.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for(let i=0;i<byteCharacters.length;i++) byteNumbers[i]=byteCharacters.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], {type:'image/jpeg'});
-      await logAuditAction("Added Invoice", `Amount: $${amount} for ${equipName(_currentInvoiceEquipId)}`);
-      const { data: uploadData, error: uploadError } = await window._mpdb.storage
-        .from('invoices')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
-    
-      if(!uploadError) {
-        photoPath = fileName;
-        showToast('Photo uploaded ✓');
-      }
-    } catch(e) {
-      console.log('Photo upload failed, saving without photo:', e);
-    }
-  }
-
-  const invoice = {
-    id: uid(),
-    equip_id: _currentInvoiceEquipId,
-    supplier,
-    amount,
-    invoice_date: date || null,
-    invoice_number: document.getElementById('inv-number').value.trim(),
-    notes: document.getElementById('inv-notes').value.trim(),
-    photo: photoPath,
-    created_by: currentUser.name,
-    created_at: new Date().toISOString(),
-  };
-
-  try {
-    await window._mpdb.from('invoices').insert(invoice);
-    showToast('Invoice saved ✓');
-    closeModal('invoice-modal');
-    _invoicePhotoData = null;
-    renderInvoicesList(_currentInvoiceEquipId);
-  } catch(e) {
-    showToast('Failed to save invoice');
-    console.error(e);
-  }
 }
 
 async function renderInvoicesList(equipId) {
@@ -6042,41 +5871,7 @@ async function addPartToActiveTask(taskId) {
     openTaskDetail(taskId);
     showToast("Part logged live ✓");
 }
-async function removePartUsage(usageId, taskId) {
-    if (!confirm("Remove this part and return it to stock?")) return;
 
-    const usage = state.partUsage.find(u => u.id === usageId);
-    if (!usage) return;
-
-    try {
-        // 1. Return the quantity to inventory
-        const part = state.parts.find(p => p.id === usage.part_id);
-        if (part) {
-            part.qty = (part.qty || 0) + usage.qty_used;
-            await persist('parts', 'upsert', part);
-        }
-
-        // 2. Delete the usage record from DB and State
-        await window._mpdb.from('part_usage').delete().eq('id', usageId);
-        state.partUsage = state.partUsage.filter(u => u.id !== usageId);
-
-        // 3. Update the task cost (subtracting this part's line total)
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.cost = Math.max(0, (task.cost || 0) - (usage.line_total || 0));
-            await persist('tasks', 'upsert', task);
-        }
-
-        // 4. Refresh UI
-        openTaskDetail(taskId); // Re-renders the current modal
-        renderTasks();         // Re-renders the main table
-        showToast("Part returned to stock");
-
-    } catch (e) {
-        console.error(e);
-        showToast("Error removing part");
-    }
-}
 async function usePartOnTask(taskId) {
   const partId = document.getElementById('dt-part-select').value;
   const qtyUsed = parseInt(document.getElementById('dt-part-qty').value);
@@ -6175,63 +5970,6 @@ async function deleteChecklistItem(taskId, index) {
         showToast("Error updating checklist");
     }
 }
-async function addPartToTask(taskId) {
-    const partId = document.getElementById('dt-part-select').value;
-    const qtyInput = document.getElementById('dt-part-qty');
-    const qtyUsed = parseInt(qtyInput.value);
-    
-    if (!partId || qtyUsed <= 0) return alert("Please select a part and quantity");
-
-    const part = state.parts.find(p => p.id === partId);
-    if (!part) return;
-
-    if (part.qty < qtyUsed) return alert(`Not enough stock. Only ${part.qty} available.`);
-
-    // Match these keys EXACTLY to your Supabase columns
-    const usage = {
-        id: uid(),
-        task_id: taskId,
-        part_id: partId,
-        part_name: part.name,
-        qty_used: qtyUsed,
-        unit_cost: parseFloat(part.cost || 0),
-        line_total: parseFloat(part.cost || 0) * qtyUsed, // This is the column that was missing
-        used_by: currentUser.name,
-        used_at: new Date().toISOString()
-    };
-
-    try {
-        // 1. Save usage
-        const { error: usageErr } = await window._mpdb.from('part_usage').insert(usage);
-        if (usageErr) throw usageErr;
-
-        // 2. Subtract from Inventory
-        part.qty -= qtyUsed; 
-        await persist('parts', 'upsert', part);
-
-        // 3. Update the total Work Order cost
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.cost = (parseFloat(task.cost) || 0) + usage.line_total;
-            await persist('tasks', 'upsert', task);
-        }
-
-        // 4. UI Update
-        if (!state.partUsage) state.partUsage = [];
-        state.partUsage.push(usage);
-        
-        qtyInput.value = 1;
-        openTaskDetail(taskId); // Re-render the modal
-        renderTasks();         // Re-render main list
-        showToast("Part added and inventory updated ✓");
-
-    } catch (e) {
-        console.error("Save failed:", e);
-        alert("Database Error: " + e.message);
-    }
-}
-
-
 
 // --- THE TRIGGER ---
 window.editObservation = function(obsId, equipId) {
