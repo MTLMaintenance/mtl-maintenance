@@ -20,6 +20,8 @@ import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from '.
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
 import { exportCSV, exportPDF } from './reports.js';
+import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
+import { saveTpl, deleteTpl } from './checklists.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1530,43 +1532,6 @@ function convertToTask(schedId){
   openModal('task-modal');
 }
 
-
-// ============================================================
-// DARK MODE
-// ============================================================
-function toggleDarkMode() {
-  document.body.classList.toggle('dark-mode');
-  const btn = document.getElementById('dark-btn');
-  const isDark = document.body.classList.contains('dark-mode');
-  if(btn) btn.textContent = isDark ? '☀️' : '🌙';
-  try { localStorage.setItem('mp_darkmode', isDark ? '1' : '0'); } catch(e) {}
-}
-// Apply saved dark mode on load
-(function() {
-  try { if(localStorage.getItem('mp_darkmode')==='1') { document.body.classList.add('dark-mode'); } } catch(e) {}
-})();
-
-// ============================================================
-// PHOTO COMPRESSION
-// ============================================================
-function compressImage(dataUrl, maxWidth=800, quality=0.75) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let w = img.width, h = img.height;
-      if(w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.src = dataUrl;
-  });
-}
-
-// Override handlePhotoUpload to compress
-const _origHandlePhoto = handlePhotoUpload;
 async function handlePhotoUpload(input, key) {
   const files = Array.from(input.files);
   for(const file of files) {
@@ -2006,51 +1971,6 @@ function printMachineHistory(equipId){
   
   const w=window.open('','_blank');
   if(w){ w.document.write(html); w.document.close(); }
-}
-
-// ── CHECKLIST TEMPLATES ──────────────────────────────────────
-function renderChecklistTemplates(){
-  const list = document.getElementById('tpl-list');
-  if(!list) return;
-
-  list.innerHTML = state.checklistTemplates.map(tpl => `
-    <div class="card" style="margin-bottom:10px">
-      <div class="card-header">
-        <div>
-          <div style="font-weight:600;font-size:14px">${tpl.name}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">
-            ${tpl.model ? `<span class="badge bi">${tpl.model}</span>` : ''} 
-            ${tpl.type ? `<span class="badge bg">${tpl.type}</span>` : ''}
-            <span style="margin-left:8px">${tpl.items.length} items</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <!-- NEW EDIT BUTTON -->
-          <button class="btn btn-secondary btn-sm" onclick="editTemplate('${tpl.id}')">Edit</button>
-          <button class="btn btn-secondary btn-sm" onclick="printTemplate('${tpl.id}')">🖨 Print</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteTpl('${tpl.id}')">Delete</button>
-        </div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
-        ${tpl.items.slice(0,5).map(i => `<span style="font-size:10px;background:var(--bg3);padding:2px 6px;border-radius:3px">${i}</span>`).join('')}
-        ${tpl.items.length > 5 ? `<span style="font-size:10px;color:var(--text3)">+${tpl.items.length-5} more</span>` : ''}
-      </div>
-    </div>`).join('') || '<div class="card"><div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">No templates found. Click "+ Add Template" to start.</div></div>';
-}
-function previewTemplate(id){
-  const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;
-  document.getElementById('detail-title').textContent=tpl.name;
-  document.getElementById('detail-body').innerHTML=`<div style="margin-bottom:12px">${tpl.model?`<span class="badge bi" style="margin-right:4px">${tpl.model}</span>`:''} ${tpl.type?`<span class="badge bg">${tpl.type}</span>`:''}</div>${tpl.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">${i+1}</div>${item}</div>`).join('')}<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary" onclick="printTemplate('${id}')">🖨 Print</button><button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button></div>`;
-  openModal('detail-modal');
-}
-
-function deleteTpl(id){if(!confirm('Delete this template?'))return;state.checklistTemplates=state.checklistTemplates.filter(t=>t.id!==id);try{localStorage.setItem('mp_tpl',JSON.stringify(state.checklistTemplates));}catch(e){}renderChecklistTemplates();showToast('Template deleted');}
-function applyTemplate(){
-  const tplId=document.getElementById('tpl-selector')?.value;if(!tplId){showToast('Select a template first');return;}
-  const tpl=state.checklistTemplates.find(t=>t.id===tplId);if(!tpl)return;
-  document.getElementById('t-checklist').value=tpl.items.join('\n');
-  document.querySelectorAll('#task-modal .tab').forEach(b=>{if(b.textContent==='Checklist'){b.classList.add('active');switchWOTab('checklist',b);}});
-  showToast(tpl.items.length+' items applied ✓');
 }
 
 // ── OBSERVATIONS ─────────────────────────────────────────────
@@ -4988,46 +4908,7 @@ async function saveCalendarEntry() {
     openModal('tpl-modal');
 }
 
-async function saveTpl() {
-  const id = document.getElementById('tpl-edit-id').value;
-  const name = document.getElementById('tpl-name').value.trim();
-  const items = document.getElementById('tpl-items').value.split('\n').filter(s => s.trim() !== '');
 
-  if(!name || items.length === 0) {
-    showToast('Name and items are required');
-    return;
-  }
-
-  const record = {
-    id: id || 'tpl-' + uid(),
-    name,
-    model: document.getElementById('tpl-model').value.trim(),
-    type: document.getElementById('tpl-type').value.trim(),
-    items: items,
-    created_at: new Date().toISOString()
-  };
-
-  try {
-    // Save to Supabase
-    await window._mpdb.from('checklist_templates').upsert(record);
-
-    // Update local memory
-    const idx = state.checklistTemplates.findIndex(t => t.id === record.id);
-    if(idx > -1) state.checklistTemplates[idx] = record;
-    else state.checklistTemplates.push(record);
-
-    closeModal('tpl-modal');
-    renderChecklistTemplates();
-    showToast('Template saved ✓');
-    
-    // Clear form
-    document.getElementById('tpl-edit-id').value = '';
-    ['tpl-name','tpl-model','tpl-type','tpl-items'].forEach(id => document.getElementById(id).value = '');
-  } catch(e) {
-    showToast('Failed to save template');
-    console.error(e);
-  }
-}  
 async function toggleLockout(equipId, isLocked) {
     const e = state.equipment.find(x => x.id === equipId);
     if (!e) return;
@@ -6088,94 +5969,7 @@ window.deleteDoc = async function(id) {
 };
 
 
-// Global settings apply function
-function applyUserPreferences() {
-    if (!currentUser) return;
-    const p = currentUser.preferences || {};
 
-    // 1. LIVE ACCENT COLOR
-    if (p.accentColor) {
-        document.documentElement.style.setProperty('--accent', p.accentColor);
-    }
-
-    // 2. LIVE TOPBAR IDENTITY (Name & Status)
-    const nameEl = document.getElementById('p-topbar-name');
-    const emojiEl = document.getElementById('p-status-emoji');
-    
-    if (nameEl) nameEl.textContent = currentUser.name;
-    if (emojiEl) {
-        const emojiMap = { 
-            'Available':'🟢', 
-            'In the Field':'🚜', 
-            'At the Shop':'🔧', 
-            'On Lunch':'🍔', 
-            'Busy':'🔴' 
-        };
-        emojiEl.textContent = emojiMap[p.status] || '🟢';
-    }
-
-    // 3. LIVE DASHBOARD STICKY NOTE
-    const noteContainer = document.getElementById('personal-note-widget');
-    if (noteContainer) {
-        if (p.notes && p.notes.trim() !== "") {
-            noteContainer.innerHTML = `
-                <div style="background:var(--accent); color:white; padding:12px 15px; border-radius:12px; margin-bottom:20px; display:flex; gap:12px; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2);">
-                    <div style="font-size:22px">📌</div>
-                    <div style="flex:1">
-                        <div style="font-size:10px; text-transform:uppercase; opacity:0.8; font-weight:bold;">Private Note</div>
-                        <div style="font-size:14px; font-weight:500">${p.notes}</div>
-                    </div>
-                </div>`;
-        } else {
-            noteContainer.innerHTML = ''; 
-        }
-    }
-}
-function openProfileModal() {
-    if (!currentUser) return;
-    const p = currentUser.preferences || {};
-
-    // Fill inputs
-    document.getElementById('p-name').value = currentUser.name || "";
-    document.getElementById('p-status').value = p.status || 'Available';
-    document.getElementById('p-start-page').value = p.startPage || 'dashboard';
-    document.getElementById('p-accent-color').value = p.accentColor || '#3b82f6';
-    document.getElementById('p-avatar-style').value = p.avatarStyle || 'avatar-style-initial';
-    document.getElementById('p-notes').value = p.notes || '';
-    
-    // Set the color picker input to current color
-    document.getElementById('p-custom-color').value = p.accentColor || '#3b82f6';
-
-    // Update Header Name
-    document.getElementById('p-preview-name').textContent = currentUser.name;
-    
-    // --- ROLE FIX: Case-Insensitive ---
-    const roleLabel = document.getElementById('p-preview-role');
-    if (roleLabel) {
-        const role = (currentUser.role || "").toLowerCase();
-        let displayRole = "Team Member";
-
-        if (role === "admin") displayRole = "System Administrator";
-        else if (role === "manager") displayRole = "Shop Manager";
-        else if (role === "technician") displayRole = "Maintenance Technician";
-        else if (role === "viewer") displayRole = "Guest Viewer";
-
-        roleLabel.textContent = displayRole;
-        roleLabel.style.cssText = "color: #888 !important; display: block !important; font-size: 12px !important;";
-    }
-
-    updateAvatarPreview();
-    openModal('profile-modal');
-}
-function setAccent(color) {
-    document.getElementById('p-accent-color').value = color;
-    
-    // Show a preview on the rainbow button too
-    const customVisual = document.getElementById('custom-swatch-visual');
-    if (customVisual) customVisual.style.borderColor = color;
-
-    updateAvatarPreview();
-}
 
 
 async function saveUserProfile() {
@@ -6672,33 +6466,7 @@ window.closeMobileZerkCard = closeMobileZerkCard;
 
 
 
-// 1. Function to update the preview box in real-time
-function updateAvatarPreview() {
-    const preview = document.getElementById('p-preview-avatar');
-    const name = document.getElementById('p-name').value || "U";
-    const style = document.getElementById('p-avatar-style').value;
-    const color = document.getElementById('p-accent-color').value || '#3b82f6';
 
-    if (!preview) return;
-
-    // Update initial and header name
-    preview.textContent = name.charAt(0).toUpperCase();
-    document.getElementById('p-preview-name').textContent = name;
-
-    // FORCE SHAPE CHANGE
-    preview.style.borderRadius = (style === 'avatar-style-square') ? "12px" : "50%";
-
-    // FORCE COLOR CHANGE
-    if (style === 'avatar-style-border') {
-        preview.style.background = 'transparent';
-        preview.style.border = `3px solid ${color}`;
-        preview.style.color = color;
-    } else {
-        preview.style.background = color;
-        preview.style.border = 'none';
-        preview.style.color = 'white';
-    }
-}
 // --- THE TRIGGER ---
 window.editObservation = function(obsId, equipId) {
     // 1. Find the data
