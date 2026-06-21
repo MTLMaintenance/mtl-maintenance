@@ -16,6 +16,7 @@ import { approveUser, denyUser, deleteUser, logAuditAction } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
+import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -1703,122 +1704,8 @@ function renderAssignUsers(){
 // ============================================================
 // WORK ORDERS
 // ============================================================
-function renderTasks() {
-  const container = document.getElementById('tasks-table-body');
-  const equipSelect = document.getElementById('task-equip-filter');
-  
-  // 1. Safety Check: If the table doesn't exist, stop.
-  if (!container) return;
 
-  // 2. AUTO-FILL DROPDOWN
-  if (equipSelect && equipSelect.options.length <= 1 && state.equipment.length > 0) {
-    let equipHtml = '<option value="all">All Equipment</option>';
-    state.equipment.forEach(e => {
-      equipHtml += `<option value="${e.id}">${e.name}</option>`;
-    });
-    equipSelect.innerHTML = equipHtml;
-  }
 
-  // 3. GET FILTER VALUES
-  const f = document.getElementById('task-filter')?.value || 'all';
-  const ef = document.getElementById('task-equip-filter')?.value || 'all';
-  
-  let tasks = [...state.tasks];
-
-  // 4. FILTER LOGIC
-  if (f === 'active') {
-    tasks = tasks.filter(t => t.status !== 'Completed');
-  } else if (f === 'overdue') {
-    tasks = tasks.filter(t => t.status === 'Overdue' || (isOverdue(t.due) && t.status !== 'Completed' && t.status !== 'Pending Approval'));
-  } else if (f === 'open') {
-    tasks = tasks.filter(t => t.status === 'Open');
-  } else if (f === 'completed') {
-    tasks = tasks.filter(t => t.status === 'Completed');
-  }
-
-  if (ef !== 'all') {
-    tasks = tasks.filter(t => (t.equip_id === ef || t.equipId === ef));
-  }
-
-  // 5. SORTING
-  tasks.sort((a, b) => {
-    const o = { 'Overdue': 0, 'Open': 1, 'Pending Approval': 2, 'Completed': 3 };
-    return (o[a.status] || 1) - (o[b.status] || 1);
-  });
-
-  // 6. BUILD HTML
-  container.innerHTML = tasks.map(t => {
-    const pUsed = state.partUsage ? state.partUsage.filter(p => p.task_id === t.id).reduce((a, p) => a + p.qty_used, 0) : 0;
-    const isActuallyOverdue = isOverdue(t.due) && t.status !== 'Completed' && t.status !== 'Pending Approval';
-    const eId = t.equip_id || t.equipId;
-
-    let statusLabel = t.status;
-    if (isActuallyOverdue) statusLabel = 'Overdue';
-    if (t.status === 'Pending Approval') statusLabel = 'Waiting for Manager';
-
-    return `
-    <!-- ADDED: window._activeTaskTab='dt-info' to the onclick below -->
-    <tr onclick="window._activeTaskTab='dt-info'; openTaskDetail('${t.id}')" style="cursor:pointer; border-bottom:1px solid var(--border)">
-      <td><div style="font-weight:500">${t.name}</div></td>
-      <td style="font-size:12px">${typeof equipName === 'function' ? equipName(eId) : eId}</td>
-      <td>${badge(t.priority)}</td>
-      <td style="color:var(--text2)">${t.assign || '—'}</td>
-      <td style="color:${isActuallyOverdue ? 'var(--danger)' : 'inherit'};font-size:12px">${fmtDate(t.due)}</td>
-      <td style="font-size:12px">${pUsed ? pUsed + ' units' : '—'}</td>
-      <td>${badge(statusLabel)}</td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Del</button></td>
-    </tr>`;
-  }).join('');
-}
-async function deleteTask(id) {
-  if (!confirm('Delete this work order?')) return;
-
-  // 1. Find the task FIRST (so we can use it for logging and logic)
-  const task = state.tasks.find(t => t.id === id);
-  if (!task) return; 
-
-  // 2. Audit Log
-  const machineName = (typeof equipName === 'function') ? equipName(task.equip_id || task.equipId) : 'Equipment';
-  logAuditAction("Deleted WO", `Removed "${task.name}" for ${machineName}`);
-
-  // 3. Delete linked observations
-  if (task.notes && task.notes.startsWith('Auto-created from critical obs')) {
-    let obsToDelete = null;
-    if (task.obs_id) {
-      obsToDelete = state.observations.find(o => o.id === task.obs_id);
-    }
-    if (!obsToDelete) {
-      obsToDelete = state.observations.find(o =>
-        (o.equip_id === task.equip_id || o.equip_id === task.equipId) && 
-        o.severity === 'critical' &&
-        task.notes.includes(o.author)
-      );
-    }
-    if (obsToDelete) {
-      try {
-        await window._mpdb.from('observations').delete().eq('id', obsToDelete.id);
-        state.observations = state.observations.filter(o => o.id !== obsToDelete.id);
-      } catch (e) { console.error("Linked obs delete failed", e); }
-    }
-  }
-
-  // 4. REMOVE FROM STATE
-  state.tasks = state.tasks.filter(t => t.id !== id);
-
-  // 5. PERSIST TO DATABASE
-  await persist('tasks', 'delete', { id });
-
-  // 6. RE-RENDER UI
-  renderTasks(); 
-  renderDashboard();
-  
-  // Close the detail card if it was open
-  if (typeof closeModal === 'function') closeModal('detail-modal');
-
-  // 7. HIDE SEARCH RESULTS
-  const results = document.getElementById('search-results');
-  if (results) results.style.display = 'none';
-} 
 // ============================================================
 // SCHEDULE
 // ============================================================
@@ -2223,11 +2110,6 @@ async function postDetailComment(taskId){
   } catch(e){ showToast('Failed to post comment'); }
 }
 
-async function toggleCheck(taskId,idx){
-  const t=state.tasks.find(x=>x.id===taskId); if(!t)return;
-  t.checklist[idx].done=!t.checklist[idx].done;
-  await persist('tasks','upsert',t); openTaskDetail(taskId);
-}
 function openEquipDetail(id){
   const e = state.equipment.find(x => x.id === id); 
   if(!e) return;
@@ -2415,46 +2297,7 @@ function addWOComment(){
 // ============================================================
 // SAVE DATA
 // ============================================================
-async function saveTask() {
-    try {
-        const name = document.getElementById('t-name')?.value.trim();
-        if (!name) { showToast("Please enter a name"); return; }
 
-        const record = {
-            id: uid(),
-            name: name,
-            equip_id: document.getElementById('t-equip')?.value || null,
-            due: document.getElementById('t-due')?.value || null,
-            meter: document.getElementById('t-meter')?.value || '0',
-            priority: document.getElementById('t-priority')?.value || 'Medium',
-            status: 'Open',
-            created_at: new Date().toISOString()
-        };
-
-        const { error } = await window._mpdb
-            .from('tasks')
-            .insert(record);
-
-        if (error) {
-            console.error("Database Error:", error.message);
-            showToast("Error saving to database");
-            return;
-        }
-
-        // Update local memory
-        state.tasks.push({ ...record, equipId: record.equip_id });
-        
-        // Refresh UI
-        updateMetrics(); 
-        renderTasks();
-        renderDashboard();
-        closeModal('task-modal');
-        showToast("Work Order Saved ✓");
-
-    } catch (err) {
-        console.error("Save error:", err);
-    }
-}
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
 
