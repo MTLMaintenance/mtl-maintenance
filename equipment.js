@@ -53,3 +53,32 @@ export async function updateEquipStatus(equipId, newStatus, equipment) {
         return false;
     }
 }
+import { compressImage, showToast } from './utils.js';
+
+export async function uploadZerkView(input, state) {
+    const file = input.files[0]; if(!file) return;
+    const equipId = window._currentDetailEquipId;
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e) return;
+
+    showToast("⚙️ Processing image...");
+    
+    try {
+        const reader = new FileReader();
+        const dataUrl = await new Promise(res => {
+            reader.onload = ev => res(ev.target.result); 
+            reader.readAsDataURL(file);
+        });
+        
+        const base64 = await compressImage(dataUrl, 1200, 0.8);
+        if(!e.zerk_photos) e.zerk_photos = [];
+        e.zerk_photos.push(base64);
+
+        const { error } = await window._mpdb.from('equipment').update({ zerk_photos: e.zerk_photos }).eq('id', equipId);
+        if (error) throw error;
+
+        showToast("View added ✓");
+        if (typeof window.refreshZerkMap === 'function') window.refreshZerkMap(equipId);
+    } catch(err) { showToast("Upload failed"); }
+    input.value = "";
+}
