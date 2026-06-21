@@ -30,8 +30,10 @@ import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
+import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
+import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned } from './analytics.js';
 
-
+window.formatDuration = formatDuration;
 window.deleteZerk = deleteZerk;
 window.handleZerkMapClick = handleZerkMapClick;
 window.renameZerkView = renameZerkView;
@@ -1335,16 +1337,7 @@ state.checklistTemplates=[
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
 
-// ── DOWNTIME ─────────────────────────────────────────────────
-function formatDuration(mins){if(!mins)return'0 mins';if(mins<60)return mins+' min'+(mins!==1?'s':'');const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m>0?' '+m+'m':'');}
-function getEquipDowntime(equipId){const entries=state.downtimeLog.filter(d=>d.equipId===equipId&&d.status==='resolved');const totalMins=entries.reduce((a,d)=>a+(d.downtimeMins||0),0);const activeDown=state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);return{entries,totalMins,activeDown};}
-async function logStatusChange(equipId,oldStatus,newStatus){
-  if(oldStatus===newStatus)return;
-  const now=new Date().toISOString();
-  if(newStatus==='Down'){state.downtimeLog.push({id:uid(),equipId,status:'started',startedAt:now,endedAt:null});}
-  else if(oldStatus==='Down'){const open=state.downtimeLog.find(d=>d.equipId===equipId&&d.status==='started'&&!d.endedAt);if(open){open.endedAt=now;open.status='resolved';open.downtimeMins=Math.round((new Date(now)-new Date(open.startedAt))/60000);showToast('Downtime: '+formatDuration(open.downtimeMins));}}
-  try{localStorage.setItem('mp_downtime',JSON.stringify(state.downtimeLog));}catch(e){}
-}
+
 
 function printMachineHistory(equipId){
   const e=state.equipment.find(x=>x.id===equipId);if(!e)return;
@@ -2046,8 +2039,7 @@ async function renderDashboard(){
       renderRecentObservations();
       renderSchedDash();
        updateDashboardParts();
-      // We REMOVED renderFleetHealthDash() and renderCostChart() from here
-      
+  
   } catch (e) {
       console.error("Dashboard error:", e);
   }
@@ -3777,54 +3769,6 @@ async function toggleLockout(equipId, isLocked) {
         showToast("Failed to save link");
     }
 }
-// Specialists: Downtime & Uptime
-async function renderDowntimeStats() {
-    const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
-    const { data: logs } = await window._mpdb.from('downtime_logs').select('*').gte('created_at', thirtyDaysAgo);
-    if (!logs) return;
-
-    // Calculate Uptime %
-    const totalPossibleMins = state.equipment.length * 30 * 24 * 60;
-    const totalDownMins = logs.reduce((sum, l) => sum + (l.total_minutes || 0), 0);
-    const uptime = totalPossibleMins > 0 ? Math.max(0, Math.min(100, ((totalPossibleMins - totalDownMins) / totalPossibleMins) * 100)) : 100;
-
-    const uptimeEl = document.getElementById('r-uptime');
-    if(uptimeEl) {
-        uptimeEl.textContent = uptime.toFixed(1) + '%';
-        uptimeEl.className = 'metric-value ' + (uptime > 95 ? 'v-success' : uptime > 85 ? 'v-warning' : 'v-danger');
-    }
-
-    // Draw Downtime Chart
-    const chart = document.getElementById('downtime-chart');
-    if(!chart) return;
-    const machineMap = {};
-    logs.forEach(l => { const name = equipName(l.equip_id); machineMap[name] = (machineMap[name] || 0) + (l.total_minutes / 60); });
-    const entries = Object.entries(machineMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    const maxH = Math.max(...Object.values(machineMap), 1);
-    chart.innerHTML = entries.map(([name, hrs]) => `
-        <div style="flex:1; display:flex; flex-ion:column; align-items:center; gap:4px">
-            <div style="font-size:10px; font-weight:700">${hrs.toFixed(1)}h</div>
-            <div style="width:100%; background:#E24B4A; height:${Math.round(hrs/maxH * 80)}px; border-radius:3px 3px 0 0"></div>
-            <div style="font-size:9px; color:var(--text2); text-align:center; white-space:nowrap; overflow:hidden; width:100%">${name}</div>
-        </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:20px">No downtime logged</div>';
-}
-
-// Specialists: 30-Day Adaptive Forecast
-async function renderServiceForecast() {
-    const container = document.getElementById('predictive-analytics-list');
-    if(!container) return;
-    let html = '';
-    for (let e of state.equipment) {
-        const pred = await getAdaptivePrediction(e.id);
-        if (pred && pred.status === 'ACTIVE' && pred.days <= 30) {
-            html += `<div class="card" style="padding:10px; border-left:4px solid var(--warning)">
-                <div style="font-weight:600; font-size:13px">${e.name}</div>
-                <div style="color:var(--warning); font-weight:700; font-size:12px">Due in ~${pred.days} days</div>
-            </div>`;
-        }
-    }
-    container.innerHTML = html || '<div style="color:var(--text3); font-size:12px">No service due in next 30 days</div>';
-}
 
 // Specialists: Cost by Equipment
 function renderCostByEquip() {
@@ -3842,92 +3786,6 @@ function renderCostByEquip() {
     ).join('');
 }
 
-// Specialists: Health Scores
-function renderHealthScores() {
-    const el = document.getElementById('health-scores');
-    if(!el) return;
-    el.innerHTML = state.equipment.map(e => {
-        const s = calcHealth(e.id);
-        return `<div class="stat-row"><div style="flex:1; font-size:12px">${e.name}</div>
-        <div class="stat-bar-wrap" style="width:100px"><div class="stat-bar" style="width:${s}%; background:${healthColor(s)}"></div></div>
-        <div style="width:40px; text-align:right; font-weight:600">${s}%</div></div>`;
-    }).join('');
-}
-
-// Specialists: Task Breakdown
-function renderTaskBreakdown() {
-    const el = document.getElementById('task-breakdown');
-    if(!el) return;
-    const tot = state.tasks.length || 1;
-    const stats = [
-        ['Completed', state.tasks.filter(t=>t.status==='Completed').length, 'var(--success)'],
-        ['Open', state.tasks.filter(t=>t.status==='Open').length, 'var(--accent)'],
-        ['Overdue', state.tasks.filter(t=>t.status==='Overdue').length, 'var(--danger)']
-    ];
-    el.innerHTML = stats.map(([l, c, col]) => `
-        <div class="stat-row"><div style="width:80px; font-size:12px">${l}</div>
-        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(c/tot*100)}%; background:${col}"></div></div>
-        <div style="width:30px; text-align:right; font-weight:600">${c}</div></div>`).join('');
-}
-function renderTopPartsUsed() {
-    const el = document.getElementById('parts-consumed');
-    if (!el) return;
-
-    // 1. Group usage by part name
-    const partMap = {};
-    (state.partUsage || []).forEach(p => {
-        partMap[p.part_name] = (partMap[p.part_name] || 0) + p.qty_used;
-    });
-
-    // 2. Sort by highest quantity and take top 6
-    const topParts = Object.entries(partMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6);
-
-    if (topParts.length === 0) {
-        el.innerHTML = '<div style="color:var(--text3); font-size:12px; padding:10px">No parts usage recorded yet.</div>';
-        return;
-    }
-
-    const maxQty = Math.max(...topParts.map(x => x[1]), 1);
-
-    // 3. Render horizontal bars
-    el.innerHTML = topParts.map(([name, qty]) => `
-        <div class="stat-row">
-            <div style="width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--text2)">${name}</div>
-            <div class="stat-bar-wrap" style="flex:1">
-                <div class="stat-bar" style="width:${Math.round(qty / maxQty * 100)}%; background:#BA7517"></div>
-            </div>
-            <div style="width:30px; text-align:right; font-weight:600; font-size:12px">${qty}</div>
-        </div>
-    `).join('');
-}
-    
-function renderPlannedVsUnplanned() {
-    const el = document.getElementById('planned-vs-unplanned');
-    if (!el) return;
-
-    // Planned = Auto-generated notes
-    const planned = state.tasks.filter(t => t.notes && t.notes.includes('auto-generated')).length;
-    const unplanned = state.tasks.length - planned;
-    const total = state.tasks.length || 1;
-
-    el.innerHTML = `
-        <div class="stat-row">
-            <div style="width:100px; font-size:12px">Planned</div>
-            <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(planned/total*100)}%; background:var(--success)"></div></div>
-            <div style="width:30px; text-align:right; font-weight:600">${planned}</div>
-        </div>
-        <div class="stat-row">
-            <div style="width:100px; font-size:12px">Breakdowns</div>
-            <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(unplanned/total*100)}%; background:var(--warning)"></div></div>
-            <div style="width:30px; text-align:right; font-weight:600">${unplanned}</div>
-        </div>
-        <div style="font-size:11px; color:var(--text3); margin-top:10px; text-align:center">
-            Higher "Planned" percentage means better fleet reliability.
-        </div>
-    `;
-}
 let markupCanvas, markupCtx, isDrawing = false;
 let currentMarkupSource = { key: '', index: -1 };
 
