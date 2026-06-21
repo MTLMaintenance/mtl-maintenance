@@ -1,3 +1,4 @@
+// settings.js - User Preferences & Personalization
 import { supabase } from './db.js';
 import { showToast } from './utils.js';
 import { openModal, closeModal } from './ui.js';
