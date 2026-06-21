@@ -102,3 +102,53 @@ export async function destroySession() {
     localStorage.removeItem('mp_session_token');
   }
 }
+
+async function syncOfflineQueue() {
+  if (!offlineQueue || !offlineQueue.length) {
+    const banner = document.getElementById('offline-queue-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  
+  showToast(`Syncing ${offlineQueue.length} changes...`);
+  const failed = [];
+
+  for (const item of offlineQueue) {
+    try {
+      // Safety: Skip if item or record is missing
+      if (!item || !item.record) continue;
+
+      // Extract ID correctly
+      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
+
+      if (item.action === 'upsert') {
+        await window._mpdb.from(item.table).upsert(item.record);
+        console.log(`Sync Upsert for ${item.table}: ${recordId} SUCCESS`);
+      } 
+      else if (item.action === 'delete') {
+        const { error, count } = await window._mpdb
+          .from(item.table)
+          .delete({ count: 'exact' })
+          .eq('id', recordId);
+        
+        if (error) throw error;
+        console.log(`Sync Delete for ${item.table}: ${recordId} - ${count} rows removed`);
+      }
+    } catch (e) { 
+      console.error("Sync failed for item:", item, e);
+      failed.push(item); 
+    }
+  }
+  
+  offlineQueue = failed;
+  saveOfflineQueue();
+  
+  if (failed.length === 0) {
+    setSyncStatus('online');
+    showToast('All changes synced ✓');
+    const banner = document.getElementById('offline-queue-banner');
+    if (banner) banner.style.display = 'none';
+  } else {
+    showToast(`${failed.length} items failed to sync`);
+  }
+}
