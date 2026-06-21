@@ -4322,7 +4322,7 @@ container.innerHTML = `
                                 <td><div class="zerk-num-list">${idx + 1}</div></td>
                                 <td style="font-weight:500; color:black !important" onclick="editZerkNote('${p.id}')">${p.note || '<span style="color:#aaa">Add instructions...</span>'}</td>
                                 <td style="text-align:right">
-                                    <button onclick="deleteZerk('${p.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:16px;">🗑</button>
+                                    <button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:16px;">🗑</button>
                                 </td>
                             </tr>
                         `).join('') || '<tr><td colspan="3" style="text-align:center; padding:30px; color:#999">Click map to add points</td></tr>'}
