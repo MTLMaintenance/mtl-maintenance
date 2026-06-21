@@ -1,0 +1,63 @@
+// views.js - Table and List Renderers
+import { fmtDate, badge, isOverdue } from './utils.js';
+
+// 1. Render the main Equipment Table
+export function renderEquipmentTable(state, currentUser, ICONS, calcHealth, healthColor, getLastService, getNextDue) {
+  const container = document.getElementById('equip-table-body');
+  if (!container) return;
+
+  const equip = window.activeGroupFilter === 'all' ? state.equipment : state.equipment.filter(e => e.group_tag === window.activeGroupFilter || e.group_tag === 'both');
+  
+  container.innerHTML = equip.map(e => {
+    const score = calcHealth(e.id, state.tasks, state.equipment);
+    const icon = e.photos && e.photos.length ? `<img src="${e.photos[0]}" style="width:30px;height:30px;object-fit:cover;border-radius:4px"/>` : (ICONS[e.type] || '⚙');
+    
+    return `
+    <tr onclick="window.openEquipDetail('${e.id}')">
+      <td><div style="display:flex;align-items:center;gap:10px"><div>${icon}</div><div><b>${e.name}</b><br><small>${e.serial}</small></div></div></td>
+      <td>${badge(e.status)}</td>
+      <td><b>${e.hours.toLocaleString()}</b> hrs</td>
+      <td>
+        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
+        <span style="font-size:11px;color:${healthColor(score)}">${score}%</span>
+      </td>
+      <td>${getLastService(e.id, state.tasks)}</td>
+      <td>${getNextDue(e.id, state.tasks)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// 2. Render the Parts Table
+export function renderPartsTable(state, supplierNameFunc) {
+    const container = document.getElementById('parts-table-body');
+    if (!container) return;
+
+    container.innerHTML = state.parts.map(p => {
+        const out = (p.qty || 0) <= 0;
+        const low = (p.qty || 0) <= (p.reorder || 0);
+        return `
+        <tr onclick="window.editPart('${p.id}')" style="cursor:pointer;">
+            <td><b>${p.name}</b></td>
+            <td>${p.num || '—'}</td>
+            <td>${supplierNameFunc(p.supplier_id)}</td>
+            <td style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${p.qty}</td>
+            <td>$${parseFloat(p.cost || 0).toFixed(2)}</td>
+            <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+// 3. Render Quick Specs (The machine specs in the detail view)
+export function renderQuickSpecs(equipId, state) {
+    const container = document.getElementById('eq-quick-specs');
+    if(!container) return;
+    const e = state.equipment.find(x => x.id === equipId);
+    const specs = e.custom_fields || {};
+    
+    container.innerHTML = Object.entries(specs).map(([key, val]) => `
+        <div class="spec-row" style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee">
+            <span style="color:#666">${key}:</span>
+            <b onclick="window.editQuickSpec('${equipId}', '${key}')" style="cursor:pointer">${val}</b>
+        </div>
+    `).join('') || '<div style="color:#aaa">No specs added</div>';
+}
