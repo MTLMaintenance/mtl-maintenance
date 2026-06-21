@@ -18,6 +18,7 @@ import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, 
 import { openAddPart, resetPartForm, editPart, savePart, deletePart } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
+import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate } from './calendar.js';
 
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
@@ -486,23 +487,7 @@ async function deleteAbsence() {
         alert("Error: " + e.message);
     }
 }
-async function fetchAbsences() {
-    console.log("Fetching team absences...");
-    const { data, error } = await window._mpdb
-        .from('staff_absences')
-        .select('*');
-    
-    if (data) {
-        window.staffAbsences = data;
-        console.log("Absences synced ✓");
 
-        // --- ADD THIS LINE ---
-        // This forces the calendar to redraw itself with the new data
-        if (typeof renderCalendar === 'function') {
-            renderCalendar(); 
-        }
-    }
-}
 function openAbsenceModal() {
     console.log("Attempting to open modal...");
     const modal = document.getElementById('absence-modal');
@@ -529,80 +514,6 @@ function togglePrivateReason(show) {
             privBox.style.display = 'none';
         }
     }
-}
-function isUserOutOnDate(absence, targetDateStr) {
-    if (!absence.start_date || !absence.end_date) return false;
-
-    // We only care about the YYYY-MM-DD part (first 10 characters)
-    const target = targetDateStr.substring(0, 10);
-    const start = absence.start_date.substring(0, 10);
-    const end = absence.end_date.substring(0, 10);
-
-    // If target is between start and end (inclusive), they are out
-    return target >= start && target <= end;
-}
-async function saveAbsence() {
-    const start = document.getElementById('abs-start-date').value;
-    let end = document.getElementById('abs-end-date').value;
-    const reason = document.getElementById('abs-public').value.trim();
-
-    if (!start) return alert("Please select a start date.");
-    if (!end) end = start;
-
-    // Build the record
-    const record = {
-        id: uid(), // This is the alphanumeric string the DB was rejecting
-        user_id: String(currentUser.id), 
-        user_name: currentUser.name,
-        author: currentUser.username,
-        start_date: start,
-        end_date: end,
-        reason_public: reason || "Time Off",
-        is_all_day: (window._currentAbsType !== 'partial'),
-        created_at: new Date().toISOString()
-    };
-
-    // Add optional fields only if they are being used
-    if (window._currentAbsType === 'partial') {
-        const timeInput = document.getElementById('abs-time');
-        record.partial_time = timeInput ? timeInput.value : null;
-    }
-
-    const isPrivate = document.getElementById('abs-is-private')?.checked;
-    if (isPrivate) {
-        record.is_private = true;
-        record.reason_private = document.getElementById('abs-private')?.value.trim();
-    }
-
-    try {
-        const { error } = await window._mpdb
-            .from('staff_absences')
-            .insert(record);
-
-        if (error) {
-            console.error("Database Error:", error);
-            alert("Database Error: " + error.message);
-            return;
-        }
-
-        showToast("Request submitted ✓");
-        closeAbsenceModal();
-        document.getElementById('abs-end-date').value = "";
-document.getElementById('abs-public').value = "";
-        // Refresh everything
-        await fetchAbsences();
-        if (typeof renderCalendar === 'function') renderCalendar();
-
-    } catch (e) {
-        console.error("Save process failed:", e);
-    }
-}
-
-async function hashPassword(password) {
-  const msgBuffer = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // --- ZERK MAP UPLOAD LOGIC (PLACE AT TOP OF SCRIPT) ---
@@ -1167,92 +1078,6 @@ function handleDocUpload(input){
   reader.readAsDataURL(file); input.value='';
 }
 
-
-
-
-// ============================================================
-// CALENDAR
-// ============================================================
-async function renderCalendar() {
-    const year = calDate.getFullYear();
-    const month = calDate.getMonth();
-    
-    const titleEl = document.getElementById('cal-title');
-    const daysEl = document.getElementById('cal-days');
-    const headersEl = document.getElementById('cal-headers');
-    if(!titleEl || !daysEl || !headersEl) return;
-
-    titleEl.textContent = `${MONTHS[month]} ${year}`;
-    
-    // 1. Set Headers
-    headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-        .map(d => `<div class="cal-header" style="font-weight:600; padding:5px">${d}</div>`).join('');
-    
-    // 2. Pre-Calculate Adaptive Forecasts
-    for (let e of state.equipment) {
-        try {
-            const pred = await getAdaptivePrediction(e.id);
-            e._predictedDate = (pred && pred.status === 'ACTIVE') ? 
-                pred.predictedDate.toISOString().split('T')[0] : null;
-        } catch(err) { e._predictedDate = null; }
-    }
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrev = new Date(year, month, 0).getDate();
-    
-    let cells = '';
-
-    // 4. Padding (Previous Month)
-    for(let i = firstDay - 1; i >= 0; i--){
-        cells += `<div class="cal-day other-month" style="opacity:0.3"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
-    }
-
-    // 5. Current Month Days
-    for(let d = 1; d <= daysInMonth; d++){
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const isToday = new Date().toISOString().split('T')[0] === dateStr;
-        
-        // --- FETCH DATA FOR THIS DAY ---
-        const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
-        
-        // THE FIX: Simplified the absence filter into one clean line
-        const dayAbs = (window.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
-
-        // --- MERGE INTO HTML ---
-        const eventsHtml = [
-            ...dayTasks.map(t => `<div class="cal-event work-order ${t.status.toLowerCase()}">${t.name}</div>`),
-            
-            ...dayAbs.map(a => {
-                const label = a.is_all_day ? `👤 ${a.user_name} Out` : `👤 ${a.user_name} Part`;
-                return `<div class="cal-event" 
-                        style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; font-weight:600; font-size:10px; padding:2px; margin-top:2px; border-radius:4px; pointer-events:none;">
-                        ${label}</div>`;
-            })
-        ].join('');
-
-        cells += `
-            <div class="cal-day${isToday ? ' today' : ''}" onclick="window.calDayClick('${dateStr}')" style="cursor:pointer">
-                <div class="cal-day-num" style="pointer-events: none;">${d}</div>
-                <div class="cal-event-container" style="pointer-events: none;"> 
-                    ${eventsHtml}
-                </div>
-            </div>`;
-    }
-
-    daysEl.innerHTML = cells;
-
-    // 6. Refresh Sidebars/Logic
-    if (typeof renderMonthSchedList === 'function') {
-        try { renderMonthSchedList(); } catch(e) { }
-    }
-    if (typeof renderRecurList === 'function') {
-        try { renderRecurList(); } catch(e) { }
-    }
-    if (typeof fillAdaptiveCalendarMarkers === 'function') {
-        fillAdaptiveCalendarMarkers(year, month);
-    }
-}
 function formatTime(timeStr) {
     if(!timeStr) return '';
     const [h, m] = timeStr.split(':');
@@ -1311,67 +1136,6 @@ function renderMonthSchedList() {
         </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
 }
 
- window.calDayClick = function(dateStr) {
-    window.lastClickedDate = dateStr;
-
-    // 1. Update Header
-    const dateObj = new Date(dateStr + "T00:00:00");
-    const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('action-modal-readable').textContent = readable;
-
-    // 2. Filter Work Orders
-    const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
-    
-    // 3. Filter Absences (The Fix)
-    // We check BOTH state.absences and window.staffAbsences to be safe
-    const allAbs = window.staffAbsences || [];
- const dayAbs = (window.staffAbsences || []).filter(a => {
-    // This now checks if the specific calendar day is inside their vacation range
-    return isUserOutOnDate(a, dateStr);
-});
-
-    console.log(`Day Card for ${dateStr}: Found ${dayAbs.length} absences.`);
-
-    const listContainer = document.getElementById('day-items-list');
-    if (!listContainer) return;
-
-    let listHtml = "";
-
-    // Render Work Orders
-    dayTasks.forEach(t => {
-        listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #444; margin-bottom:8px;">
-                <div style="flex:1">
-                    <div style="font-weight:700; color:white; font-size:13px;">🛠️ ${t.name}</div>
-                    <div style="font-size:10px; color:#aaa">${t.status}</div>
-                </div>
-                <button onclick="closeModal('cal-action-modal'); setTimeout(() => openTaskDetail('${t.id}'), 150)" 
-                        style="background:var(--accent); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
-            </div>`;
-    });
-
-    // Render Absences
-    dayAbs.forEach(a => {
-        listHtml += `
-            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #ff9800; margin-bottom:8px;">
-                <div style="flex:1">
-                    <div style="font-weight:700; color:white; font-size:13px;">👤 ${a.user_name} Out</div>
-                    <div style="font-size:10px; color:#aaa">${a.is_all_day ? 'All Day' : 'Time Off'}</div>
-                </div>
-                <button onclick="closeModal('cal-action-modal'); setTimeout(() => openAbsenceDetail('${a.id}'), 100)" 
-                        style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
-            </div>`;
-    });
-
-    listContainer.innerHTML = listHtml || `<div style="color:#666; font-size:12px; text-align:center; padding:20px;">Nothing scheduled for this day.</div>`;
-
-    // 4. Show the Card
-    const modal = document.getElementById('cal-action-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        modal.classList.add('active');
-    }
-};
 
  window.triggerAddEntryFromCal = function() {
     closeModal('cal-action-modal');
@@ -1409,9 +1173,6 @@ window.triggerAbsenceFromCal = function() {
     // 4. Open the request modal
     openAbsenceModal(); 
 };
-function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
-function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
-function calToday() { calDate = new Date(); renderCalendar(); }
 
 // Function 1: Open the Work Order Modal with the date filled
 function triggerAddEntryFromCal() {
