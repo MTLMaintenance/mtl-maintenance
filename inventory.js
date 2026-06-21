@@ -87,3 +87,30 @@ export async function deletePart(id, state) {
         return false;
     }
 }
+export async function addPartToTask(taskId, partId, qtyUsed, currentUser, state) {
+    const part = state.parts.find(p => p.id === partId);
+    if (!part || part.qty < qtyUsed) return { success: false, msg: "Insufficient stock" };
+
+    const usage = {
+        id: uid(),
+        task_id: taskId,
+        part_id: partId,
+        part_name: part.name,
+        qty_used: qtyUsed,
+        unit_cost: parseFloat(part.cost || 0),
+        line_total: parseFloat(part.cost || 0) * qtyUsed,
+        used_by: currentUser.name,
+        used_at: new Date().toISOString()
+    };
+
+    try {
+        await supabase.from('part_usage').insert(usage);
+        
+        // Update Stock
+        part.qty -= qtyUsed; 
+        await supabase.from('parts').update({ qty: part.qty }).eq('id', partId);
+
+        state.partUsage.push(usage);
+        return { success: true, usage };
+    } catch (e) { return { success: false, msg: e.message }; }
+}
