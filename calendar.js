@@ -83,3 +83,31 @@ export async function saveAbsence(record) {
         return false;
     }
 }
+export function setAbsenceType(type) {
+    window.selectedAbsenceType = type;
+    document.getElementById('btn-all-day').classList.toggle('active', type === 'all');
+    document.getElementById('btn-partial').classList.toggle('active', type === 'partial');
+    document.getElementById('abs-time-container').style.display = type === 'partial' ? 'block' : 'none';
+}
+
+export async function deleteAbsence() {
+    if (!window.currentDetailId) return;
+    if (!confirm("Are you sure you want to cancel this request?")) return;
+
+    try {
+        const { error } = await window._mpdb.from('staff_absences').delete().eq('id', window.currentDetailId);
+        if (error) throw error;
+
+        window.state.staffAbsences = window.state.staffAbsences.filter(a => a.id !== window.currentDetailId);
+        document.getElementById('absence-detail-modal').style.display = 'none';
+        
+        // This is important: trigger the redraw
+        if (typeof renderCalendar === 'function') renderCalendar(window.calDate); 
+        window.showToast("Request deleted ✓");
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+export function openAbsenceModal() {
+    const modal = document.getElementById('absence-modal');
+    if (modal) modal.style.setProperty('display', 'block', 'important');
+}
