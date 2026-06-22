@@ -7,6 +7,21 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
+// --- AUTH BRIDGES (Fixes the login screen) ---
+import { showPinLogin, pressPin, verifyUserPin, selectUserForLogin } from './auth.js';
+window.showPinLogin = showPinLogin;
+window.pressPin = pressPin;
+window.verifyUserPin = verifyUserPin;
+window.selectUserForLogin = selectUserForLogin;
+
+// --- INITIALIZATION BRIDGES ---
+import { loadState, teleportModals } from './init.js';
+window.loadState = () => loadState(state);
+
+// --- SEARCH BRIDGES ---
+import { handleGlobalSearch } from './search.js';
+window.handleGlobalSearch = () => handleGlobalSearch(state);
+
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
