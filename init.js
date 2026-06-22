@@ -21,17 +21,18 @@ export async function loadState() {
       supabase.from('observations').select('*').order('created_at',{ascending:false})
     ]);
 
-    state.equipment = eq.data || [];
-    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    state.schedules = sc.data || [];
-    state.parts = pt.data || [];
-    state.suppliers = sup.data || [];
-    state.documents = docs.data || [];
-    state.partUsage = pu.data || [];
-    state.recurrenceRules = rr.data || [];
-    state.tools = tl.data || [];
-    state.wishlist = wl.data || [];
-    state.observations = obs.data || [];
+     s.equipment = eq.data || [];
+    s.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    s.schedules = sc.data || [];
+    s.parts = pt.data || [];
+    s.suppliers = sup.data || [];
+    s.documents = docs.data || [];
+    s.partUsage = pu.data || [];
+    s.recurrenceRules = rr.data || [];
+    s.tools = tl.data || [];
+    s.wishlist = wl.data || [];
+    s.observations = obs.data || [];
+
 
     updateMetrics();
     setSyncStatus('online');
