@@ -45,3 +45,35 @@ export function showToast(msg) {
     t.classList.add('show'); 
     setTimeout(() => t.classList.remove('show'), 2000); 
 }
+/**
+ * Compresses an image to save database storage space
+ * @param {string} dataUrl - The raw image data
+ * @param {number} maxWidth - Max width in pixels (default 800)
+ * @param {number} quality - Quality from 0 to 1 (default 0.75)
+ */
+export function compressImage(dataUrl, maxWidth = 800, quality = 0.75) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width;
+      let h = img.height;
+
+      // Calculate new dimensions
+      if (w > maxWidth) {
+        h = Math.round((h * maxWidth) / w);
+        w = maxWidth;
+      }
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Return the compressed version
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
