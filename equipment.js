@@ -1,11 +1,11 @@
 // equipment.js - The Machine & Health Module
 import { supabase, persist } from './db.js';
 import { fmtDate, isOverdue, badge, showToast,compressImage} from './utils.js';
-import { openModal } from './ui.js';
+import { openModal,openModal  } from './ui.js';
+import { renderQuickSpecs } from './views.js';
+import { buildEquipDetailHTML } from './details.js';
 
-
-// 1. Health Color Logic (The source of your current error!)
-// I have merged your logic into one clean function.
+// merged  logic into one clean function.
 export function healthColor(score) {
     if (score >= 80) return '#3B6D11'; // Dark Green
     if (score >= 50) return '#BA7517'; // Orange
@@ -82,3 +82,26 @@ export async function uploadZerkView(input, state) {
     } catch(err) { showToast("Upload failed"); }
     input.value = "";
 }
+
+export function openEquipDetail(id, state) {
+  const e = state.equipment.find(x => x.id === id); 
+  if(!e) return;
+  
+  window._currentDetailEquipId = id; // Store for other functions
+  const score = calcHealth(id, state.tasks, state.equipment);
+
+  // 1. Set the Title
+  const titleEl = document.getElementById('detail-title');
+  if (titleEl) titleEl.textContent = e.name;
+  
+  // 2. Build and Inject the HTML
+  const bodyEl = document.getElementById('detail-body');
+  if (bodyEl) {
+      bodyEl.innerHTML = buildEquipDetailHTML(e, score, healthColor);
+  }
+
+  // 3. Open the Modal
+  openModal('detail-modal');
+
+  // 4. Trigger sub-renders (Fill in the specs and timeline)
+  renderQuickSpecs(id, state);
