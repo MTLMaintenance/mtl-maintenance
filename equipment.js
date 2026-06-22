@@ -105,3 +105,4 @@ export function openEquipDetail(id, state) {
 
   // 4. Trigger sub-renders (Fill in the specs and timeline)
   renderQuickSpecs(id, state);
+}
