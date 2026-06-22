@@ -2,7 +2,9 @@
 import { supabase, setSyncStatus } from './db.js';
 import { updateMetrics } from './dashboard.js';
 
-export async function loadState(state) {
+export async function loadState() {
+  const state = window.state; 
+  if (!state) return console.error("Global state not found!");
   setSyncStatus('syncing');
   try {
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl, obs] = await Promise.all([
