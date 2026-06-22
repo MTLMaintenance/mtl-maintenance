@@ -114,3 +114,36 @@ export async function addPartToTask(taskId, partId, qtyUsed, currentUser, state)
         return { success: true, usage };
     } catch (e) { return { success: false, msg: e.message }; }
 }
+
+export async function removePartUsage(usageId, taskId, state) {
+    if (!confirm("Remove this part and return it to stock?")) return;
+
+    const usage = state.partUsage.find(u => u.id === usageId);
+    if (!usage) return;
+
+    try {
+        // 1. Return the quantity to inventory stock
+        const part = state.parts.find(p => p.id === usage.part_id);
+        if (part) {
+            part.qty = (part.qty || 0) + usage.qty_used;
+            await supabase.from('parts').update({ qty: part.qty }).eq('id', part.id);
+        }
+
+        // 2. Delete the usage record from Supabase
+        await supabase.from('part_usage').delete().eq('id', usageId);
+        state.partUsage = state.partUsage.filter(u => u.id !== usageId);
+
+        // 3. Update the Work Order cost (subtracting this part)
+        const task = state.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.cost = Math.max(0, (task.cost || 0) - (usage.line_total || 0));
+            await supabase.from('tasks').update({ cost: task.cost }).eq('id', taskId);
+        }
+
+        showToast("Part returned to stock ✓");
+        return true; // Signal the UI to refresh
+    } catch (e) {
+        console.error("Error removing part:", e);
+        return false;
+    }
+}
