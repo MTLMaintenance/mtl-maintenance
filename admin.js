@@ -153,3 +153,11 @@ export async function autoCleanupAuditLogs() {
         await supabase.from('audit_logs').delete().lt('created_at', cutoff.toISOString());
     } catch (e) { console.error("Cleanup failed", e); }
 }
+// ── BLOCK CHAT USER ───────────────────────────────────────────
+export async function blockChatUser(username,displayName){
+  if(!confirm('Block '+displayName+' from sending chat messages?'))return;
+  try{await window._mpdb.from('profiles').update({blocked_from_chat:true}).eq('username',username);showToast(displayName+' blocked from chat');}catch(e){showToast('Failed');}
+}
+export async function unblockChatUser(username,displayName){
+  try{await window._mpdb.from('profiles').update({blocked_from_chat:false}).eq('username',username);showToast(displayName+' unblocked');renderDeletedMessages();}catch(e){showToast('Failed');}
+}
