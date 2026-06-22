@@ -7,11 +7,6 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
-// --- AUTH BRIDGES (Fixes the login screen) ---
-window.showPinLogin = showPinLogin;
-window.pressPin = pressPin;
-window.verifyUserPin = verifyUserPin;
-window.selectUserForLogin = selectUserForLogin;
 
 // --- INITIALIZATION BRIDGES ---
 import { loadState, teleportModals } from './init.js';
@@ -19,7 +14,6 @@ window.loadState = () => loadState(state);
 
 // --- SEARCH BRIDGES ---
 import { handleGlobalSearch } from './search.js';
-window.handleGlobalSearch = () => handleGlobalSearch(state);
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
@@ -48,6 +42,11 @@ import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned } from './analytics.js';
 
+window.showPinLogin = showPinLogin;
+window.pressPin = pressPin;
+window.verifyUserPin = verifyUserPin;
+window.selectUserForLogin = selectUserForLogin;
+window.handleGlobalSearch = () => handleGlobalSearch(state);
 window.formatDuration = formatDuration;
 window.deleteZerk = deleteZerk;
 window.handleZerkMapClick = handleZerkMapClick;
