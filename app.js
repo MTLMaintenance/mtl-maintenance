@@ -124,13 +124,6 @@ function updatePinDisplay() {
 }
 
 
-function backToNames() {
-    enteredPin = "";
-    updatePinDisplay();
-    document.getElementById('login-stage-names').style.display = 'block';
-    document.getElementById('login-stage-pin').style.display = 'none';
-    document.getElementById('auth-sub').textContent = 'Sign in to your workspace';
-}
 function checkDateSelection(val) {
     if(val) document.getElementById('abs-options').style.display = 'block';
 }
