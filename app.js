@@ -16,7 +16,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './util
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard } from './ui.js';
-import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
+import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
