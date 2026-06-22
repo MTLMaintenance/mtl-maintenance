@@ -4393,57 +4393,6 @@ window.deleteDoc = async function(id) {
   }
 };
 
-
-
-
-
-async function saveUserProfile() {
-    const newName = document.getElementById('p-name').value.trim();
-    if (!newName) return alert("Please enter a name");
-
-    const newPrefs = {
-        status: document.getElementById('p-status').value,
-        startPage: document.getElementById('p-start-page').value,
-        accentColor: document.getElementById('p-accent-color').value,
-        notes: document.getElementById('p-notes').value,
-    };
-
-    try {
-        // 1. Update Supabase
-        const { error } = await window._mpdb
-            .from('profiles')
-            .update({ 
-                full_name: newName,
-                preferences: newPrefs 
-            })
-            .eq('id', currentUser.id);
-
-        if (error) throw error;
-
-        // 2. Update Live Memory
-        currentUser.name = newName;
-        currentUser.preferences = newPrefs;
-
-        // 3. Update Browser Storage (CRITICAL for Refresh)
-        localStorage.setItem('mp_session', JSON.stringify(currentUser));
-
-        // 4. Update the screen right now
-        applyUserPreferences();
-
-        closeModal('profile-modal');
-        showToast("Settings applied live! ✓");
-        
-        // Log it in Audit Log
-        logAuditAction("Profile Update", "Personalized app settings and status.");
-
-    } catch (e) {
-        console.error("Save failed:", e);
-        showToast("Error saving profile");
-    }
-}
-console.log("Script loaded. Forcing startApp...");
-startApp();
-
 function openMobileSearch() {
     // Instead of a tiny bar, we use a prompt or a full-screen search experience
     const query = prompt("Search equipment, tasks, or parts:");
