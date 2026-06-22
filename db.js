@@ -103,7 +103,7 @@ export async function destroySession() {
   }
 }
 
-async function syncOfflineQueue() {
+export async function syncOfflineQueue() {
   if (!offlineQueue || !offlineQueue.length) {
     const banner = document.getElementById('offline-queue-banner');
     if (banner) banner.style.display = 'none';
