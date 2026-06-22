@@ -120,3 +120,46 @@ export function closeMobileZerkCard() {
 window.showMobileZerkCard = showMobileZerkCard;
 window.closeMobileZerkCard = closeMobileZerkCard;
 
+export function switchDetailTab(tab, btn) {
+  const modal = document.getElementById('detail-modal');
+  if (!modal) return;
+
+  // 1. RESET MODAL WIDTH
+  // If we are leaving the Zerk Map, shrink the modal back to normal size
+  if (tab !== 'eq-zerks') {
+      modal.classList.remove('modal-zerk-wide');
+      const histBtn = document.getElementById('btn-history-report');
+      if (histBtn) histBtn.style.display = 'block';
+  }
+
+  // 2. HIDE ALL TAB CONTENT
+  // We look for every div with the class 'tab-content' and hide it
+  const contents = modal.querySelectorAll('.tab-content');
+  contents.forEach(c => {
+      c.style.display = 'none';
+      c.classList.remove('active');
+  });
+
+  // 3. SHOW THE CLICKED TAB
+  const el = document.getElementById(tab);
+  if (el) {
+      el.style.display = 'block';
+      el.classList.add('active');
+  }
+
+  // 4. UPDATE BUTTON HIGHLIGHTS
+  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // 5. TRIGGER DATA RELOADS
+  const id = window._currentDetailEquipId;
+  if (!id) return;
+
+  if (tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
+  if (tab === 'eq-zerks') renderZerkTab(id); // This function will handle widening the modal
+  if (tab === 'eq-history') renderFullHistoryList(id);
+  if (tab === 'eq-obs') renderObservationsList(id);
+  if (tab === 'eq-invoices') renderInvoicesList(id);
+  if (tab === 'eq-docs') renderDocsList(id);
+}
+
