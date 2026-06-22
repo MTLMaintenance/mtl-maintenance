@@ -15,8 +15,8 @@ import { scanInvoiceWithAI, submitBugReport } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard } from './ui.js';
-import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail } from './equipment.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab  } from './ui.js';
+import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, deleteObservation, editQuickSpec, toggleLockout  } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
@@ -45,7 +45,6 @@ window.deleteChecklistItem = deleteChecklistItem;
 window.deleteTaskComment = deleteTaskComment;
 window._currentTaskTab = 'dt-info';
 window.openEquipDetail = (id) => openEquipDetail(id, state);
-window.editPart = editPart;
 window.savePart = savePart;
 window.openModal = openModal;
 window.closeModal = closeModal;
@@ -53,7 +52,7 @@ window.showPanel = showPanel;
 window.deleteDoc = deleteDoc;
 window.quickLogHours = (id) => quickLogHours(id, state);
 window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
-window.addObservation = addObservation;
+window.addObservation = (id) => addObservation(id, state, currentUser);
 window.runRecurrenceEngine = () => runRecurrenceEngine(state);
 window.exportHealthCSV = () => exportHealthCSV(state, calcHealth);
 window.createBulkWO = createBulkWO;
@@ -63,6 +62,10 @@ window.removePartUsage = (usageId, taskId) => {
         if (success) window.openTaskDetail(taskId); // Refresh the popup
     });
 };
+
+window.openTaskDetail = (id) => openTaskDetail(id, state);
+window.deleteTask = (id) => deleteTask(id, state);
+window.editPart = (id) => editPart(id, state);
 
 window.globalEditObs = function(id) {
   
@@ -872,52 +875,6 @@ function openEditDocModal(docId = null) {
   openModal('doc-modal');
 }
 
-// ============================================================
-// DETAIL VIEWS
-// ============================================================
-
-function switchDetailTab(tab, btn) {
-  const modal = document.getElementById('detail-modal');
-  if (!modal) return;
-
-  // 1. RESET MODAL WIDTH
-  // If we are leaving the Zerk Map, shrink the modal back to normal size
-  if (tab !== 'eq-zerks') {
-      modal.classList.remove('modal-zerk-wide');
-      const histBtn = document.getElementById('btn-history-report');
-      if (histBtn) histBtn.style.display = 'block';
-  }
-
-  // 2. HIDE ALL TAB CONTENT
-  // We look for every div with the class 'tab-content' and hide it
-  const contents = modal.querySelectorAll('.tab-content');
-  contents.forEach(c => {
-      c.style.display = 'none';
-      c.classList.remove('active');
-  });
-
-  // 3. SHOW THE CLICKED TAB
-  const el = document.getElementById(tab);
-  if (el) {
-      el.style.display = 'block';
-      el.classList.add('active');
-  }
-
-  // 4. UPDATE BUTTON HIGHLIGHTS
-  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  // 5. TRIGGER DATA RELOADS
-  const id = window._currentDetailEquipId;
-  if (!id) return;
-
-  if (tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
-  if (tab === 'eq-zerks') renderZerkTab(id); // This function will handle widening the modal
-  if (tab === 'eq-history') renderFullHistoryList(id);
-  if (tab === 'eq-obs') renderObservationsList(id);
-  if (tab === 'eq-invoices') renderInvoicesList(id);
-  if (tab === 'eq-docs') renderDocsList(id);
-}
 
 // Small helper for the downtime display logic inside the detail view
 function renderDowntimeTab(equipId) {
@@ -2246,21 +2203,7 @@ function updateTotalCostDisplay() {
 
 // ── EDIT OBSERVATION ─────────────────────────────────────────
 
-async function deleteObservation(obsId, equipId) {
-    if (!confirm("Permanently delete this observation?")) return;
 
-    try {
-        await window._mpdb.from('observations').delete().eq('id', obsId);
-        
-        // Remove from local memory
-        state.observations = state.observations.filter(o => o.id !== obsId);
-        
-        // Refresh UI
-        renderObservationsList(equipId);
-        renderDashboard();
-        showToast("Deleted ✓");
-    } catch (e) { showToast("Delete failed"); }
-}
 
 async function saveEditObservation(obsId, equipId) {
   const body = document.getElementById('edit-obs-body')?.value.trim();
@@ -3333,26 +3276,7 @@ async function addQuickSpec(equipId) {
         showToast("Sync failed - will retry later");
     }
 }
-async function editQuickSpec(equipId, key) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e || !e.custom_fields) return;
 
-    const currentVal = e.custom_fields[key];
-    const newVal = prompt(`Update value for "${key}":`, currentVal);
-
-    // If user clicks cancel or enters nothing, do nothing
-    if (newVal === null || newVal.trim() === "") return;
-
-    // Update local state and redraw
-    e.custom_fields[key] = newVal.trim();
-    renderQuickSpecs(equipId);
-
-    // Save to DB
-    try {
-        await persist('equipment', 'upsert', e);
-        showToast("Updated ✓");
-    } catch(err) { console.error(err); }
-}
 async function deleteQuickSpec(equipId, key) {
     if (!confirm(`Are you sure you want to delete the spec "${key}"?`)) return;
 
@@ -3557,59 +3481,6 @@ async function saveCalendarEntry() {
     openModal('tpl-modal');
 }
 
-
-async function toggleLockout(equipId, isLocked) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if (!e) return;
-
-    let reason = "";
-    if (isLocked) {
-        reason = prompt("REASON FOR SAFETY LOCKOUT:\n(This will be shown to everyone on the dashboard)");
-        if (!reason) {
-            // Cancel if no reason provided
-            document.querySelector(`#status-widget-${equipId} input`).checked = false;
-            return;
-        }
-        e.status = 'Down'; // Automatically mark as down
-    } else {
-        if (!confirm("Clear safety lockout? Ensure all repairs are verified.")) {
-            document.querySelector(`#status-widget-${equipId} input`).checked = true;
-            return;
-        }
-        e.status = 'Operational';
-    }
-
-    e.is_locked = isLocked;
-    e.lock_reason = reason;
-
-    try {
-        await persist('equipment', 'upsert', e);
-        
-        // 1. Update the UI widget immediately
-        const widget = document.getElementById(`status-widget-${equipId}`);
-        const warn = document.getElementById(`lock-warning-${equipId}`);
-        if(widget) {
-            widget.style.background = isLocked ? '#FCEBEB' : 'var(--bg2)';
-            widget.style.borderColor = isLocked ? '#E24B4A' : 'var(--border)';
-        }
-        if(warn) {
-            warn.style.display = isLocked ? 'block' : 'none';
-            warn.textContent = `⚠️ DANGER: ${reason}`;
-        }
-
-        // 2. Send an URGENT message to the chat
-        const alertMsg = isLocked ? 
-            `🚨 **SAFETY LOCKOUT**: ${currentUser.name} locked out **${e.name}**! Reason: ${reason}` : 
-            `✅ **LOCKOUT CLEARED**: ${currentUser.name} cleared the lockout on **${e.name}**. Machine is back in service.`;
-        
-        await sendSystemDMToUsername('general', alertMsg); // Posts to general channel
-
-        renderDashboard();
-        showToast(isLocked ? "Machine LOCKED OUT" : "Lockout Cleared");
-    } catch(err) {
-        showToast("Failed to update lockout status");
-    }
-}  
     async function setManualLink(equipId) {
     const url = prompt("Enter the URL for this machine's parts manual or manufacturer catalog:");
     if (!url) return;
