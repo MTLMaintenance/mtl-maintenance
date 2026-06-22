@@ -42,6 +42,8 @@ import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned } from './analytics.js';
 
+window.backToNames = backToNames;
+window.updatePinDots = updatePinDots;
 window.showPinLogin = showPinLogin;
 window.pressPin = pressPin;
 window.verifyUserPin = verifyUserPin;
