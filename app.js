@@ -443,77 +443,7 @@ async function signOut() {
  let html5QrCode = null;
 
 
-async function loadState() {
-  setSyncStatus('syncing');
-  try {
-    // 1. Fetch all main tables
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl] = await Promise.all([
-      window._mpdb.from('equipment').select('*'),
-      window._mpdb.from('tasks').select('*'),
-      window._mpdb.from('schedules').select('*'),
-      window._mpdb.from('parts').select('*'),
-      window._mpdb.from('suppliers').select('*'),
-      window._mpdb.from('documents').select('*'),
-      window._mpdb.from('part_usage').select('*'),
-      window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('shop_tools').select('*'),
-      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false})
-    ]);
 
-    state.equipment       = eq.data||[];
-    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    state.schedules       = sc.data||[];
-    state.parts           = pt.data||[];
-    state.suppliers       = sup.data||[];
-    state.documents       = docs.data||[];
-    state.partUsage       = pu.data||[];
-    state.recurrenceRules = rr.data||[];
-    state.tools           = tl.data||[];
-    state.wishlist        = wl.data||[];
-    
-    // 2. Load Profiles
-    const { data: profiles } = await window._mpdb.from('profiles')
-        .select('id, username, full_name, role, group_tag, show_sensitive_metrics')
-        .eq('status', 'approved');
-    state.users_list_cache = profiles || [];
-
-    // --- THE FIX: Populate the Admin dropdown as soon as profiles arrive ---
-    if (typeof populateAdminUserSelect === 'function') {
-        populateAdminUserSelect();
-    }
-    // -----------------------------------------------------------------------
-
-    const myProfile = state.users_list_cache.find(p => p.username === currentUser.username);
-    if (myProfile && myProfile.show_sensitive_metrics !== undefined) {
-        currentUser.show_sensitive_metrics = myProfile.show_sensitive_metrics;
-    }
-
-    const { data: templates } = await window._mpdb.from('checklist_templates').select('*');
-    if(templates && templates.length > 0) {
-        state.checklistTemplates = templates;
-    }
-
-    state.monthlyCosts = computeMonthlyCosts();
-    setSyncStatus('online');
-
-  } catch(e) { 
-    console.error('Load error:', e); 
-    setSyncStatus('offline'); 
-  }
-
-  try {
-    const { data: obs } = await window._mpdb.from('observations').select('*').order('created_at',{ascending:false});
-    state.observations = obs || [];
-  } catch(e) {}
-
-  updateMetrics();
-  
-  // --- FINAL SYNC NUDGE ---
-  // Sometimes the HTML isn't ready yet, so we try one more time after a short delay
-  setTimeout(() => {
-      if (typeof populateAdminUserSelect === 'function') populateAdminUserSelect();
-  }, 500);
-}
 function computeMonthlyCosts() {
   const now=new Date();
   return [3,2,1,0].map(ago=>{
@@ -2465,51 +2395,6 @@ function acceptToolSuggestion() {
   }
   document.getElementById('tools-suggestion-area').style.display = 'none';
 }
-function handleGlobalSearch() {
-  const input = document.getElementById('global-search');
-  const resultsContainer = document.getElementById('search-results');
-  const query = input.value.toLowerCase().trim();
-
-  if (!query) {
-    resultsContainer.style.display = 'none';
-    return;
-  }
-
-  // 1. Filter live data ONLY (This ignores anything not in your current state)
-  const equipment = state.equipment.filter(e => e.name.toLowerCase().includes(query));
-  const tasks = state.tasks.filter(t => t.name.toLowerCase().includes(query));
-  const docs = state.documents.filter(d => d.name.toLowerCase().includes(query));
-  const parts = state.parts ? state.parts.filter(p => p.name.toLowerCase().includes(query)) : [];
-
-  // 2. If no results found
-  if (equipment.length === 0 && tasks.length === 0 && docs.length === 0 && parts.length === 0) {
-    resultsContainer.innerHTML = '<div style="padding:10px; font-size:12px; color:var(--text2)">No results found</div>';
-    resultsContainer.style.display = 'block';
-    return;
-  }
-
-  // 3. Build the results list
-  let html = '';
-  
-  if (equipment.length) {
-    html += '<div style="padding:5px 10px; background:rgba(255,255,255,0.05); font-size:10px; font-weight:bold; color:var(--accent)">EQUIPMENT</div>';
-    equipment.forEach(e => {
-      html += `<div class="search-item" onclick="openEquipDetail('${e.id}')">${e.name}</div>`;
-    });
-  }
-
-  if (tasks.length) {
-    html += '<div style="padding:5px 10px; background:rgba(255,255,255,0.05); font-size:10px; font-weight:bold; color:var(--accent)">WORK ORDERS</div>';
-    tasks.forEach(t => {
-      html += `<div class="search-item" onclick="openTaskDetail('${t.id}')">${t.name}</div>`;
-    });
-  }
-
-  // Add more sections for Docs or Parts if needed...
-
-  resultsContainer.innerHTML = html;
-  resultsContainer.style.display = 'block';
-}
 
 async function toggleToolStatus(id) {
   const t = state.tools.find(x => x.id === id);
@@ -3674,26 +3559,7 @@ function openUserPermissions(userId) {
         }
     }
 }
-function teleportModals() {
-    console.log("🚀 Placing items in their final homes...");
-    
-    // 1. POPUPS go to the body
-    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
-    modalIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) document.body.appendChild(el);
-    });
 
-    // 2. MAIN PANELS go to the main app wrapper
-    const mainApp = document.getElementById('app') || document.querySelector('.main-content');
-    
-    // THE FIX: Move both Tools and Parts into the main view area
-    const panelsToMove = ['panel-tools', 'panel-parts'];
-    panelsToMove.forEach(id => {
-        const p = document.getElementById(id);
-        if (p && mainApp) mainApp.appendChild(p);
-    });
-}
 async function receiveTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id) return;
