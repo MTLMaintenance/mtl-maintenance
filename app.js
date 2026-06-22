@@ -20,7 +20,7 @@ import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkV
 import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask } from './inventory.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage  } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
@@ -43,7 +43,6 @@ window.zerkDrawingStep = 1;   // Start at the first click
 window.tempZerkCoords = null; // Store the first click for lines
 window.deleteChecklistItem = deleteChecklistItem; 
 window.deleteTaskComment = deleteTaskComment;
-window.removePartUsage = removePartUsage;
 window._currentTaskTab = 'dt-info';
 window.openEquipDetail = openEquipDetail;
 window.editPart = editPart;
@@ -59,7 +58,11 @@ window.runRecurrenceEngine = () => runRecurrenceEngine(state);
 window.exportHealthCSV = () => exportHealthCSV(state, calcHealth);
 window.createBulkWO = createBulkWO;
 
-
+window.removePartUsage = (usageId, taskId) => {
+    removePartUsage(usageId, taskId, state).then(success => {
+        if (success) window.openTaskDetail(taskId); // Refresh the popup
+    });
+};
 
 window.globalEditObs = function(id) {
   
