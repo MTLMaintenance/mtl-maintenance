@@ -42,6 +42,25 @@ import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned } from './analytics.js';
 
+window.showLogin = () => {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('register-view').style.display = 'none';
+    if (typeof backToNames === 'function') backToNames();
+};
+
+window.showRegister = () => {
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('register-view').style.display = 'grid';
+    document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
+};
+
+window.pressPin = pressPin;
+window.verifyUserPin = verifyUserPin;
+window.selectUserForLogin = selectUserForLogin;
+window.backToNames = backToNames;
+window.showPinLogin = showPinLogin;
+
 window.backToNames = backToNames;
 window.updatePinDots = updatePinDots;
 window.showPinLogin = showPinLogin;
@@ -4553,3 +4572,14 @@ function populateAdminUserSelect() {
     
     select.innerHTML = html;
 }
+// At the very end of app.js
+console.log("🚀 All modules loaded. Triggering Startup...");
+
+// We wait for the HTML to be fully ready before starting
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof startApp === 'function') {
+        startApp();
+    } else {
+        console.error("Critical Error: startApp function not found in app.js");
+    }
+});
