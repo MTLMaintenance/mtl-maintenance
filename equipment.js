@@ -106,3 +106,51 @@ export function openEquipDetail(id, state) {
   // 4. Trigger sub-renders (Fill in the specs and timeline)
   renderQuickSpecs(id, state);
 }
+export async function addObservation(equipId, state, currentUser) {
+    const input = document.getElementById(`obs-input-${equipId}`);
+    const severitySelect = document.getElementById(`obs-severity-${equipId}`);
+    
+    if (!input) return;
+    
+    const body = input.value.trim();
+    const severity = severitySelect ? severitySelect.value : 'info';
+
+    if (!body) {
+        showToast("Enter a note first");
+        return;
+    }
+
+    const record = {
+        id: uid(),
+        equip_id: equipId,
+        author: currentUser.name,
+        body: body,
+        severity: severity,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        // 1. Save to Supabase
+        const { error } = await supabase.from('observations').insert(record);
+        if (error) throw error;
+
+        // 2. Update local memory
+        if (!state.observations) state.observations = [];
+        state.observations.unshift(record);
+
+        // 3. UI Refresh
+        // We call the renderer we moved to details.js earlier
+        if (typeof window.renderObservationsList === 'function') {
+            window.renderObservationsList(equipId);
+        }
+        
+        // 4. Cleanup
+        input.value = '';
+        showToast("Observation added ✓");
+        return true;
+    } catch (e) {
+        console.error("Observation error:", e);
+        showToast("Error saving note");
+        return false;
+    }
+}
