@@ -61,70 +61,9 @@ export async function logAuditAction(action, details, currentUser) {
         });
     } catch(e) { console.warn("Audit log failed"); }
 }
-export async function showPinLogin() {
-    const list = document.getElementById('user-name-list');
-    if (!list) return;
-    list.innerHTML = '<div style="color:white;">Loading names...</div>';
 
-    try {
-        const { data: users, error } = await window._mpdb.from('profiles').select('*');
-        if (error) throw error;
 
-        list.innerHTML = '';
-        users.forEach(user => {
-            const card = document.createElement('div');
-            card.className = "login-card"; // Apply your styles here
-            card.innerHTML = user.full_name || user.username;
-            card.onclick = () => selectUserForLogin(user);
-            list.appendChild(card);
-        });
-    } catch (e) { console.error(e); }
-}
-
-export function selectUserForLogin(user) {
-    window.selectedLoginUser = user;
-    window.enteredPin = "";
-    document.getElementById('selected-user-display').textContent = "Hello, " + (user.full_name || user.username);
-    document.getElementById('login-stage-names').style.display = 'none';
-    document.getElementById('login-stage-pin').style.display = 'block';
-    updatePinDots();
-}
-
-export function pressPin(num) {
-    if (num === 'clear') window.enteredPin = "";
-    else if (window.enteredPin.length < 10) window.enteredPin += num;
-    updatePinDots();
-}
-
-export async function verifyUserPin() {
-    const { data, error } = await window._mpdb.from('profiles')
-        .select('*')
-        .eq('id', window.selectedLoginUser.id)
-        .eq('pin_code', window.enteredPin)
-        .single();
-
-    if (data) {
-        window.currentUser = { ...data, name: data.full_name || data.username };
-        localStorage.setItem('mp_session', JSON.stringify(window.currentUser));
-        await window.createSession(data.username, data.id);
-        await window.enterApp(); 
-    } else {
-        alert("Incorrect PIN");
-        window.enteredPin = "";
-        updatePinDots();
-    }
-}
-
-export function updatePinDots() {
-    const container = document.getElementById('pin-display');
-    if (!container) return;
-    const dotsCount = Math.max(4, window.enteredPin.length);
-    let html = "";
-    for (let i = 0; i < dotsCount; i++) {
-        html += `<div class="pin-dot ${i < window.enteredPin.length ? 'filled' : ''}"></div>`;
-    }
-    container.innerHTML = html;
-}
+e
 export async function renderAuditLogs() {
     const container = document.getElementById('audit-log-list');
     if (!container) return;
