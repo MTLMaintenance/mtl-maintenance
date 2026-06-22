@@ -8,7 +8,6 @@ import {
 } from './state.js';
 
 // --- AUTH BRIDGES (Fixes the login screen) ---
-import { showPinLogin, pressPin, verifyUserPin, selectUserForLogin } from './auth.js';
 window.showPinLogin = showPinLogin;
 window.pressPin = pressPin;
 window.verifyUserPin = verifyUserPin;
