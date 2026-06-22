@@ -17,7 +17,7 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditlogs, blockChatUser, unblockChatUser } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask } from './inventory.js';
