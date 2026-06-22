@@ -44,7 +44,7 @@ window.tempZerkCoords = null; // Store the first click for lines
 window.deleteChecklistItem = deleteChecklistItem; 
 window.deleteTaskComment = deleteTaskComment;
 window._currentTaskTab = 'dt-info';
-window.openEquipDetail = openEquipDetail;
+window.openEquipDetail = (id) => openEquipDetail(id, state);
 window.editPart = editPart;
 window.savePart = savePart;
 window.openModal = openModal;
