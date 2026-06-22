@@ -154,3 +154,93 @@ export async function addObservation(equipId, state, currentUser) {
         return false;
     }
 }
+
+export async function deleteObservation(obsId, equipId) {
+    if (!confirm("Permanently delete this observation?")) return;
+
+    try {
+        await window._mpdb.from('observations').delete().eq('id', obsId);
+        
+        // Remove from local memory
+        state.observations = state.observations.filter(o => o.id !== obsId);
+        
+        // Refresh UI
+        renderObservationsList(equipId);
+        renderDashboard();
+        showToast("Deleted ✓");
+    } catch (e) { showToast("Delete failed"); }
+}
+
+export async function editQuickSpec(equipId, key) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if(!e || !e.custom_fields) return;
+
+    const currentVal = e.custom_fields[key];
+    const newVal = prompt(`Update value for "${key}":`, currentVal);
+
+    // If user clicks cancel or enters nothing, do nothing
+    if (newVal === null || newVal.trim() === "") return;
+
+    // Update local state and redraw
+    e.custom_fields[key] = newVal.trim();
+    renderQuickSpecs(equipId);
+
+    // Save to DB
+    try {
+        await persist('equipment', 'upsert', e);
+        showToast("Updated ✓");
+    } catch(err) { console.error(err); }
+}
+
+export async function toggleLockout(equipId, isLocked) {
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    let reason = "";
+    if (isLocked) {
+        reason = prompt("REASON FOR SAFETY LOCKOUT:\n(This will be shown to everyone on the dashboard)");
+        if (!reason) {
+            // Cancel if no reason provided
+            document.querySelector(`#status-widget-${equipId} input`).checked = false;
+            return;
+        }
+        e.status = 'Down'; // Automatically mark as down
+    } else {
+        if (!confirm("Clear safety lockout? Ensure all repairs are verified.")) {
+            document.querySelector(`#status-widget-${equipId} input`).checked = true;
+            return;
+        }
+        e.status = 'Operational';
+    }
+
+    e.is_locked = isLocked;
+    e.lock_reason = reason;
+
+    try {
+        await persist('equipment', 'upsert', e);
+        
+        // 1. Update the UI widget immediately
+        const widget = document.getElementById(`status-widget-${equipId}`);
+        const warn = document.getElementById(`lock-warning-${equipId}`);
+        if(widget) {
+            widget.style.background = isLocked ? '#FCEBEB' : 'var(--bg2)';
+            widget.style.borderColor = isLocked ? '#E24B4A' : 'var(--border)';
+        }
+        if(warn) {
+            warn.style.display = isLocked ? 'block' : 'none';
+            warn.textContent = `⚠️ DANGER: ${reason}`;
+        }
+
+        // 2. Send an URGENT message to the chat
+        const alertMsg = isLocked ? 
+            `🚨 **SAFETY LOCKOUT**: ${currentUser.name} locked out **${e.name}**! Reason: ${reason}` : 
+            `✅ **LOCKOUT CLEARED**: ${currentUser.name} cleared the lockout on **${e.name}**. Machine is back in service.`;
+        
+        await sendSystemDMToUsername('general', alertMsg); // Posts to general channel
+
+        renderDashboard();
+        showToast(isLocked ? "Machine LOCKED OUT" : "Lockout Cleared");
+    } catch(err) {
+        showToast("Failed to update lockout status");
+    }
+}  
