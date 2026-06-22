@@ -1,7 +1,8 @@
 // equipment.js - The Machine & Health Module
 import { supabase, persist } from './db.js';
-import { fmtDate, isOverdue, badge, showToast } from './utils.js';
+import { fmtDate, isOverdue, badge, showToast,compressImage } from './utils.js';
 import { openModal } from './ui.js';
+
 
 // 1. Health Color Logic (The source of your current error!)
 // I have merged your logic into one clean function.
@@ -53,7 +54,6 @@ export async function updateEquipStatus(equipId, newStatus, equipment) {
         return false;
     }
 }
-import { compressImage, showToast } from './utils.js';
 
 export async function uploadZerkView(input, state) {
     const file = input.files[0]; if(!file) return;
