@@ -3,10 +3,17 @@ import { supabase, setSyncStatus } from './db.js';
 import { updateMetrics } from './dashboard.js';
 
 export async function loadState() {
+  // 1. Grab the global folder from the window
   const state = window.state; 
-  if (!state) return console.error("Global state not found!");
+  
+  if (!state) {
+    console.error("Critical: Global state object not found on window.");
+    return false;
+  }
+
   setSyncStatus('syncing');
   try {
+    // 2. Fetch all main tables
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl, obs] = await Promise.all([
       supabase.from('equipment').select('*'),
       supabase.from('tasks').select('*'),
@@ -18,24 +25,27 @@ export async function loadState() {
       supabase.from('recurrence_rules').select('*'),
       supabase.from('shop_tools').select('*'),
       supabase.from('tool_requests').select('*').order('created_at', {ascending: false}),
-      supabase.from('observations').select('*').order('created_at',{ascending:false})
+      supabase.from('observations').select('*').order('created_at', {ascending:false})
     ]);
 
-     s.equipment = eq.data || [];
-    s.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    s.schedules = sc.data || [];
-    s.parts = pt.data || [];
-    s.suppliers = sup.data || [];
-    s.documents = docs.data || [];
-    s.partUsage = pu.data || [];
-    s.recurrenceRules = rr.data || [];
-    s.tools = tl.data || [];
-    s.wishlist = wl.data || [];
-    s.observations = obs.data || [];
+    // 3. Map the data into the state
+    state.equipment = eq.data || [];
+    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    state.schedules = sc.data || [];
+    state.parts = pt.data || [];
+    state.suppliers = sup.data || [];
+    state.documents = docs.data || [];
+    state.partUsage = pu.data || [];
+    state.recurrenceRules = rr.data || [];
+    state.tools = tl.data || [];
+    state.wishlist = wl.data || [];
+    state.observations = obs.data || [];
 
-
-    updateMetrics();
+    // 4. Trigger UI Refresh
+    if (typeof updateMetrics === 'function') updateMetrics();
     setSyncStatus('online');
+    
+    console.log("✅ LoadState successful.");
     return true;
   } catch(e) { 
     console.error('Load error:', e); 
