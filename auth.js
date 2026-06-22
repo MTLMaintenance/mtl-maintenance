@@ -31,8 +31,8 @@ export async function showPinLogin() {
 
 // 2. When a user clicks their name
 export function selectUserForLogin(user) {
-    window.selectedLoginUser = user;
-    window.enteredPin = "";
+    window.selectedLoginUser = user; 
+    window.enteredPin = "";          
     
     document.getElementById('selected-user-display').textContent = "Hello, " + (user.full_name || user.username);
     document.getElementById('login-stage-names').style.display = 'none';
@@ -41,8 +41,11 @@ export function selectUserForLogin(user) {
     updatePinDots();
 }
 
+
 // 3. Handle numbers pressed on the PIN pad
 export function pressPin(num) {
+    if (!window.enteredPin) window.enteredPin = ""; // Initialize if empty
+
     if (num === 'clear') {
         window.enteredPin = "";
     } else {
@@ -52,10 +55,12 @@ export function pressPin(num) {
     }
     updatePinDots();
 }
-
 // 4. Verify the PIN against the database
 export async function verifyUserPin() {
-    const { data, error } = await supabase
+    console.log("Verifying PIN for:", window.selectedLoginUser?.username);
+    
+    // 1. Check Supabase
+    const { data, error } = await window._mpdb
         .from('profiles')
         .select('*')
         .eq('id', window.selectedLoginUser.id)
@@ -63,17 +68,19 @@ export async function verifyUserPin() {
         .single();
 
     if (data) {
+        console.log("PIN Correct! Setting user...");
         window.currentUser = { ...data, name: data.full_name || data.username };
         localStorage.setItem('mp_session', JSON.stringify(window.currentUser));
 
-        applyUserPreferences(window.currentUser);
-        await logAuditAction("Sign In", `Logged into workspace.`, window.currentUser);
-        await createSession(data.username, data.id);
+        // 2. Run success logic
+        if (typeof applyUserPreferences === 'function') applyUserPreferences(window.currentUser);
         
-        // ENTER THE APP
-        await fetchAbsences();
-        if (typeof window.enterApp === 'function') window.enterApp(); 
-
+        // 3. IMPORTANT: Tell the main file to enter the app
+        if (typeof window.enterApp === 'function') {
+            window.enterApp();
+        } else {
+            console.error("Critical: window.enterApp not found!");
+        }
     } else {
         alert("Incorrect PIN");
         window.enteredPin = "";
