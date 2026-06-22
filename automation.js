@@ -3,7 +3,9 @@ import { supabase } from './db.js';
 import { uid, showToast } from './utils.js';
 
 // 1. The Recurrence Engine (Auto-generates 500hr services, etc.)
-export async function runRecurrenceEngine(state) {
+export async function runRecurrenceEngine() {
+  const state = window.state; 
+  if (!state || !state.recurrenceRules) return;
   const today = new Date(); 
   today.setHours(0,0,0,0);
 
