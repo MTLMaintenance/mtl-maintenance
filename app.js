@@ -7,6 +7,7 @@ import {
     _tempFileData, taskPinEntry, currentTargetTaskId,state 
 } from './state.js';
 
+import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
@@ -16,7 +17,7 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard } from './ui.js';
 import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditlogs } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction, showPinLogin, pressPin, verifyUserPin, updatePinDots, autoCleanupAuditlogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask } from './inventory.js';
@@ -1022,9 +1023,6 @@ async function handlePhotoUpload(input, key) {
   input.value = '';
 }
 
-// ============================================================
-// OFFLINE QUEUE
-// ============================================================
 let offlineQueue = [];
 try { offlineQueue = JSON.parse(localStorage.getItem('mp_offline_queue') || '[]'); } catch(e) {}
 
@@ -1033,55 +1031,7 @@ function saveOfflineQueue() {
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
 
-async function syncOfflineQueue() {
-  if (!offlineQueue || !offlineQueue.length) {
-    const banner = document.getElementById('offline-queue-banner');
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-  
-  showToast(`Syncing ${offlineQueue.length} changes...`);
-  const failed = [];
 
-  for (const item of offlineQueue) {
-    try {
-      // Safety: Skip if item or record is missing
-      if (!item || !item.record) continue;
-
-      // Extract ID correctly
-      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
-
-      if (item.action === 'upsert') {
-        await window._mpdb.from(item.table).upsert(item.record);
-        console.log(`Sync Upsert for ${item.table}: ${recordId} SUCCESS`);
-      } 
-      else if (item.action === 'delete') {
-        const { error, count } = await window._mpdb
-          .from(item.table)
-          .delete({ count: 'exact' })
-          .eq('id', recordId);
-        
-        if (error) throw error;
-        console.log(`Sync Delete for ${item.table}: ${recordId} - ${count} rows removed`);
-      }
-    } catch (e) { 
-      console.error("Sync failed for item:", item, e);
-      failed.push(item); 
-    }
-  }
-  
-  offlineQueue = failed;
-  saveOfflineQueue();
-  
-  if (failed.length === 0) {
-    setSyncStatus('online');
-    showToast('All changes synced ✓');
-    const banner = document.getElementById('offline-queue-banner');
-    if (banner) banner.style.display = 'none';
-  } else {
-    showToast(`${failed.length} items failed to sync`);
-  }
-}
 // ============================================================
 // HOURS AUTO-TRACKER
 // ============================================================
@@ -2156,77 +2106,10 @@ async function enterApp() {
 function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
 function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
 
-// ── ONLINE USERS (all team members) ──────────────────────────
-async function renderOnlineUsers(){
-  const el=document.getElementById('online-users-list');if(!el)return;
-  try{
-    const{data:profiles}=await window._mpdb.from('profiles').select('full_name,username,last_seen').eq('status','approved');
-    const fiveMinAgo=new Date(Date.now()-5*60*1000);
-    el.innerHTML=(profiles||[]).map(p=>{
-      const isMe=p.username===currentUser.username;
-      const isOnline=isMe||(p.last_seen&&new Date(p.last_seen)>fiveMinAgo);
-      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:rgba(255,255,255,0.8)">
-        <div style="width:7px;height:7px;border-radius:50%;background:${isOnline?'#3B6D11':'rgba(255,255,255,0.25)'};flex-shrink:0"></div>
-        ${p.full_name}${isMe?' (you)':''}
-      </div>`;
-    }).join('');
-  }catch(e){}
-}
 
-// Update last_seen every 2 minutes while app is open
-async function updateLastSeen(){
-  try{
-    await window._mpdb.from('profiles').update({last_seen:new Date().toISOString()}).eq('username',currentUser.username);
-  }catch(e){}
-}
 
 // ──  MESSAGES ──────────────────────────────────────────
 let activeDmUser=null;
-async function renderDmList() {
-    const el = document.getElementById('dm-list');
-    if (!el) return;
-    
-    // 1. Fetch fresh profiles (including preferences/status) if cache is empty
-    if (!state.users_list_cache || state.users_list_cache.length === 0) {
-        const { data } = await window._mpdb
-            .from('profiles')
-            .select('username, full_name, preferences') // Added preferences
-            .eq('status', 'approved');
-        state.users_list_cache = data || [];
-    }
-
-    const otherUsers = state.users_list_cache.filter(u => u.username !== currentUser.username);
-    
-    el.innerHTML = otherUsers.map(u => {
-        const ch = 'dm-' + [currentUser.username, u.username].sort().join('-');
-        
-        // 2. Determine the user's status and dot color
-        const status = u.preferences?.status || 'Available';
-        // Clean the status string for CSS (remove spaces/dots)
-        const dotClass = `dot-${status.replace(/\s+/g, '-')}`;
-
-        return `
-        <button class="chat-channel-btn" id="btn-dm-${u.username}" data-channel="${ch}" onclick="switchChannel('${ch}', this)" style="display:flex; align-items:center;">
-            <span class="dm-status-dot ${dotClass}"></span>
-            <span style="flex:1; text-align:left;">${u.full_name || u.username}</span>
-            <span class="unread-dot" id="dot-dm-${ch}" style="display:none"></span>
-        </button>`;
-    }).join('') || '<div style="color:rgba(255,255,255,0.4); font-size:11px; padding-left:12px">No users found</div>';
-
-    if (typeof refreshMobileChatChannelOptions === 'function') {
-        refreshMobileChatChannelOptions();
-    }
-}
-function switchToDm(username,fullName,btn){
-  activeDmUser=username;currentChannel=getDmChannel(currentUser.username,username);
-  document.querySelectorAll('.chat-channel-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
-  const t=document.getElementById('chat-channel-title');const d=document.getElementById('chat-channel-desc');
-  if(t)t.textContent='@ '+fullName;if(d)d.textContent='Direct message';
-  const i=document.getElementById('chat-input');if(i)i.placeholder='Message '+fullName+'...';
-  loadChatMessages(currentChannel);closeChatSidebarMobile();
-}
-
-
 
 // ── DELETE CHAT MESSAGE ──────────────────────────────────────
 async function deleteChatMessage(msgId,channel,author){
@@ -2240,35 +2123,6 @@ async function deleteChatMessage(msgId,channel,author){
     await loadChatMessages(currentChannel);
     showToast('Message deleted');
   }catch(e){showToast('Failed to delete');}
-}
-
-// ── BLOCK CHAT USER ───────────────────────────────────────────
-async function blockChatUser(username,displayName){
-  if(!confirm('Block '+displayName+' from sending chat messages?'))return;
-  try{await window._mpdb.from('profiles').update({blocked_from_chat:true}).eq('username',username);showToast(displayName+' blocked from chat');}catch(e){showToast('Failed');}
-}
-async function unblockChatUser(username,displayName){
-  try{await window._mpdb.from('profiles').update({blocked_from_chat:false}).eq('username',username);showToast(displayName+' unblocked');renderDeletedMessages();}catch(e){showToast('Failed');}
-}
-
-// ── DELETED MESSAGES ADMIN ────────────────────────────────────
-async function renderDeletedMessages(){
-  const listEl=document.getElementById('deleted-msgs-list');const blockedEl=document.getElementById('blocked-users-list');if(!listEl)return;
-  try{const{data:deleted}=await window._mpdb.from('deleted_messages').select('*').gte('expires_at',new Date().toISOString()).order('deleted_at',{ascending:false});
-    listEl.innerHTML=!deleted||!deleted.length?'<div style="color:var(--text2);font-size:13px;padding:8px 0">No deleted messages</div>':deleted.map(m=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap"><span style="font-weight:600;font-size:13px">${m.author_name||m.author}</span><span class="badge bg">#${m.channel}</span><span style="font-size:11px;color:var(--text3)">${new Date(m.deleted_at).toLocaleDateString()} · Deleted by ${m.deleted_by}</span><span style="font-size:11px;color:var(--danger);margin-left:auto">Expires ${new Date(m.expires_at).toLocaleDateString()}</span><button class="btn btn-secondary btn-sm" onclick="recoverMessage('${m.id}')">Recover</button><button class="btn btn-danger btn-sm" onclick="permanentDeleteMessage('${m.id}')">Delete Forever</button></div><div style="font-size:13px;color:var(--text);background:var(--bg2);padding:8px 10px;border-radius:var(--radius)">${m.body||'[photo]'}</div></div>`).join('');
-  }catch(e){if(listEl)listEl.innerHTML='<div style="color:var(--text2);font-size:13px">Could not load</div>';}
-  if(!blockedEl)return;
-  try{const{data:blocked}=await window._mpdb.from('profiles').select('username,full_name').eq('blocked_from_chat',true);
-    blockedEl.innerHTML=!blocked||!blocked.length?'<div style="color:var(--text2);font-size:13px;padding:8px 0">No blocked users</div>':blocked.map(p=>`<div class="parts-row"><div style="flex:1"><div style="font-weight:500">${p.full_name}</div><div style="font-size:12px;color:var(--text2)">${p.username}</div></div><button class="btn btn-success btn-sm" onclick="unblockChatUser('${p.username}','${p.full_name}')">Unblock</button></div>`).join('');
-  }catch(e){}
-}
-async function recoverMessage(deletedId){
-  if(!confirm('Restore this message?'))return;
-  try{const{data:dm}=await window._mpdb.from('deleted_messages').select('*').eq('id',deletedId);const m=dm?.[0];if(!m)return;
-    await window._mpdb.from('chat_messages').insert({id:m.original_id||uid(),channel:m.channel,author:m.author,author_name:m.author_name,body:m.body,photo:m.photo,created_at:new Date().toISOString()});
-    await window._mpdb.from('deleted_messages').delete().eq('id',deletedId);
-    showToast('Message recovered ✓');renderDeletedMessages();
-  }catch(e){showToast('Failed');}
 }
 
 // ── ADMIN TAB SWITCHER ────────────────────────────────────────
