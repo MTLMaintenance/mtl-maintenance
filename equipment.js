@@ -1,6 +1,6 @@
 // equipment.js - The Machine & Health Module
 import { supabase, persist } from './db.js';
-import { fmtDate, isOverdue, badge, showToast,} from './utils.js';
+import { fmtDate, isOverdue, badge, showToast,compressImage} from './utils.js';
 import { openModal } from './ui.js';
 
 
