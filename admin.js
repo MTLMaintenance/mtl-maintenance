@@ -63,7 +63,7 @@ export async function logAuditAction(action, details, currentUser) {
 }
 
 
-e
+
 export async function renderAuditLogs() {
     const container = document.getElementById('audit-log-list');
     if (!container) return;
