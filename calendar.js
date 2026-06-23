@@ -116,3 +116,37 @@ export function closeAbsenceModal() {
     const modal = document.getElementById('absence-modal');
     if (modal) modal.style.display = 'none';
 }
+
+export function openAbsenceDetail(id, currentUser, state) {
+    const abs = (state.staffAbsences || []).find(a => a.id === id);
+    if (!abs) return;
+    
+    window.currentDetailId = id; 
+
+    document.getElementById('det-user').textContent = `👤 ${abs.user_name}`;
+    document.getElementById('det-reason').textContent = abs.reason_public || "No reason provided.";
+    document.getElementById('det-time').textContent = abs.is_all_day ? "All Day" : (abs.partial_time || "Scheduled");
+
+    const isOwner = (abs.author === currentUser.username || abs.user_id === String(currentUser.id));
+    const isAdmin = (currentUser.role === 'Admin');
+
+    const delBtn = document.getElementById('det-delete-btn');
+    if (delBtn) delBtn.style.display = (isOwner || isAdmin) ? 'block' : 'none';
+
+    const privBox = document.getElementById('det-private-section');
+    if (privBox && isAdmin) {
+        privBox.style.display = 'block';
+        document.getElementById('det-private-text').textContent = abs.reason_private || "None";
+    }
+
+    const modal = document.getElementById('absence-detail-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active'); 
+    }
+}
+
+export function togglePrivateReason(show) {
+    const privBox = document.getElementById('priv-box');
+    if (privBox) privBox.style.display = show ? 'block' : 'none';
+}
