@@ -10,9 +10,6 @@ import {
 
 // --- INITIALIZATION BRIDGES ---
 import { loadState, teleportModals } from './init.js';
-window.loadState = () => loadState(state);
-
-// --- SEARCH BRIDGES ---
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview } from './profiles.js';
@@ -28,7 +25,7 @@ import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkV
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO} from './inventory.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable} from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
@@ -36,7 +33,7 @@ import { exportCSV, exportPDF, exportHealthCSV } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
-import { renderEquipmentTable, renderPartsTable, renderQuickSpecs } from './views.js';
+import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable  } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
@@ -55,6 +52,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.loadState = () => loadState(state);
 window.pressPin = pressPin;
 window.verifyUserPin = verifyUserPin;
 window.selectUserForLogin = selectUserForLogin;
@@ -150,7 +148,17 @@ window.deleteTaskComment = (commentId, taskId) => {
 };
 window.updateDashboardParts = () => updateDashboardParts(state);
 
-
+window.editConsumable = (id) => editConsumable(id, state);
+window.saveConsumable = () => {
+    saveConsumable(state).then(success => {
+        if (success) renderConsumablesTable(state, supplierName);
+    });
+};
+window.openAddConsumable = () => {
+    document.getElementById('c-edit-id').value = "";
+    document.getElementById('c-modal-title').textContent = "Add Supply Item";
+    openModal('consumable-modal');
+};
 window.globalEditObs = function(id) {
   
     console.log("Opening Edit for ID:", id);
@@ -3579,171 +3587,7 @@ async function fetchAllProfiles() {
 }
 
 // 2. Tab Switcher
-function switchPartsSubTab(tab) {
-    const invView = document.getElementById('parts-inventory-view');
-    const consView = document.getElementById('parts-consumables-view');
-    const partBtn = document.getElementById('add-part-btn');
-    const consBtn = document.getElementById('add-consumable-btn');
 
-    if (tab === 'inventory') {
-        invView.style.display = 'block';
-        consView.style.display = 'none';
-        partBtn.style.display = 'block';
-        consBtn.style.display = 'none';
-        renderParts();
-    } else {
-        invView.style.display = 'none';
-        consView.style.display = 'block';
-        partBtn.style.display = 'none';
-        consBtn.style.display = 'block';
-        fetchConsumables(); // Load data when clicking the tab
-    }
-
-    // Update button highlighting
-    document.getElementById('btn-parts-inv').classList.toggle('active', tab === 'inventory');
-    document.getElementById('btn-parts-cons').classList.toggle('active', tab === 'consumables');
-}
-
-// 3. Fetch Data
-async function fetchConsumables() {
-    try {
-        const { data, error } = await window._mpdb.from('consumables').select('*').order('name');
-        if (data) {
-            state.consumables = data;
-            renderConsumables();
-        }
-    } catch (e) { console.error(e); }
-}
-
-// 1. OPEN THE MODAL (For New Items)
-window.openAddConsumable = function() {
-    console.log("🚀 Opening Consumable Modal for new entry...");
-    
-    // Set Title and clear Hidden ID
-    if (document.getElementById('c-modal-title')) document.getElementById('c-modal-title').textContent = "Add Shop Supply";
-    if (document.getElementById('c-edit-id')) document.getElementById('c-edit-id').value = "";
-    if (document.getElementById('btn-delete-consumable')) document.getElementById('btn-delete-consumable').style.display = "none";
-    
-    // Reset all fields to empty/zero
-    const fields = ['c-name', 'c-num', 'c-cost', 'c-qty', 'c-reorder'];
-    fields.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.value = (id.includes('qty') || id.includes('reorder')) ? '0' : '';
-    });
-    
-    // Fill suppliers (Specifically for the Consumable dropdown)
-    // If your function supports passing an ID, use it here
-    if (typeof populateSupplierDropdown === 'function') {
-        populateSupplierDropdown(); 
-    }
-    
-    openModal('consumable-modal');
-};
-
-// 2. OPEN MODAL FOR EDITING
-window.editConsumable = function(id) {
-    console.log("🛠️ Opening Edit for Consumable ID:", id);
-
-    // 1. Find the item data FIRST
-    const item = state.consumables.find(c => c.id === id);
-    if (!item) {
-        console.error("Item not found in memory.");
-        return;
-    }
-
-    // 2. Open the Modal UI
-    if (typeof openModal === 'function') openModal('consumable-modal');
-
-    // 3. Force the Delete button to show
-    const delBtn = document.getElementById('btn-delete-consumable');
-    if (delBtn) {
-        delBtn.style.setProperty('display', 'block', 'important');
-    }
-
-    // 4. Fill the IDs and Labels
-    if (document.getElementById('c-modal-title')) {
-        document.getElementById('c-modal-title').textContent = "Edit Item: " + (item.name || "Unnamed");
-    }
-    if (document.getElementById('c-edit-id')) {
-        document.getElementById('c-edit-id').value = item.id;
-    }
-
-    // 5. Fill all input fields
-    if (document.getElementById('c-name')) document.getElementById('c-name').value = item.name || "";
-    if (document.getElementById('c-num')) document.getElementById('c-num').value = item.num || "";
-    if (document.getElementById('c-cost')) document.getElementById('c-cost').value = item.cost || 0;
-    if (document.getElementById('c-qty')) document.getElementById('c-qty').value = item.qty || 0;
-    if (document.getElementById('c-reorder')) document.getElementById('c-reorder').value = item.reorder || 0;
-    if (document.getElementById('c-supplier-select')) document.getElementById('c-supplier-select').value = item.supplier_id || "";
-
-    console.log("✅ Consumable form populated successfully.");
-};
-// 3. SAVE TO SUPABASE
-async function saveConsumable() {
-    const editId = document.getElementById('c-edit-id').value;
-    const name = document.getElementById('c-name').value.trim();
-    if(!name) return alert("Please enter a name");
-
-    const record = {
-        id: (editId && editId !== "") ? editId : uid(),
-        name: name,
-        num: document.getElementById('c-num').value,
-        supplier_id: document.getElementById('c-supplier-select').value || null,
-        qty: parseInt(document.getElementById('c-qty').value) || 0,
-        reorder: parseInt(document.getElementById('c-reorder').value) || 0,
-        cost: parseFloat(document.getElementById('c-cost').value) || 0,
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        const { error } = await window._mpdb.from('consumables').upsert([record]);
-        if (error) throw error;
-        
-        await fetchConsumables(); 
-        closeModal('consumable-modal');
-        showToast("Consumable saved ✓");
-    } catch(e) {
-        alert("Save failed: " + e.message);
-    }
-}
-window.deleteConsumable = async function(id) {
-    // 1. Identify which ID to delete
-    // If an ID wasn't passed (clicked from modal), grab it from the hidden input
-    const targetId = id || document.getElementById('c-edit-id').value;
-    
-    if (!targetId) {
-        console.error("Delete failed: No ID found.");
-        return;
-    }
-
-    // 2. Find the name for the confirmation box
-    const item = state.consumables.find(c => c.id === targetId);
-    const itemName = item ? item.name : "this item";
-
-    if (!confirm(`Are you sure you want to permanently delete "${itemName}"?`)) return;
-
-    try {
-        // 3. Delete from Supabase
-        const { error } = await window._mpdb
-            .from('consumables')
-            .delete()
-            .eq('id', targetId);
-
-        if (error) throw error;
-
-        // 4. Update local memory
-        state.consumables = state.consumables.filter(c => c.id !== targetId);
-
-        // 5. Success - Refresh UI
-        closeModal('consumable-modal');
-        renderConsumables();
-        showToast("Item removed ✓");
-
-    } catch (e) {
-        console.error("Delete error:", e);
-        alert("Delete failed: " + e.message);
-    }
-};
 // 1. Updated Wishlist Renderer
 function renderToolWishlist() {
     const tableBody = document.getElementById('wishlist-table-body');
@@ -4143,8 +3987,7 @@ function switchPartsTab(tabType) {
         if (partBtn) partBtn.style.display = 'none';
         if (consumableBtn) consumableBtn.style.display = 'inline-flex';
         
-        // Your existing logic to show consumables table
-        // renderConsumables(); 
+        // Your existing logic to show consumables table 
     }
 }
 // Also run it once when the app starts
