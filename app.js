@@ -3958,15 +3958,6 @@ async function removePartFromTask(usageId, taskId) {
   openTaskDetail(taskId);
 }
 
-async function addTaskCheckItem(taskId) {
-  const input = document.getElementById('new-check-item');
-  if(!input.value.trim()) return;
-  const t = state.tasks.find(x => x.id === taskId);
-  t.checklist.push({ text: input.value.trim(), done: false });
-  await persist('tasks', 'upsert', t);
-  openTaskDetail(taskId);
-}
-
 
 // --- THE TRIGGER ---
 window.editObservation = function(obsId, equipId) {
