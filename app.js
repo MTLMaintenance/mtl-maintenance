@@ -12,7 +12,7 @@ import {
 import { loadState, teleportModals } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
-import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput  } from './profiles.js';
+import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
@@ -51,10 +51,11 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-window.renderDmList = () => renderDmList(currentUser, state);
-window.handleChatInput = (el) => handleChatInput(el, state, window.showMentionDropdown, window.hideMentionDropdown);
 window.showMentionDropdown = showMentionDropdown;
 window.hideMentionDropdown = hideMentionDropdown;
+window.insertMention = insertMention;
+window.renderDmList = () => renderDmList(currentUser, state);
+window.handleChatInput = (el) => handleChatInput(el, state, window.showMentionDropdown, window.hideMentionDropdown);
 window.renderUsersTable = () => renderUsersTable(state);
 window.openPermissionsCard = (id) => openPermissionsCard(id); // Ensure this is in admin.js
 window.togglePermission = (role, key, val) => togglePermission(role, key, val);
