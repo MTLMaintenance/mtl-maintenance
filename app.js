@@ -1587,7 +1587,8 @@ function renderTools() {
         const status = t.status || 'available';
         const location = t.location || '—';
         const isOrdered = status === 'ordered';
-    }})
+    })
+}
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
