@@ -246,3 +246,32 @@ export async function saveConsumable(state) {
         return false;
     }
 }
+
+export function openSupplierDetail(id, state) {
+  const s = state.suppliers.find(x => x.id === id); 
+  if(!s) return;
+  
+  const parts = state.parts.filter(p => p.supplier_id === id);
+  document.getElementById('detail-title').textContent = s.name;
+  
+  document.getElementById('detail-body').innerHTML = `
+    <div class="sup-grid">
+      <div><span class="label">Contact:</span> ${s.contact||'—'}</div>
+      <div><span class="label">Phone:</span> ${s.phone||'—'}</div>
+      <div><span class="label">Email:</span> ${s.email||'—'}</div>
+    </div>
+    <div class="sup-parts-list">
+        ${parts.map(p => `<div class="parts-row"><b>${p.name}</b> (Stock: ${p.qty})</div>`).join('')}
+    </div>`;
+
+  window.openModal('detail-modal');
+}
+
+export async function deleteInvoice(invoiceId, equipId) {
+  if(!confirm('Delete this invoice?')) return;
+  try {
+    await window._mpdb.from('invoices').delete().eq('id', invoiceId);
+    window.showToast('Invoice deleted');
+    if (typeof window.renderInvoicesList === 'function') window.renderInvoicesList(equipId);
+  } catch(e) { window.showToast('Failed to delete'); }
+}
