@@ -192,58 +192,7 @@ export async function editQuickSpec(equipId, key) {
     } catch(err) { console.error(err); }
 }
 
-export async function toggleLockout(equipId, isLocked) {
-    const e = state.equipment.find(x => x.id === equipId);
-    if (!e) return;
 
-    let reason = "";
-    if (isLocked) {
-        reason = prompt("REASON FOR SAFETY LOCKOUT:\n(This will be shown to everyone on the dashboard)");
-        if (!reason) {
-            // Cancel if no reason provided
-            document.querySelector(`#status-widget-${equipId} input`).checked = false;
-            return;
-        }
-        e.status = 'Down'; // Automatically mark as down
-    } else {
-        if (!confirm("Clear safety lockout? Ensure all repairs are verified.")) {
-            document.querySelector(`#status-widget-${equipId} input`).checked = true;
-            return;
-        }
-        e.status = 'Operational';
-    }
-
-    e.is_locked = isLocked;
-    e.lock_reason = reason;
-
-    try {
-        await persist('equipment', 'upsert', e);
-        
-        // 1. Update the UI widget immediately
-        const widget = document.getElementById(`status-widget-${equipId}`);
-        const warn = document.getElementById(`lock-warning-${equipId}`);
-        if(widget) {
-            widget.style.background = isLocked ? '#FCEBEB' : 'var(--bg2)';
-            widget.style.borderColor = isLocked ? '#E24B4A' : 'var(--border)';
-        }
-        if(warn) {
-            warn.style.display = isLocked ? 'block' : 'none';
-            warn.textContent = `⚠️ DANGER: ${reason}`;
-        }
-
-        // 2. Send an URGENT message to the chat
-        const alertMsg = isLocked ? 
-            `🚨 **SAFETY LOCKOUT**: ${currentUser.name} locked out **${e.name}**! Reason: ${reason}` : 
-            `✅ **LOCKOUT CLEARED**: ${currentUser.name} cleared the lockout on **${e.name}**. Machine is back in service.`;
-        
-        await sendSystemDMToUsername('general', alertMsg); // Posts to general channel
-
-        renderDashboard();
-        showToast(isLocked ? "Machine LOCKED OUT" : "Lockout Cleared");
-    } catch(err) {
-        showToast("Failed to update lockout status");
-    }
-}  
 // 1. Safety Lockout: Disables a machine and alerts the team
 export async function toggleLockout(equipId, isLocked, currentUser) {
     const state = window.state;
