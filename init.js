@@ -1,12 +1,12 @@
 // init.js - Application Bootstrapping
 import { supabase, setSyncStatus } from './db.js';
 import { updateMetrics } from './dashboard.js';
-import { validateSession, fetchAbsences } from './db.js';
+import { validateSession} from './db.js';
 import { fetchAllProfiles } from './profiles.js';
 import { showPinLogin } from './auth.js';
 import { showPanel, adjustMobileLayout } from './ui.js';
 import { applyUserPreferences } from './settings.js';
-
+import { fetchAbsences } from './calendar.js';
 export async function loadState() {
   // 1. Grab the global folder from the window
   const state = window.state; 
