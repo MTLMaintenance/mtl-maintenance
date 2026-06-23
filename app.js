@@ -4,7 +4,7 @@ import {
     staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
     calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
-    _tempFileData, taskPinEntry, currentTargetTaskId,state 
+    _tempFileData, taskPinEntry, currentTargetTaskId,state,ICONS 
 } from './state.js';
 
 
@@ -17,10 +17,10 @@ import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport } from './services.js';
-import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './utils.js';
+import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab  } from './ui.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects  } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
@@ -52,6 +52,10 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.equipName = (id) => equipName(id, state);
+window.supplierName = (id) => supplierName(id, state);
+window.switchDetailTab = switchDetailTab;
+window.switchAdminTab = switchAdminTab;
 window.fetchAllProfiles = () => fetchAllProfiles(state);
 window.globalEditObs = (id) => globalEditObs(id, state);
 window.saveObservationChange = () => saveObservationChange(state);
@@ -464,77 +468,15 @@ function computeMonthlyCosts() {
 /// ============================================================
 // HELPERS
 // ============================================================
-const ICONS={Excavator:'🦾',Tractor:'🚜','Wheel Loader':'⚙','Skid Steer':'🔧',Compressor:'💨',Crane:'🏗',Compactor:'🔩',Truck:'🚛',Forklift:'🏭'};
+
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 
-function equipName(id){ const e=state.equipment.find(x=>x.id===id); return e?e.name:'—'; }
+
 function supplierName(id){ const s=state.suppliers.find(x=>x.id===id); return s?s.name:'—'; }
 
 
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
-
-
-// --- THE DROPDOWN PAINTER ---
-
-function populateSelects() {
-    // Check if the machine list exists
-    if (!state.equipment || state.equipment.length === 0) {
-        console.warn("PopulateSelects: No equipment in state yet.");
-    }
-
-    // 1. Define the option strings
-    const equipOpts = state.equipment.map(e => 
-        `<option value="${e.id}">${e.name}</option>`
-    ).join('') || '<option value="">No equipment found</option>';
-
-    const users = state.users_list_cache || [];
-    const userOpts = '<option value="">— Unassigned —</option>' +
-        users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
-
-    // 2. Targets for Work Order Modal
-    const tEquip = document.getElementById('t-equip');
-    const tAssign = document.getElementById('t-assign');
-    if (tEquip) { tEquip.innerHTML = equipOpts; }
-    if (tAssign) { tAssign.innerHTML = userOpts; }
-
-    // 3. Targets for Calendar/Entry Modal
-    const ceEquip = document.getElementById('ce-equip');
-    const ceAssign = document.getElementById('ce-assign');
-    if (ceEquip) { ceEquip.innerHTML = equipOpts; }
-    if (ceAssign) { ceAssign.innerHTML = userOpts; }
-
-    // 4. Target for Equipment Filter
-    const taskFilter = document.getElementById('task-equip-filter');
-    if (taskFilter) {
-        taskFilter.innerHTML = `<option value="all">All Equipment</option>` + equipOpts;
-    }
-
-    // 5. Target for Parts Select
-    const pSel = document.getElementById('wo-part-select');
-    if (pSel) {
-        pSel.innerHTML = state.parts.map(p => 
-            `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`
-        ).join('');
-    }
-} // <--- Ensure this bracket is here!
-function switchWOTab(tabId, btn) {
-    // 1. Hide all WO tab content divs
-    const tabs = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments'];
-    tabs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-
-    // 2. Show the one we clicked
-    const target = document.getElementById(tabId);
-    if (target) target.style.display = 'block';
-
-    // 3. Update button highlights
-    const parent = btn.parentElement;
-    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-}
 
 // ============================================================
 // PHOTOS
@@ -1896,41 +1838,6 @@ async function deleteChatMessage(msgId,channel,author){
     showToast('Message deleted');
   }catch(e){showToast('Failed to delete');}
 }
-
-// ── ADMIN TAB SWITCHER ────────────────────────────────────────
-function switchAdminTab(tab, btn) {
-  // Hide all admin sub-panels
-  ['admin-approvals', 'admin-users', 'admin-permissions', 'admin-deleted-msgs', 'admin-settings'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-
-  // Show the one you clicked
-  const target = document.getElementById('admin-' + tab);
-  if (target) target.style.display = 'block';
-
-  // Highlight the tab button
-  document.querySelectorAll('#panel-admin .tab').forEach(b => {
-    b.classList.remove('active');
-  });
-  btn.classList.add('active');
-
-  // --- TRIGGER DATA RELOADS ---
-  if(tab === 'settings') renderAuditLogs();
-    
-    if (tab === 'users' || tab === 'permissions') {
-    renderUsersTable(); // This fills the dropdown and the table
-  }
-  if (tab === 'permissions') {
-    renderPermissionsMatrix();
-  }
-  if (tab === 'deleted-msgs') {
-    renderDeletedMessages();
-  }
-  if (tab === 'settings') {
-    renderAuditLogs();
-  }
-}
 // ── RESET USER PASSWORD ───────────────────────────────────────
 async function resetUserPassword(userId,userName){
   const newPass=prompt('Set a new password for '+userName+':');
@@ -2272,30 +2179,7 @@ async function toggleToolStatus(id) {
   await persist('shop_tools', 'upsert', t);
   renderTools();
 }  
-function switchToolTab(tab) {
-    console.log("Switching Tool Tab to:", tab);
-    
-    const inventory = document.getElementById('tool-inventory-view');
-    const wishlist = document.getElementById('tool-wishlist-view');
-    const denied = document.getElementById('tool-denied-view');
 
-    if (inventory) inventory.style.display = tab === 'inventory' ? 'block' : 'none';
-    if (wishlist) wishlist.style.display = tab === 'wishlist' ? 'block' : 'none';
-    if (denied) denied.style.display = tab === 'denied' ? 'block' : 'none';
-
-    document.querySelectorAll('#panel-tools .tab').forEach(b => b.classList.remove('active'));
-    
-    let btnId = 'tool-inv-tab';
-    if (tab === 'wishlist') btnId = 'tool-wish-tab';
-    if (tab === 'denied') btnId = 'tool-denied-tab';
-    
-    const activeBtn = document.getElementById(btnId);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    // THE FIX: Specifically trigger the correct render function for the tab
-    if (tab === 'inventory') renderTools();
-    if (tab === 'wishlist') renderToolWishlist();
-    if (tab === 'denied') renderToolDeniedHistory(); // <--- This was missing!
 }
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
