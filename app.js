@@ -93,6 +93,7 @@ window.printQRCode = (id) => printQRCode(id, state);
 window.printMachineHistory = (id) => printMachineHistory(id, state);
 window.signOut = () => { destroySession(); location.reload(); };
 window.togglePassVis = togglePassVis;
+window.signOut = signOut;
 
 
 window.removePartUsage = (usageId, taskId) => {
