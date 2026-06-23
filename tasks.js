@@ -186,3 +186,40 @@ export async function deleteChecklistItem(taskId, index) {
         showToast("Error updating checklist");
     }
 }
+
+// 1. Post a new comment to a work order
+export async function addTaskComment(taskId, body, currentUser) {
+    if (!body.trim()) return false;
+
+    const comment = {
+        id: uid(),
+        task_id: taskId,
+        author: currentUser.name,
+        body: body.trim(),
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await supabase.from('wo_comments').insert(comment);
+        if (error) throw error;
+        showToast("Comment posted ✓");
+        return true;
+    } catch (e) {
+        console.error("Comment failed:", e);
+        return false;
+    }
+}
+
+// 2. Delete a comment
+export async function deleteTaskComment(commentId) {
+    if(!confirm("Delete this comment?")) return false;
+    try {
+        const { error } = await supabase.from('wo_comments').delete().eq('id', commentId);
+        if (error) throw error;
+        showToast("Comment removed");
+        return true;
+    } catch(e) {
+        console.error(e);
+        return false;
+    }
+}
