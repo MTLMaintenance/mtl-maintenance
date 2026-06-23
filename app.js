@@ -23,7 +23,7 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab   } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
@@ -38,7 +38,7 @@ import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumab
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
-import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown  } from './analytics.js';
+import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed } from './analytics.js';
 
 window.showLogin = () => {
     document.getElementById('auth-screen').style.display = 'flex';
@@ -119,6 +119,9 @@ window.signOut = () => { destroySession(); location.reload(); };
 window.togglePassVis = togglePassVis;
 window.signOut = signOut;
 window.startApp = startApp;
+window.clearAuditFilters = clearAuditFilters;
+window.renderDowntimeStats = () => renderDowntimeStats(state);
+window.renderTopPartsUsed = () => renderTopPartsUsed(state);
 
 window.removePartUsage = (usageId, taskId) => {
     removePartUsage(usageId, taskId, state).then(success => {
