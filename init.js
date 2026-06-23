@@ -1,6 +1,11 @@
 // init.js - Application Bootstrapping
 import { supabase, setSyncStatus } from './db.js';
 import { updateMetrics } from './dashboard.js';
+import { validateSession, fetchAbsences } from './db.js';
+import { fetchAllProfiles } from './profiles.js';
+import { showPinLogin } from './auth.js';
+import { showPanel, adjustMobileLayout } from './ui.js';
+import { applyUserPreferences } from './settings.js';
 
 export async function loadState() {
   // 1. Grab the global folder from the window
@@ -62,8 +67,7 @@ export function teleportModals() {
     });
 }
 
-import { showPanel, adjustMobileLayout } from './ui.js';
-import { applyUserPreferences } from './settings.js';
+
 
 export async function enterApp(currentUser, state, canFunc) {
   console.log("Building application interface...");
@@ -119,4 +123,31 @@ export async function enterApp(currentUser, state, canFunc) {
 
   // Force layout snap
   setTimeout(adjustMobileLayout, 100);
+}
+
+export async function startApp(SUPABASE_URL, SUPABASE_KEY) {
+  console.log("--- Starting Application Init ---");
+  
+  // 1. Initialize Database
+  window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
+  });
+  window.supabase = window._mpdb;
+
+  try {
+    await fetchAllProfiles(); 
+    const sessionData = await validateSession();
+
+    if(sessionData) {
+       // Auto-login logic
+       window.currentUser = sessionData.profiles;
+       await fetchAbsences(); 
+       window.enterApp(); 
+    } else {
+       showPinLogin();
+    }
+  } catch(e) { 
+    console.error("Startup error:", e);
+    showPinLogin(); 
+  }
 }
