@@ -100,3 +100,28 @@ export async function blockChatUser(username,displayName){
 export async function unblockChatUser(username,displayName){
   try{await window._mpdb.from('profiles').update({blocked_from_chat:false}).eq('username',username);showToast(displayName+' unblocked');renderDeletedMessages();}catch(e){showToast('Failed');}
 }
+
+export function populateAdminUserSelect() {
+    const select = document.getElementById('role-user-select');
+    if (!select) return;
+
+    let html = '<option value="">-- Select User --</option>';
+    const users = state.users_list_cache || [];
+    
+    users.forEach(u => {
+        html += `<option value="${u.username}">${u.full_name || u.username}</option>`;
+    });
+    
+    select.innerHTML = html;
+}
+// At the very end of app.js
+console.log("🚀 All modules loaded. Triggering Startup...");
+
+// We wait for the HTML to be fully ready before starting
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof startApp === 'function') {
+        startApp();
+    } else {
+        console.error("Critical Error: startApp function not found in app.js");
+    }
+});
