@@ -109,3 +109,50 @@ export async function suggestTools(woName, equipId, state, equipNameFunc) {
   } catch(e) { showToast('AI suggestion failed'); }
   finally { if(btn) { btn.textContent = '✨ AI Suggest'; btn.disabled = false; } }
 }
+
+const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
+
+// 1. Check for overdue tasks and queue emails
+export async function checkAndSendOverdueEmails(state, currentUser) {
+  try {
+    const schedules = JSON.parse(localStorage.getItem('mp_email_schedule') || '{}');
+    const now = new Date();
+    const toSend = [];
+
+    for(const [taskId, info] of Object.entries(schedules)) {
+      if(new Date(info.sendAt) <= now) {
+        const task = state.tasks.find(t => t.id === taskId);
+        if(task && task.status !== 'Completed') toSend.push(task);
+        delete schedules[taskId];
+      }
+    }
+    localStorage.setItem('mp_email_schedule', JSON.stringify(schedules));
+
+    if(toSend.length > 0) {
+      await sendOverdueEmailBatch(toSend, currentUser);
+    }
+  } catch(e) { console.log('Email check error:', e); }
+}
+
+// 2. The actual "Send" command to the email server
+async function sendOverdueEmailBatch(tasks, currentUser) {
+  try {
+    const { data: recentEmails } = await window._mpdb.from('email_log')
+      .select('*').eq('type','overdue')
+      .gte('sent_at', new Date(Date.now()-6*24*60*60*1000).toISOString());
+    
+    const recentIds = new Set((recentEmails||[]).flatMap(e=>e.task_ids||[]));
+    const newTasks = tasks.filter(t=>!recentIds.has(t.id));
+    if(!newTasks.length) return;
+
+    await window._mpdb.from('email_log').insert({
+      id: uid(), type:'overdue', recipient: OVERDUE_EMAIL_RECIPIENT,
+      subject: 'MTL Maintenance — Overdue Work Orders',
+      task_ids: newTasks.map(t=>t.id),
+    });
+
+    if(currentUser?.role === 'admin') {
+      showToast('📧 Overdue email queued');
+    }
+  } catch(e) { console.log('Email send error:', e); }
+}
