@@ -156,3 +156,33 @@ export async function addTaskCheckItem(taskId, text) {
   await persist('tasks', 'upsert', t);
   return true;
 }
+
+export async function deleteChecklistItem(taskId, index) {
+    // 1. Confirm with user
+    if (!confirm("Remove this item from the checklist?")) return;
+
+    // 2. Find the task in local memory
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task || !task.checklist) return;
+
+    // 3. Remove the specific item from the array
+    task.checklist.splice(index, 1);
+
+    try {
+        // 4. Update the database
+        await persist('tasks', 'upsert', task);
+        
+        // 5. Log the action for accountability
+        if (typeof logAuditAction === 'function') {
+            logAuditAction("Checklist Item Removed", `Deleted a step from task: ${task.name}`);
+        }
+
+        // 6. Refresh the modal live so the item vanishes
+        openTaskDetail(taskId);
+        showToast("Item removed ✓");
+
+    } catch (e) {
+        console.error("Failed to delete checklist item:", e);
+        showToast("Error updating checklist");
+    }
+}
