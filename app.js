@@ -1975,13 +1975,6 @@ function renderDeniedList() {
         </div>`).join('') || '<div style="color:var(--text3); padding:20px">No denied tools in history.</div>';
 }
 
-
-function updateWishCount() {
-    const count = state.wishlist.filter(w => w.status === 'pending').length;
-    const badge = document.getElementById('wish-count');
-    if(badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none'; }
-}
-
 async function notifyManagers(text) {
     const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
     for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
@@ -1997,52 +1990,6 @@ async function sendDMToUsername(username, text) {
     await window._mpdb.from('chat_messages').insert({ id: uid(), channel: ch, author: 'System', author_name: 'Tool Monitor', body: text, created_at: new Date().toISOString() });
 }
 
-function renderEquipTimeline(equipId) {
-  const container = document.getElementById('eq-timeline-content');
-  if(!container) return;
-
-  // Gather Work Orders
-  const tasks = state.tasks.filter(t => t.equipId === equipId).map(t => ({ 
-      date: t.due, 
-      title: t.name, 
-      body: t.notes, 
-      type: 'WO', 
-      status: t.status 
-  }));
-  
-  // Gather Observations
-  const obs = (state.observations || []).filter(o => o.equip_id === equipId).map(o => ({ 
-      date: o.created_at, 
-      title: o.severity.toUpperCase() + ' Obs', 
-      body: o.body, 
-      type: 'OBS', 
-      author: o.author,
-      photo: o.photo
-  }));
-  
-  // Combine and Sort (Newest at top)
-  const timeline = [...tasks, ...obs].sort((a,b) => new Date(b.date) - new Date(a.date));
-
-  if (!timeline.length) {
-    container.innerHTML = '<div style="color:var(--text3); font-size:13px; padding:20px 0">No history found for this machine.</div>';
-    return;
-  }
-
-  container.innerHTML = timeline.map(item => `
-    <div style="position:relative; padding-left:24px; margin-bottom:20px; border-left:2px solid var(--border)">
-      <!-- The Timeline Dot -->
-      <div style="position:absolute; left:-7px; top:0; width:12px; height:12px; border-radius:50%; background:${item.type === 'WO' ? 'var(--accent)' : 'var(--warning)'}; border:2px solid var(--bg)"></div>
-      
-      <div style="font-size:11px; color:var(--text3); font-weight:600">${fmtDate(item.date)}</div>
-      <div style="font-weight:600; font-size:14px; margin:2px 0">${item.title} ${item.status ? `<span class="badge bg" style="font-size:10px">${item.status}</span>` : ''}</div>
-      <div style="font-size:13px; color:var(--text2); line-height:1.4">${item.body || ''}</div>
-      
-      ${item.photo ? `<img src="${item.photo}" style="width:100px; height:100px; object-fit:cover; border-radius:4px; margin-top:8px; border:1px solid var(--border); cursor:pointer" onclick="viewPhoto('${item.photo}')"/>` : ''}
-      
-      ${item.author ? `<div style="font-size:11px; color:var(--text3); margin-top:4px">Logged by ${item.author}</div>` : ''}
-    </div>
-  `).join('');
-}
 
 // Switches between Details and Observations inside the tool popup
 function switchToolModalTab(tab) {
@@ -2148,92 +2095,6 @@ function resetToolForm() {
     console.log("✅ Edit form loaded for:", tool.tool_name || tool.name);
 }
 
-
-
-async function handleWishApproval(id) {
-    const req = state.wishlist.find(x => x.id === id);
-    if (!req) return;
-
-    // 1. Mark wish as approved
-    req.status = 'approved';
-    await window._mpdb.from('tool_requests').update({status: 'approved'}).eq('id', id);
-
-    // 2. Create the tool in Inventory as "On Order"
-    const newTool = {
-        id: uid(),
-        name: req.tool_name,
-        category: 'Other',
-        location: '📦 ON ORDER', // This marks it as not here yet
-        health: 100,
-        is_lost: false,
-        last_updated: new Date().toISOString()
-    };
-    
-    state.tools.push(newTool);
-    await window._mpdb.from('shop_tools').insert(newTool);
-
-    await notifyManagers(`✅ Tool Approved & Ordered: "${req.tool_name}" (Requested by ${req.requested_by})`);
-    
-    showToast("Approved! Tool added to Inventory as 'On Order'");
-     logAuditAction("Wishlist Approval", `Approved and Ordered: ${req.tool_name}`);
-  switchToolTab('inventory');
-}
-
-async function handleWishDenial(id) {
-    const reason = prompt("Why is this tool being denied? (This will be shown to the crew)");
-    if (reason === null) return;
-
-    const req = state.wishlist.find(x => x.id === id);
-    req.status = 'denied';
-    req.denial_reason = reason;
-
-    await window._mpdb.from('tool_requests').update({status: 'denied', denial_reason: reason}).eq('id', id);
-    
-    await sendDM(req.requested_by, `❌ Your tool request for "${req.tool_name}" was denied. Reason: ${reason}`);
-    
-    showToast("Request denied and moved to history");
-       logAuditAction("Wishlist Denial", `Denied "${req.tool_name}". Reason: ${reason}`);
-  renderWishlist();
-}
-
-async function promptWishlistCheck() {
-    const toolName = prompt("Enter the name of the tool you are suggesting:");
-    if (!toolName || toolName.trim() === "") return;
-    const category = prompt("What category? (e.g. Power Tool, Diagnostic, Hand Tool)", "Power Tool");
-    // THE FIX: We send both 'name' and 'tool_name' to ensure it satisfies Supabase
-    const newRequest = {
-        id: uid(),
-        name: toolName.trim(),        // Column 1
-        tool_name: toolName.trim(),   // Column 2 (Matching previous fix)
-        category: category || 'Other',
-        status: 'requested',          // This marks it as a Wishlist item
-        requested_by: currentUser.full_name || currentUser.username,
-        created_at: new Date().toISOString()
-    };
-    try {
-        console.log("Submitting suggestion:", newRequest);
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .insert([newRequest]);
-        if (error) {
-            console.error("Supabase Suggestion Error:", error.message);
-            alert("Could not submit suggestion: " + error.message);
-            return;
-        }
-        showToast("Suggestion submitted ✓");
-        // REFRESH DATA: Reload the tools into memory
-        if (typeof fetchTools === 'function') {
-            await fetchTools(); 
-        }
-        // REFRESH UI: If you are looking at the Wishlist, redraw it
-        if (typeof renderToolWishlist === 'function') {
-            renderToolWishlist();
-        }
-    } catch (e) {
-        console.error("Critical error in suggestion:", e);
-    }
-}
-    
 
 async function renderAdminPanel(){
   try {
@@ -2912,35 +2773,7 @@ function renderToolWishlist() {
             </tr>`;
     }).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
 }
-async function reviewWishlist(id) {
-    const tool = state.tools.find(t => t.id === id);
-    if (!tool) return;
 
-    const reason = tool.request_reason || tool.notes || "No reason provided.";
-    
-    // Simple Manager Review
-    const action = confirm(`Tool: ${tool.tool_name}\nRequested by: ${tool.requested_by}\n\nReason: "${reason}"\n\nClick OK to Approve (move to Inventory) or Cancel to leave it on the Wishlist.`);
-
-    if (action) {
-        // MOVE TO INVENTORY
-        showToast("Moving to Inventory...");
-        const { error } = await window._mpdb
-            .from('tool_requests')
-            .update({ 
-                status: 'available', 
-                location: 'Main Crib', 
-                health: 100 
-            })
-            .eq('id', id);
-
-        if (!error) {
-            await fetchTools();
-            renderTools();
-            renderToolWishlist();
-            showToast("Tool Approved ✓");
-        }
-    }
-}
 // 2. Updated Denied History Renderer
 function renderToolDeniedHistory() {
     const tableBody = document.getElementById('denied-table-body');
