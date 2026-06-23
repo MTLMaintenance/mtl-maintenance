@@ -74,3 +74,20 @@ export function updateAvatarPreview() {
         preview.style.color = 'white';
     }
 }
+
+// 1. Fetch every team member (for chat status dots)
+export async function fetchAllProfiles(state) {
+    try {
+        const { data, error } = await window._mpdb
+            .from('profiles')
+            .select('id, username, full_name, preferences');
+        
+        if (error) throw error;
+        state.profiles = data || [];
+        console.log(`Team profiles synced: ${state.profiles.length} members.`);
+        return state.profiles;
+    } catch (e) {
+        console.error("Error loading team profiles:", e);
+        return [];
+    }
+}
