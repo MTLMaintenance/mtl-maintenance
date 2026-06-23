@@ -236,7 +236,7 @@ export async function startApp() {
         currentUser = { ...profile, name: profile.full_name || sessionData.username };
        window._geminiKey = profile.gemini_key || localStorage.getItem('mp_gemini_key') || '';
        localStorage.setItem('mp_session', JSON.stringify(currentUser));
-        if (typeof applyUserPreferences === 'function') applyUserPreferences();
+       if (typeof applyUserPreferences === 'function') applyUserPreferences(currentUser);
         await fetchAbsences(); 
        await enterApp(); 
         return; 
