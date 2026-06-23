@@ -11,7 +11,7 @@ import {
 // --- INITIALIZATION BRIDGES ---
 import { loadState, teleportModals } from './init.js';
 import { handleGlobalSearch } from './search.js';
-import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames } from './auth.js';
+import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
@@ -29,7 +29,7 @@ import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTa
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
-import { exportCSV, exportPDF, exportHealthCSV } from './reports.js';
+import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
@@ -88,6 +88,12 @@ window.addObservation = (id) => addObservation(id, state, currentUser);
 window.runRecurrenceEngine = () => runRecurrenceEngine(state);
 window.exportHealthCSV = () => exportHealthCSV(state, calcHealth);
 window.createBulkWO = createBulkWO;
+window.can = (permission) => can(permission, currentUser);
+window.printQRCode = (id) => printQRCode(id, state);
+window.printMachineHistory = (id) => printMachineHistory(id, state);
+window.signOut = () => { destroySession(); location.reload(); };
+window.togglePassVis = togglePassVis;
+
 
 window.removePartUsage = (usageId, taskId) => {
     removePartUsage(usageId, taskId, state).then(success => {
@@ -318,7 +324,7 @@ async function startApp() {
         await fetchAllProfiles(); 
     }
 
-    const sessionData = await validateSession();
+    const sessionData = await ();
     
     if(sessionData) {
       const { data: profile } = await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single();
@@ -350,39 +356,8 @@ async function startApp() {
 // ============================================================
 // AUTH
 // ============================================================
-function togglePassVis(inputId, btnId) {
-  const input = document.getElementById(inputId);
-  document.getElementById(btnId).style.opacity = input.type==='password' ? '1' : '0.6';
-  input.type = input.type==='password' ? 'text' : 'password';
-}
 
-function showLogin() {
-    // This is the main function that resets the auth screen
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('login-view').style.display = 'block';
-    document.getElementById('register-view').style.display = 'none';
-    document.getElementById('pending-view').style.display = 'none';
-    
-    // Go back to the Name List by default
-    backToNames();
-    showPinLogin();
-}
-function showRegister() {
-    // Hide everything else
-    document.getElementById('login-view').style.display = 'none';
-    document.getElementById('login-stage-names').style.display = 'none';
-    document.getElementById('login-stage-pin').style.display = 'none';
-    document.getElementById('pending-view').style.display = 'none';
 
-    // Show registration
-    document.getElementById('register-view').style.display = 'grid';
-    document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
-}
-function showPending() {
-  document.getElementById('login-view').style.display='none';
-  document.getElementById('register-view').style.display='none';
-  document.getElementById('pending-view').style.display='block';
-}
 function showErr(msg) { const e=document.getElementById('auth-err'); e.textContent=msg; e.style.display='block'; }
 
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -500,19 +475,6 @@ async function doRegister() {
     showErr('Registration failed. Try again.'); 
   }
 }
-
-
-async function signOut() {
-  await destroySession();
-  localStorage.removeItem('mp_session');
-  currentUser=null;
-  document.getElementById('app').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
-  showLogin();
-}
- let html5QrCode = null;
-
-
 
 function computeMonthlyCosts() {
   const now=new Date();
@@ -1098,56 +1060,6 @@ async function sendOverdueEmailBatch(tasks) {
 // Run email check on app load
 setTimeout(checkAndSendOverdueEmails, 3000);
 
-
-// QR CODES (Admin only)
-// ============================================================
-function printQRCode(equipId) {
-  const equip = state.equipment.find(e=>e.id===equipId); if(!equip) return;
-  const url = window.location.origin + window.location.pathname + '?equip=' + equipId;
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
-  const win = window.open('','_blank');
-  
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR — ${equip.name}</title>
-  <style>
-    body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff}
-    .card{text-align:center;padding:32px;border:2px solid #1a1a18;border-radius:12px;max-width:300px}
-    h2{font-size:18px;margin:16px 0 4px}
-    .sub{font-size:13px;color:#666;margin-bottom:8px}
-    .serial{font-size:12px;color:#999}
-    .url{font-size:10px;color:#aaa;margin-top:12px;word-break:break-all}
-    @media print{.no-print{display:none}}
-  </style></head><body>
-  <div class="card">
-    <div style="font-size:28px">⚙</div>
-    <h2>${equip.name}</h2>
-    <div class="sub">${equip.type||''}</div>
-    <div class="serial">S/N: ${equip.serial||'—'}</div>
-    <img src="${qrUrl}" style="margin:16px 0;width:220px;height:220px" alt="QR Code"/>
-    <div class="url">Scan to view maintenance history</div>
-    <div style="margin-top:16px" class="no-print">
-      <button onclick="window.print()" style="padding:8px 20px;cursor:pointer;font-size:14px;border:1px solid #000;border-radius:8px;background:#fff">🖨 Print</button>
-    </div>
-  </div>
-  </body></html>`);
-  
-  win.document.close();
-}
-
-// Handle QR code deep link on load
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const equipId = params.get('equip');
-  if(equipId) {
-    const checkReady = setInterval(() => {
-      if(currentUser && state.equipment.length) {
-        clearInterval(checkReady);
-        showPanel('equipment');
-        openEquipDetail(equipId);
-      }
-    }, 300);
-  }
-})();
-
 // ============================================================
 // PATCH: saveEquipment — add budget fields
 // ============================================================
@@ -1200,19 +1112,6 @@ await logAuditAction(
 const _origRenderDashboard = renderDashboard;
 const _origEnterApp = enterApp;
 const _origRenderEquipmentTable = renderEquipmentTable;
-const PERMISSIONS = {
-  admin:   {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:true,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
-  manager: {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:false,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
-  tech:    {canCreate:true,canEdit:true,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false,canManageTools:true},
-  viewer:  {canCreate:false,canEdit:false,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false,canManageTools:false},
-};
-(function(){try{const s=JSON.parse(localStorage.getItem('mp_permissions')||'null');if(s){['manager','tech','viewer'].forEach(r=>{if(s[r])PERMISSIONS[r]={...PERMISSIONS[r],...s[r]};});}}catch(e){}})();
-function can(permission){
-  if(!currentUser)return false;
-  if(currentUser.custom_permissions&&currentUser.custom_permissions[permission]!==undefined)return!!currentUser.custom_permissions[permission];
-  return!!(PERMISSIONS[currentUser.role||'viewer']?.[permission]);
-}
-
 // State additions
 state.downtimeLog=[];state.observations=[];state.chatMessages=[];
 state.checklistTemplates=[
@@ -1224,43 +1123,6 @@ state.checklistTemplates=[
 ];
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
-
-
-
-function printMachineHistory(equipId){
-  const e=state.equipment.find(x=>x.id===equipId);if(!e)return;
-  const tasks=state.tasks.filter(t=>t.equipId===equipId).sort((a,b)=>new Date(b.due)-new Date(a.due));
-  const docs=state.documents.filter(d=>d.equip_id===equipId);
-  const dt=getEquipDowntime(equipId);const score=calcHealth(equipId);
-  const totalCost=tasks.reduce((a,t)=>a+(t.cost||0),0);
-  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>History — ${e.name}</title>
-  <style>
-    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}
-    h1{font-size:20px;margin-bottom:3px}h2{font-size:13px;font-weight:700;text-transform:uppercase;color:#185FA5;border-bottom:1.5px solid #185FA5;padding-bottom:4px;margin:22px 0 8px}
-    .kpis{display:flex;gap:10px;margin-bottom:16px}.kpi{background:#f5f5f3;border-radius:6px;padding:10px 14px;min-width:100px}.kpi-l{font-size:10px;text-transform:uppercase;color:#888}.kpi-v{font-size:18px;font-weight:700;margin-top:2px}
-    table{width:100%;border-collapse:collapse}th{font-size:10px;text-align:left;color:#888;padding:5px 7px;border-bottom:2px solid #eee}td{padding:6px 7px;border-bottom:1px solid #eee;font-size:11px}
-    @media print{.no-print{display:none}}
-    .btn-print{padding:10px 25px; font-weight:bold; cursor:pointer; background:#fff; border:2px solid #1a1a18; border-radius:8px; margin-top:30px}
-  </style></head><body>
-  <h1>⚙ ${e.name} History</h1>
-  <div class="kpis">
-    <div class="kpi"><div class="kpi-l">Total WOs</div><div class="kpi-v">${tasks.length}</div></div>
-    <div class="kpi"><div class="kpi-l">Total Cost</div><div class="kpi-v">$${totalCost.toLocaleString()}</div></div>
-  </div>
-  <table><thead><tr><th>Name</th><th>Due</th><th>Cost</th><th>Status</th></tr></thead><tbody>
-  ${tasks.map(t=>`<tr><td><b>${t.name}</b></td><td>${fmtDate(t.due)}</td><td>$${(t.cost||0).toLocaleString()}</td><td>${t.status}</td></tr>`).join('')}
-  </tbody></table>
-  <div class="no-print" style="text-align:center">
-    <button class="btn-print" onclick="window.print()">🖨 Print / Save as PDF</button>
-  </div>
-  </body></html>`;
-  
-  const w=window.open('','_blank');
-  if(w){ w.document.write(html); w.document.close(); }
-}
-
 
 
   function refreshObsList(equipId) {
@@ -2110,10 +1972,6 @@ async function resetUserPassword(userId,userName){
 const PARTS_CATALOG_URLS={'cat':'https://parts.cat.com','caterpillar':'https://parts.cat.com','komatsu':'https://parts.komatsu.com','deere':'https://parts.deere.com','john deere':'https://parts.deere.com','kubota':'https://www.kubotausa.com/parts-and-service','volvo':'https://www.volvoce.com/united-states/en-us/services/parts/','bobcat':'https://www.bobcat.com/en/parts-and-service/parts','case':'https://www.caseparts.com','jcb':'https://parts.jcb.com'};
 function getPartsCatalogUrl(name,type,mfr){const text=((mfr||'')+' '+name+' '+(type||'')).toLowerCase();for(const[brand,url]of Object.entries(PARTS_CATALOG_URLS)){if(text.includes(brand))return url;}return 'https://www.google.com/search?q='+encodeURIComponent((mfr||name)+' parts catalog');}
 function openPartsCatalog(equipId){if(window.innerWidth<768){showToast('Parts catalog is only available on desktop');return;}const e=state.equipment.find(x=>x.id===equipId);if(!e)return;window.open(getPartsCatalogUrl(e.name,e.type,e.manufacturer),'_blank');}
-
-// ── BUG REPORT ────────────────────────────────────────────────
-
-function printTemplate(id){const tpl=state.checklistTemplates.find(t=>t.id===id);if(!tpl)return;const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tpl.name}</title><style>body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px;max-width:700px}h1{font-size:18px;margin:0 0 4px}.meta{font-size:11px;color:#888;margin-bottom:20px}.item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #eee}.checkbox{width:20px;height:20px;border:2px solid #333;border-radius:3px;flex-shrink:0;margin-top:1px}.num{width:20px;font-size:11px;color:#888;text-align:right;flex-shrink:0;margin-top:2px}.label{flex:1;font-size:13px;line-height:1.4}.notes{margin-top:6px;border:1px solid #ddd;border-radius:3px;min-height:30px}.footer{margin-top:28px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#aaa}.sign-row{display:flex;gap:24px;margin-top:24px}.sign-field{flex:1;border-bottom:1px solid #333;padding-bottom:4px;font-size:11px;color:#888}@media print{.no-print{display:none}}</style></head><body><h1>⚙ ${tpl.name}</h1><div class="meta">${tpl.model?'Model: '+tpl.model+' · ':''}${tpl.type?'Type: '+tpl.type+' · ':''}${tpl.items.length} items · MTL Maintenance</div><div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px"><div>Equipment: <span style="border-bottom:1px solid #333;display:inline-block;width:180px">&nbsp;</span></div><div>Date: <span style="border-bottom:1px solid #333;display:inline-block;width:120px">&nbsp;</span></div><div>Technician: <span style="border-bottom:1px solid #333;display:inline-block;width:140px">&nbsp;</span></div></div>${tpl.items.map((item,i)=>`<div class="item"><div class="num">${i+1}</div><div class="checkbox"></div><div class="label">${item}<div class="notes"></div></div></div>`).join('')}<div class="sign-row"><div class="sign-field">Technician signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div><div class="sign-field">Supervisor signature: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></div><div class="footer"><div>MTL Maintenance — ${tpl.name}</div><div>Printed ${date}</div></div><div class="no-print" style="text-align:center;padding:20px"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer">🖨 Print / Save PDF</button></div><script>window.onload=()=>setTimeout(()=>window.print(),600)<\/script></body></html>`;const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}else showToast('Allow popups to print');}
 
 // ── PERMANENT DELETE MESSAGE ──────────────────────────────────
 async function permanentDeleteMessage(deletedId) {
