@@ -125,3 +125,41 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Critical Error: startApp function not found in app.js");
     }
 });
+
+export function renderUsersTable(state) {
+    const tableBody = document.getElementById('users-table-body');
+    if (!tableBody) return;
+
+    const active = (state.users_list_cache || []).filter(p => p.status === 'approved');
+    const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
+    
+    tableBody.innerHTML = active.map(p => `
+        <tr>
+            <td><b>${p.full_name || p.username}</b></td>
+            <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
+            <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
+            <td>
+              <div class="flex-gap-5">
+                <button class="btn-secondary btn-sm" onclick="window.promptResetPin('${p.id}')">🔑 PIN</button>
+                <button class="btn-secondary btn-sm" onclick="window.openPermissionsCard('${p.id}')">🛡️ Perms</button>
+                <button class="btn-danger btn-sm" onclick="window.deleteUser('${p.id}')">Delete</button>
+              </div>
+            </td>
+        </tr>`).join('');
+}
+
+export function renderPermissionsMatrix(PERM_LABELS, PERMISSIONS) {
+    const roles = ['admin', 'manager', 'tech', 'viewer'];
+    const container = document.getElementById('permissions-table-body');
+    if (!container) return;
+
+    container.innerHTML = Object.entries(PERM_LABELS).map(([key, label]) => `
+        <tr>
+            <td class="perm-label">${label}</td>
+            ${roles.map(role => `
+                <td class="text-center">
+                    ${role === 'admin' ? '✅' : `<input type="checkbox" ${PERMISSIONS[role]?.[key] ? 'checked' : ''} 
+                    onchange="window.togglePermission('${role}','${key}',this.checked)">`}
+                </td>`).join('')}
+        </tr>`).join('');
+}
