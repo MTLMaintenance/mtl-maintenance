@@ -196,3 +196,27 @@ export async function changeUserRole(renderUsersTableFunc, state) {
     renderUsersTableFunc(state);
   } catch(e) { showToast("Failed to update"); }
 }
+
+export async function resetUserPassword(userId, userName) {
+  const newPass = prompt('Set a new password for ' + userName + ':');
+  if(!newPass || newPass.trim().length < 4) return;
+  
+  const confirm2 = prompt('Confirm new password:');
+  if(newPass !== confirm2) return alert("Passwords do not match");
+
+  try {
+    const hashed = await window.hashPassword(newPass.trim());
+    await window._mpdb.from('profiles').update({ password_hash: hashed }).eq('id', userId);
+    showToast(userName + ' password reset ✓');
+  } catch(e) { showToast('Failed'); }
+}
+
+export async function unlockUser(userId, userName) {
+  try {
+    await window._mpdb.from('profiles').update({ 
+        login_attempts: 0, 
+        locked_until: null 
+    }).eq('id', userId);
+    showToast(userName + ' unlocked ✓');
+  } catch(e) { showToast('Failed to unlock'); }
+}
