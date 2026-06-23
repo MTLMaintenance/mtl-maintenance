@@ -152,3 +152,27 @@ export async function syncOfflineQueue() {
     showToast(`${failed.length} items failed to sync`);
   }
 }
+
+export async function validateSession() {
+  const token = localStorage.getItem('mp_session_token');
+  if(!token) return null;
+  try {
+    const { data: session, error: sErr } = await supabase.from('app_sessions').select('*').eq('token', token).single();
+    if(!session || sErr || new Date(session.expires_at) < new Date()) {
+      localStorage.removeItem('mp_session_token');
+      return null;
+    }
+    // Refresh the profile data
+    const { data: profile } = await supabase.from('profiles').select('*').eq('username', session.username).single();
+    return { ...session, profiles: profile };
+  } catch(e) { return null; }
+}
+
+export async function destroySession() {
+  const token = localStorage.getItem('mp_session_token');
+  if(token) {
+    try { await supabase.from('app_sessions').delete().eq('token', token); } catch(e) {}
+    localStorage.removeItem('mp_session_token');
+    localStorage.removeItem('mp_session');
+  }
+}
