@@ -112,7 +112,7 @@ window.printMachineHistory = (id) => printMachineHistory(id, state);
 window.signOut = () => { destroySession(); location.reload(); };
 window.togglePassVis = togglePassVis;
 window.signOut = signOut;
-
+window.startApp = startApp;
 
 window.removePartUsage = (usageId, taskId) => {
     removePartUsage(usageId, taskId, state).then(success => {
@@ -185,6 +185,9 @@ window.openAddConsumable = () => {
     openModal('consumable-modal');
 };
 
+document.addEventListener('DOMContentLoaded', () => {
+    startApp(); 
+});
 
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
@@ -204,7 +207,7 @@ let currentUser = null;
 // ============================================================
 // INIT
 // ============================================================
-async function startApp() {
+export async function startApp() {
   console.log("--- Starting Application Init ---");
   try { localStorage.removeItem('mp_users'); } catch(e) {}
   
