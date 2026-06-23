@@ -4,7 +4,7 @@ import {
     staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
     calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
-    _tempFileData, taskPinEntry, currentTargetTaskId,state,ICONS,  state, SUPABASE_URL, SUPABASE_KEY, pendingPhotos, woPartsAdded
+    _tempFileData, taskPinEntry, currentTargetTaskId,ICONS,  state, SUPABASE_URL, SUPABASE_KEY, pendingPhotos, woPartsAdded
 } from './state.js';
 
 
