@@ -2720,3 +2720,4 @@ async function addPartToActiveTask(taskId) {
     showToast("Part logged live ✓");
 }
 
+    } 
