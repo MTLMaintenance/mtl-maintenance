@@ -324,7 +324,8 @@ async function startApp() {
         await fetchAllProfiles(); 
     }
 
-    const sessionData = await ();
+    const sessionData = await validateSession();
+
     
     if(sessionData) {
       const { data: profile } = await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single();
