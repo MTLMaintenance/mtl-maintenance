@@ -51,7 +51,7 @@ export async function createSession(username, userId) {
   } catch(e) { console.error('Session create failed:', e); }
   return token;
 }
-export async function () {
+export async function validateSession () {
   const token = localStorage.getItem('mp_session_token');
   if(!token) return null;
   try {
