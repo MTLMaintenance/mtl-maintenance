@@ -61,3 +61,51 @@ export async function submitBugReport(reportData, currentUser) {
     return false;
   }
 }
+
+// 1. Save the Gemini API Key to Supabase and LocalStorage
+export async function saveGeminiKey(currentUser) {
+  const keyInput = document.getElementById('gemini-key-input');
+  const key = keyInput?.value.trim();
+  
+  if(!key || key.startsWith('•')) { 
+      showToast('Enter a valid API key'); 
+      return; 
+  }
+
+  window._geminiKey = key;
+  localStorage.setItem('mp_gemini_key', key);
+
+  try {
+    await window._mpdb.from('profiles').update({ gemini_key: key }).eq('id', currentUser.id);
+    keyInput.value = '••••••••••••••••';
+    showToast('Gemini API key synced ✓');
+  } catch(e) { console.error(e); }
+}
+
+// 2. AI Logic: Suggest tools for a specific job name
+export async function suggestTools(woName, equipId, state, equipNameFunc) {
+  if(!window._geminiKey) return showToast('Set Gemini Key in Admin first');
+  
+  const btn = document.getElementById('suggest-tools-btn');
+  if(btn) { btn.textContent = '⏳ Thinking...'; btn.disabled = true; }
+
+  try {
+    const prompt = `Suggest tools for work order: "${woName}" on machine: ${equipNameFunc(equipId, state)}. Respond ONLY with a comma-separated list.`;
+
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    const data = await response.json();
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    if(result) {
+      document.getElementById('tools-suggestion-text').textContent = result;
+      document.getElementById('tools-suggestion-area').style.display = 'block';
+      window._lastToolSuggestion = result;
+    }
+  } catch(e) { showToast('AI suggestion failed'); }
+  finally { if(btn) { btn.textContent = '✨ AI Suggest'; btn.disabled = false; } }
+}
