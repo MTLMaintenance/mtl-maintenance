@@ -4,7 +4,7 @@ import {
     staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
     calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
-    _tempFileData, taskPinEntry, currentTargetTaskId,ICONS,  state, SUPABASE_URL, SUPABASE_KEY, pendingPhotos, woPartsAdded
+    _tempFileData, taskPinEntry, currentTargetTaskId,ICONS,  state, pendingPhotos, woPartsAdded
 } from './state.js';
 
 
@@ -19,7 +19,7 @@ import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,rende
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools, checkAndSendOverdueEmails  } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
-import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
+import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages  } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment  } from './equipment.js';
