@@ -17,13 +17,13 @@ import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, f
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
-import { scanInvoiceWithAI, submitBugReport } from './services.js';
+import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab   } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
@@ -122,6 +122,15 @@ window.startApp = startApp;
 window.clearAuditFilters = clearAuditFilters;
 window.renderDowntimeStats = () => renderDowntimeStats(state);
 window.renderTopPartsUsed = () => renderTopPartsUsed(state);
+window.saveGeminiKey = () => saveGeminiKey(currentUser);
+window.suggestTools = () => suggestTools(document.getElementById('t-name').value, document.getElementById('t-equip').value, state, equipName);
+window.syncAdminRoleSelects = () => syncAdminRoleSelects(state);
+window.changeUserRole = () => changeUserRole(renderUsersTable, state);
+window.acceptToolSuggestion = () => {
+    const field = document.getElementById('t-tools');
+    if(field) field.value = window._lastToolSuggestion;
+    document.getElementById('tools-suggestion-area').style.display = 'none';
+};
 
 window.removePartUsage = (usageId, taskId) => {
     removePartUsage(usageId, taskId, state).then(success => {
@@ -1098,28 +1107,6 @@ async function quickGroupChange(userId, newGroup) {
         renderUsersTable();
     }
 }
-async function changeUserRole() {
-  const userId = document.getElementById('role-user-select').value;
-  const newRole = document.getElementById('role-select').value;
-  const newGroup = document.getElementById('group-select').value;
-
-  if (!userId) { showToast("Select a user first"); return; }
-
-  try {
-    const { error } = await window._mpdb.from('profiles').update({
-      role: newRole,
-      group_tag: newGroup || null
-    }).eq('id', userId);
-
-    if (error) throw error;
-
-    showToast("User permissions updated ✓");
-    renderUsersTable(); // Refresh the table to show the change
-  } catch(e) {
-    showToast("Failed to update user");
-  }
-}
-
 
 async function saveUserPermissions() {
     if (!editingUserId) return;
@@ -1873,110 +1860,6 @@ async function viewInvoicePhoto(photoPath) {
 }
 
 
-// ── GEMINI KEY MANAGEMENT ─────────────────────────────────────
-async function saveGeminiKey() {
-  const keyInput = document.getElementById('gemini-key-input');
-  const key = keyInput?.value.trim();
-  
-  if(!key || key.startsWith('•')) { 
-      showToast('Enter a valid API key'); 
-      return; 
-  }
-
-  // 1. Save to active memory
-  window._geminiKey = key;
-
-  // 2. Save to LocalStorage (Instant)
-  localStorage.setItem('mp_gemini_key', key);
-
-  // 3. Save to Supabase (Permanent across all devices)
-  try {
-    const { error } = await window._mpdb
-      .from('profiles')
-      .update({ gemini_key: key })
-      .eq('id', currentUser.id);
-
-    if (error) throw error;
-    
-    document.getElementById('gemini-key-status').textContent = '✅ Gemini key synced to cloud';
-    keyInput.value = '••••••••••••••••';
-    showToast('Gemini API key saved & synced ✓');
-  } catch(e) {
-    console.error("Cloud sync failed:", e);
-    showToast('Saved locally, but cloud sync failed.');
-  }
-}
-
-// ── AI TOOL SUGGESTIONS ───────────────────────────────────────
-let _lastToolSuggestion = '';
-
-async function suggestTools() {
-  if(!window._geminiKey) {
-    showToast('Set your Gemini API key in Admin → Settings first');
-    return;
-  }
-  const woName = document.getElementById('t-name')?.value.trim();
-  const equipId = document.getElementById('t-equip')?.value;
-  if(!woName) { showToast('Enter a work order name first'); return; }
-
-  const btn = document.getElementById('suggest-tools-btn');
-  if(btn) { btn.textContent = '⏳ Thinking...'; btn.disabled = true; }
-
-  try {
-    // Get relevant past work orders for context
-    const equip = state.equipment.find(e=>e.id===equipId);
-    const pastWOs = state.tasks
-      .filter(t=>t.status==='Completed' && t.tools && (
-        (equipId && t.equipId===equipId) ||
-        t.name.toLowerCase().split(' ').some(w=>w.length>3&&woName.toLowerCase().includes(w))
-      ))
-      .slice(0,10)
-      .map(t=>`Job: "${t.name}" on ${equipName(t.equipId)} — Tools: ${t.tools}`).join('\n');
-
-    const prompt = `You are a heavy equipment maintenance expert. Based on the work order history below, suggest the tools needed for this new job.
-
-Equipment: ${equip?.name || 'Unknown'} (${equip?.type || ''})
-New work order: "${woName}"
-
-Past similar work orders:
-${pastWOs || 'No relevant history yet - suggest based on job name and equipment type'}
-
-Respond with ONLY a comma-separated list of tools needed. Be specific and concise. Example: "3/4 socket set, torque wrench 150 ft-lbs, hydraulic pressure gauge, drain pan, shop rags"`;
-
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 200, temperature: 0.3 }
-      })
-    });
-
-    const data = await response.json();
-    const suggestion = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-
-    if(suggestion) {
-      _lastToolSuggestion = suggestion;
-      document.getElementById('tools-suggestion-text').textContent = suggestion;
-      document.getElementById('tools-suggestion-area').style.display = 'block';
-    } else {
-      showToast('No suggestion available — fill in manually');
-    }
-  } catch(e) {
-    console.error('Tool suggestion error:', e);
-    showToast('AI suggestion failed — fill in manually');
-  } finally {
-    if(btn) { btn.textContent = '✨ AI Suggest'; btn.disabled = false; }
-  }
-}
-
-function acceptToolSuggestion() {
-  const toolsField = document.getElementById('t-tools');
-  if(toolsField && _lastToolSuggestion) {
-    toolsField.value = _lastToolSuggestion;
-  }
-  document.getElementById('tools-suggestion-area').style.display = 'none';
-}
 
 async function toggleToolStatus(id) {
   const t = state.tools.find(x => x.id === id);
@@ -2351,25 +2234,7 @@ async function promptWishlistCheck() {
     }
 }
     
-function syncAdminRoleSelects() {
-    const userId = document.getElementById('role-user-select').value;
-    if (!userId) return;
 
-    // Find the user's data in our local state
-    // Note: We check profiles in loadState, so we need to ensure they are accessible
-    // Let's fetch the specific user from the state we loaded in renderUsersTable
-    const { data: profile } = state.users_list_cache ? { data: state.users_list_cache.find(u => u.id === userId) } : { data: null };
-
-    if (profile) {
-        // Set the Role dropdown to match the user
-        document.getElementById('role-select').value = profile.role || 'tech';
-        
-        // Set the Group dropdown to match the user
-        document.getElementById('group-select').value = profile.group_tag || '';
-        
-        console.log(`Syncing UI for ${profile.username}: Role=${profile.role}, Group=${profile.group_tag}`);
-    }
-}
 async function renderAdminPanel(){
   try {
     const { data: profiles } = await window._mpdb.from('profiles').select('*').order('created_at',{ascending:false});
@@ -3090,80 +2955,6 @@ function renderToolDeniedHistory() {
             <td style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
             <td><span class="badge bd">DENIED</span></td>
         </tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No denied items.</td></tr>';
-}
-async function checkToolArrivals() {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Find tools that are 'ordered' and the arrival date has passed or is today
-    const arrived = (state.tools || []).filter(t => t.status === 'ordered' && t.expected_arrival <= today);
-
-    for (let tool of arrived) {
-        await window._mpdb.from('tool_requests').update({ 
-            status: 'available',
-            location: 'Main Crib',
-            health: 100 
-        }).eq('id', tool.id);
-    }
-    
-    if (arrived.length > 0) await fetchTools();
-}
-
-window.openReviewModal = async function(id) {
-    console.log("🔍 Attempting to Review Tool ID:", id);
-    
-    // 1. Try to find the tool in local memory first
-    const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
-    let tool = localList.find(t => t.id === id);
-
-    // 2. THE FIX: If not found in memory, fetch it ly from Supabase
-    if (!tool) {
-        console.warn("Tool not found in local memory. Fetching from Supabase...");
-        try {
-            const { data, error } = await window._mpdb
-                .from('tool_requests')
-                .select('*')
-                .eq('id', id)
-                .single();
-            
-            if (data) {
-                tool = data;
-            } else {
-                alert("Error: Could not find this request in the database.");
-                return;
-            }
-        } catch (err) {
-            console.error("Fetch failed:", err);
-            return;
-        }
-    }
-
-    // 3. Save the ID globally for the buttons to use
-    window.currentReviewId = id;
-
-    // 4. Fill the Modal UI
-    const title = document.getElementById('rev-title');
-    const reason = document.getElementById('rev-reason');
-    
-    if (title) title.textContent = "Review: " + (tool.tool_name || tool.name);
-    if (reason) {
-        reason.innerHTML = `
-            <div style="margin-bottom:8px;"><b>Requested by:</b> ${tool.requested_by || 'Unknown'}</div>
-            <div><b>Reason:</b> ${tool.request_reason || tool.notes || 'No reason provided.'}</div>
-        `;
-    }
-
-    // 5. Clear the manager inputs
-    if (document.getElementById('rev-date')) document.getElementById('rev-date').value = "";
-    if (document.getElementById('rev-denial-reason')) document.getElementById('rev-denial-reason').value = "";
-
-    // 6. Physically show the modal
-    if (typeof openModal === 'function') {
-        openModal('review-modal');
-    } else {
-        document.getElementById('review-modal').style.display = 'flex';
-    }
-    
-    console.log("✅ Review modal successfully loaded.");
 }
 
 async function saveWishRequest() {
