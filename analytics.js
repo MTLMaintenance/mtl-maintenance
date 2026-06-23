@@ -53,3 +53,20 @@ export function renderPlannedVsUnplanned(tasks) {
             <div style="width:30px; text-align:right;">${planned}</div>
         </div>`;
 }
+
+export function renderTaskBreakdown(tasks, badgeFunc) {
+    const el = document.getElementById('task-breakdown');
+    if(!el) return;
+    const stats = [
+        { label: 'Completed', count: tasks.filter(t => t.status === 'Completed').length, color: 'var(--success)' },
+        { label: 'Open', count: tasks.filter(t => t.status === 'Open').length, color: 'var(--accent)' },
+        { label: 'Overdue', count: tasks.filter(t => t.status === 'Overdue').length, color: 'var(--danger)' }
+    ];
+    const total = tasks.length || 1;
+    el.innerHTML = stats.map(s => `
+        <div class="stat-row">
+            <div style="width:80px">${s.label}</div>
+            <div class="stat-bar-wrap"><div class="stat-bar" style="width:${(s.count/total)*100}%; background:${s.color}"></div></div>
+            <div style="width:30px; text-align:right"><b>${s.count}</b></div>
+        </div>`).join('');
+}
