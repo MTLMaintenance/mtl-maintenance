@@ -127,3 +127,20 @@ export function togglePassVis(inputId, btnId) {
   if (!input) return;
   input.type = input.type === 'password' ? 'text' : 'password';
 }
+
+export async function signOut() {
+    // 1. Tell the database to end the session
+    if (typeof window.destroySession === 'function') {
+        await window.destroySession();
+    }
+
+    // 2. Clear local storage so the app "forgets" the user
+    localStorage.removeItem('mp_session');
+    localStorage.removeItem('mp_session_token');
+    
+    // 3. Reset the global user variable
+    window.currentUser = null;
+
+    // 4. Reload the page to show the login screen
+    window.location.reload();
+}
