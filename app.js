@@ -1620,7 +1620,9 @@ function renderAlerts(){
 
 async function enterApp() {
   console.log("Entering application...");
-  
+   if (window.currentUser) {
+      currentUser = window.currentUser; 
+  }
   // 1. Initial UI Setup & Session Persistence
   try { 
       localStorage.setItem('mp_session', JSON.stringify(currentUser)); 
