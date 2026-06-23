@@ -15,7 +15,7 @@ import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
-import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
+import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
@@ -25,7 +25,7 @@ import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showM
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
-import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
+import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
@@ -52,9 +52,6 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-
-let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
-
 window.handlePhotoUpload = (input, key) => handlePhotoUpload(input, key, pendingPhotos, refreshPhotoGrid);
 window.refreshPhotoGrid = (key) => refreshPhotoGrid(key, pendingPhotos);
 window.showMentionDropdown = showMentionDropdown;
@@ -126,6 +123,10 @@ window.saveGeminiKey = () => saveGeminiKey(currentUser);
 window.suggestTools = () => suggestTools(document.getElementById('t-name').value, document.getElementById('t-equip').value, state, equipName);
 window.syncAdminRoleSelects = () => syncAdminRoleSelects(state);
 window.changeUserRole = () => changeUserRole(renderUsersTable, state);
+window.renderEquipTimeline = (id) => renderEquipTimeline(id, state, fmtDate);
+window.renderMiniTimeline = (id) => renderMiniTimeline(id, state, fmtDate, badge);
+window.handleWishApproval = (id) => handleWishApproval(id, state).then(() => window.renderWishlist());
+window.handleWishDenial = (id) => handleWishDenial(id, state).then(() => window.renderWishlist());
 window.acceptToolSuggestion = () => {
     const field = document.getElementById('t-tools');
     if(field) field.value = window._lastToolSuggestion;
@@ -206,6 +207,8 @@ window.openAddConsumable = () => {
 document.addEventListener('DOMContentLoaded', () => {
     startApp(); 
 });
+
+let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
 
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
