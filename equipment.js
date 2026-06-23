@@ -277,3 +277,48 @@ export async function deleteQuickSpec(equipId, key) {
         showToast("Failed to save link");
     }
 }
+
+export function globalEditObs(id, state) {
+    const obs = state.observations.find(o => o.id === id);
+    if (!obs) return alert("Error: Observation data not found.");
+
+    const idField = document.getElementById('edit-obs-id');
+    const sevField = document.getElementById('edit-obs-sev');
+    const bodyField = document.getElementById('edit-obs-body');
+    const modalBackdrop = document.getElementById('obs-edit-modal-backdrop');
+
+    if (idField && sevField && bodyField && modalBackdrop) {
+        idField.value = id;
+        sevField.value = obs.severity;
+        bodyField.value = obs.body;
+        modalBackdrop.style.display = 'flex';
+    }
+}
+
+export async function saveObservationChange(state) {
+    const idEl = document.getElementById('edit-obs-id');
+    const bodyEl = document.getElementById('edit-obs-body');
+    const sevEl = document.getElementById('edit-obs-sev');
+
+    const obsId = idEl.value;
+    const newBody = bodyEl.value.trim();
+    const newSev = sevEl.value;
+
+    try {
+        const { error } = await window._mpdb.from('observations').update({ body: newBody, severity: newSev }).eq('id', obsId);
+        if (error) throw error;
+
+        const obsIndex = state.observations.findIndex(o => o.id === obsId);
+        if (obsIndex !== -1) {
+            state.observations[obsIndex].body = newBody;
+            state.observations[obsIndex].severity = newSev;
+        }
+        
+        document.getElementById('obs-edit-modal-backdrop').style.display = 'none';
+        showToast("Update saved ✓");
+        return true;
+    } catch (e) {
+        alert("Save failed");
+        return false;
+    }
+}
