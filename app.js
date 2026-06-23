@@ -20,7 +20,7 @@ import { scanInvoiceWithAI, submitBugReport } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects  } from './ui.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab   } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
