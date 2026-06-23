@@ -88,3 +88,71 @@ export async function finalizeTask(taskId, currentUser) {
     showToast("Status Updated ✓");
     return true;
 }
+
+// 1. Open the PIN Pad for a specific task
+export function openTaskSignoff(taskId, currentUser) {
+    window.currentTargetTaskId = taskId;
+    window.taskPinEntry = "";
+    
+    const display = document.getElementById('task-pin-display');
+    if (display) display.textContent = "";
+    
+    const task = window.state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    document.getElementById('task-pin-user-name').textContent = currentUser.name;
+    
+    if (task.status === 'Pending Approval') {
+        document.getElementById('task-pin-title').textContent = "Manager Approval";
+        document.getElementById('task-pin-instruction').textContent = "Manager PIN required to finalize";
+    } else {
+        document.getElementById('task-pin-title').textContent = "Technician Sign-off";
+        document.getElementById('task-pin-instruction').textContent = "Enter your PIN to verify work";
+    }
+
+    // Force the PIN modal to sit on top of the detail modal
+    const pinModal = document.getElementById('task-pin-modal');
+    if (pinModal) pinModal.style.display = 'flex';
+}
+
+// 2. Verify the PIN typed for the task
+export async function verifyTaskPinAction(currentUser) {
+    const task = window.state.tasks.find(t => t.id === window.currentTargetTaskId);
+    const now = new Date().toISOString();
+
+    // PIN SECURITY CHECK
+    if (window.taskPinEntry !== currentUser.pin_code) {
+        alert("Incorrect PIN for " + currentUser.name);
+        window.taskPinEntry = "";
+        document.getElementById('task-pin-display').textContent = "";
+        return false;
+    }
+
+    if (task.status === 'Pending Approval') {
+        // Manager Approval Flow
+        if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
+            alert("Access Denied: Only a Manager can approve this task.");
+            return false;
+        }
+        task.status = 'Completed';
+        task.manager_user_name = currentUser.name;
+        task.manager_signed_at = now;
+    } else {
+        // Technician Sign-off Flow
+        task.status = 'Pending Approval';
+        task.tech_user_name = currentUser.name;
+        task.tech_signed_at = now;
+    }
+
+    await persist('tasks', 'upsert', task);
+    return true;
+}
+
+// 3. Add a new step to a checklist
+export async function addTaskCheckItem(taskId, text) {
+  const t = window.state.tasks.find(x => x.id === taskId);
+  if (!t.checklist) t.checklist = [];
+  t.checklist.push({ text: text, done: false });
+  await persist('tasks', 'upsert', t);
+  return true;
+}
