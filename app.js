@@ -10,7 +10,7 @@ import {
 
 // --- INITIALIZATION BRIDGES ---
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
-import { loadState, teleportModals, teleportModals, enterApp } from './init.js';
+import { loadState, teleportModals, enterApp } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
