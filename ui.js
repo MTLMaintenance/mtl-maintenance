@@ -237,3 +237,39 @@ export function populateSelects() {
         ).join('');
     }
 }
+
+// 1. Mobile Sidebar Toggle
+export function toggleChatSidebar() {
+    const s = document.getElementById('chat-sidebar');
+    const o = document.getElementById('chat-sidebar-overlay');
+    if (!s) return;
+    const isOpen = s.classList.contains('open');
+    if (isOpen) {
+        s.classList.remove('open');
+        if (o) o.style.display = 'none';
+    } else {
+        s.classList.add('open');
+        if (o) o.style.display = 'block';
+    }
+}
+
+export function closeChatSidebarMobile() {
+    if (window.innerWidth <= 768) {
+        const s = document.getElementById('chat-sidebar');
+        const o = document.getElementById('chat-sidebar-overlay');
+        if (s) s.classList.remove('open');
+        if (o) o.style.display = 'none';
+    }
+}
+
+// 2. Adjust Layout for Mobile (Calculates topbar height)
+export function adjustMobileLayout() {
+    if (window.innerWidth <= 768) {
+        const topbar = document.querySelector('.topbar');
+        if (topbar) {
+            document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
+        }
+    } else {
+        document.documentElement.style.setProperty('--topbar-h', '60px');
+    }
+}
