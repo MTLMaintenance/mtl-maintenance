@@ -236,63 +236,6 @@ function checkDateSelection(val) {
 
 const ADMIN_USERNAME = 'tangal99';
 
-// ============================================================
-// INIT
-// ============================================================
-export async function startApp() {
-  console.log("--- Starting Application Init ---");
-  try { localStorage.removeItem('mp_users'); } catch(e) {}
-  
-  try {
-    window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
-    });
-    window.supabase = window._mpdb;
-    setSyncStatus('online');
-    if (typeof teleportModals === 'function') teleportModals(); 
-  } catch(e) { console.warn('Supabase init failed:', e); }
-
-  try {
-    // --- ADDED: Load all users/profiles so Chat Dots work ---
-    if (typeof fetchAllProfiles === 'function') {
-        await fetchAllProfiles(); 
-    }
-
-    const sessionData = await validateSession();
-
-    
-    if(sessionData) {
-      const { data: profile } = await window._mpdb.from('profiles').select('*').eq('username', sessionData.username).single();
-
-      if(profile && profile.status === 'approved') {
-        currentUser = { ...profile, name: profile.full_name || sessionData.username };
-       window._geminiKey = profile.gemini_key || localStorage.getItem('mp_gemini_key') || '';
-       localStorage.setItem('mp_session', JSON.stringify(currentUser));
-       if (typeof applyUserPreferences === 'function') applyUserPreferences(currentUser);
-        await fetchAbsences(); 
-       await enterApp(); 
-        return; 
-      }
-    }
-
-    console.log("No session found. Running showPinLogin...");
-    showPinLogin();
-
-  } catch(e) { 
-    console.error("Startup error:", e);
-    showPinLogin(); 
- 
-
-  }
-
-  window.addEventListener('online', () => setSyncStatus('online'));
-  window.addEventListener('offline', () => setSyncStatus('offline'));
-}
-// ============================================================
-// AUTH
-// ============================================================
-
-
 function showErr(msg) { const e=document.getElementById('auth-err'); e.textContent=msg; e.style.display='block'; }
 
 const MAX_LOGIN_ATTEMPTS = 5;
