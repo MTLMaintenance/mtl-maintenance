@@ -24,12 +24,12 @@ import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './util
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab  } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation,toggleLockout, addQuickSpec, deleteQuickSpec, } from './equipment.js';
+import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation,toggleLockout, addQuickSpec, deleteQuickSpec, } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
-import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage  } from './inventory.js';
-import {   renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem,deleteChecklistItem} from './tasks.js';
+import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO} from './inventory.js';
+import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
 import { exportCSV, exportPDF, exportHealthCSV } from './reports.js';
@@ -131,6 +131,25 @@ window.addQuickSpec = (id) => {
 window.deleteQuickSpec = (id, key) => {
     deleteQuickSpec(id, key).then(() => window.renderQuickSpecs(id, state));
 };
+
+window.addTaskComment = (id) => {
+    const input = document.getElementById('dt-comment-input-large');
+    if (input) {
+        addTaskComment(id, input.value, currentUser).then(success => {
+            if (success) {
+                input.value = '';
+                window.openTaskDetail(id); // Refresh the popup
+            }
+        });
+    }
+};
+window.deleteTaskComment = (commentId, taskId) => {
+    deleteTaskComment(commentId).then(success => {
+        if (success) window.openTaskDetail(taskId);
+    });
+};
+window.updateDashboardParts = () => updateDashboardParts(state);
+
 
 window.globalEditObs = function(id) {
   
@@ -912,44 +931,7 @@ function openSupplierDetail(id){
   openModal('detail-modal');
 
 }
-
-
-// ============================================================
-// WO PARTS
-// ============================================================
 let woPartsAdded=[];
-function addPartToWO(){
-  const partId=document.getElementById('wo-part-select').value;
-  const qty=parseInt(document.getElementById('wo-part-qty').value)||1;
-  const part=state.parts.find(p=>p.id===partId); if(!part) return;
-  if(qty>part.qty){ showToast('Not enough stock! ('+part.qty+' available)'); return; }
-  const unitCost = parseFloat(part.cost)||0;
-  const existing=woPartsAdded.find(p=>p.part_id===partId);
-  if(existing){ existing.qty_used+=qty; } else { woPartsAdded.push({id:uid(),part_id:partId,part_name:part.name,qty_used:qty,unit_cost:unitCost}); }
-  updateWOCostFromParts();
-  renderWOPartsList();
-}
-function renderWOPartsList(){
-  const total = woPartsAdded.reduce((sum,p)=>sum+(p.unit_cost||0)*p.qty_used, 0);
-  document.getElementById('wo-parts-list').innerHTML=woPartsAdded.length?
-    woPartsAdded.map((p,i)=>`<div class="parts-row">
-      <div style="flex:1"><div style="font-weight:500">${p.part_name}</div>
-        <div style="font-size:11px;color:var(--text2)">$${(p.unit_cost||0).toFixed(2)} each × ${p.qty_used} = <b>$${((p.unit_cost||0)*p.qty_used).toFixed(2)}</b></div>
-      </div>
-      <button class="btn btn-danger" onclick="woPartsAdded.splice(${i},1);renderWOPartsList();updateWOCostFromParts()">✕</button>
-    </div>`).join('')
-    :'<div style="color:var(--text3);font-size:13px">No parts added yet</div>';
-  // Update cost summary
-  const summary = document.getElementById('wo-parts-cost-summary');
-  const subtotalEl = document.getElementById('wo-parts-subtotal');
-  if(summary) summary.style.display = woPartsAdded.length ? 'block' : 'none';
-  if(subtotalEl) subtotalEl.textContent = '$' + total.toFixed(2);
-}
-function addWOComment(){
-  const body=document.getElementById('wo-comment-input').value.trim(); if(!body) return;
-  document.getElementById('wo-comment-list').innerHTML+=`<div class="comment"><div class="comment-author">${currentUser.name}<span class="comment-time">Just now</span></div><div class="comment-body">${body}</div></div>`;
-  document.getElementById('wo-comment-input').value='';
-}
 
 // ============================================================
 // SAVE DATA
@@ -3596,46 +3578,6 @@ async function fetchAllProfiles() {
     }
 }
 
-function updateDashboardParts() {
-    const bigNumber = document.getElementById('dash-low-parts');
-    const listContainer = document.getElementById('dash-low-parts-list');
-    
-    if (!bigNumber || !listContainer) return;
-
-    // 1. Filter for parts that are below reorder point
-    const lowParts = (state.parts || []).filter(p => {
-        const qty = parseInt(p.qty) || 0;
-        const reorder = parseInt(p.reorder) || 0;
-        return qty <= reorder;
-    });
-
-    // 2. Update the Big Number
-    bigNumber.textContent = lowParts.length;
-    bigNumber.style.color = lowParts.length > 0 ? '#d9480f' : 'inherit';
-
-    // 3. Build the List
-    if (lowParts.length === 0) {
-        listContainer.innerHTML = '<div style="color: #aaa; font-style: italic;">All stock OK</div>';
-        return;
-    }
-
-    listContainer.innerHTML = lowParts.map(p => {
-        const isOut = (parseInt(p.qty) || 0) === 0;
-        return `
-            <div style="margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                • ${p.name}: 
-                <b style="color: ${isOut ? '#dc3545' : '#fd7e14'}">
-                    ${isOut ? 'OUT' : p.qty + ' left'}
-                </b>
-            </div>
-        `;
-    }).join('');
-}
-// 1. Initialize memory for consumables
-if (typeof state !== 'undefined' && !state.consumables) {
-    state.consumables = [];
-}
-
 // 2. Tab Switcher
 function switchPartsSubTab(tab) {
     const invView = document.getElementById('parts-inventory-view');
@@ -4297,14 +4239,7 @@ async function usePartOnTask(taskId) {
   openTaskDetail(taskId); 
   showToast("Part added to Work Order ✓");
 }
-async function deleteTaskComment(commentId, taskId) {
-    if(!confirm("Delete this comment?")) return;
-    try {
-        await window._mpdb.from('wo_comments').delete().eq('id', commentId);
-        // Refresh the modal to show it's gone
-        openTaskDetail(taskId);
-    } catch(e) { console.error(e); }
-}
+
 async function removePartFromTask(usageId, taskId) {
   if(!confirm("Remove part and return to stock?")) return;
   const usage = state.partUsage.find(u => u.id === usageId);
