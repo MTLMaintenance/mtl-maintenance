@@ -163,3 +163,28 @@ export function switchDetailTab(tab, btn) {
   if (tab === 'eq-docs') renderDocsList(id);
 }
 
+function switchPartsSubTab(tab) {
+    const invView = document.getElementById('parts-inventory-view');
+    const consView = document.getElementById('parts-consumables-view');
+    const partBtn = document.getElementById('add-part-btn');
+    const consBtn = document.getElementById('add-consumable-btn');
+
+    if (tab === 'inventory') {
+        invView.style.display = 'block';
+        consView.style.display = 'none';
+        partBtn.style.display = 'block';
+        consBtn.style.display = 'none';
+        renderParts();
+    } else {
+        invView.style.display = 'none';
+        consView.style.display = 'block';
+        partBtn.style.display = 'none';
+        consBtn.style.display = 'block';
+        fetchConsumables(); // Load data when clicking the tab
+    }
+
+    // Update button highlighting
+    document.getElementById('btn-parts-inv').classList.toggle('active', tab === 'inventory');
+    document.getElementById('btn-parts-cons').classList.toggle('active', tab === 'consumables');
+}
+
