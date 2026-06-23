@@ -244,3 +244,71 @@ export async function toggleLockout(equipId, isLocked) {
         showToast("Failed to update lockout status");
     }
 }  
+// 1. Safety Lockout: Disables a machine and alerts the team
+export async function toggleLockout(equipId, isLocked, currentUser) {
+    const state = window.state;
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    let reason = "";
+    if (isLocked) {
+        reason = prompt("REASON FOR SAFETY LOCKOUT:\n(This will be shown on the dashboard)");
+        if (!reason) return false; // Cancel if no reason given
+        e.status = 'Down'; 
+    } else {
+        if (!confirm("Clear safety lockout? Ensure all repairs are verified.")) return true;
+        e.status = 'Operational';
+    }
+
+    e.is_locked = isLocked;
+    e.lock_reason = reason;
+
+    try {
+        await persist('equipment', 'upsert', e);
+        
+        // Log the safety event
+        const alertMsg = isLocked ? 
+            `🚨 SAFETY LOCKOUT: ${currentUser.name} locked out ${e.name}. Reason: ${reason}` : 
+            `✅ LOCKOUT CLEARED: ${e.name} is back in service.`;
+        
+        // Use your existing log function
+        if (typeof window.logAuditAction === 'function') {
+            window.logAuditAction("Safety Update", alertMsg, currentUser);
+        }
+
+        showToast(isLocked ? "Machine LOCKED" : "Lockout Cleared");
+        return true;
+    } catch(err) {
+        showToast("Update failed");
+        return false;
+    }
+}
+
+// 2. Manage Quick Specs (Oil types, Tire PSI, etc.)
+export async function addQuickSpec(equipId) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if(!e) return;
+
+    const key = prompt("Spec Name (e.g. Engine Oil, Front Tire PSI)");
+    if (!key) return;
+    const val = prompt(`Value for ${key}`);
+    if (!val) return;
+
+    if (!e.custom_fields) e.custom_fields = {};
+    e.custom_fields[key] = val;
+
+    await persist('equipment', 'upsert', e);
+    showToast("Spec saved ✓");
+    return true;
+}
+
+export async function deleteQuickSpec(equipId, key) {
+    if (!confirm(`Delete the spec "${key}"?`)) return;
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e || !e.custom_fields) return;
+
+    delete e.custom_fields[key];
+    await persist('equipment', 'upsert', e);
+    showToast("Spec deleted");
+    return true;
+}
