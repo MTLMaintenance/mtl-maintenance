@@ -188,3 +188,30 @@ function switchPartsSubTab(tab) {
     document.getElementById('btn-parts-cons').classList.toggle('active', tab === 'consumables');
 }
 
+export function switchDetailTab(tab, btn) {
+  const modal = document.getElementById('detail-modal');
+  if (!modal) return;
+
+  // 1. Reset modal width for Zerk Map
+  if (tab === 'eq-zerks') modal.classList.add('modal-zerk-wide');
+  else modal.classList.remove('modal-zerk-wide');
+
+  // 2. Hide all contents
+  modal.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  
+  // 3. Show target
+  const target = document.getElementById(tab);
+  if (target) target.style.display = 'block';
+
+  // 4. Highlight button
+  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+export function switchAdminTab(tab, btn) {
+  document.querySelectorAll('[id^="admin-"]').forEach(el => el.style.display = 'none');
+  const target = document.getElementById('admin-' + tab);
+  if (target) target.style.display = 'block';
+  btn.parentElement.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
