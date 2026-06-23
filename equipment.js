@@ -312,3 +312,19 @@ export async function deleteQuickSpec(equipId, key) {
     showToast("Spec deleted");
     return true;
 }
+ export async function setManualLink(equipId) {
+    const url = prompt("Enter the URL for this machine's parts manual or manufacturer catalog:");
+    if (!url) return;
+
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+    
+    e.manual_url = url;
+    try {
+        await persist('equipment', 'upsert', e);
+        openEquipDetail(equipId); // Refresh the card to show the new button
+        showToast("Catalog link saved ✓");
+    } catch(err) {
+        showToast("Failed to save link");
+    }
+}
