@@ -275,3 +275,18 @@ export async function deleteInvoice(invoiceId, equipId) {
     if (typeof window.renderInvoicesList === 'function') window.renderInvoicesList(equipId);
   } catch(e) { window.showToast('Failed to delete'); }
 }
+
+
+
+export function openPartsCatalog(equipId, state) {
+  const e = state.equipment.find(x => x.id === equipId);
+  if(!e) return;
+  
+  const mfr = (e.manufacturer || e.name || "").toLowerCase();
+  let url = 'https://www.google.com/search?q=' + encodeURIComponent(mfr + ' parts catalog');
+
+  for(const [brand, link] of Object.entries(PARTS_CATALOG_URLS)) {
+    if(mfr.includes(brand)) { url = link; break; }
+  }
+  window.open(url, '_blank');
+}
