@@ -49,3 +49,19 @@ export function exportHealthCSV(state, calcHealthFunc) {
   a.download = 'mtl-health-report.csv';
   a.click();
 }
+
+export function printQRCode(equipId, state) {
+  const equip = state.equipment.find(e=>e.id===equipId); if(!equip) return;
+  const url = window.location.origin + window.location.pathname + '?equip=' + equipId;
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+  const win = window.open('','_blank');
+  win.document.write(`<html><body><div style="text-align:center;"><h2>${equip.name}</h2><img src="${qrUrl}"/><p>Scan for History</p></div></body></html>`);
+  win.document.close();
+}
+
+export function printMachineHistory(equipId, state) {
+  const e = state.equipment.find(x=>x.id===equipId); if(!e) return;
+  const html = `<html><body><h1>History: ${e.name}</h1><p>Full service record generated on ${new Date().toLocaleDateString()}</p></body></html>`;
+  const w = window.open('','_blank');
+  w.document.write(html); w.document.close();
+}
