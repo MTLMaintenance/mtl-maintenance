@@ -108,3 +108,22 @@ export function backToNames() {
     document.getElementById('login-stage-names').style.display = 'block';
     document.getElementById('login-stage-pin').style.display = 'none';
 }
+
+export const PERMISSIONS = {
+  admin:   {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:true,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
+  manager: {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:false,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
+  tech:    {canCreate:true,canEdit:true,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false,canManageTools:true},
+  viewer:  {canCreate:false,canEdit:false,canDelete:false,canViewReports:false,canManageUsers:false,canManageParts:false,canManageEquip:false,canManageSuppliers:false,canViewCosts:false,canManageTools:false},
+};
+
+export function can(permission, currentUser) {
+  if(!currentUser) return false;
+  const role = currentUser.role || 'viewer';
+  return !!(PERMISSIONS[role]?.[permission]);
+}
+
+export function togglePassVis(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
