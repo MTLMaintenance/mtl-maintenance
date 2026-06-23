@@ -322,3 +322,43 @@ export async function saveObservationChange(state) {
         return false;
     }
 }
+
+// 1. Save or Update machine with budgets and custom specs
+export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
+  const name = document.getElementById('e-name').value.trim(); 
+  if(!name) return { success: false, msg: 'Please enter a name' };
+  
+  const assignInput = document.getElementById('assign-input');
+  const assignedUsers = assignInput ? assignInput.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  
+  const record = {
+    id: uid(), 
+    name,
+    type:   document.getElementById('e-type').value,
+    serial: document.getElementById('e-serial').value,
+    hours:  parseInt(document.getElementById('e-hours').value)||0,
+    status: document.getElementById('e-status').value,
+    op:     document.getElementById('e-op').value,
+    notes:  document.getElementById('e-notes').value,
+    photos: pendingPhotos.equip.slice(),
+    assigned_users: assignedUsers,
+    custom_fields: customFieldsTemp,
+    health_score: 100,
+    manufacturer: document.getElementById('e-manufacturer')?.value.trim()||'',
+    group_tag: document.getElementById('e-group')?.value||'outside',
+    monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
+    yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
+  };
+
+  try {
+    await persist('equipment', 'upsert', record);
+    state.equipment.push(record);
+    
+    // Log for accountability
+    if (typeof window.logAuditAction === 'function') {
+        window.logAuditAction("Machine Update", `Saved details for ${name}`, currentUser);
+    }
+    
+    return { success: true, name };
+  } catch (e) { return { success: false, msg: 'Save failed' }; }
+}
