@@ -12,7 +12,7 @@ import {
 import { loadState, teleportModals } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
-import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles,renderDmList, handleChatInput  } from './profiles.js';
+import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
