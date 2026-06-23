@@ -41,3 +41,7 @@ export let _tempFileData = null;
 export let taskPinEntry = "";
 export let currentTargetTaskId = null;
 
+export const ICONS = {
+    Excavator:'🦾', Tractor:'🚜', 'Wheel Loader':'⚙', 'Skid Steer':'🔧', 
+    Compressor:'💨', Crane:'🏗', Compactor:'🔩', Truck:'🚛', Forklift:'🏭'
+};
