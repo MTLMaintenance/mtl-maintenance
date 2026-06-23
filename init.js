@@ -61,3 +61,62 @@ export function teleportModals() {
         if (el) document.body.appendChild(el);
     });
 }
+
+import { showPanel, adjustMobileLayout } from './ui.js';
+import { applyUserPreferences } from './settings.js';
+
+export async function enterApp(currentUser, state, canFunc) {
+  console.log("Building application interface...");
+  
+  const nav = document.getElementById('main-nav');
+  if (nav) {
+      nav.innerHTML = ''; 
+      const buttons = [
+        { id: 'analytics', label: 'Analytics' },
+        { id: 'calendar', label: 'Calendar' },
+        { id: 'chat', label: 'Chat' },
+        { id: 'checklists', label: 'Checklists' },
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'documents', label: 'Docs' },
+        { id: 'equipment', label: 'Equipment' },
+        { id: 'parts', label: 'Parts' },
+        { id: 'suppliers', label: 'Suppliers' },
+        { id: 'tools', label: 'Tool Crib' },
+        { id: 'tasks', label: 'Work Orders' }
+      ];
+
+      // Alphabetize for a clean look
+      buttons.sort((a, b) => a.label.localeCompare(b.label));
+
+      buttons.forEach(btn => {
+        // Permission Checks
+        if (btn.id === 'analytics' && !canFunc('canViewReports')) return;
+        if (btn.id === 'suppliers' && !canFunc('canManageSuppliers')) return;
+
+        const b = document.createElement('button');
+        b.className = 'nav-btn';
+        b.onclick = () => showPanel(btn.id);
+        b.innerHTML = btn.id === 'chat' ? 
+          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
+        nav.appendChild(b);
+      });
+
+      if (currentUser.role === 'admin') {
+        const adminBtn = document.createElement('button');
+        adminBtn.className = 'nav-btn';
+        adminBtn.onclick = () => showPanel('admin');
+        adminBtn.textContent = 'Admin';
+        nav.appendChild(adminBtn);
+      }
+  }
+
+  // Load personalization
+  applyUserPreferences(currentUser);
+  
+  // Set preferred home page
+  const home = currentUser.preferences?.startPage || 'dashboard';
+  showPanel(home); 
+
+  // Force layout snap
+  setTimeout(adjustMobileLayout, 100);
+}
