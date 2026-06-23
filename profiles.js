@@ -76,14 +76,25 @@ export function updateAvatarPreview() {
 }
 
 // 1. Fetch every team member (for chat status dots)
-export async function fetchAllProfiles(state) {
+export async function fetchAllProfiles() {
+    // 1. Grab the master folder from the window
+    const state = window.state; 
+    
+    if (!state) {
+        console.error("Global state not found while fetching profiles.");
+        return [];
+    }
+
     try {
         const { data, error } = await window._mpdb
             .from('profiles')
             .select('id, username, full_name, preferences');
         
         if (error) throw error;
+
+        // 2. This line now works because 'state' is defined above!
         state.profiles = data || [];
+        
         console.log(`Team profiles synced: ${state.profiles.length} members.`);
         return state.profiles;
     } catch (e) {
