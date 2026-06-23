@@ -29,7 +29,7 @@ import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLog
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage  } from './inventory.js';
-import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask } from './tasks.js';
+import {   renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem,deleteChecklistItem} from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
 import { exportCSV, exportPDF, exportHealthCSV } from './reports.js';
@@ -100,6 +100,25 @@ window.removePartUsage = (usageId, taskId) => {
 window.openTaskDetail = (id) => openTaskDetail(id, state);
 window.deleteTask = (id) => deleteTask(id, state);
 window.editPart = (id) => editPart(id, state);
+window.openTaskSignoff = (id) => openTaskSignoff(id, currentUser);
+window.verifyTaskPinAction = () => {
+    verifyTaskPinAction(currentUser).then(success => {
+        if(success) {
+            closeModal('task-pin-modal');
+            renderTasks();
+            showToast("Work Verified ✓");
+        }
+    });
+};
+window.addTaskCheckItem = (id) => {
+    const input = document.getElementById('new-check-item');
+    if(input && input.value.trim()) {
+        addTaskCheckItem(id, input.value.trim()).then(() => {
+            input.value = '';
+            window.openTaskDetail(id); // Refresh popup
+        });
+    }
+};
 
 window.globalEditObs = function(id) {
   
@@ -4249,84 +4268,8 @@ function switchPartsTab(tabType) {
 setTimeout(adjustMobileLayout, 500);
 
 
-// 1. Open the modal
-function openTaskSignoff(taskId) {
-    currentTargetTaskId = taskId;
-    taskPinEntry = "";
-    
-    // Clear the display
-    const display = document.getElementById('task-pin-display');
-    if (display) display.textContent = "";
-    
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task) return;
 
-    // Update Text for Sign-off
-    document.getElementById('task-pin-user-name').textContent = currentUser.name;
-    
-    if (task.status === 'Pending Approval') {
-        document.getElementById('task-pin-title').textContent = "Manager Approval";
-        document.getElementById('task-pin-instruction').textContent = "Manager PIN required to finalize";
-    } else {
-        document.getElementById('task-pin-title').textContent = "Technician Sign-off";
-        document.getElementById('task-pin-instruction').textContent = "Enter your PIN to verify work";
-    }
 
-    // --- THE FIX ---
-    // Ensure the main detail modal stays open but sits behind the PIN pad
-    const detailModal = document.getElementById('detail-modal');
-    if (detailModal) {
-        detailModal.style.zIndex = "10000"; // Lower
-    }
-
-    const pinModal = document.getElementById('task-pin-modal');
-    if (pinModal) {
-        pinModal.style.display = 'flex';
-        pinModal.style.zIndex = "30000"; // Much Higher
-    }
-}
-// 3. Verify the PIN and update the Task
-async function verifyTaskPinAction() {
-    const task = state.tasks.find(t => t.id === currentTargetTaskId);
-    const now = new Date().toISOString();
-
-    // 1. PIN SECURITY CHECK:
-    // This forces the user to use THEIR OWN PIN that they logged in with.
-    if (taskPinEntry !== currentUser.pin_code) {
-        alert("Incorrect PIN for " + currentUser.name);
-        taskPinEntry = "";
-        document.getElementById('task-pin-display').textContent = "";
-        return;
-    }
-
-    // 2. FLOW LOGIC
-    if (task.status === 'Pending Approval') {
-        // Only allow if the person currently logged in is a Manager
-        if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-            alert("Access Denied: Only a Manager can approve this task.");
-            closeModal('task-pin-modal');
-            return;
-        }
-
-        task.status = 'Completed';
-        task.manager_user_name = currentUser.name;
-        task.manager_signed_at = now;
-        await logAuditAction("Work Order Approved", `Task "${task.name}" finalized by Manager.`);
-    } 
-    else {
-        // Tech sign-off
-        task.status = 'Pending Approval';
-        task.tech_user_name = currentUser.name;
-        task.tech_signed_at = now;
-        await logAuditAction("Work Order Sign-off", `Tech requested approval for "${task.name}".`);
-    }
-
-    // 3. Save to Supabase and Refresh
-    await persist('tasks', 'upsert', task);
-    closeModal('task-pin-modal');
-    renderTasks();
-    showToast("Verification Successful ✓");
-} 
 function switchTaskTab(tabId, btn) {
     // SAVE the choice globally so openTaskDetail knows where to stay
     window._activeTaskTab = tabId;
@@ -4343,22 +4286,7 @@ function switchTaskTab(tabId, btn) {
     tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
 }
-async function toggleTaskCheck(taskId, index) {
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task) return;
 
-    // Toggle the done state
-    task.checklist[index].done = !task.checklist[index].done;
-
-    // Save to Database
-    await persist('tasks', 'upsert', task);
-
-    // RE-RENDER THE MODAL LIVE (This keeps the user on the current tab)
-    openTaskDetail(taskId); 
-    
-    // Log the action for accountability
-    logAuditAction("Checklist Update", `Marked item "${task.checklist[index].text}" as ${task.checklist[index].done ? 'Done' : 'Incomplete'}`);
-}
 async function addPartToActiveTask(taskId) {
     const partId = prompt("Enter Part ID or Scan QR:"); // You can replace this with a dropdown later
     if (!partId) return;
@@ -4460,35 +4388,7 @@ async function addTaskCheckItem(taskId) {
   await persist('tasks', 'upsert', t);
   openTaskDetail(taskId);
 }
-async function deleteChecklistItem(taskId, index) {
-    // 1. Confirm with user
-    if (!confirm("Remove this item from the checklist?")) return;
 
-    // 2. Find the task in local memory
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task || !task.checklist) return;
-
-    // 3. Remove the specific item from the array
-    task.checklist.splice(index, 1);
-
-    try {
-        // 4. Update the database
-        await persist('tasks', 'upsert', task);
-        
-        // 5. Log the action for accountability
-        if (typeof logAuditAction === 'function') {
-            logAuditAction("Checklist Item Removed", `Deleted a step from task: ${task.name}`);
-        }
-
-        // 6. Refresh the modal live so the item vanishes
-        openTaskDetail(taskId);
-        showToast("Item removed ✓");
-
-    } catch (e) {
-        console.error("Failed to delete checklist item:", e);
-        showToast("Error updating checklist");
-    }
-}
 
 // --- THE TRIGGER ---
 window.editObservation = function(obsId, equipId) {
