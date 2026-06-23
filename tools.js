@@ -181,3 +181,30 @@ export async function processReview(newStatus, currentReviewId) {
         return false;
     }
 }
+
+export async function handleWishApproval(id, state) {
+    const req = state.wishlist.find(x => x.id === id);
+    if (!req) return;
+
+    // 1. Mark as approved
+    await window._mpdb.from('tool_requests').update({status: 'approved'}).eq('id', id);
+
+    // 2. Create the tool as "On Order"
+    const newTool = {
+        id: uid(), name: req.tool_name, category: 'Other',
+        location: '📦 ON ORDER', health: 100, is_lost: false,
+        last_updated: new Date().toISOString()
+    };
+    
+    state.tools.push(newTool);
+    await window._mpdb.from('shop_tools').insert(newTool);
+    showToast("Approved! Tool moved to 'On Order'");
+}
+
+export async function handleWishDenial(id, state) {
+    const reason = prompt("Why is this being denied?");
+    if (reason === null) return;
+
+    await window._mpdb.from('tool_requests').update({status: 'denied', denial_reason: reason}).eq('id', id);
+    showToast("Request denied");
+}
