@@ -10,7 +10,7 @@ import {
 
 // --- INITIALIZATION BRIDGES ---
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
-import { loadState, teleportModals } from './init.js';
+import { loadState, teleportModals, teleportModals, enterApp } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
@@ -21,7 +21,7 @@ import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools } from 
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab   } from './ui.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout  } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
@@ -52,6 +52,9 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.enterApp = () => enterApp(window.currentUser, state, can);
+window.toggleChatSidebar = toggleChatSidebar;
+window.adjustMobileLayout = adjustMobileLayout;
 window.handlePhotoUpload = (input, key) => handlePhotoUpload(input, key, pendingPhotos, refreshPhotoGrid);
 window.refreshPhotoGrid = (key) => refreshPhotoGrid(key, pendingPhotos);
 window.showMentionDropdown = showMentionDropdown;
@@ -1579,107 +1582,6 @@ function renderAlerts(){
   sec.innerHTML=h;
 }
 
-
-async function enterApp() {
-  console.log("Entering application...");
-   if (window.currentUser) {
-      currentUser = window.currentUser; 
-  }
-  // 1. Initial UI Setup & Session Persistence
-  try { 
-      localStorage.setItem('mp_session', JSON.stringify(currentUser)); 
-  } catch(e) { console.error("Session save failed", e); }
-  
-  const authScreen = document.getElementById('auth-screen');
-  const appContainer = document.getElementById('app');
-  
-  // HIDE LOGIN, SHOW APP (This reveals the Topbar since it's inside #app)
-  if (authScreen) authScreen.style.display = 'none';
-  if (appContainer) appContainer.style.display = 'flex';
-
-  // 2. Build the Navigation Bar (Alphabetized)
-  const nav = document.getElementById('main-nav');
-  if (nav) {
-      nav.innerHTML = ''; 
-      const buttons = [
-        { id: 'analytics', label: 'Analytics' },
-        { id: 'calendar', label: 'Calendar' },
-        { id: 'chat', label: 'Chat' },
-        { id: 'checklists', label: 'Checklists' },
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'documents', label: 'Docs' },
-        { id: 'equipment', label: 'Equipment' },
-        { id: 'parts', label: 'Parts' },
-        { id: 'suppliers', label: 'Suppliers' },
-        { id: 'tools', label: 'Tool Crib' },
-        { id: 'tasks', label: 'Work Orders' }
-      ];
-
-      buttons.sort((a, b) => a.label.localeCompare(b.label));
-
-      buttons.forEach(btn => {
-        if (btn.id === 'analytics' && typeof can === 'function' && !can('canViewReports')) return;
-        if (btn.id === 'suppliers' && typeof can === 'function' && !can('canManageSuppliers')) return;
-
-        const b = document.createElement('button');
-        b.className = 'nav-btn';
-        b.onclick = () => showPanel(btn.id);
-        b.innerHTML = btn.id === 'chat' ? 
-          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
-        nav.appendChild(b);
-      });
-
-      if (currentUser.role === 'admin') {
-        const adminBtn = document.createElement('button');
-        adminBtn.className = 'nav-btn';
-        adminBtn.onclick = () => showPanel('admin');
-        adminBtn.textContent = 'Admin';
-        nav.appendChild(adminBtn);
-      }
-  }
-
-  // 3. Load Data & State
-  await loadState(); 
-  if (typeof fetchTools === 'function') await fetchTools();
-  if (typeof runRecurrenceEngine === 'function') await runRecurrenceEngine();
-  if (typeof applyUserGroupFilter === 'function') applyUserGroupFilter();
-  
-  // 4. APPLY PERSONALIZATION (Theme, Status, Name)
-  if (typeof applyUserPreferences === 'function') {
-      applyUserPreferences(); 
-  }
-
-  // 5. RE TO PREFERRED HOME PAGE
-  const home = (currentUser.preferences && currentUser.preferences.startPage) 
-                 ? currentUser.preferences.startPage 
-                 : 'dashboard';
-  
-  showPanel(home); 
-
-  // 6. Start Background Services
-  if (typeof initChat === 'function') await initChat();
-  if (typeof autoCleanupAuditLogs === 'function') autoCleanupAuditLogs();
-  
-  if (typeof updateLastSeen === 'function') {
-      updateLastSeen();
-      setInterval(updateLastSeen, 2 * 60 * 1000);
-  }
-  
-  // 7. --- MOBILE LAYOUT NUDGE ---
-  // This triggers your height detector to snap content under the topbar
-  setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-        console.log("Forced mobile layout refresh.");
-  }, 100);
-
-  console.log(`App ready. Welcome, ${currentUser.name}. Home: ${home}`);
-}
-// ── CHAT SIDEBAR MOBILE ──────────────────────────────────────
-function toggleChatSidebar(){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(!s)return;const open=s.classList.contains('open');if(open){s.classList.remove('open');if(o)o.style.display='none';}else{s.classList.add('open');if(o)o.style.display='block';}}
-function closeChatSidebarMobile(){if(window.innerWidth<=640){const s=document.getElementById('chat-sidebar');const o=document.getElementById('chat-sidebar-overlay');if(s)s.classList.remove('open');if(o)o.style.display='none';}}
-
-
-
 // ──  MESSAGES ──────────────────────────────────────────
 let activeDmUser=null;
 
@@ -2989,52 +2891,8 @@ function openMobileSearch() {
     }
 }
 
-// Make it global
+
 window.openMobileSearch = openMobileSearch;
-
-function handleLogoClick() {
-    if (window.innerWidth <= 768) {
-        // MOBILE: Open Search
-        const query = prompt("Search for equipment, tasks, or parts:");
-        if (query && query.trim() !== "") {
-            const searchInput = document.getElementById('global-search');
-            if (searchInput) {
-                searchInput.value = query;
-                handleGlobalSearch(); 
-            }
-        }
-    } else {
-        // PC: Standard behavior (Go to Dashboard)
-        showPanel('dashboard');
-    }
-}
-window.handleLogoClick = handleLogoClick;
-function adjustMobileLayout() {
-    // Only run this logic on mobile screens
-    if (window.innerWidth <= 768) {
-        const topbar = document.querySelector('.topbar');
-        if (topbar) {
-            // Measure the actual height of the bar right now
-            const height = topbar.offsetHeight;
-            // Send that height to the CSS
-            document.documentElement.style.setProperty('--topbar-h', height + 'px');
-        }
-    } else {
-        // Reset for PC
-        document.documentElement.style.setProperty('--topbar-h', '60px');
-    }
-}
-
-// Run this whenever the window is resized or a new panel is shown
-window.addEventListener('resize', adjustMobileLayout);
-
-// Update your showPanel function to call this
-const _origShowPanel = showPanel;
-window.showPanel = function(id) {
-    _origShowPanel(id);
-    // Give the browser a millisecond to render the new panel, then adjust
-    setTimeout(adjustMobileLayout, 10); 
-};
 
 function switchPartsTab(tabType) {
     const partBtn = document.getElementById('add-part-btn');
