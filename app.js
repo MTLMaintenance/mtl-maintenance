@@ -17,12 +17,12 @@ import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport } from './services.js';
-import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName from './utils.js';
+import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects  } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
@@ -37,7 +37,7 @@ import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumab
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
-import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned } from './analytics.js';
+import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown  } from './analytics.js';
 
 window.showLogin = () => {
     document.getElementById('auth-screen').style.display = 'flex';
@@ -51,7 +51,9 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-
+window.renderUsersTable = () => renderUsersTable(state);
+window.openPermissionsCard = (id) => openPermissionsCard(id); // Ensure this is in admin.js
+window.togglePermission = (role, key, val) => togglePermission(role, key, val);
 window.openAbsenceDetail = (id) => openAbsenceDetail(id, currentUser, state);
 window.togglePrivateReason = togglePrivateReason;
 window.openSupplierDetail = (id) => openSupplierDetail(id, state);
@@ -1069,7 +1071,6 @@ function resetUserPerms() {
     }
 }
 function togglePermission(role,permission,value){if(role==='admin')return;PERMISSIONS[role][permission]=value;try{const c={};['manager','tech','viewer'].forEach(r=>{c[r]={...PERMISSIONS[r]};});localStorage.setItem('mp_permissions',JSON.stringify(c));}catch(e){}showToast('Updated ✓');}
-function renderPermissionsMatrix(){const perms=Object.entries(PERM_LABELS);const roles=['admin','manager','tech','viewer'];document.getElementById('permissions-table-body').innerHTML=perms.map(([key,label])=>`<tr><td style="padding-left:16px;font-weight:500">${label}</td>${roles.map(role=>`<td style="text-align:center">${role==='admin'?'✅':`<input type="checkbox" ${PERMISSIONS[role]?.[key]?'checked':''} onchange="togglePermission('${role}','${key}',this.checked)" style="width:16px;height:16px;cursor:pointer"/>`}</td>`).join('')}</tr>`).join('');}
 async function openPermissionsCard(userId) {
     const user = state.users_list_cache ? state.users_list_cache.find(u => u.id === userId) : null;
     if (!user) return;
