@@ -1,10 +1,14 @@
-// photos.js - Media & Image logic
 import { compressImage, showToast } from './utils.js';
 import { openModal } from './ui.js';
 
 // 1. Handle the actual upload and compression
-export async function handlePhotoUpload(input, key, pendingPhotos, refreshPhotoGrid) {
+export async function handlePhotoUpload(input, key) {
+  // Use the global window version of pendingPhotos if it exists
+  const photos = window.pendingPhotos || {};
+  if (!photos[key]) photos[key] = [];
+
   const files = Array.from(input.files);
+  
   for(const file of files) {
     const reader = new FileReader();
     const dataUrl = await new Promise(res => { 
@@ -12,25 +16,29 @@ export async function handlePhotoUpload(input, key, pendingPhotos, refreshPhotoG
         reader.readAsDataURL(file); 
     });
     
-    // Shrink the image so it doesn't break the database
-    const compressed = await compressImage(dataUrl);
-    
-    // Add to our temporary storage
-    pendingPhotos[key].push(compressed);
-    
-    // Redraw the little boxes on screen
-    refreshPhotoGrid(key, pendingPhotos);
+    try {
+        showToast("Compressing...");
+        const compressed = await compressImage(dataUrl);
+        photos[key].push(compressed);
+        
+        // Call the refresh function directly since it's in this same file
+        refreshPhotoGrid(key); 
+    } catch (e) {
+        console.error("Compression failed:", e);
+    }
   }
   input.value = '';
 }
 
 // 2. Build the HTML for the little 72x72 photo boxes
-export function refreshPhotoGrid(key, pendingPhotos) {
+export function refreshPhotoGrid(key) {
+  const photos = window.pendingPhotos || {};
   const gridId = key === 'task' ? 'task-photo-grid' : 'equip-photo-grid';
   const grid = document.getElementById(gridId); 
-  if(!grid) return;
   
-  grid.innerHTML = pendingPhotos[key].map((src, i) => `
+  if(!grid || !photos[key]) return;
+  
+  grid.innerHTML = photos[key].map((src, i) => `
     <div style="position:relative; width:72px; height:72px">
       <img class="photo-thumb" src="${src}" onclick="window.viewPhoto('${src}')" style="width:100%; height:100%; object-fit:cover; border-radius:8px;"/>
       <button onclick="window.initMarkup('${src}', '${key}', ${i})" 
