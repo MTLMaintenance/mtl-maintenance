@@ -147,3 +147,30 @@ export async function removePartUsage(usageId, taskId, state) {
         return false;
     }
 }
+// Updates the "Low Parts" number on the home screen
+export function updateDashboardParts(state) {
+    const bigNumber = document.getElementById('dash-low-parts');
+    const listContainer = document.getElementById('dash-low-parts-list');
+    
+    if (!bigNumber || !listContainer) return;
+
+    // Filter for parts below reorder point
+    const lowParts = (state.parts || []).filter(p => {
+        const qty = parseInt(p.qty) || 0;
+        const reorder = parseInt(p.reorder) || 0;
+        return qty <= reorder;
+    });
+
+    bigNumber.textContent = lowParts.length;
+    bigNumber.style.color = lowParts.length > 0 ? '#dc3545' : 'inherit';
+
+    if (lowParts.length === 0) {
+        listContainer.innerHTML = '<div style="color: #aaa; font-style: italic;">All stock OK</div>';
+        return;
+    }
+
+    listContainer.innerHTML = lowParts.map(p => `
+        <div class="low-stock-row">
+            • ${p.name}: <b style="color:#fd7e14">${p.qty} left</b>
+        </div>`).join('');
+}
