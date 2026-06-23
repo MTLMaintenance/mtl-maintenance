@@ -174,3 +174,15 @@ export function updateDashboardParts(state) {
             • ${p.name}: <b style="color:#fd7e14">${p.qty} left</b>
         </div>`).join('');
 }
+
+export function addPartToWO(){
+  const partId=document.getElementById('wo-part-select').value;
+  const qty=parseInt(document.getElementById('wo-part-qty').value)||1;
+  const part=state.parts.find(p=>p.id===partId); if(!part) return;
+  if(qty>part.qty){ showToast('Not enough stock! ('+part.qty+' available)'); return; }
+  const unitCost = parseFloat(part.cost)||0;
+  const existing=woPartsAdded.find(p=>p.part_id===partId);
+  if(existing){ existing.qty_used+=qty; } else { woPartsAdded.push({id:uid(),part_id:partId,part_name:part.name,qty_used:qty,unit_cost:unitCost}); }
+  updateWOCostFromParts();
+  renderWOPartsList();
+}
