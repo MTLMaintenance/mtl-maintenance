@@ -150,3 +150,46 @@ export function togglePrivateReason(show) {
     const privBox = document.getElementById('priv-box');
     if (privBox) privBox.style.display = show ? 'block' : 'none';
 }
+export function triggerAddEntryFromCal(lastClickedDate) {
+    // 1. Close the small day card
+    const actionModal = document.getElementById('cal-action-modal');
+    if (actionModal) {
+        actionModal.classList.remove('active');
+        actionModal.style.display = 'none';
+    }
+    
+    // 2. Open the work order modal
+    if (typeof window.openModal === 'function') {
+        window.openModal('calendar-entry-modal'); 
+    }
+
+    // 3. Auto-fill the date
+    const dateInput = document.getElementById('cal-date') || document.getElementById('task-due');
+    if (dateInput) {
+        dateInput.value = lastClickedDate;
+    }
+}
+
+export function triggerAbsenceFromCal(lastClickedDate) {
+    window.closeModal('cal-action-modal');
+
+    // Pre-fill the date in the Time Off modal
+    const startInp = document.getElementById('abs-start-date');
+    if (startInp) startInp.value = lastClickedDate;
+
+    window.openModal('absence-modal'); 
+}
+
+export function renderRecurList(state, equipNameFunc) {
+    const list = document.getElementById('recur-list');
+    if(!list) return;
+    
+    list.innerHTML = state.recurrenceRules.map(r => `
+        <div class="recur-item">
+            <div style="flex:1">
+                <div class="bold">${r.name}</div>
+                <div class="text-mini">${equipNameFunc(r.equip_id)} · Every ${r.runtime_hours || r.interval_value} ${r.type === 'hours' ? 'hrs' : r.interval_unit}</div>
+            </div>
+            <button class="btn-danger btn-sm" onclick="window.deleteRecurRule('${r.id}')">✕</button>
+        </div>`).join('') || '<div class="empty-text">No rules set.</div>';
+}
