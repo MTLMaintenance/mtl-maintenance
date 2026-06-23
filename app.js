@@ -12,7 +12,7 @@ import {
 import { loadState, teleportModals } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
-import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview } from './profiles.js';
+import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
@@ -21,8 +21,8 @@ import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './util
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab  } from './ui.js';
-import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation,toggleLockout, addQuickSpec, deleteQuickSpec, } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable} from './inventory.js';
@@ -52,6 +52,9 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.fetchAllProfiles = () => fetchAllProfiles(state);
+window.globalEditObs = (id) => globalEditObs(id, state);
+window.saveObservationChange = () => saveObservationChange(state);
 window.loadState = () => loadState(state);
 window.pressPin = pressPin;
 window.verifyUserPin = verifyUserPin;
@@ -166,39 +169,6 @@ window.openAddConsumable = () => {
     document.getElementById('c-modal-title').textContent = "Add Supply Item";
     openModal('consumable-modal');
 };
-window.globalEditObs = function(id) {
-  
-    console.log("Opening Edit for ID:", id);
-    
-    const obs = state.observations.find(o => o.id === id);
-    if (!obs) return alert("Error: Observation data not found.");
-
-    // 1. Define the elements FIRST (This fixes the 'idField' error)
-    const idField = document.getElementById('edit-obs-id');
-    const sevField = document.getElementById('edit-obs-sev');
-    const bodyField = document.getElementById('edit-obs-body');
-    const modalBackdrop = document.getElementById('obs-edit-modal-backdrop');
-
-    // 2. Check if they exist before setting values
-    if (idField && sevField && bodyField && modalBackdrop) {
-        idField.value = id;
-        sevField.value = obs.severity;
-        bodyField.value = obs.body;
-        
-        // 3. Show the modal
-        modalBackdrop.style.display = 'flex';
-    } else {
-        console.error("HTML Error: One or more IDs are missing from the page.");
-        alert("System error: Edit modal is not properly linked.");
-    }
-};
-
-
-
-
-
-
-
 
 
 function updatePinDisplay() {
@@ -3416,37 +3386,6 @@ async function receiveTool() {
     }
 }
 
-async function fetchAllProfiles() {
-    try {
-        const { data, error } = await window._mpdb
-            .from('profiles')
-            .select('id, username, full_name, preferences');
-        
-        if (error) throw error;
-        state.profiles = data || [];
-        console.log(`Successfully loaded ${state.profiles.length} team profiles.`);
-
- 
-        window._mpdb.channel('global-profile-updates')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, payload => {
-                const updatedUser = payload.new;
-                const idx = state.profiles.findIndex(u => u.id === updatedUser.id);
-                if (idx !== -1) {
-                    state.profiles[idx] = updatedUser;
-                    
-                    if (document.getElementById('panel-chat')?.classList.contains('active')) {
-                        
-                        renderChat(); 
-                    }
-                }
-            }).subscribe();
-
-    } catch (e) {
-        console.error("Error loading team profiles:", e);
-    }
-}
-
-// 2. Tab Switcher
 
 // 1. Updated Wishlist Renderer
 function renderToolWishlist() {
@@ -3976,80 +3915,4 @@ window.editObservation = function(obsId, equipId) {
     document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
 };
 
-window.saveObservationChange = async function() {
-    console.log("--- SAVING OBSERVATION ---");
 
-    // 1. Try to find the elements (searching for both new and old IDs just in case)
-    const idEl   = document.getElementById('edit-obs-id')   || document.getElementById('edit-id');
-    const bodyEl = document.getElementById('edit-obs-body') || document.getElementById('edit-body');
-    const sevEl  = document.getElementById('edit-obs-sev')  || document.getElementById('edit-sev');
-
-    // 2. Stop if they are truly missing
-    if (!idEl || !bodyEl || !sevEl) {
-        console.error("Missing Elements:", { idEl, bodyEl, sevEl });
-        alert("CRITICAL ERROR: The app cannot find the edit boxes in your HTML. Check your IDs.");
-        return;
-    }
-
-    const obsId = idEl.value;
-    const newBody = bodyEl.value.trim();
-    const newSev = sevEl.value;
-
-    if (!newBody) return alert("Note cannot be empty.");
-
-    try {
-        // 3. Update Supabase
-        const { error } = await window._mpdb
-            .from('observations')
-            .update({ body: newBody, severity: newSev })
-            .eq('id', obsId);
-
-        if (error) throw error;
-
-        // 4. Update the local memory (state)
-        const obsIndex = state.observations.findIndex(o => o.id === obsId);
-        if (obsIndex !== -1) {
-            state.observations[obsIndex].body = newBody;
-            state.observations[obsIndex].severity = newSev;
-            
-            // 5. Live UI Update
-            const equipId = state.observations[obsIndex].equip_id;
-            if (equipId) renderObservationsList(equipId);
-            renderDashboard(); 
-        }
-
-        // 6. Close Modal
-        const modal = document.getElementById('obs-edit-modal-backdrop');
-        if (modal) modal.style.display = 'none';
-        
-        showToast("Update saved ✓");
-
-    } catch (e) {
-        alert("Save failed: " + e.message);
-    }
-};
-
-function populateAdminUserSelect() {
-    const select = document.getElementById('role-user-select');
-    if (!select) return;
-
-    let html = '<option value="">-- Select User --</option>';
-    const users = state.users_list_cache || [];
-    
-    users.forEach(u => {
-        html += `<option value="${u.username}">${u.full_name || u.username}</option>`;
-    });
-    
-    select.innerHTML = html;
-}
-// At the very end of app.js
-console.log("🚀 All modules loaded. Triggering Startup...");
-
-// We wait for the HTML to be fully ready before starting
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof startApp === 'function') {
-        startApp();
-    } else {
-        console.error("Critical Error: startApp function not found in app.js");
-    }
-});
