@@ -4,13 +4,13 @@ import {
     staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
     calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
-    _tempFileData, taskPinEntry, currentTargetTaskId,state,ICONS 
+    _tempFileData, taskPinEntry, currentTargetTaskId,state,ICONS,  state, SUPABASE_URL, SUPABASE_KEY, pendingPhotos, woPartsAdded
 } from './state.js';
 
 
 // --- INITIALIZATION BRIDGES ---
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
-import { loadState, teleportModals, enterApp } from './init.js';
+import { startApp, loadState, teleportModals, enterApp } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
@@ -223,8 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
     startApp(); 
 });
 
-let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
-
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
     // Shows one asterisk for every digit typed
@@ -237,8 +235,6 @@ function checkDateSelection(val) {
 }
 
 const ADMIN_USERNAME = 'tangal99';
-let currentUser = null;
-
 
 // ============================================================
 // INIT
@@ -323,7 +319,6 @@ async function doLogin() {
     // Check password
     const hashedInput = await hashPassword(pass);
     const storedHash = profile.password_hash || '';
-    let passwordMatch = false;
     if (storedHash.length === 64) {
       passwordMatch = storedHash === hashedInput;
     } else {
@@ -435,8 +430,6 @@ function computeMonthlyCosts() {
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
-
-let pendingDocFile=null;
 
 function handleDocUpload(input){
   const file=input.files[0]; if(!file) return;
@@ -839,7 +832,6 @@ await window._mpdb.from('meter_history').insert({
 }
 
 // ── GROUPS ───────────────────────────────────────────────────
-let activeGroupFilter='all',equipGroupFilter='all';
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
 function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});renderEquipmentTable();}
 function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all')return state.equipment;return state.equipment.filter(e=>e.group_tag===f||e.group_tag==='both');}
@@ -853,7 +845,6 @@ function renderRecentObservations() {
 
   // 1. Filter out observations for machines that were deleted
   const validEquipIds = new Set(state.equipment.map(e => e.id));
-  let obs = (state.observations || []).filter(o => validEquipIds.has(o.equip_id));
 
   // 2. Handle Group Filtering (Outside/Production)
   if (typeof activeGroupFilter !== 'undefined' && activeGroupFilter !== 'all') {
@@ -921,7 +912,6 @@ const PERM_LABELS = {
   'canManageUsers': 'Manage users',
   'canManageTools': 'Manage Tool Crib (Add/Edit)' // <--- ADD THIS LINE
 };
-let editingUserId=null,editingUserRole=null,editingPerms={};
 function openUserPerms(userId,userName,userRole,customPerms){editingUserId=userId;editingUserRole=userRole;editingPerms={...PERMISSIONS[userRole]||PERMISSIONS.tech,...(customPerms||{})};document.getElementById('user-perms-title').textContent=userName+' — Permissions';document.getElementById('user-perms-role').textContent=userRole;renderUserPermsList();openModal('user-perms-modal');}
 function renderUserPermsList(){const rd=PERMISSIONS[editingUserRole]||PERMISSIONS.tech;document.getElementById('user-perms-list').innerHTML=Object.entries(PERM_LABELS).map(([key,label])=>{const def=!!(rd[key]),cur=!!(editingPerms[key]),ov=cur!==def;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">${label}</div><div style="font-size:11px;color:var(--text3)">Default: ${def?'✅':'❌'}${ov?' <span style="color:var(--warning)">● Override</span>':''}</div></div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;margin-left:12px"><span style="font-size:12px;color:${cur?'var(--success)':'var(--danger)'};font-weight:600;min-width:60px;text-align:right">${cur?'Allowed':'Denied'}</span><div style="position:relative;width:40px;height:22px;flex-shrink:0"><input type="checkbox" ${cur?'checked':''} onchange="editingPerms['${key}']=this.checked;renderUserPermsList()" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0;z-index:2"/><div style="width:40px;height:22px;border-radius:11px;background:${cur?'#3B6D11':'#E24B4A'};position:absolute;top:0;left:0"></div><div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${cur?'21px':'3px'};transition:left .2s;pointer-events:none"></div></div></label></div>`;}).join('');}
 async function saveUserPerms() {
@@ -1023,8 +1013,7 @@ async function saveUserPermissions() {
         console.error(e);
     }
 }
-// ── CHAT ─────────────────────────────────────────────────────
-let currentChannel='general',chatTagEquipId=null,chatTagTaskId=null,chatPhotoData=null,lastReadAt={};
+
 const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
 (function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
 
@@ -1103,8 +1092,7 @@ async function loadChatMessages(channel) {
       
 function renderChatMessages(msgs,container){
   if(!msgs.length){container.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 20px">No messages yet — say hello! 👋</div>';return;}
-  let html='',lastDate='';
-  msgs.forEach(msg=>{const msgDate=new Date(msg.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});if(msgDate!==lastDate){html+=`<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div>${msgDate}<div style="flex:1;height:1px;background:var(--border)"></div></div>`;lastDate=msgDate;}html+=buildChatMsgHtml(msg);});
+   msgs.forEach(msg=>{const msgDate=new Date(msg.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});if(msgDate!==lastDate){html+=`<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div>${msgDate}<div style="flex:1;height:1px;background:var(--border)"></div></div>`;lastDate=msgDate;}html+=buildChatMsgHtml(msg);});
   container.innerHTML=html;
 }
 
@@ -1166,10 +1154,6 @@ function chooseMobileChatChannel(channel){
 }
 function enableHorizontalDragScroll(el){
     if(!el || el.dataset.dragScrollBound === '1') return;
-    let startX = 0;
-    let startY = 0;
-    let startScrollLeft = 0;
-    let dragging = false;
     el.addEventListener('touchstart', function(e){
         if(!e.touches || !e.touches[0]) return;
         dragging = true;
@@ -1345,9 +1329,6 @@ function switchChannel(channel, btn) {
         // 3. Update the Header Title & Mobile Label
         const header = document.getElementById('chat-header-title');
         const mobileMenuLabel = document.getElementById('chat-channel-menu-label');
-        
-        let displayName = channel;
-
         if (channel.startsWith('dm-')) {
             // Find the other person's name for the header
             const parts = channel.replace('dm-', '').split('-');
@@ -1405,7 +1386,6 @@ function markChannelRead(channel) {
     updateUnreadBadge();
 }
 function updateUnreadBadge() {
-    let totalUnread = 0;
     const channels = ['general', 'outside', 'production'];
 
     channels.forEach(ch => {
@@ -1460,7 +1440,6 @@ function renderAlerts(){
   const lp=state.parts.filter(p=>p.qty<=p.reorder_qty&&p.reorder_qty>0);
   const exp=state.documents.filter(d=>d.expiry_date&&new Date(d.expiry_date)<=new Date(Date.now()+30*24*60*60*1000));
   const critObs=(state.observations||[]).filter(o=>o.severity==='critical');
-  let h='';
   if(od.length)h+=`<div class="alert alert-d"><span class="dot"></span><b>${od.length} overdue:</b> ${od.map(t=>t.name).join(', ')}</div>`;
   if(lp.length)h+=`<div class="alert alert-w">⚠ <b>${lp.length} part${lp.length>1?'s':''} low/out of stock:</b> ${lp.map(p=>p.name).join(', ')}</div>`;
   if(exp.length)h+=`<div class="alert alert-w">📄 <b>${exp.length} document${exp.length>1?'s':''} expiring soon:</b> ${exp.map(d=>d.name).join(', ')}</div>`;
@@ -1468,8 +1447,6 @@ function renderAlerts(){
   sec.innerHTML=h;
 }
 
-// ──  MESSAGES ──────────────────────────────────────────
-let activeDmUser=null;
 
 // ── DELETE CHAT MESSAGE ──────────────────────────────────────
 async function deleteChatMessage(msgId,channel,author){
@@ -1668,32 +1645,6 @@ function renderTools() {
         const location = t.location || '—';
         const isOrdered = status === 'ordered';
 
-        // Add a "Check In" button for managers if the tool is currently on order
-        let actionBtn = '';
-        if (isOrdered && isAdmin) {
-            actionBtn = `<button class="btn btn-primary btn-sm" 
-                         style="background:#28a745 !important; border:none; padding:4px 8px; font-size:10px; margin-left:10px;" 
-                         onclick="event.stopPropagation(); window.receiveOrderedTool('${t.id}')">📦 Check In</button>`;
-        }
-
-        return `
-            <tr onclick="editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'opacity:0.8; background:rgba(0,123,255,0.02);' : ''}">
-                <td><b>${name}</b> ${actionBtn}</td>
-                <td>${t.category || 'Other'}</td>
-                <td><span style="${isOrdered ? 'color:#007bff; font-weight:600;' : ''}">${isOrdered ? '📦 ON ORDER' : location}</span></td>
-                <td>
-                    ${isOrdered ? '—' : `
-                    <div style="width:60px; height:8px; background:#eee; border-radius:4px; overflow:hidden;">
-                        <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
-                    </div>`}
-                </td>
-                <td><span class="badge ${isOrdered ? 'bi' : (t.is_lost ? 'bd' : 'bs')}">${status.toUpperCase()}</span></td>
-                <td>${isOrdered ? `<span style="font-size:11px; color:#007bff">Due: ${t.expected_arrival || '??'}</span>` : (t.procurement || '—')}</td>
-            </tr>`;
-    }).join('');
-}
-
-
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
@@ -1823,9 +1774,7 @@ function resetToolForm() {
     // 1. Try to find the tool in local memory first
     // We check both 'state.tools' and 'window.state.tools' for safety
     const localList = (window.state && window.state.tools) ? window.state.tools : (typeof state !== 'undefined' ? state.tools : []);
-    let tool = localList.find(x => x.id === id);
-
-    // 2. THE FIX: If not found in memory, fetch directly from Supabase
+       // 2. THE FIX: If not found in memory, fetch directly from Supabase
     if (!tool) {
         console.warn("Tool not found in memory. Fetching from database...");
         const { data, error } = await window._mpdb
@@ -2342,9 +2291,6 @@ function renderCostByEquip() {
     ).join('');
 }
 
-let markupCanvas, markupCtx, isDrawing = false;
-let currentMarkupSource = { key: '', index: -1 };
-
 function initMarkup(imgSrc, key, index) {
     currentMarkupSource = { key, index };
     const modal = document.getElementById('markup-modal');
@@ -2688,10 +2634,7 @@ window.receiveOrderedTool = async function(id) {
     renderToolWishlist();
     showToast("Tool checked in ✓");
 }
-window.deleteDoc = deleteDoc;
-window.openEditDocModal = openEditDocModal;
-window.saveDoc = saveDoc;
-window.openDocDetail = openDocDetail;
+
 // FORCE THE FUNCTION TO BE GLOBAL SO HTML CAN SEE IT
 window.deleteDoc = async function(id) {
   // 1. CONFIRMATION ALERT (If this doesn't show up, the button is broken)
