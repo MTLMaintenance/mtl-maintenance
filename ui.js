@@ -273,3 +273,22 @@ export function adjustMobileLayout() {
         document.documentElement.style.setProperty('--topbar-h', '60px');
     }
 }
+
+export function initLazyImages() {
+    const lazyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if(entry.isIntersecting) {
+                const img = entry.target;
+                const src = img.getAttribute('data-src');
+                if(src) {
+                    img.src = src;
+                    img.removeAttribute('data-src');
+                    lazyObserver.unobserve(img);
+                }
+            }
+        });
+    }, { rootMargin: '100px' });
+
+    document.querySelectorAll('img.lazy-img[data-src]').forEach(img => lazyObserver.observe(img));
+}
+
