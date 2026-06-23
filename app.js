@@ -1571,7 +1571,7 @@ function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
     if (!tableBody) return;
 
-    // THE FIX: Show 'available' items AND 'ordered' items in this list
+    // 1. Filter tools
     const tools = (window.state.tools || []).filter(t => t.status === 'available' || t.status === 'ordered');
     
     if (tools.length === 0) {
@@ -1579,16 +1579,33 @@ function renderTools() {
         return;
     }
 
-    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+    const isAdmin = window.currentUser?.role === 'admin' || window.currentUser?.role === 'manager';
 
+    // 2. Build the HTML string
     tableBody.innerHTML = tools.map(t => {
         const name = t.tool_name || t.name || 'Unnamed';
         const health = t.health || 100;
         const status = t.status || 'available';
         const location = t.location || '—';
         const isOrdered = status === 'ordered';
-    })
+
+        // --- THE MISSING PART: You must RETURN the HTML ---
+        return `
+            <tr onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
+                <td><b>${name}</b></td>
+                <td>${t.category || 'Other'}</td>
+                <td>${isOrdered ? '📦 ON ORDER' : location}</td>
+                <td>
+                    <div style="width:60px; height:8px; background:#ddd; border-radius:4px; overflow:hidden;">
+                        <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
+                    </div>
+                </td>
+                <td><span class="badge ${isOrdered ? 'bi' : 'bs'}">${status.toUpperCase()}</span></td>
+                <td>${t.procurement || '—'}</td>
+            </tr>`;
+    }).join(''); // --- THE OTHER MISSING PART: Combine the array into one string ---
 }
+
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
