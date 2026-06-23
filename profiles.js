@@ -119,3 +119,33 @@ export function handleChatInput(el, state, showMentionDropdown, hideMentionDropd
         hideMentionDropdown();
     }
 }
+export function showMentionDropdown(users, atPos) {
+    const dd = document.getElementById('mention-dropdown');
+    if (!dd) return;
+    
+    dd.innerHTML = users.map(u => `
+        <div class="mention-item" style="padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px" 
+             onclick="window.insertMention('${u.username}', ${atPos})">
+            <b>${u.full_name}</b> <span style="font-size:11px; color:var(--text3)">@${u.username}</span>
+        </div>
+    `).join('');
+    dd.style.display = 'block';
+}
+
+export function hideMentionDropdown() {
+    const dd = document.getElementById('mention-dropdown');
+    if (dd) dd.style.display = 'none';
+}
+
+export function insertMention(username, atPos) {
+    const input = document.getElementById('chat-input');
+    if (!input) return;
+    
+    const val = input.value;
+    const before = val.substring(0, atPos);
+    const after = val.substring(input.selectionStart);
+    
+    input.value = before + '@' + username + ' ' + after;
+    hideMentionDropdown();
+    input.focus();
+}
