@@ -215,3 +215,45 @@ export function switchAdminTab(tab, btn) {
   btn.parentElement.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
+
+export function populateSelects() {
+    // Check if the machine list exists
+    if (!state.equipment || state.equipment.length === 0) {
+        console.warn("PopulateSelects: No equipment in state yet.");
+    }
+
+    // 1. Define the option strings
+    const equipOpts = state.equipment.map(e => 
+        `<option value="${e.id}">${e.name}</option>`
+    ).join('') || '<option value="">No equipment found</option>';
+
+    const users = state.users_list_cache || [];
+    const userOpts = '<option value="">— Unassigned —</option>' +
+        users.map(u => `<option value="${u.full_name}">${u.full_name}</option>`).join('');
+
+    // 2. Targets for Work Order Modal
+    const tEquip = document.getElementById('t-equip');
+    const tAssign = document.getElementById('t-assign');
+    if (tEquip) { tEquip.innerHTML = equipOpts; }
+    if (tAssign) { tAssign.innerHTML = userOpts; }
+
+    // 3. Targets for Calendar/Entry Modal
+    const ceEquip = document.getElementById('ce-equip');
+    const ceAssign = document.getElementById('ce-assign');
+    if (ceEquip) { ceEquip.innerHTML = equipOpts; }
+    if (ceAssign) { ceAssign.innerHTML = userOpts; }
+
+    // 4. Target for Equipment Filter
+    const taskFilter = document.getElementById('task-equip-filter');
+    if (taskFilter) {
+        taskFilter.innerHTML = `<option value="all">All Equipment</option>` + equipOpts;
+    }
+
+    // 5. Target for Parts Select
+    const pSel = document.getElementById('wo-part-select');
+    if (pSel) {
+        pSel.innerHTML = state.parts.map(p => 
+            `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`
+        ).join('');
+    }
+}
