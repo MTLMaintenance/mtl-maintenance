@@ -1587,7 +1587,7 @@ function renderTools() {
         const status = t.status || 'available';
         const location = t.location || '—';
         const isOrdered = status === 'ordered';
-
+    }})
 function renderWishlist() {
     const container = document.getElementById('wishlist-container');
     const pending = state.wishlist.filter(w => w.status === 'pending');
@@ -1676,7 +1676,7 @@ function switchToolModalTab(tab) {
     document.getElementById('btn-tool-obs')?.classList.toggle('active', tab === 'observations');
 }
 
-
+    
 function resetToolForm() {
     console.log("Resetting Tool Form Safely...");
     
@@ -2067,7 +2067,7 @@ function updateCalEntryTypeButtons(type) {
     setCalEntryType(type);
 }
    
-
+    
    
     
 function openDocModal(docId = null) {
@@ -2720,4 +2720,4 @@ async function addPartToActiveTask(taskId) {
     showToast("Part logged live ✓");
 }
 
-    } 
+    
