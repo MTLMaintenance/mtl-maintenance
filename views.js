@@ -61,3 +61,25 @@ export function renderQuickSpecs(equipId, state) {
         </div>
     `).join('') || '<div style="color:#aaa">No specs added</div>';
 }
+export function renderConsumablesTable(state, supplierNameFunc) {
+    const body = document.getElementById('consumables-table-body');
+    if (!body || !state.consumables) return;
+
+    if (state.consumables.length === 0) {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No supplies found.</td></tr>';
+        return;
+    }
+
+    body.innerHTML = state.consumables.map(c => {
+        const isLow = c.qty <= c.reorder;
+        return `
+            <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
+                <td><b>${c.name}</b></td>
+                <td>${c.num || '—'}</td>
+                <td>${supplierNameFunc(c.supplier_id)}</td>
+                <td style="font-weight:700; color:${isLow ? '#dc3545' : 'inherit'};">${c.qty}</td>
+                <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
+                <td><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
+            </tr>`;
+    }).join('');
+}
