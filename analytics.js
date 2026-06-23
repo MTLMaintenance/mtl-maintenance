@@ -70,3 +70,51 @@ export function renderTaskBreakdown(tasks, badgeFunc) {
             <div style="width:30px; text-align:right"><b>${s.count}</b></div>
         </div>`).join('');
 }
+
+// analytics.js additions
+import { equipName } from './utils.js';
+
+// 1. Calculate Uptime % and Draw Downtime Bars
+export async function renderDowntimeStats(state) {
+    const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+    const { data: logs } = await window._mpdb.from('downtime_logs').select('*').gte('created_at', thirtyDaysAgo);
+    if (!logs) return;
+
+    const totalPossibleMins = state.equipment.length * 30 * 24 * 60;
+    const totalDownMins = logs.reduce((sum, l) => sum + (l.total_minutes || 0), 0);
+    const uptime = totalPossibleMins > 0 ? Math.max(0, Math.min(100, ((totalPossibleMins - totalDownMins) / totalPossibleMins) * 100)) : 100;
+
+    const uptimeEl = document.getElementById('r-uptime');
+    if(uptimeEl) uptimeEl.textContent = uptime.toFixed(1) + '%';
+
+    const chart = document.getElementById('downtime-chart');
+    if(!chart) return;
+    const machineMap = {};
+    logs.forEach(l => { const name = equipName(l.equip_id, state); machineMap[name] = (machineMap[name] || 0) + (l.total_minutes / 60); });
+    const entries = Object.entries(machineMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    const maxH = Math.max(...Object.values(machineMap), 1);
+    
+    chart.innerHTML = entries.map(([name, hrs]) => `
+        <div class="stat-col">
+            <div class="stat-val-mini">${hrs.toFixed(1)}h</div>
+            <div class="stat-bar-vertical" style="height:${Math.round(hrs/maxH * 80)}px;"></div>
+            <div class="stat-label-mini">${name}</div>
+        </div>`).join('') || '<div class="empty-text">No downtime logged</div>';
+}
+
+// 2. Top Parts Consumed Chart
+export function renderTopPartsUsed(state) {
+    const el = document.getElementById('parts-consumed');
+    if (!el) return;
+    const partMap = {};
+    (state.partUsage || []).forEach(p => { partMap[p.part_name] = (partMap[p.part_name] || 0) + p.qty_used; });
+    const topParts = Object.entries(partMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const maxQty = Math.max(...topParts.map(x => x[1]), 1);
+
+    el.innerHTML = topParts.map(([name, qty]) => `
+        <div class="stat-row">
+            <div class="stat-name-wide">${name}</div>
+            <div class="stat-bar-wrap"><div class="stat-bar" style="width:${(qty/maxQty)*100}%; background:#BA7517"></div></div>
+            <div class="stat-qty">${qty}</div>
+        </div>`).join('');
+}
