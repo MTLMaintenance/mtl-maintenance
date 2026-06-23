@@ -389,11 +389,6 @@ function computeMonthlyCosts() {
 // ============================================================
 
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
-
-
-function supplierName(id){ const s=state.suppliers.find(x=>x.id===id); return s?s.name:'—'; }
-
-
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
