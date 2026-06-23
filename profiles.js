@@ -91,3 +91,31 @@ export async function fetchAllProfiles(state) {
         return [];
     }
 }
+export function handleChatInput(el, state, showMentionDropdown, hideMentionDropdown) {
+    // 1. Auto-resize the chat box height
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+
+    const val = el.value;
+    const cursor = el.selectionStart;
+    const lastAt = val.lastIndexOf('@', cursor - 1);
+
+    // 2. Check if user is typing a @mention
+    if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ')) {
+        const query = val.substring(lastAt + 1, cursor).toLowerCase();
+        
+        // Find users matching the typed name
+        const users = (state.users_list_cache || []).filter(u => 
+            u.full_name.toLowerCase().includes(query) || 
+            u.username.toLowerCase().includes(query)
+        );
+
+        if (users.length > 0) {
+            showMentionDropdown(users, lastAt);
+        } else {
+            hideMentionDropdown();
+        }
+    } else {
+        hideMentionDropdown();
+    }
+}
