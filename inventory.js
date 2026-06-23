@@ -186,3 +186,63 @@ export function addPartToWO(){
   updateWOCostFromParts();
   renderWOPartsList();
 }
+// 1. Fetch supplies from Supabase
+export async function fetchConsumables(state) {
+    try {
+        const { data, error } = await supabase.from('consumables').select('*').order('name');
+        if (error) throw error;
+        state.consumables = data || [];
+        return state.consumables;
+    } catch (e) {
+        console.error("Consumable fetch error:", e);
+        return [];
+    }
+}
+
+// 2. Open modal to EDIT a supply item
+export function editConsumable(id, state) {
+    const item = state.consumables.find(c => c.id === id);
+    if (!item) return;
+
+    document.getElementById('c-modal-title').textContent = "Edit Item: " + (item.name || "Unnamed");
+    document.getElementById('c-edit-id').value = item.id;
+    document.getElementById('c-name').value = item.name || "";
+    document.getElementById('c-num').value = item.num || "";
+    document.getElementById('c-cost').value = item.cost || 0;
+    document.getElementById('c-qty').value = item.qty || 0;
+    document.getElementById('c-reorder').value = item.reorder || 0;
+    document.getElementById('c-supplier-select').value = item.supplier_id || "";
+
+    const delBtn = document.getElementById('btn-delete-consumable');
+    if (delBtn) delBtn.style.display = 'block';
+    
+    openModal('consumable-modal');
+}
+
+// 3. Save Supply Item
+export async function saveConsumable(state) {
+    const editId = document.getElementById('c-edit-id').value;
+    const record = {
+        id: (editId && editId !== "") ? editId : uid(),
+        name: document.getElementById('c-name').value.trim(),
+        num: document.getElementById('c-num').value,
+        supplier_id: document.getElementById('c-supplier-select').value || null,
+        qty: parseInt(document.getElementById('c-qty').value) || 0,
+        reorder: parseInt(document.getElementById('c-reorder').value) || 0,
+        cost: parseFloat(document.getElementById('c-cost').value) || 0,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await supabase.from('consumables').upsert([record]);
+        if (error) throw error;
+        
+        await fetchConsumables(state); 
+        closeModal('consumable-modal');
+        showToast("Supply item saved ✓");
+        return true;
+    } catch(e) {
+        alert("Save failed: " + e.message);
+        return false;
+    }
+}
