@@ -171,3 +171,28 @@ export function clearAuditFilters() {
     // Re-render logs with no filters
     if (typeof window.renderAuditLogs === 'function') window.renderAuditLogs();
 }
+
+export function syncAdminRoleSelects(state) {
+    const userId = document.getElementById('role-user-select')?.value;
+    if (!userId) return;
+
+    const profile = state.users_list_cache.find(u => u.username === userId || u.id === userId);
+    if (profile) {
+        document.getElementById('role-select').value = profile.role || 'tech';
+        document.getElementById('group-select').value = profile.group_tag || '';
+    }
+}
+
+export async function changeUserRole(renderUsersTableFunc, state) {
+  const userId = document.getElementById('role-user-select').value;
+  const newRole = document.getElementById('role-select').value;
+  const newGroup = document.getElementById('group-select').value;
+
+  if (!userId) return showToast("Select a user first");
+
+  try {
+    await window._mpdb.from('profiles').update({ role: newRole, group_tag: newGroup || null }).eq('id', userId);
+    showToast("User updated ✓");
+    renderUsersTableFunc(state);
+  } catch(e) { showToast("Failed to update"); }
+}
