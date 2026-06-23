@@ -45,3 +45,16 @@ export const ICONS = {
     Excavator:'🦾', Tractor:'🚜', 'Wheel Loader':'⚙', 'Skid Steer':'🔧', 
     Compressor:'💨', Crane:'🏗', Compactor:'🔩', Truck:'🚛', Forklift:'🏭'
 };
+
+// Photo Storage
+export let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
+export let pendingDocFile = null;
+
+// Temporary Form Storage
+export let customFieldsTemp = {};
+export let assignedUsersTemp = [];
+export let woPartsAdded = [];
+
+// App Control
+export let activeGroupFilter = 'all';
+export let equipGroupFilter = 'all';
