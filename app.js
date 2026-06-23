@@ -9,6 +9,7 @@ import {
 
 
 // --- INITIALIZATION BRIDGES ---
+import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
 import { loadState, teleportModals } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
@@ -51,6 +52,11 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+
+let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
+
+window.handlePhotoUpload = (input, key) => handlePhotoUpload(input, key, pendingPhotos, refreshPhotoGrid);
+window.refreshPhotoGrid = (key) => refreshPhotoGrid(key, pendingPhotos);
 window.showMentionDropdown = showMentionDropdown;
 window.hideMentionDropdown = hideMentionDropdown;
 window.insertMention = insertMention;
@@ -400,28 +406,8 @@ const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
 function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
-// ============================================================
-// PHOTOS
-// ============================================================
-let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
 let pendingDocFile=null;
-function refreshPhotoGrid(key){
-  const gridId = key==='task'?'task-photo-grid':'equip-photo-grid';
-  const grid = document.getElementById(gridId); if(!grid) return;
-  
-  grid.innerHTML = pendingPhotos[key].map((src, i) => `
-    <div style="position:relative; width:72px; height:72px">
-      <img class="photo-thumb" src="${src}" onclick="viewPhoto('${src}')" style="width:100%; height:100%"/>
-      <!-- THE MARKUP BUTTON -->
-      <button onclick="initMarkup('${src}', '${key}', ${i})" 
-              style="position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:3px; font-size:10px; padding:2px 4px; cursor:pointer">
-              ✏️
-      </button>
-    </div>
-  `).join('') +
-  `<div class="photo-add" onclick="document.getElementById('${key}-photo-input').click()">+</div>` +
-  `<input type="file" id="${key}-photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'${key}')"/>`;
-}
+
 function handleDocUpload(input){
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
@@ -717,23 +703,6 @@ function renderDowntimeTab(equipId) {
 // ============================================================
 
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
-
-async function handlePhotoUpload(input, key) {
-  const files = Array.from(input.files);
-  for(const file of files) {
-    const reader = new FileReader();
-    const dataUrl = await new Promise(res => { reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
-    const compressed = await compressImage(dataUrl);
-    const savings = Math.round((1 - compressed.length/dataUrl.length)*100);
-    if(savings > 5) showToast('Photo compressed — saved ' + savings + '% storage');
-    pendingPhotos[key].push(compressed);
-    refreshPhotoGrid(key);
-  }
-  input.value = '';
-}
-
-let offlineQueue = [];
-try { offlineQueue = JSON.parse(localStorage.getItem('mp_offline_queue') || '[]'); } catch(e) {}
 
 function saveOfflineQueue() {
   try { localStorage.setItem('mp_offline_queue', JSON.stringify(offlineQueue)); } catch(e) {}
