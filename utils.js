@@ -77,3 +77,13 @@ export function compressImage(dataUrl, maxWidth = 800, quality = 0.75) {
     img.src = dataUrl;
   });
 }
+
+export function equipName(id, state) { 
+    const e = state.equipment.find(x => x.id === id); 
+    return e ? e.name : '—'; 
+}
+
+export function supplierName(id, state) { 
+    const s = state.suppliers.find(x => x.id === id); 
+    return s ? s.name : '—'; 
+}
