@@ -24,7 +24,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, compressImage } from './util
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab  } from './ui.js';
-import { healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, deleteObservation, editQuickSpec, toggleLockout  } from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation,toggleLockout, addQuickSpec, deleteQuickSpec, } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import {  fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
@@ -118,6 +118,18 @@ window.addTaskCheckItem = (id) => {
             window.openTaskDetail(id); // Refresh popup
         });
     }
+};
+
+window.toggleLockout = (id, checked) => {
+    toggleLockout(id, checked, currentUser).then(success => {
+        if(success) renderDashboard(); // Redraw status on home screen
+    });
+};
+window.addQuickSpec = (id) => {
+    addQuickSpec(id).then(() => window.renderQuickSpecs(id, state));
+};
+window.deleteQuickSpec = (id, key) => {
+    deleteQuickSpec(id, key).then(() => window.renderQuickSpecs(id, state));
 };
 
 window.globalEditObs = function(id) {
@@ -3176,63 +3188,7 @@ function renderDashboardObs(equipId) {
 }
     
    
-async function addQuickSpec(equipId) {
-    // 1. Find the machine in our local list
-    const e = state.equipment.find(x => x.id === equipId);
-    if(!e) return;
 
-    // 2. Ask for the info
-    const key = prompt("Spec Name (e.g. Engine Oil, Front Tire PSI)");
-    if (!key) return;
-    const val = prompt(`Value for ${key} (e.g. 15 qts, 35 PSI)`);
-    if (!val) return;
-
-    // 3. Update the LOCAL data immediately so the redraw sees it
-    if (!e.custom_fields) e.custom_fields = {};
-    e.custom_fields[key] = val;
-
-    // 4. DRAW IT NOW (Before even talking to the database)
-    renderQuickSpecs(equipId);
-
-    // 5. Save to the database in the background
-    try {
-        await persist('equipment', 'upsert', e);
-        showToast("Spec saved ✓");
-        
-        if(typeof logAuditAction === 'function') {
-            logAuditAction("Added Spec", `${e.name}: ${key}=${val}`);
-        }
-    } catch(err) {
-        console.error(err);
-        showToast("Sync failed - will retry later");
-    }
-}
-
-async function deleteQuickSpec(equipId, key) {
-    if (!confirm(`Are you sure you want to delete the spec "${key}"?`)) return;
-
-    const e = state.equipment.find(x => x.id === equipId);
-    if (!e || !e.custom_fields) return;
-
-    // 1. Remove the key from the local object
-    delete e.custom_fields[key];
-
-    // 2. Instant UI Refresh
-    renderQuickSpecs(equipId);
-
-    // 3. Save to Database
-    try {
-        await persist('equipment', 'upsert', e);
-        showToast("Spec deleted");
-        
-        if(typeof logAuditAction === 'function') {
-            logAuditAction("Deleted Spec", `${e.name}: removed ${key}`);
-        }
-    } catch(err) {
-        console.error(err);
-        showToast("Error saving changes");
-    }
-}
 function setZerkMode(mode) {
     zerkPinMode = mode;
     zerkDrawingStep = 1; // Reset steps
@@ -3412,22 +3368,7 @@ async function saveCalendarEntry() {
     openModal('tpl-modal');
 }
 
-    async function setManualLink(equipId) {
-    const url = prompt("Enter the URL for this machine's parts manual or manufacturer catalog:");
-    if (!url) return;
-
-    const e = state.equipment.find(x => x.id === equipId);
-    if (!e) return;
-    
-    e.manual_url = url;
-    try {
-        await persist('equipment', 'upsert', e);
-        openEquipDetail(equipId); // Refresh the card to show the new button
-        showToast("Catalog link saved ✓");
-    } catch(err) {
-        showToast("Failed to save link");
-    }
-}
+  
 
 // Specialists: Cost by Equipment
 function renderCostByEquip() {
