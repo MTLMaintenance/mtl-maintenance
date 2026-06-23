@@ -12,7 +12,7 @@ import {
 import { loadState, teleportModals } from './init.js';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
-import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles  } from './profiles.js';
+import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles,renderDmList, handleChatInput  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
@@ -51,6 +51,10 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.renderDmList = () => renderDmList(currentUser, state);
+window.handleChatInput = (el) => handleChatInput(el, state, window.showMentionDropdown, window.hideMentionDropdown);
+window.showMentionDropdown = showMentionDropdown;
+window.hideMentionDropdown = hideMentionDropdown;
 window.renderUsersTable = () => renderUsersTable(state);
 window.openPermissionsCard = (id) => openPermissionsCard(id); // Ensure this is in admin.js
 window.togglePermission = (role, key, val) => togglePermission(role, key, val);
@@ -2010,7 +2014,7 @@ async function toggleToolStatus(id) {
   renderTools();
 }  
 
-}
+
 function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
     if (!tableBody) return;
@@ -2407,63 +2411,6 @@ async function renderAdminPanel(){
   } catch(e){ console.error(e); }
 }
 
-
-function handleChatInput(el) {
-    // 1. Auto-resize textarea
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-
-    const val = el.value;
-    const cursor = el.selectionStart;
-    const lastAt = val.lastIndexOf('@', cursor - 1);
-
-    // 2. Check if user is typing a mention
-    if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ')) {
-        const query = val.substring(lastAt + 1, cursor).toLowerCase();
-        
-        // Fetch users from our existing cache or profiles
-        const users = (state.users_list_cache || []).filter(u => 
-            u.full_name.toLowerCase().includes(query) || 
-            u.username.toLowerCase().includes(query)
-        );
-
-        if (users.length > 0) {
-            showMentionDropdown(users, lastAt);
-        } else {
-            hideMentionDropdown();
-        }
-    } else {
-        hideMentionDropdown();
-    }
-}
-
-function showMentionDropdown(users, atPos) {
-    const dd = document.getElementById('mention-dropdown');
-    if (!dd) return;
-    
-    dd.innerHTML = users.map(u => `
-        <div class="mention-item" style="padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px" onclick="insertMention('${u.username}', ${atPos})">
-            <b>${u.full_name}</b> <span style="font-size:11px; color:var(--text3)">@${u.username}</span>
-        </div>
-    `).join('');
-    dd.style.display = 'block';
-}
-
-function hideMentionDropdown() {
-    const dd = document.getElementById('mention-dropdown');
-    if (dd) dd.style.display = 'none';
-}
-
-function insertMention(username, atPos) {
-    const input = document.getElementById('chat-input');
-    const val = input.value;
-    const before = val.substring(0, atPos);
-    const after = val.substring(input.selectionStart);
-    
-    input.value = before + '@' + username + ' ' + after;
-    hideMentionDropdown();
-    input.focus();
-}
 
 function showZerkInfo(event, zerkId) {
     event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
