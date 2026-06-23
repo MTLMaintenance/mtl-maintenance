@@ -25,10 +25,10 @@ import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerk
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview  } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable} from './inventory.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
-import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal } from './calendar.js'
+import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason } from './calendar.js'
 import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
@@ -52,6 +52,10 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.openAbsenceDetail = (id) => openAbsenceDetail(id, currentUser, state);
+window.togglePrivateReason = togglePrivateReason;
+window.openSupplierDetail = (id) => openSupplierDetail(id, state);
+window.deleteInvoice = deleteInvoice;
 window.equipName = (id) => equipName(id, state);
 window.supplierName = (id) => supplierName(id, state);
 window.switchDetailTab = switchDetailTab;
@@ -184,93 +188,6 @@ function updatePinDisplay() {
 
 function checkDateSelection(val) {
     if(val) document.getElementById('abs-options').style.display = 'block';
-}
-
-
-
-async function checkUpcomingAbsences() {
-    const today = new Date().toISOString().split('T')[0];
-    const lastCheck = localStorage.getItem('last_absence_check');
-    if (lastCheck === today) return; // Don't spam, only check once a day
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-    const upcoming = staffAbsences.filter(a => a.start_date.split('T')[0] === tomorrowStr);
-
-    for (let abs of upcoming) {
-        const detail = abs.is_private ? abs.reason_private : abs.reason_public;
-        
-        // Insert a message into the Admin channel
-        await window._mpdb.from('chat_messages').insert([{
-            channel: 'admin',
-            author: 'SYSTEM',
-            author_name: 'Reminder Bot 🤖',
-            body: `⚠️ REMINDER: ${abs.user_name} is scheduled to be out tomorrow. Reason: ${detail}`,
-            created_at: new Date().toISOString()
-        }]);
-    }
-    localStorage.setItem('last_absence_check', today);
-}
-
-function openAbsenceDetail(id) {
-    console.log("Opening details for absence:", id);
-    const abs = (window.staffAbsences || []).find(a => a.id === id);
-    if (!abs) return;
-    
-    window.currentDetailId = id; // Store for deletion
-
-    // 1. Fill the Information
-    document.getElementById('det-user').textContent = `👤 ${abs.user_name}`;
-    document.getElementById('det-reason').textContent = abs.reason_public || "No reason provided.";
-    
-    const timeDisplay = abs.is_all_day ? "All Day" : (abs.partial_time || "Scheduled");
-    document.getElementById('det-time').textContent = timeDisplay;
-
-    // 2. PERMISSION CHECK
-    // Only the creator OR an Admin can delete/edit
-    const isOwner = (abs.author === currentUser.username || abs.user_id === String(currentUser.id));
-    const isAdmin = (currentUser.role === 'Admin');
-
-    const delBtn = document.getElementById('det-delete-btn');
-    if (delBtn) {
-        if (isOwner || isAdmin) {
-            delBtn.style.display = 'block';
-        } else {
-            delBtn.style.display = 'none'; // Hide if not their request
-        }
-    }
-
-    // 3. Show Private Info (Admins Only)
-    const privBox = document.getElementById('det-private-section');
-    if (privBox) {
-        if (isAdmin) {
-            privBox.style.display = 'block';
-            document.getElementById('det-private-text').textContent = abs.reason_private || "None";
-        } else {
-            privBox.style.display = 'none';
-        }
-    }
-
-    // 4. Force Show the Modal
-    const modal = document.getElementById('absence-detail-modal');
-    if (modal) {
-        modal.style.display = 'flex'; // Use flex for centering
-        modal.classList.add('active'); 
-    }
-}
-
-function togglePrivateReason(show) {
-    const privBox = document.getElementById('priv-box');
-    if (privBox) {
-        if (show) {
-            privBox.style.display = 'block';
-            // Optional: Scroll to bottom of modal so they see the new box
-        } else {
-            privBox.style.display = 'none';
-        }
-    }
 }
 
 const ADMIN_USERNAME = 'tangal99';
@@ -789,33 +706,6 @@ function renderDowntimeTab(equipId) {
 
 
 
-function openSupplierDetail(id){
-  const s = state.suppliers.find(x => x.id === id); 
-  if(!s) return;
-  
-  const parts = state.parts.filter(p => p.supplier_id === id);
-  document.getElementById('detail-title').textContent = s.name;
-  
-  document.getElementById('detail-body').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
-      <div><span style="color:var(--text2)">Contact:</span> ${s.contact||'—'}</div>
-      <div><span style="color:var(--text2)">Phone:</span> ${s.phone||'—'}</div>
-      <div><span style="color:var(--text2)">Email:</span> <a href="mailto:${s.email}" style="color:var(--accent)">${s.email||'—'}</a></div>
-      <div><span style="color:var(--text2)">Website:</span> ${s.website ? `<a href="${s.website}" target="_blank" style="color:var(--accent)">Visit</a>` : '—'}</div>
-    </div>
-    ${s.notes ? `<div style="font-size:13px;color:var(--text2);background:var(--bg2);padding:9px 11px;border-radius:var(--radius);margin-bottom:12px">${s.notes}</div>` : ''}
-    <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Parts from this supplier (${parts.length})</div>
-    ${parts.map(p => `<div class="parts-row">
-        <div style="flex:1"><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.num} · Stock: ${p.qty}</div></div>
-    </div>`).join('') || '<div style="color:var(--text3);font-size:13px">No parts linked</div>'}
-    <div style="margin-top:16px;text-align:right">
-        <button class="btn btn-primary" onclick="closeModal('detail-modal')">Close</button>
-    </div>`;
-
-  openModal('detail-modal');
-
-}
-let woPartsAdded=[];
 
 // ============================================================
 // SAVE DATA
@@ -1965,37 +1855,6 @@ async function sendCriticalObsEmail(obs, equipId) {
 }
 
 // ── INVOICES ─────────────────────────────────────────────────
-function openAddInvoice() {
-  _invoicePhotoData = null;
-  _currentInvoiceEquipId = window._currentDetailEquipId;
-
-  // Reset form
-  ['inv-supplier','inv-number','inv-date','inv-amount','inv-notes'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
-
-  // Helper function to safely hide elements
-  const hide = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-    else console.warn(`Element with ID "${id}" was not found in the DOM.`);
-  };
-
-  hide('invoice-scanning');
-  hide('invoice-extracted-badge');
-  hide('inv-clear-photo-wrap');
-
-  const previewArea = document.getElementById('invoice-photo-preview-area');
-  if (previewArea) {
-    previewArea.innerHTML = `
-      <div style="font-size:32px;margin-bottom:8px">📄</div>
-      <div style="font-size:13px;font-weight:500;color:var(--text)">Drop invoice photo here or click to upload</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">The app will automatically read the invoice details</div>`;
-  }
-
-  openModal('invoice-modal');
-}
-
 
 
 function handleInvoiceDrop(event) {
@@ -2035,31 +1894,6 @@ async function viewInvoicePhoto(photoPath) {
   }
 }
 
-// ── DELETE INVOICE PHOTO FROM STORAGE ────────────────────────
-async function deleteInvoicePhotoFromStorage(photoPath) {
-  if(!photoPath) return;
-  try {
-    await window._mpdb.storage.from('invoices').remove([photoPath]);
-  } catch(e) {
-    console.log('Photo delete error:', e);
-  }
-}
-
-// Override deleteInvoice to also remove photo from storage
-const _baseDeleteInvoice = deleteInvoice;
-async function deleteInvoice(invoiceId, equipId) {
-  if(!confirm('Delete this invoice?')) return;
-  try {
-    // Get photo path first
-    const { data: inv } = await window._mpdb.from('invoices').select('photo').eq('id', invoiceId).single();
-    if(inv?.photo) await deleteInvoicePhotoFromStorage(inv.photo);
-    await window._mpdb.from('invoices').delete().eq('id', invoiceId);
-    showToast('Invoice deleted');
-    renderInvoicesList(equipId);
-  } catch(e) {
-    showToast('Failed to delete');
-  }
-}
 
 // ── GEMINI KEY MANAGEMENT ─────────────────────────────────────
 async function saveGeminiKey() {
@@ -3727,76 +3561,4 @@ async function addPartToActiveTask(taskId) {
     openTaskDetail(taskId);
     showToast("Part logged live ✓");
 }
-
-async function usePartOnTask(taskId) {
-  const partId = document.getElementById('dt-part-select').value;
-  const qtyUsed = parseInt(document.getElementById('dt-part-qty').value);
-  if(!partId || qtyUsed <= 0) return;
-
-  const part = state.parts.find(p => p.id === partId);
-  if(part.qty < qtyUsed) return alert("Not enough stock!");
-
-  const usage = {
-    id: uid(),
-    task_id: taskId,
-    part_id: partId,
-    part_name: part.name,
-    qty_used: qtyUsed,
-    unit_cost: part.cost || 0,
-    line_total: (part.cost || 0) * qtyUsed,
-    used_by: currentUser.name,
-    used_at: new Date().toISOString()
-  };
-
-  // 1. Update Database
-  await window._mpdb.from('part_usage').insert(usage);
-  
-  // 2. Subtract from Inventory
-  part.qty -= qtyUsed;
-  await persist('parts', 'upsert', part);
-
-  // 3. Update Task Total Cost
-  const task = state.tasks.find(t => t.id === taskId);
-  task.cost = (task.cost || 0) + usage.line_total;
-  await persist('tasks', 'upsert', task);
-
-  // 4. Refresh UI
-  state.partUsage.push(usage);
-  openTaskDetail(taskId); 
-  showToast("Part added to Work Order ✓");
-}
-
-async function removePartFromTask(usageId, taskId) {
-  if(!confirm("Remove part and return to stock?")) return;
-  const usage = state.partUsage.find(u => u.id === usageId);
-  
-  // Return to stock
-  const part = state.parts.find(p => p.id === usage.part_id);
-  if(part) {
-    part.qty += usage.qty_used;
-    await persist('parts', 'upsert', part);
-  }
-
-  await window._mpdb.from('part_usage').delete().eq('id', usageId);
-  state.partUsage = state.partUsage.filter(u => u.id !== usageId);
-  openTaskDetail(taskId);
-}
-
-
-// --- THE TRIGGER ---
-window.editObservation = function(obsId, equipId) {
-    // 1. Find the data
-    const obs = state.observations.find(o => o.id === obsId);
-    if (!obs) return alert("Observation not found.");
-
-    // 2. Pre-fill the dedicated card
-    document.getElementById('edit-obs-id').value = obsId;
-    document.getElementById('edit-obs-equip-id').value = equipId;
-    document.getElementById('edit-obs-sev').value = obs.severity;
-    document.getElementById('edit-obs-body').value = obs.body;
-
-    // 3. Force the card to show
-    document.getElementById('obs-edit-modal-backdrop').style.display = 'flex';
-};
-
 
