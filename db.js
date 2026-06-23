@@ -95,14 +95,6 @@ export async function validateSession () {
   }
 }
 
-export async function destroySession() {
-  const token = localStorage.getItem('mp_session_token');
-  if(token) {
-    try { await window._mpdb.from('app_sessions').delete().eq('token', token); } catch(e) {}
-    localStorage.removeItem('mp_session_token');
-  }
-}
-
 export async function syncOfflineQueue() {
   if (!offlineQueue || !offlineQueue.length) {
     const banner = document.getElementById('offline-queue-banner');
