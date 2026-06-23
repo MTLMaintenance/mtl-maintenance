@@ -17,16 +17,16 @@ import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, f
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
-import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools } from './services.js';
+import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools, checkAndSendOverdueEmails  } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout  } from './ui.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages  } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment  } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason } from './calendar.js'
@@ -63,6 +63,7 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.openPartsCatalog = (id) => openPartsCatalog(id, state);
 window.enterApp = () => enterApp(window.currentUser, state, can);
 window.toggleChatSidebar = toggleChatSidebar;
 window.adjustMobileLayout = adjustMobileLayout;
@@ -805,72 +806,6 @@ await window._mpdb.from('meter_history').insert({
     status_at_reading: e.status 
 });
 }
-// OVERDUE EMAIL (weekly, one email per batch)
-// ============================================================
-const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
-
-function scheduleOverdueCheck(task) {
-  // Store when each task was created so we can check 1 week later
-  try {
-    const schedules = JSON.parse(localStorage.getItem('mp_email_schedule') || '{}');
-    if(!schedules[task.id]) {
-      const dueDate = new Date(task.due || Date.now());
-      const sendDate = new Date(dueDate.getTime() + 7*24*60*60*1000);
-      schedules[task.id] = { sendAt: sendDate.toISOString(), taskId: task.id, taskName: task.name };
-      localStorage.setItem('mp_email_schedule', JSON.stringify(schedules));
-    }
-  } catch(e) {}
-}
-
-async function checkAndSendOverdueEmails() {
-  try {
-    const schedules = JSON.parse(localStorage.getItem('mp_email_schedule') || '{}');
-    const now = new Date();
-    const toSend = [];
-    for(const [taskId, info] of Object.entries(schedules)) {
-      if(new Date(info.sendAt) <= now) {
-        const task = state.tasks.find(t=>t.id===taskId);
-        if(task && task.status !== 'Completed') toSend.push(task);
-        delete schedules[taskId];
-      }
-    }
-    localStorage.setItem('mp_email_schedule', JSON.stringify(schedules));
-    if(toSend.length > 0) {
-      await sendOverdueEmailBatch(toSend);
-    }
-  } catch(e) { console.log('Email check error:', e); }
-}
-
-async function sendOverdueEmailBatch(tasks) {
-  // Check we haven't sent a similar email in last 6 days (dedup)
-  try {
-    const { data: recentEmails } = await window._mpdb.from('email_log')
-      .select('*').eq('type','overdue')
-      .gte('sent_at', new Date(Date.now()-6*24*60*60*1000).toISOString());
-    const recentIds = new Set((recentEmails||[]).flatMap(e=>e.task_ids||[]));
-    const newTasks = tasks.filter(t=>!recentIds.has(t.id));
-    if(!newTasks.length) return;
-    // Log the email
-    await window._mpdb.from('email_log').insert({
-      id: uid(), type:'overdue', recipient: OVERDUE_EMAIL_RECIPIENT,
-      subject: 'MTL Maintenance — Overdue Work Orders',
-      task_ids: newTasks.map(t=>t.id),
-    });
-    // Show in-app notification to admin
-    if(currentUser?.role==='admin') {
-      showToast('📧 Overdue email queued for ' + OVERDUE_EMAIL_RECIPIENT);
-    }
-  } catch(e) { console.log('Email send error:', e); }
-}
-
-// Run email check on app load
-setTimeout(checkAndSendOverdueEmails, 3000);
-
-// ============================================================
-// PATCH: saveEquipment — add budget fields
-// ============================================================
-const _origSaveEquipment = saveEquipment;
-
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
 
@@ -1500,9 +1435,6 @@ function updateUnreadBadge() {
 window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
 
-// ── LAZY IMAGES ──────────────────────────────────────────────
-const lazyObserver=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){const img=entry.target;const src=img.getAttribute('data-src');if(src){img.src=src;img.removeAttribute('data-src');lazyObserver.unobserve(img);}}});},{rootMargin:'100px'});
-function initLazyImages(){document.querySelectorAll('img.lazy-img[data-src]').forEach(img=>lazyObserver.observe(img));}
 
 // ── OVERRIDDEN renderDashboard ────────────────────────────────
 
@@ -1556,8 +1488,6 @@ async function deleteChatMessage(msgId,channel,author){
 // ── PARTS CATALOG ─────────────────────────────────────────────
 const PARTS_CATALOG_URLS={'cat':'https://parts.cat.com','caterpillar':'https://parts.cat.com','komatsu':'https://parts.komatsu.com','deere':'https://parts.deere.com','john deere':'https://parts.deere.com','kubota':'https://www.kubotausa.com/parts-and-service','volvo':'https://www.volvoce.com/united-states/en-us/services/parts/','bobcat':'https://www.bobcat.com/en/parts-and-service/parts','case':'https://www.caseparts.com','jcb':'https://parts.jcb.com'};
 function getPartsCatalogUrl(name,type,mfr){const text=((mfr||'')+' '+name+' '+(type||'')).toLowerCase();for(const[brand,url]of Object.entries(PARTS_CATALOG_URLS)){if(text.includes(brand))return url;}return 'https://www.google.com/search?q='+encodeURIComponent((mfr||name)+' parts catalog');}
-function openPartsCatalog(equipId){if(window.innerWidth<768){showToast('Parts catalog is only available on desktop');return;}const e=state.equipment.find(x=>x.id===equipId);if(!e)return;window.open(getPartsCatalogUrl(e.name,e.type,e.manufacturer),'_blank');}
-
 // ── PERMANENT DELETE MESSAGE ──────────────────────────────────
 async function permanentDeleteMessage(deletedId) {
   if(!confirm('Permanently delete this message? This cannot be undone.')) return;
