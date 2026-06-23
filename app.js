@@ -22,8 +22,8 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } fr
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout  } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange } from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole } from './admin.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment  } from './equipment.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice} from './inventory.js';
@@ -40,6 +40,17 @@ import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed } from './analytics.js';
 
+
+window.saveEquipment = () => {
+    saveEquipment(state, currentUser, window.pendingPhotos, window.customFieldsTemp).then(res => {
+        if(success) {
+            closeModal('equip-modal');
+            renderEquipmentTable();
+        }
+    });
+};
+window.resetUserPassword = resetUserPassword;
+window.unlockUser = unlockUser;
 window.showLogin = () => {
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('login-view').style.display = 'block';
@@ -630,7 +641,7 @@ async function deleteEquip(id) {
   }
 }
 // Custom fields
-let customFieldsTemp={};
+
 function renderCustomFields(){
   const list=document.getElementById('custom-fields-list'); if(!list)return;
   list.innerHTML=Object.entries(customFieldsTemp).map(([k,v])=>
@@ -643,8 +654,7 @@ function renderCustomFields(){
 }
 function addCustomField(){ customFieldsTemp['New Field '+Object.keys(customFieldsTemp).length]='' ; renderCustomFields(); }
 
-// Assign users
-let assignedUsersTemp=[];
+
 function renderAssignUsers(){
   const list=document.getElementById('assign-users-list'); if(!list)return;
   list.innerHTML='<div style="color:var(--text2);font-size:13px">Enter usernames to assign (comma separated):</div><input class="form-input" id="assign-input" placeholder="e.g. mike, sarah" style="margin-top:8px;width:100%" value="'+assignedUsersTemp.join(', ')+'"/>';
@@ -860,63 +870,7 @@ setTimeout(checkAndSendOverdueEmails, 3000);
 // PATCH: saveEquipment — add budget fields
 // ============================================================
 const _origSaveEquipment = saveEquipment;
-async function saveEquipment() {
-  const name = document.getElementById('e-name').value.trim(); 
-  if(!name){ showToast('Please enter a name'); return; }
-  
-  const assignInput = document.getElementById('assign-input');
-  const assignedUsers = assignInput ? assignInput.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
-  
-  const record = {
-    id:uid(), 
-    name,
-    type:   document.getElementById('e-type').value,
-    serial: document.getElementById('e-serial').value,
-    hours:  parseInt(document.getElementById('e-hours').value)||0,
-    status: document.getElementById('e-status').value,
-    op:     document.getElementById('e-op').value,
-    notes:  document.getElementById('e-notes').value,
-    photos: pendingPhotos.equip.slice(),
-    assigned_users: assignedUsers,
-    custom_fields: customFieldsTemp,
-    health_score: 100,
-    manufacturer: document.getElementById('e-manufacturer')?.value.trim()||'',
-    group_tag: document.getElementById('e-group')?.value||'outside',
-    monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
-    yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
-  };
 
-  state.equipment.push(record);
-  await persist('equipment','upsert',record);
-const isEdit = state.equipment.some(e => e.id === record.id);
-await logAuditAction(
-  isEdit ? "Updated Equipment" : "Added New Equipment", 
-  `Machine: "${name}"`
-);
-  pendingPhotos.equip=[]; 
-  customFieldsTemp={};
-  closeModal('equip-modal'); 
-  renderEquipmentTable(); 
-  updateMetrics();
-
-  ['e-name','e-type','e-serial','e-hours','e-op','e-notes','e-budget-monthly','e-budget-yearly'].forEach(id=>{ 
-    const el=document.getElementById(id); 
-    if(el) el.value=''; 
-  });
-}
-
-const _origRenderDashboard = renderDashboard;
-const _origEnterApp = enterApp;
-const _origRenderEquipmentTable = renderEquipmentTable;
-// State additions
-state.downtimeLog=[];state.observations=[];state.chatMessages=[];
-state.checklistTemplates=[
-  {id:'tpl-cat320',name:'CAT 320 Excavator — Daily',model:'CAT 320',type:'Excavator',items:['Check engine oil level','Check hydraulic fluid level','Check coolant level','Check fuel level','Inspect for fluid leaks','Drain water separator','Inspect hydraulic hoses','Check cylinder seals','Inspect undercarriage','Check track tension','Inspect track bolts','Inspect sprocket','Inspect bucket teeth','Check bucket pins','Grease all pivot points','Test lights and horn','Test seat belt','Check control switches','Inspect mirrors','Clean cab','Clean radiator','Monitor display for errors','Test brakes','Listen for abnormal sounds','Test all hydraulic functions','Log hours']},
-  {id:'tpl-cat320-500',name:'CAT 320 — 500hr Service',model:'CAT 320',type:'Excavator',items:['Change engine oil and filter','Replace fuel filters','Replace hydraulic return filter','Check and clean air filter','Top up all fluid levels','Grease all lubrication points','Inspect track and undercarriage','Check swing bearing','Inspect cylinder seals','Check all hydraulic hoses','Inspect engine belts','Check battery terminals','Test all safety devices','Check slew ring bolts','Sample hydraulic oil','Sample engine oil','Inspect radiator cores','Log service']},
-  {id:'tpl-loader',name:'Wheel Loader — Daily',model:'General',type:'Wheel Loader',items:['Check engine oil','Check hydraulic fluid','Check coolant','Check fuel','Inspect tyres','Check wheel nuts','Inspect bucket teeth','Check bucket pins','Inspect hydraulic hoses','Grease pivot points','Test lights and alarm','Test seat belt','Check mirrors','Test hydraulic functions','Log hours']},
-  {id:'tpl-skid',name:'Skid Steer — Daily',model:'General',type:'Skid Steer',items:['Check engine oil','Check hydraulic fluid','Check coolant','Check fuel','Inspect tyres or tracks','Check quick attach','Inspect hydraulic hoses','Grease lubrication points','Test lights and alarm','Test seat bar','Test all controls','Log hours']},
-  {id:'tpl-crane',name:'Crane — Daily Pre-Op',model:'General',type:'Crane',items:['Check engine oil','Check hydraulic fluid','Check coolant','Check fuel','Inspect wire rope','Inspect hook and latch','Check load block','Inspect boom','Check outriggers','Test limit switches','Test load indicator','Inspect hydraulic hoses','Grease all points','Test all controls','Verify lift certification','Log hours']},
-];
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
 
@@ -1598,14 +1552,6 @@ async function deleteChatMessage(msgId,channel,author){
     showToast('Message deleted');
   }catch(e){showToast('Failed to delete');}
 }
-// ── RESET USER PASSWORD ───────────────────────────────────────
-async function resetUserPassword(userId,userName){
-  const newPass=prompt('Set a new password for '+userName+':');
-  if(!newPass||newPass.trim().length<4){if(newPass!==null)showToast('Password must be at least 4 characters');return;}
-  const confirm2=prompt('Confirm new password for '+userName+':');
-  if(newPass!==confirm2){showToast('Passwords do not match');return;}
-  try{const hashed=await hashPassword(newPass.trim());await window._mpdb.from('profiles').update({password_hash:hashed}).eq('id',userId);showToast(userName+' password reset ✓');}catch(e){showToast('Failed');}
-}
 
 // ── PARTS CATALOG ─────────────────────────────────────────────
 const PARTS_CATALOG_URLS={'cat':'https://parts.cat.com','caterpillar':'https://parts.cat.com','komatsu':'https://parts.komatsu.com','deere':'https://parts.deere.com','john deere':'https://parts.deere.com','kubota':'https://www.kubotausa.com/parts-and-service','volvo':'https://www.volvoce.com/united-states/en-us/services/parts/','bobcat':'https://www.bobcat.com/en/parts-and-service/parts','case':'https://www.caseparts.com','jcb':'https://parts.jcb.com'};
@@ -1736,16 +1682,6 @@ function handleInvoiceDrop(event) {
   dt.items.add(file);
   input.files = dt.files;
   handleInvoicePhoto(input);
-}
-
-
-// ── UNLOCK USER ───────────────────────────────────────────────
-async function unlockUser(userId, userName) {
-  try {
-    await window._mpdb.from('profiles').update({ login_attempts: 0, locked_until: null }).eq('id', userId);
-    showToast(userName + ' unlocked ✓');
-    renderUsersTable();
-  } catch(e) { showToast('Failed to unlock'); }
 }
 
 // ── INVOICE PHOTO VIEWER ─────────────────────────────────────
