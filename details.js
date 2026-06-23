@@ -76,3 +76,46 @@ export function buildTaskDetailHTML(t, equipName) {
     </div>
     `;
 }
+
+// 1. Build the chronological history (Work Orders + Notes)
+export function renderEquipTimeline(equipId, state, fmtDateFunc) {
+  const container = document.getElementById('eq-timeline-content');
+  if(!container) return;
+
+  const tasks = state.tasks.filter(t => t.equipId === equipId).map(t => ({ 
+      date: t.due, title: t.name, body: t.notes, type: 'WO', status: t.status 
+  }));
+  
+  const obs = (state.observations || []).filter(o => o.equip_id === equipId).map(o => ({ 
+      date: o.created_at, title: o.severity.toUpperCase() + ' Note', body: o.body, type: 'OBS', author: o.author
+  }));
+  
+  const timeline = [...tasks, ...obs].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  if (!timeline.length) {
+    container.innerHTML = '<div class="empty-text">No history found.</div>';
+    return;
+  }
+
+  container.innerHTML = timeline.map(item => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${item.type}"></div>
+      <div class="timeline-date">${fmtDateFunc(item.date)}</div>
+      <div class="timeline-title">${item.title}</div>
+      <div class="timeline-body">${item.body || ''}</div>
+    </div>`).join('');
+}
+
+// 2. Render the tiny "Recent Activity" list on the machine card
+export function renderMiniTimeline(equipId, state, fmtDateFunc, badgeFunc) {
+    const container = document.getElementById('eq-timeline-content-mini');
+    if(!container) return;
+
+    const items = state.tasks.filter(t => t.equipId === equipId).slice(0, 5);
+    container.innerHTML = items.map(t => `
+        <div class="mini-row">
+            <div class="text-mini">${fmtDateFunc(t.due)}</div>
+            <div class="bold">${t.name}</div>
+            <div>${badgeFunc(t.status)}</div>
+        </div>`).join('') || '<div class="empty-text">No recent activity</div>';
+}
