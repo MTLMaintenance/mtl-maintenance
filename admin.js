@@ -163,3 +163,11 @@ export function renderPermissionsMatrix(PERM_LABELS, PERMISSIONS) {
                 </td>`).join('')}
         </tr>`).join('');
 }
+export function clearAuditFilters() {
+    const uInp = document.getElementById('audit-filter-user');
+    const dInp = document.getElementById('audit-filter-date');
+    if(uInp) uInp.value = 'all';
+    if(dInp) dInp.value = '';
+    // Re-render logs with no filters
+    if (typeof window.renderAuditLogs === 'function') window.renderAuditLogs();
+}
