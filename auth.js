@@ -144,3 +144,115 @@ export async function signOut() {
     // 4. Reload the page to show the login screen
     window.location.reload();
 }
+
+export async function doLogin() {
+  const username = document.getElementById('auth-user').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  document.getElementById('auth-err').style.display='none';
+  if (!username||!pass) { showErr('Please enter your username and password.'); return; }
+  const btn = document.getElementById('auth-btn');
+  btn.textContent='Signing in...'; btn.disabled=true;
+  try {
+    const { data: profile, error } = await window._mpdb.from('profiles').select('*').eq('username', username).single();
+    if (error||!profile) { showErr('Username not found.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+
+    // Check if account is locked
+    if (profile.locked_until && new Date(profile.locked_until) > new Date()) {
+      const mins = Math.ceil((new Date(profile.locked_until) - new Date()) / 60000);
+      showErr('Account locked due to too many failed attempts. Try again in ' + mins + ' minute' + (mins!==1?'s':'') + '.');
+      btn.textContent='Sign In'; btn.disabled=false; return;
+    }
+
+    // Check password
+    const hashedInput = await hashPassword(pass);
+    const storedHash = profile.password_hash || '';
+    if (storedHash.length === 64) {
+      passwordMatch = storedHash === hashedInput;
+    } else {
+      try { passwordMatch = atob(storedHash.replace(/\s/g,'')) === pass; } catch(e) {}
+    }
+
+    if (!passwordMatch) {
+      const attempts = (profile.login_attempts || 0) + 1;
+      const updateData = { login_attempts: attempts };
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString();
+        updateData.locked_until = lockUntil;
+        updateData.login_attempts = 0;
+        showErr('Too many failed attempts. Account locked for ' + LOCKOUT_MINUTES + ' minutes.');
+      } else {
+        const remaining = MAX_LOGIN_ATTEMPTS - attempts;
+        showErr('Incorrect password. ' + remaining + ' attempt' + (remaining!==1?'s':'') + ' remaining.');
+      }
+      await window._mpdb.from('profiles').update(updateData).eq('username', username);
+      btn.textContent='Sign In'; btn.disabled=false; return;
+    }
+
+    // Success — reset attempts
+    await window._mpdb.from('profiles').update({ login_attempts: 0, locked_until: null }).eq('username', username);
+
+    if (profile.status==='pending') { showErr('Your account is pending admin approval.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+    if (profile.status==='denied') { showErr('Access denied. Contact your administrator.'); btn.textContent='Sign In'; btn.disabled=false; return; }
+
+    const isAdmin = username.toLowerCase()===ADMIN_USERNAME.toLowerCase();
+    currentUser = { id: profile.id, name: profile.full_name||username, role: isAdmin?'admin':'tech', username };
+    // Create secure session token
+    await createSession(username, profile.id);
+    enterApp();
+  } catch(e) { showErr('Login failed. Try again.'); btn.textContent='Sign In'; btn.disabled=false; }
+}
+
+export async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const username = document.getElementById('reg-user').value.trim();
+  const pin = document.getElementById('reg-pin').value.trim(); // Changed from reg-pass to reg-pin
+  
+  // Clear any old errors
+  document.getElementById('auth-err').style.display = 'none';
+
+  // 1. Validation
+  if (!name || !username || !pin) { 
+      showErr('Please fill in all fields.'); 
+      return; 
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) { 
+      showErr('Username: letters, numbers and underscores only.'); 
+      return; 
+  }
+
+  try {
+    // 2. Check if username is already taken
+    const { data: existing } = await window._mpdb
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .single();
+    
+    if (existing) { 
+        showErr('That username is already taken.'); 
+        return; 
+    }
+
+    // 3. Insert the new user into the database
+    const { error } = await window._mpdb.from('profiles').insert({
+      id: crypto.randomUUID(), 
+      username: username, 
+      full_name: name, 
+      role: 'tech', 
+      status: 'pending',
+      pin_code: pin // Saves ly to the new PIN column
+    });
+
+    if (error) { 
+        showErr('Could not submit: ' + error.message); 
+        return; 
+    }
+
+    // 4. Success - show the pending screen
+    showPending();
+
+  } catch(e) { 
+    console.error(e);
+    showErr('Registration failed. Try again.'); 
+  }
+}
