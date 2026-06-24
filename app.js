@@ -643,34 +643,6 @@ await window._mpdb.from('meter_history').insert({
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
 
 
-  function refreshObsList(equipId) {
-    const container = document.getElementById('obs-list-' + equipId);
-    if (!container) return;
-
-    const obs = (state.observations || []).filter(o => o.equip_id === equipId);
-    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
-
-    container.innerHTML = obs.map(o => {
-        const sevClass = o.severity === 'critical' ? 'obs-critical' : o.severity === 'watch' ? 'obs-watch' : 'obs-info';
-        const isAuthor = o.author === currentUser.username || o.author === currentUser.name;
-
-        return `
-        <div class="card" style="margin-bottom: 12px; border-left: 5px solid ${o.severity === 'critical' ? 'var(--danger)' : 'var(--border)'}">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px">
-                <span class="badge ${sevClass}">${o.severity.toUpperCase()}</span>
-                <span style="font-size:11px; color:var(--text3)">${o.author} · ${fmtDate(o.created_at)}</span>
-            </div>
-            <div style="font-size:13px; line-height:1.5">${o.body}</div>
-            ${o.photo ? `<img src="${o.photo}" style="width:100%; max-height:200px; object-fit:cover; margin-top:8px; border-radius:4px; cursor:pointer" onclick="viewPhoto('${o.photo}')"/>` : ''}
-            
-            <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end">
-                ${(isAuthor || isAdmin) ? `<button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="editObservation('${o.id}', '${equipId}')">Edit</button>` : ''}
-                ${(isAdmin) ? `<button class="btn btn-danger btn-sm" style="font-size:10px" onclick="deleteObservation('${o.id}', '${equipId}')">Delete</button>` : ''}
-            </div>
-        </div>`;
-    }).join('') || '<div style="color:var(--text3); padding:20px; text-align:center">No observations yet.</div>';
-}
-
 // ── GROUPS ───────────────────────────────────────────────────
 function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
 function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});renderEquipmentTable();}
