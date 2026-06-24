@@ -46,6 +46,9 @@ export async function loadState() {
     state.wishlist = wl.data || [];
     state.observations = obs.data || [];
 
+     if (typeof window.renderChecklistTemplates === 'function') {
+        window.renderChecklistTemplates();
+    }
     // 4. Trigger UI Refresh
     if (typeof updateMetrics === 'function') updateMetrics();
     setSyncStatus('online');
