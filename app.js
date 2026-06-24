@@ -94,7 +94,9 @@ window.verifyUserPin = verifyUserPin;
 window.selectUserForLogin = selectUserForLogin;
 window.backToNames = backToNames;
 window.showPinLogin = showPinLogin;
-window.enterApp = enterApp;
+window.enterApp = () => {
+    return enterApp(window.currentUser, state, window.can);
+};
 window.backToNames = backToNames;
 window.updatePinDots = updatePinDots;
 window.showPinLogin = showPinLogin;
