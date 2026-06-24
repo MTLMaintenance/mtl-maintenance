@@ -9,10 +9,11 @@ import {
 
 
 // --- INITIALIZATION BRIDGES ---
+import { adjustMobileLayout, handleLogoClick } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
 import { startApp, loadState, teleportModals, enterApp } from './init.js';
 import { handleGlobalSearch } from './search.js';
-import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut } from './auth.js';
+import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline } from './details.js';
@@ -25,7 +26,7 @@ import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showM
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment  } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
-import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial } from './tools.js';
+import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks } from './dashboard.js';
@@ -34,7 +35,7 @@ import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory 
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
-import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable  } from './views.js';
+import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations  } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
@@ -63,6 +64,10 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+
+window.renderDeniedList = renderDeniedList;
+window.renderWishlist = renderWishlist;
+window.renderTools = renderTools;
 window.openPartsCatalog = (id) => openPartsCatalog(id, state);
 window.enterApp = () => enterApp(window.currentUser, state, can);
 window.toggleChatSidebar = toggleChatSidebar;
@@ -144,6 +149,9 @@ window.renderEquipTimeline = (id) => renderEquipTimeline(id, state, fmtDate);
 window.renderMiniTimeline = (id) => renderMiniTimeline(id, state, fmtDate, badge);
 window.handleWishApproval = (id) => handleWishApproval(id, state).then(() => window.renderWishlist());
 window.handleWishDenial = (id) => handleWishDenial(id, state).then(() => window.renderWishlist());
+window.refreshObsList = (id) => refreshObsList(id, state, currentUser);
+window.renderRecentObservations = () => renderRecentObservations(state, equipName);
+
 window.startApp = startApp; 
 
 window.acceptToolSuggestion = () => {
@@ -241,121 +249,6 @@ function checkDateSelection(val) {
 const ADMIN_USERNAME = 'tangal99';
 
 function showErr(msg) { const e=document.getElementById('auth-err'); e.textContent=msg; e.style.display='block'; }
-
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
-
-async function doLogin() {
-  const username = document.getElementById('auth-user').value.trim();
-  const pass = document.getElementById('auth-pass').value;
-  document.getElementById('auth-err').style.display='none';
-  if (!username||!pass) { showErr('Please enter your username and password.'); return; }
-  const btn = document.getElementById('auth-btn');
-  btn.textContent='Signing in...'; btn.disabled=true;
-  try {
-    const { data: profile, error } = await window._mpdb.from('profiles').select('*').eq('username', username).single();
-    if (error||!profile) { showErr('Username not found.'); btn.textContent='Sign In'; btn.disabled=false; return; }
-
-    // Check if account is locked
-    if (profile.locked_until && new Date(profile.locked_until) > new Date()) {
-      const mins = Math.ceil((new Date(profile.locked_until) - new Date()) / 60000);
-      showErr('Account locked due to too many failed attempts. Try again in ' + mins + ' minute' + (mins!==1?'s':'') + '.');
-      btn.textContent='Sign In'; btn.disabled=false; return;
-    }
-
-    // Check password
-    const hashedInput = await hashPassword(pass);
-    const storedHash = profile.password_hash || '';
-    if (storedHash.length === 64) {
-      passwordMatch = storedHash === hashedInput;
-    } else {
-      try { passwordMatch = atob(storedHash.replace(/\s/g,'')) === pass; } catch(e) {}
-    }
-
-    if (!passwordMatch) {
-      const attempts = (profile.login_attempts || 0) + 1;
-      const updateData = { login_attempts: attempts };
-      if (attempts >= MAX_LOGIN_ATTEMPTS) {
-        const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString();
-        updateData.locked_until = lockUntil;
-        updateData.login_attempts = 0;
-        showErr('Too many failed attempts. Account locked for ' + LOCKOUT_MINUTES + ' minutes.');
-      } else {
-        const remaining = MAX_LOGIN_ATTEMPTS - attempts;
-        showErr('Incorrect password. ' + remaining + ' attempt' + (remaining!==1?'s':'') + ' remaining.');
-      }
-      await window._mpdb.from('profiles').update(updateData).eq('username', username);
-      btn.textContent='Sign In'; btn.disabled=false; return;
-    }
-
-    // Success — reset attempts
-    await window._mpdb.from('profiles').update({ login_attempts: 0, locked_until: null }).eq('username', username);
-
-    if (profile.status==='pending') { showErr('Your account is pending admin approval.'); btn.textContent='Sign In'; btn.disabled=false; return; }
-    if (profile.status==='denied') { showErr('Access denied. Contact your administrator.'); btn.textContent='Sign In'; btn.disabled=false; return; }
-
-    const isAdmin = username.toLowerCase()===ADMIN_USERNAME.toLowerCase();
-    currentUser = { id: profile.id, name: profile.full_name||username, role: isAdmin?'admin':'tech', username };
-    // Create secure session token
-    await createSession(username, profile.id);
-    enterApp();
-  } catch(e) { showErr('Login failed. Try again.'); btn.textContent='Sign In'; btn.disabled=false; }
-}
-
-async function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
-  const username = document.getElementById('reg-user').value.trim();
-  const pin = document.getElementById('reg-pin').value.trim(); // Changed from reg-pass to reg-pin
-  
-  // Clear any old errors
-  document.getElementById('auth-err').style.display = 'none';
-
-  // 1. Validation
-  if (!name || !username || !pin) { 
-      showErr('Please fill in all fields.'); 
-      return; 
-  }
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) { 
-      showErr('Username: letters, numbers and underscores only.'); 
-      return; 
-  }
-
-  try {
-    // 2. Check if username is already taken
-    const { data: existing } = await window._mpdb
-        .from('profiles')
-        .select('id')
-        .eq('username', username)
-        .single();
-    
-    if (existing) { 
-        showErr('That username is already taken.'); 
-        return; 
-    }
-
-    // 3. Insert the new user into the database
-    const { error } = await window._mpdb.from('profiles').insert({
-      id: crypto.randomUUID(), 
-      username: username, 
-      full_name: name, 
-      role: 'tech', 
-      status: 'pending',
-      pin_code: pin // Saves ly to the new PIN column
-    });
-
-    if (error) { 
-        showErr('Could not submit: ' + error.message); 
-        return; 
-    }
-
-    // 4. Success - show the pending screen
-    showPending();
-
-  } catch(e) { 
-    console.error(e);
-    showErr('Registration failed. Try again.'); 
-  }
-}
 
 function computeMonthlyCosts() {
   const now=new Date();
@@ -1571,96 +1464,6 @@ async function toggleToolStatus(id) {
 }  
 
 
-function renderTools() {
-    const tableBody = document.getElementById('tools-table-body');
-    if (!tableBody) return;
-
-    // 1. Filter tools
-    const tools = (window.state.tools || []).filter(t => t.status === 'available' || t.status === 'ordered');
-    
-    if (tools.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
-        return;
-    }
-
-    const isAdmin = window.currentUser?.role === 'admin' || window.currentUser?.role === 'manager';
-
-    // 2. Build the HTML string
-    tableBody.innerHTML = tools.map(t => {
-        const name = t.tool_name || t.name || 'Unnamed';
-        const health = t.health || 100;
-        const status = t.status || 'available';
-        const location = t.location || '—';
-        const isOrdered = status === 'ordered';
-
-        // --- THE MISSING PART: You must RETURN the HTML ---
-        return `
-            <tr onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
-                <td><b>${name}</b></td>
-                <td>${t.category || 'Other'}</td>
-                <td>${isOrdered ? '📦 ON ORDER' : location}</td>
-                <td>
-                    <div style="width:60px; height:8px; background:#ddd; border-radius:4px; overflow:hidden;">
-                        <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
-                    </div>
-                </td>
-                <td><span class="badge ${isOrdered ? 'bi' : 'bs'}">${status.toUpperCase()}</span></td>
-                <td>${t.procurement || '—'}</td>
-            </tr>`;
-    }).join(''); // --- THE OTHER MISSING PART: Combine the array into one string ---
-}
-
-function renderWishlist() {
-    const container = document.getElementById('wishlist-container');
-    const pending = state.wishlist.filter(w => w.status === 'pending');
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-
-    container.innerHTML = pending.map(w => `
-        <div class="card" style="border-left: 5px solid var(--warning)">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start">
-                <div>
-                    <div style="font-weight:700; font-size:15px">${w.tool_name}</div>
-                    <!-- ONLY MANAGERS SEE THE NAME -->
-                    <div style="font-size:11px; color:var(--text3); margin-top:2px">
-                        ${isManager ? `Requested by <b>${w.requested_by}</b>` : `Status: Pending Review`}
-                    </div>
-                </div>
-                <span class="badge bw">PENDING</span>
-            </div>
-            <div style="margin-top:10px; font-size:13px; color:var(--text2); background:var(--bg2); padding:8px 10px; border-radius:4px">
-                <b>Reason Needed:</b> ${w.request_reason || 'No reason provided.'}
-            </div>
-            ${isManager ? `
-                <div style="margin-top:12px; display:flex; gap:8px">
-                    <button class="btn btn-success btn-sm" onclick="handleWishApproval('${w.id}')">Approve</button>
-                    <button class="btn btn-danger btn-sm" onclick="handleWishDenial('${w.id}')">Deny</button>
-                </div>
-            ` : ''}
-        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No pending suggestions.</div>';
-    updateWishCount();
-}
-function renderDeniedList() {
-    const container = document.getElementById('denied-container');
-    const denied = state.wishlist.filter(w => w.status === 'denied');
-    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-    
-    container.innerHTML = denied.map(w => `
-        <div class="card" style="border-left: 5px solid var(--danger); opacity: 0.9">
-            <div style="display:flex; justify-content:space-between">
-                <div>
-                    <div style="font-weight:700; font-size:15px">${w.tool_name}</div>
-                    <div style="font-size:11px; color:var(--text3)">
-                        Denied on: ${new Date(w.created_at).toLocaleDateString()} 
-                        ${isManager ? ` · Requested by: ${w.requested_by}` : ''}
-                    </div>
-                </div>
-                <span class="badge bd">DENIED</span>
-            </div>
-            <div style="margin-top:10px; font-size:12px; color:var(--danger-text); background:var(--danger-bg); padding:8px 10px; border-radius:4px">
-                <b>Denial Reason:</b> ${w.denial_reason || 'Not specified.'}
-            </div>
-        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No denied tools in history.</div>';
-}
 
 async function notifyManagers(text) {
     const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
