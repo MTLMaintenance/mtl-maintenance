@@ -9,7 +9,7 @@ import {
 
 
 // --- INITIALIZATION BRIDGES ---
-import { adjustMobileLayout, handleLogoClick } from './mobile.js';
+import {  handleLogoClick } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
 import { startApp, loadState, teleportModals, enterApp } from './init.js';
 import { handleGlobalSearch } from './search.js';
