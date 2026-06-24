@@ -292,3 +292,33 @@ export function initLazyImages() {
     document.querySelectorAll('img.lazy-img[data-src]').forEach(img => lazyObserver.observe(img));
 }
 
+export function switchToolTab(tab) {
+    console.log("Switching Tool Tab to:", tab);
+    
+    // 1. Get the three main view containers
+    const inventory = document.getElementById('tool-inventory-view');
+    const wishlist = document.getElementById('tool-wishlist-view');
+    const denied = document.getElementById('tool-denied-view');
+
+    // 2. Toggle visibility (Only show the one that matches the 'tab' name)
+    if (inventory) inventory.style.display = tab === 'inventory' ? 'block' : 'none';
+    if (wishlist) wishlist.style.display = tab === 'wishlist' ? 'block' : 'none';
+    if (denied) denied.style.display = tab === 'denied' ? 'block' : 'none';
+
+    // 3. Update Button Highlighting
+    // Find all buttons in the Tool panel and remove the 'active' class
+    document.querySelectorAll('#panel-tools .tab').forEach(b => b.classList.remove('active'));
+    
+    // Add 'active' class to the button that was clicked
+    let btnId = 'tool-inv-tab';
+    if (tab === 'wishlist') btnId = 'tool-wish-tab';
+    if (tab === 'denied') btnId = 'tool-denied-tab';
+    
+    const activeBtn = document.getElementById(btnId);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // 4. Trigger the data refresh for that specific tab
+    if (tab === 'inventory' && typeof window.renderTools === 'function') window.renderTools();
+    if (tab === 'wishlist' && typeof window.renderToolWishlist === 'function') window.renderToolWishlist();
+    if (tab === 'denied' && typeof window.renderToolDeniedHistory === 'function') window.renderToolDeniedHistory();
+}
