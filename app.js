@@ -142,6 +142,8 @@ window.renderEquipTimeline = (id) => renderEquipTimeline(id, state, fmtDate);
 window.renderMiniTimeline = (id) => renderMiniTimeline(id, state, fmtDate, badge);
 window.handleWishApproval = (id) => handleWishApproval(id, state).then(() => window.renderWishlist());
 window.handleWishDenial = (id) => handleWishDenial(id, state).then(() => window.renderWishlist());
+window.startApp = startApp; 
+
 window.acceptToolSuggestion = () => {
     const field = document.getElementById('t-tools');
     if(field) field.value = window._lastToolSuggestion;
