@@ -649,67 +649,6 @@ function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','pro
 function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all')return state.equipment;return state.equipment.filter(e=>e.group_tag===f||e.group_tag==='both');}
 function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group_tag;if(g&&g!=='all'){setGroupFilter(g);setEquipGroupFilter(g);}}
 
-// ── RECENT OBS + FLEET HEALTH ────────────────────────────────
-function renderRecentObservations() {
-  const listEl = document.getElementById('recent-obs-list');
-  const badgeEl = document.getElementById('obs-count-badge');
-  if (!listEl) return;
-
-  // 1. Filter out observations for machines that were deleted
-  const validEquipIds = new Set(state.equipment.map(e => e.id));
-
-  // 2. Handle Group Filtering (Outside/Production)
-  if (typeof activeGroupFilter !== 'undefined' && activeGroupFilter !== 'all') {
-    const ids = new Set(filteredEquipment(activeGroupFilter).map(e => e.id));
-    obs = obs.filter(o => ids.has(o.equip_id));
-  }
-
-  // 3. Update the badge count
-  if (badgeEl) badgeEl.textContent = obs.length + ' total';
-
-  // 4. If empty, show message and STOP
-  if (obs.length === 0) {
-    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px;text-align:center">No observations yet</div>';
-    return;
-  }
-
-  // 5. THE FIX: Actually draw the items if count > 0
-  // We sort by newest first and take the top 6
-  listEl.innerHTML = obs
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 6)
-    .map(o => {
-      // Determine machine name and severity colors
-      const machineName = typeof equipName === 'function' ? equipName(o.equip_id) : 'Machine';
-      const sevClass = o.severity === 'critical' ? 'bd' : o.severity === 'watch' ? 'bw' : 'bs';
-      
-      return `
-        <div class="obs-row" onclick="openEquipDetail('${o.equip_id}')" 
-             style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid var(--border); transition: background 0.2s;">
-          
-         
-          <!-- Content -->
-          <div style="flex:1; min-width:0">
-            <div style="font-weight:700; font-size:13px; color:black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
-               ${o.body}
-            </div>
-            <div style="font-size:11px; color:var(--text2)">
-               ${machineName} · ${o.author} · ${new Date(o.created_at).toLocaleDateString()}
-            </div>
-          </div>
-
-          <!-- Status Badge (The fixed vibrant colors) -->
-          <span class="badge ${sevClass}">${o.severity}</span>
-        </div>`;
-    }).join('');
-}
-  
-function renderFleetHealthDash(){
-  const el=document.getElementById('fleet-health-dash');if(!el)return;
-  const equip=filteredEquipment(activeGroupFilter).slice(0,6);
-  if(!equip.length){el.innerHTML='<div style="color:var(--text2);font-size:13px">No equipment in this group</div>';return;}
-  el.innerHTML=equip.map(e=>{const score=calcHealth(e.id);return`<div class="parts-row" onclick="openEquipDetail('${e.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div><div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:${score}%;background:${healthColor(score)}"></div></div></div><span style="font-size:12px;font-weight:600;color:${healthColor(score)};flex-shrink:0;margin-left:8px">${score}%</span></div>`;}).join('');
-}
 
 // ── PERMISSIONS ADMIN ────────────────────────────────────────
 const PERM_LABELS = {
