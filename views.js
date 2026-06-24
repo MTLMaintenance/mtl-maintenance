@@ -120,3 +120,28 @@ export function renderRecentObservations(state, equipNameFunc) {
         <span class="badge ${o.severity === 'critical' ? 'bd' : 'bs'}">${o.severity}</span>
     </div>`).join('') || '<div class="empty-text">No observations yet</div>';
 }
+
+export function renderChecklistTemplates() {
+  const list = document.getElementById('tpl-list');
+  if(!list) return;
+
+  const state = window.state;
+  
+  // Build the HTML for the cards
+  list.innerHTML = state.checklistTemplates.map(tpl => `
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header">
+        <div>
+          <div style="font-weight:600;font-size:14px">${tpl.name}</div>
+          <div style="font-size:12px;color:#666;margin-top:2px">
+            <span class="badge bi">${tpl.model || 'General'}</span> 
+            <span style="margin-left:8px">${tpl.items.length} items</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="window.editTemplate('${tpl.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="window.deleteTpl('${tpl.id}')">Delete</button>
+        </div>
+      </div>
+    </div>`).join('') || '<div class="empty-text">No templates found. Click "+ Add Template" to start.</div>';
+}
