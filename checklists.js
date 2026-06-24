@@ -44,7 +44,10 @@ export async function saveTpl() {
     // 7. Success!
     closeModal('tpl-modal');
     showToast('Template saved ✓');
-    
+
+     if (typeof window.renderChecklistTemplates === 'function') {
+        window.renderChecklistTemplates(); // This triggers the screen update
+    }
     // Refresh the list on screen if you have the renderer
     if (typeof window.renderChecklistTemplates === 'function') {
         window.renderChecklistTemplates();
