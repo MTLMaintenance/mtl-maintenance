@@ -71,9 +71,18 @@ export function teleportModals() {
 
 export async function enterApp(currentUser, state, canFunc) {
   console.log("Building application interface...");
-  
-    const check = typeof canFunc === 'function' ? canFunc : () => true;
 
+  // --- THE VITAL MISSING PIECE ---
+  // 1. Hide the login screen
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.style.display = 'none';
+
+  // 2. Show the main application container
+  const appContainer = document.getElementById('app');
+  if (appContainer) appContainer.style.display = 'flex';
+  // -------------------------------
+
+  const check = typeof canFunc === 'function' ? canFunc : () => true;
 
   const nav = document.getElementById('main-nav');
   if (nav) {
