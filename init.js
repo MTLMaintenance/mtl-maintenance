@@ -125,29 +125,24 @@ export async function enterApp(currentUser, state, canFunc) {
   setTimeout(adjustMobileLayout, 100);
 }
 
-export async function startApp(SUPABASE_URL, SUPABASE_KEY) {
+export async function startApp() {
   console.log("--- Starting Application Init ---");
   
-  // 1. Initialize Database
-  window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    global: { headers: { 'x-app-token': 'mtl-maint-2026-secure-token-x7k9p' } }
-  });
-  window.supabase = window._mpdb;
-
+  // No client creation here anymore! 
+  
   try {
     await fetchAllProfiles(); 
     const sessionData = await validateSession();
 
     if(sessionData) {
-       // Auto-login logic
-       window.currentUser = sessionData.profiles;
-       await fetchAbsences(); 
-       window.enterApp(); 
+      window.currentUser = sessionData.profiles;
+      await fetchAbsences(); 
+      if (typeof window.enterApp === 'function') window.enterApp(); 
     } else {
-       showPinLogin();
+      if (typeof window.showPinLogin === 'function') window.showPinLogin();
     }
   } catch(e) { 
     console.error("Startup error:", e);
-    showPinLogin(); 
+    if (typeof window.showPinLogin === 'function') window.showPinLogin();
   }
 }
