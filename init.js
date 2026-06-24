@@ -72,6 +72,9 @@ export function teleportModals() {
 export async function enterApp(currentUser, state, canFunc) {
   console.log("Building application interface...");
   
+    const check = typeof canFunc === 'function' ? canFunc : () => true;
+
+
   const nav = document.getElementById('main-nav');
   if (nav) {
       nav.innerHTML = ''; 
@@ -89,13 +92,12 @@ export async function enterApp(currentUser, state, canFunc) {
         { id: 'tasks', label: 'Work Orders' }
       ];
 
-      // Alphabetize for a clean look
       buttons.sort((a, b) => a.label.localeCompare(b.label));
 
       buttons.forEach(btn => {
-        // Permission Checks
-        if (btn.id === 'analytics' && !canFunc('canViewReports')) return;
-        if (btn.id === 'suppliers' && !canFunc('canManageSuppliers')) return;
+        // USE THE 'check' VARIABLE HERE
+        if (btn.id === 'analytics' && !check('canViewReports')) return;
+        if (btn.id === 'suppliers' && !check('canManageSuppliers')) return;
 
         const b = document.createElement('button');
         b.className = 'nav-btn';
@@ -105,7 +107,7 @@ export async function enterApp(currentUser, state, canFunc) {
         nav.appendChild(b);
       });
 
-      if (currentUser.role === 'admin') {
+      if (currentUser && currentUser.role === 'admin') {
         const adminBtn = document.createElement('button');
         adminBtn.className = 'nav-btn';
         adminBtn.onclick = () => showPanel('admin');
@@ -115,14 +117,18 @@ export async function enterApp(currentUser, state, canFunc) {
   }
 
   // Load personalization
-  applyUserPreferences(currentUser);
+  if (typeof applyUserPreferences === 'function') {
+      applyUserPreferences(currentUser);
+  }
   
   // Set preferred home page
-  const home = currentUser.preferences?.startPage || 'dashboard';
+  const home = currentUser?.preferences?.startPage || 'dashboard';
   showPanel(home); 
 
   // Force layout snap
-  setTimeout(adjustMobileLayout, 100);
+  setTimeout(() => {
+      if (typeof adjustMobileLayout === 'function') adjustMobileLayout();
+  }, 100);
 }
 
 export async function startApp() {
