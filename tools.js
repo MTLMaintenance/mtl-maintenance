@@ -208,3 +208,94 @@ export async function handleWishDenial(id, state) {
     await window._mpdb.from('tool_requests').update({status: 'denied', denial_reason: reason}).eq('id', id);
     showToast("Request denied");
 }
+
+export function renderTools() {
+    const tableBody = document.getElementById('tools-table-body');
+    if (!tableBody) return;
+
+    // 1. Filter tools
+    const tools = (window.state.tools || []).filter(t => t.status === 'available' || t.status === 'ordered');
+    
+    if (tools.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
+        return;
+    }
+
+    const isAdmin = window.currentUser?.role === 'admin' || window.currentUser?.role === 'manager';
+
+    // 2. Build the HTML string
+    tableBody.innerHTML = tools.map(t => {
+        const name = t.tool_name || t.name || 'Unnamed';
+        const health = t.health || 100;
+        const status = t.status || 'available';
+        const location = t.location || '—';
+        const isOrdered = status === 'ordered';
+
+        // --- THE MISSING PART: You must RETURN the HTML ---
+        return `
+            <tr onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
+                <td><b>${name}</b></td>
+                <td>${t.category || 'Other'}</td>
+                <td>${isOrdered ? '📦 ON ORDER' : location}</td>
+                <td>
+                    <div style="width:60px; height:8px; background:#ddd; border-radius:4px; overflow:hidden;">
+                        <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
+                    </div>
+                </td>
+                <td><span class="badge ${isOrdered ? 'bi' : 'bs'}">${status.toUpperCase()}</span></td>
+                <td>${t.procurement || '—'}</td>
+            </tr>`;
+    }).join(''); 
+}
+
+export function renderWishlist() {
+    const container = document.getElementById('wishlist-container');
+    const pending = state.wishlist.filter(w => w.status === 'pending');
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
+
+    container.innerHTML = pending.map(w => `
+        <div class="card" style="border-left: 5px solid var(--warning)">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                <div>
+                    <div style="font-weight:700; font-size:15px">${w.tool_name}</div>
+                    <!-- ONLY MANAGERS SEE THE NAME -->
+                    <div style="font-size:11px; color:var(--text3); margin-top:2px">
+                        ${isManager ? `Requested by <b>${w.requested_by}</b>` : `Status: Pending Review`}
+                    </div>
+                </div>
+                <span class="badge bw">PENDING</span>
+            </div>
+            <div style="margin-top:10px; font-size:13px; color:var(--text2); background:var(--bg2); padding:8px 10px; border-radius:4px">
+                <b>Reason Needed:</b> ${w.request_reason || 'No reason provided.'}
+            </div>
+            ${isManager ? `
+                <div style="margin-top:12px; display:flex; gap:8px">
+                    <button class="btn btn-success btn-sm" onclick="handleWishApproval('${w.id}')">Approve</button>
+                    <button class="btn btn-danger btn-sm" onclick="handleWishDenial('${w.id}')">Deny</button>
+                </div>
+            ` : ''}
+        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No pending suggestions.</div>';
+    updateWishCount();
+}
+export function renderDeniedList() {
+    const container = document.getElementById('denied-container');
+    const denied = state.wishlist.filter(w => w.status === 'denied');
+    const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
+    
+    container.innerHTML = denied.map(w => `
+        <div class="card" style="border-left: 5px solid var(--danger); opacity: 0.9">
+            <div style="display:flex; justify-content:space-between">
+                <div>
+                    <div style="font-weight:700; font-size:15px">${w.tool_name}</div>
+                    <div style="font-size:11px; color:var(--text3)">
+                        Denied on: ${new Date(w.created_at).toLocaleDateString()} 
+                        ${isManager ? ` · Requested by: ${w.requested_by}` : ''}
+                    </div>
+                </div>
+                <span class="badge bd">DENIED</span>
+            </div>
+            <div style="margin-top:10px; font-size:12px; color:var(--danger-text); background:var(--danger-bg); padding:8px 10px; border-radius:4px">
+                <b>Denial Reason:</b> ${w.denial_reason || 'Not specified.'}
+            </div>
+        </div>`).join('') || '<div style="color:var(--text3); padding:20px">No denied tools in history.</div>';
+}
