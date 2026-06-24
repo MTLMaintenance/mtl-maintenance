@@ -8,7 +8,8 @@ const masterState = {
     partUsage: [], 
     tools: [], 
     wishlist: [], 
-    observations: [] 
+    observations: [], 
+    checklistTemplates: [] 
 };
 
 // 2. THE BRIDGE: Attach it to the window so ALL files see it as "state"
