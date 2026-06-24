@@ -65,6 +65,8 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.deleteTpl = deleteTpl;
+window.saveTpl = saveTpl;
 window.resetToolForm = resetToolForm;
 window.editTool = editTool;
 window.renderDeniedList = renderDeniedList;
