@@ -102,6 +102,7 @@ window.showPinLogin = showPinLogin;
 window.enterApp = () => {
     return enterApp(window.currentUser, state, window.can);
 };
+window.switchToolTab = switchToolTab;
 window.backToNames = backToNames;
 window.updatePinDots = updatePinDots;
 window.showPinLogin = showPinLogin;
