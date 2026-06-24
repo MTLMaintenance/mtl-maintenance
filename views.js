@@ -83,3 +83,40 @@ export function renderConsumablesTable(state, supplierNameFunc) {
             </tr>`;
     }).join('');
 }
+
+export function refreshObsList(equipId, state, currentUser) {
+    const container = document.getElementById('obs-list-' + equipId);
+    if (!container) return;
+
+    const obs = (state.observations || []).filter(o => o.equip_id === equipId);
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+
+    container.innerHTML = obs.map(o => {
+        const sevClass = o.severity === 'critical' ? 'obs-critical' : o.severity === 'watch' ? 'obs-watch' : 'obs-info';
+        return `
+        <div class="card" style="margin-bottom: 12px; border-left: 5px solid ${o.severity === 'critical' ? 'var(--danger)' : 'var(--border)'}">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+                <span class="badge ${sevClass}">${o.severity.toUpperCase()}</span>
+                <span style="font-size:11px; color:var(--text3)">${o.author}</span>
+            </div>
+            <div style="font-size:13px;">${o.body}</div>
+        </div>`;
+    }).join('') || '<div class="empty-text">No observations yet.</div>';
+}
+
+export function renderRecentObservations(state, equipNameFunc) {
+  const listEl = document.getElementById('recent-obs-list');
+  if (!listEl) return;
+
+  const validIds = new Set(state.equipment.map(e => e.id));
+  const obs = (state.observations || []).filter(o => validIds.has(o.equip_id)).slice(0, 6);
+
+  listEl.innerHTML = obs.map(o => `
+    <div class="obs-row" onclick="window.openEquipDetail('${o.equip_id}')">
+        <div style="flex:1">
+            <div class="bold">${o.body}</div>
+            <div class="text-mini">${equipNameFunc(o.equip_id, state)} · ${o.author}</div>
+        </div>
+        <span class="badge ${o.severity === 'critical' ? 'bd' : 'bs'}">${o.severity}</span>
+    </div>`).join('') || '<div class="empty-text">No observations yet</div>';
+}
