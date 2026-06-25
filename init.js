@@ -47,6 +47,11 @@ export async function loadState() {
     state.wishlist = wl.data || [];
     state.observations = obs.data || [];
 
+console.log("Data loaded, drawing calendar...");
+    if (typeof window.renderCalendar === 'function') {
+        window.renderCalendar();
+    }
+    
  if (typeof window.renderCalendar === 'function') {
         window.renderCalendar();
     }
