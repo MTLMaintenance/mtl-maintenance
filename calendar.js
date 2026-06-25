@@ -4,14 +4,6 @@ import { fmtDate, showToast, uid } from './utils.js';
 import { openModal, closeModal } from './ui.js';
 import { MONTHS } from './state.js';
 
-// 1. Core Logic: Check if a user is out on a specific YYYY-MM-DD
-export function isUserOutOnDate(absence, targetDateStr) {
-    if (!absence.start_date || !absence.end_date) return false;
-    const target = targetDateStr.substring(0, 10);
-    const start = absence.start_date.substring(0, 10);
-    const end = absence.end_date.substring(0, 10);
-    return target >= start && target <= end;
-}
 
 // 2. Fetch all absences from Supabase
 export async function fetchAbsences() {
@@ -97,13 +89,6 @@ export async function renderCalendar() {
     console.log("✅ Calendar render complete.");
 }
 
-export function isUserOutOnDate(absence, targetDateStr) {
-    if (!absence.start_date || !absence.end_date) return false;
-    const target = targetDateStr.substring(0, 10);
-    const start = absence.start_date.substring(0, 10);
-    const end = absence.end_date.substring(0, 10);
-    return target >= start && target <= end;
-}
 
 // 4. Save a Time-Off Request
 export async function saveAbsence(record) {
@@ -141,10 +126,6 @@ export async function deleteAbsence() {
     } catch (e) { alert("Error: " + e.message); }
 }
 
-export function openAbsenceModal() {
-    const modal = document.getElementById('absence-modal');
-    if (modal) modal.style.setProperty('display', 'block', 'important');
-}
 
 export function closeAbsenceModal() {
     const modal = document.getElementById('absence-modal');
