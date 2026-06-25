@@ -220,3 +220,40 @@ export async function unlockUser(userId, userName) {
     showToast(userName + ' unlocked ✓');
   } catch(e) { showToast('Failed to unlock'); }
 }
+
+export async function saveUserPerms() {
+    // These variables need to be global or accessible via state
+    const userId = window.editingUserId; 
+    const perms = window.editingPerms;
+
+    if (!userId) return;
+
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ permissions: perms })
+            .eq('id', userId);
+
+        if (error) throw error;
+
+        window.showToast("Permissions updated ✓");
+        window.closeModal('user-perms-modal');
+        
+        // Refresh the user table to show changes
+        if (typeof window.renderUsersTable === 'function') window.renderUsersTable();
+    } catch (e) {
+        alert("Error saving: " + e.message);
+    }
+}
+
+export function resetUserPerms() {
+    if (!confirm("Reset this user to default role permissions?")) return;
+    
+    // Clear the custom overrides
+    window.editingPerms = {}; 
+    
+    // Redraw the list in the modal
+    if (typeof window.renderUserPermsList === 'function') {
+        window.renderUserPermsList();
+    }
+}
