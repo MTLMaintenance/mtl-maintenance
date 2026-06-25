@@ -27,24 +27,39 @@ export async function fetchAbsences() {
 }
 
 // 3. Render the Actual Grid (The most complex part of the UI)
-export async function renderCalendar(calDate) {
-    const year = calDate.getFullYear();
-    const month = calDate.getMonth();
+export async function renderCalendar() {
+    // 1. Grab everything from the global window/state
+    const date = window.calDate || new Date();
+    const state = window.state;
+    const year = date.getFullYear();
+    const month = date.getMonth();
     
+    // 2. Find the HTML elements
     const titleEl = document.getElementById('cal-title');
     const daysEl = document.getElementById('cal-days');
+    const headersEl = document.getElementById('cal-headers');
+    
     if(!titleEl || !daysEl) return;
 
+    // 3. Set the Month/Year Title
     titleEl.textContent = `${MONTHS[month]} ${year}`;
     
+    // 4. Draw Headers (Sun-Sat) if that element exists
+    if (headersEl) {
+        headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+            .map(d => `<div class="cal-header">${d}</div>`).join('');
+    }
+
+    // 5. Calculate Calendar Grid
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrev = new Date(year, month, 0).getDate();
     
     let cells = '';
 
-    // Padding for previous month
-    for(let i = 0; i < firstDay; i++){
-        cells += `<div class="cal-day other-month"></div>`;
+    // Padding for Previous Month
+    for(let i = firstDay - 1; i >= 0; i--){
+        cells += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
     }
 
     // Current Month Days
@@ -52,8 +67,8 @@ export async function renderCalendar(calDate) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
         
-        // Filter tasks and absences for this specific day
-        const dayTasks = (window.state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
+        // Data filtering
+        const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
         const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
 
         const eventsHtml = [
@@ -192,4 +207,12 @@ export function renderRecurList(state, equipNameFunc) {
             </div>
             <button class="btn-danger btn-sm" onclick="window.deleteRecurRule('${r.id}')">✕</button>
         </div>`).join('') || '<div class="empty-text">No rules set.</div>';
+}
+
+export function isUserOutOnDate(absence, targetDateStr) {
+    if (!absence.start_date || !absence.end_date) return false;
+    const target = targetDateStr.substring(0, 10);
+    const start = absence.start_date.substring(0, 10);
+    const end = absence.end_date.substring(0, 10);
+    return target >= start && target <= end;
 }
