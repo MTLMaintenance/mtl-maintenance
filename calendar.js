@@ -28,34 +28,46 @@ export async function fetchAbsences() {
 
 // 3. Render the Actual Grid (The most complex part of the UI)
 export async function renderCalendar() {
-    // Force the app to use the current date if window.calDate is missing
-    const date = window.calDate || new Date(); 
+    console.log("📅 renderCalendar triggered...");
+
+    // 1. Get Date and State
+    const date = window.calDate || new Date();
+    const state = window.state;
     const year = date.getFullYear();
     const month = date.getMonth();
-
+    
+    // 2. Find Elements
     const titleEl = document.getElementById('cal-title');
     const daysEl = document.getElementById('cal-days');
+    const headersEl = document.getElementById('cal-headers');
     
-    if (!titleEl || !daysEl) {
-        console.error("Calendar elements not found in HTML!");
+    // 3. DEBUG: Check if elements exist
+    if(!titleEl || !daysEl) {
+        console.error("❌ Calendar Error: Could not find 'cal-title' or 'cal-days' in your HTML.");
         return;
     }
-    // 4. Draw Headers (Sun-Sat) if that element exists
+
+    console.log(`Building month: ${MONTHS[month]} ${year}`);
+
+    // 4. Set Title
+    titleEl.textContent = `${MONTHS[month]} ${year}`;
+    
+    // 5. Draw Headers
     if (headersEl) {
         headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-            .map(d => `<div class="cal-header">${d}</div>`).join('');
+            .map(d => `<div class="cal-header" style="text-align:center; font-weight:bold;">${d}</div>`).join('');
     }
 
-    // 5. Calculate Calendar Grid
+    // 6. Calculate Grid
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
     
     let cells = '';
 
-    // Padding for Previous Month
+    // Padding (Prev Month)
     for(let i = firstDay - 1; i >= 0; i--){
-        cells += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
+        cells += `<div class="cal-day other-month" style="opacity:0.3; padding:10px;">${daysInPrev - i}</div>`;
     }
 
     // Current Month Days
@@ -63,23 +75,34 @@ export async function renderCalendar() {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
         
-        // Data filtering
+        // Use empty arrays if data isn't loaded yet to prevent crashing
         const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
         const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
 
         const eventsHtml = [
-            ...dayTasks.map(t => `<div class="cal-event work-order">${t.name}</div>`),
-            ...dayAbs.map(a => `<div class="cal-event absence">👤 ${a.user_name} Out</div>`)
+            ...dayTasks.map(t => `<div class="cal-event" style="background:var(--accent); color:white; font-size:10px; margin-top:2px; padding:2px; border-radius:3px;">${t.name}</div>`),
+            ...dayAbs.map(a => `<div class="cal-event" style="background:#ff9800; color:white; font-size:10px; margin-top:2px; padding:2px; border-radius:3px;">👤 ${a.user_name} Out</div>`)
         ].join('');
 
         cells += `
-            <div class="cal-day${isToday ? ' today' : ''}" onclick="window.calDayClick('${dateStr}')">
-                <div class="cal-day-num">${d}</div>
+            <div class="cal-day${isToday ? ' today' : ''}" 
+                 onclick="window.calDayClick('${dateStr}')" 
+                 style="border:1px solid #eee; min-height:80px; padding:5px; cursor:pointer; background:${isToday ? '#fffbeb' : '#fff'}">
+                <div class="cal-day-num" style="font-weight:bold;">${d}</div>
                 <div class="cal-event-container">${eventsHtml}</div>
             </div>`;
     }
 
     daysEl.innerHTML = cells;
+    console.log("✅ Calendar render complete.");
+}
+
+export function isUserOutOnDate(absence, targetDateStr) {
+    if (!absence.start_date || !absence.end_date) return false;
+    const target = targetDateStr.substring(0, 10);
+    const start = absence.start_date.substring(0, 10);
+    const end = absence.end_date.substring(0, 10);
+    return target >= start && target <= end;
 }
 
 // 4. Save a Time-Off Request
