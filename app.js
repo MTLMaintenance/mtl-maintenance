@@ -65,6 +65,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+
 window.renderChecklistTemplates = renderChecklistTemplates;
 window.deleteTpl = deleteTpl;
 window.saveTpl = saveTpl;
@@ -176,6 +177,28 @@ window.openTaskDetail = (id) => openTaskDetail(id, state);
 window.deleteTask = (id) => deleteTask(id, state);
 window.editPart = (id) => editPart(id, state);
 window.openTaskSignoff = (id) => openTaskSignoff(id, currentUser);
+
+window.calNext = () => {
+    window.calDate.setMonth(window.calDate.getMonth() + 1);
+    renderCalendar();
+};
+
+window.calPrev = () => {
+    window.calDate.setMonth(window.calDate.getMonth() - 1);
+    renderCalendar();
+};
+
+window.calToday = () => {
+    window.calDate = new Date();
+    renderCalendar();
+};
+
+// Also bridge the day click
+window.calDayClick = (dateStr) => {
+    window.lastClickedDate = dateStr;
+    // Logic to open the Day Card modal...
+    openModal('cal-action-modal'); 
+};
 window.verifyTaskPinAction = () => {
     verifyTaskPinAction(currentUser).then(success => {
         if(success) {
