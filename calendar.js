@@ -209,3 +209,24 @@ export function renderRecurList(state, equipNameFunc) {
         </div>`).join('') || '<div class="empty-text">No rules set.</div>';
 }
 
+export async function deleteSched(id) {
+    if (!confirm("Delete this scheduled item?")) return;
+
+    // 1. Remove from local memory
+    if (window.state && window.state.schedules) {
+        window.state.schedules = window.state.schedules.filter(s => s.id !== id);
+    }
+
+    // 2. Remove from Database
+    try {
+        await persist('schedules', 'delete', id);
+        
+        // 3. Refresh UI
+        if (typeof window.renderSchedule === 'function') window.renderSchedule();
+        if (typeof renderCalendar === 'function') renderCalendar();
+        
+        window.showToast("Item deleted ✓");
+    } catch (e) {
+        console.error("Delete schedule error:", e);
+    }
+}
