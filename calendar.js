@@ -209,10 +209,3 @@ export function renderRecurList(state, equipNameFunc) {
         </div>`).join('') || '<div class="empty-text">No rules set.</div>';
 }
 
-export function isUserOutOnDate(absence, targetDateStr) {
-    if (!absence.start_date || !absence.end_date) return false;
-    const target = targetDateStr.substring(0, 10);
-    const start = absence.start_date.substring(0, 10);
-    const end = absence.end_date.substring(0, 10);
-    return target >= start && target <= end;
-}
