@@ -230,3 +230,10 @@ export async function deleteSched(id) {
         console.error("Delete schedule error:", e);
     }
 }
+export function isUserOutOnDate(absence, targetDateStr) {
+    if (!absence.start_date || !absence.end_date) return false;
+    const target = targetDateStr.substring(0, 10);
+    const start = absence.start_date.substring(0, 10);
+    const end = absence.end_date.substring(0, 10);
+    return target >= start && target <= end;
+}
