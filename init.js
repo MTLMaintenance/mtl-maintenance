@@ -7,6 +7,7 @@ import { showPinLogin } from './auth.js';
 import { showPanel, adjustMobileLayout } from './ui.js';
 import { applyUserPreferences } from './settings.js';
 import { fetchAbsences } from './calendar.js';
+
 export async function loadState() {
   // 1. Grab the global folder from the window
   const state = window.state; 
@@ -46,6 +47,10 @@ export async function loadState() {
     state.wishlist = wl.data || [];
     state.observations = obs.data || [];
 
+ if (typeof window.renderCalendar === 'function') {
+        window.renderCalendar();
+    }
+    
      if (typeof window.renderChecklistTemplates === 'function') {
         window.renderChecklistTemplates();
     }
