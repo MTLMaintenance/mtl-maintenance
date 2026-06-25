@@ -449,13 +449,6 @@ function renderAssignUsers(){
   list.innerHTML='<div style="color:var(--text2);font-size:13px">Enter usernames to assign (comma separated):</div><input class="form-input" id="assign-input" placeholder="e.g. mike, sarah" style="margin-top:8px;width:100%" value="'+assignedUsersTemp.join(', ')+'"/>';
 }
 
-// ============================================================
-// SCHEDULE
-// ============================================================
-async function deleteSched(id){ state.schedules=state.schedules.filter(s=>s.id!==id); await persist('schedules','delete',{id}); renderSchedule(); renderCalendar(); }
-
-
-
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
   
