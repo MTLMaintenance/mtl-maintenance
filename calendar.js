@@ -28,22 +28,18 @@ export async function fetchAbsences() {
 
 // 3. Render the Actual Grid (The most complex part of the UI)
 export async function renderCalendar() {
-    // 1. Grab everything from the global window/state
-    const date = window.calDate || new Date();
-    const state = window.state;
+    // Force the app to use the current date if window.calDate is missing
+    const date = window.calDate || new Date(); 
     const year = date.getFullYear();
     const month = date.getMonth();
-    
-    // 2. Find the HTML elements
+
     const titleEl = document.getElementById('cal-title');
     const daysEl = document.getElementById('cal-days');
-    const headersEl = document.getElementById('cal-headers');
     
-    if(!titleEl || !daysEl) return;
-
-    // 3. Set the Month/Year Title
-    titleEl.textContent = `${MONTHS[month]} ${year}`;
-    
+    if (!titleEl || !daysEl) {
+        console.error("Calendar elements not found in HTML!");
+        return;
+    }
     // 4. Draw Headers (Sun-Sat) if that element exists
     if (headersEl) {
         headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
