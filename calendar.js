@@ -68,9 +68,12 @@ export async function renderCalendar() {
         ].join('');
 
         cells += `
-            <div class="cal-day${isToday ? ' today' : ''}" onclick="window.calDayClick('${dateStr}')">
-                <div class="cal-day-num">${d}</div>
-                <div class="cal-event-container"> 
+            <div class="cal-day${isToday ? ' today' : ''}" 
+                 onclick="window.calDayClick('${dateStr}')" 
+                 style="cursor:pointer">
+                <!-- We add 'pointer-events: none' to the children so they don't block the click -->
+                <div class="cal-day-num" style="pointer-events: none;">${d}</div>
+                <div class="cal-event-container" style="pointer-events: none;"> 
                     ${eventsHtml}
                 </div>
             </div>`;
@@ -244,6 +247,7 @@ export function openAbsenceModal() {
 }
 
 export function calDayClick(dateStr) {
+    console.log("👆 Day clicked:", dateStr); 
     window.lastClickedDate = dateStr;
 
     // Set the Title of the popup (e.g. "Monday, January 20")
@@ -267,7 +271,13 @@ export function calDayClick(dateStr) {
         });
         listContainer.innerHTML = listHtml || `<div style="color:#888; padding:10px;">Nothing scheduled for this day.</div>`;
     }
-
+const modal = document.getElementById('cal-action-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    } else {
+        console.error("❌ Modal 'cal-action-modal' not found in HTML!");
+    }
     // Open the small Day Card
     window.openModal('cal-action-modal');
 }
