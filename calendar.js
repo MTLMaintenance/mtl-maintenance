@@ -247,19 +247,14 @@ export function openAbsenceModal() {
 }
 
 export function calDayClick(dateStr) {
-     alert("Function is working for: " + dateStr);
-    console.log("Checkpoint 1: Function started for", dateStr);
     window.lastClickedDate = dateStr;
 
-    // Checkpoint 2: The Title
-    const titleEl = document.getElementById('action-modal-readable');
-    if (titleEl) {
-        const dateObj = new Date(dateStr + "T00:00:00");
-        titleEl.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-        console.log("Checkpoint 2: Header text set.");
-    }
+    // 1. Set the Title of the modal
+    const dateObj = new Date(dateStr + "T00:00:00");
+    const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('action-modal-readable').textContent = readable;
 
-    // Checkpoint 3: The List
+    // 2. Build the list of items for that day
     const dayTasks = (window.state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
     const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
     const listContainer = document.getElementById('day-items-list');
@@ -267,24 +262,14 @@ export function calDayClick(dateStr) {
     if (listContainer) {
         let listHtml = "";
         dayTasks.forEach(t => {
-            listHtml += `<div style="background:#333; padding:8px; border-radius:8px; margin-bottom:5px;">🛠️ ${t.name}</div>`;
+            listHtml += `<div class="day-card-item">🛠️ ${t.name}</div>`;
         });
         dayAbs.forEach(a => {
-            listHtml += `<div style="background:#ff9800; padding:8px; border-radius:8px; margin-bottom:5px;">👤 ${a.user_name} Out</div>`;
+            listHtml += `<div class="day-card-item" style="border-left:4px solid orange;">👤 ${a.user_name} Out</div>`;
         });
-        listContainer.innerHTML = listHtml || `<div style="color:#888; text-align:center; padding:10px;">Nothing scheduled.</div>`;
-        console.log("Checkpoint 3: Day list built.");
+        listContainer.innerHTML = listHtml || `<div style="color:#888; padding:10px;">Nothing scheduled.</div>`;
     }
 
-    // Checkpoint 4: The Modal
-    const modal = document.getElementById('cal-action-modal');
-    if (modal) {
-        console.log("Checkpoint 4: Modal found. Forcing display...");
-        modal.style.setProperty('display', 'flex', 'important');
-        modal.classList.add('active'); 
-        console.log("🏁 SUCCESS: Modal should be visible now.");
-    } else {
-        console.error("❌ Checkpoint 4 FAILED: Could not find 'cal-action-modal' in HTML.");
-    }
+    // 3. Show the modal
+    window.openModal('cal-action-modal');
 }
-window.calDayClick = calDayClick;
