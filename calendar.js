@@ -247,6 +247,7 @@ export function openAbsenceModal() {
 }
 
 export function calDayClick(dateStr) {
+     alert("Function is working for: " + dateStr);
     console.log("Checkpoint 1: Function started for", dateStr);
     window.lastClickedDate = dateStr;
 
