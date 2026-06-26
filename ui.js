@@ -46,7 +46,14 @@ export function showPanel(id) {
         targetPanel.style.display = 'block';
         targetPanel.classList.add('active');
     }
-
+ if (id === 'calendar') {
+        const grid = document.getElementById('cal-grid-container');
+        if (grid) grid.style.display = 'block';
+        
+        // Trigger the draw immediately
+        if (typeof window.renderCalendar === 'function') {
+            window.renderCalendar();
+        }
     // Highlight the button
     navButtons.forEach(btn => {
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
@@ -54,7 +61,7 @@ export function showPanel(id) {
         }
     });
 }
-
+}
 // 4. Switch Tabs inside a modal or panel
 export function switchTab(group, tabId, btn) {
     const parent = btn.parentElement;
