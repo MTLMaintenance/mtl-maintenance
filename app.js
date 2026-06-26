@@ -50,6 +50,7 @@ window.saveEquipment = () => {
         }
     });
 };
+window.calDayClick = calDayClick; 
 window.resetUserPassword = resetUserPassword;
 window.unlockUser = unlockUser;
 window.showLogin = () => {
