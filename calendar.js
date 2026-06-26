@@ -242,3 +242,32 @@ export function openAbsenceModal() {
         alert("HTML Error: Could not find id='absence-modal'");
     }
 }
+
+export function calDayClick(dateStr) {
+    window.lastClickedDate = dateStr;
+
+    // Set the Title of the popup (e.g. "Monday, January 20")
+    const dateObj = new Date(dateStr + "T00:00:00");
+    const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const titleEl = document.getElementById('action-modal-readable');
+    if (titleEl) titleEl.textContent = readable;
+
+    // Find everything happening on this day
+    const dayTasks = (window.state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
+    const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
+
+    const listContainer = document.getElementById('day-items-list');
+    if (listContainer) {
+        let listHtml = "";
+        dayTasks.forEach(t => {
+            listHtml += `<div class="day-card-item">🛠️ ${t.name} <span class="badge bi">${t.status}</span></div>`;
+        });
+        dayAbs.forEach(a => {
+            listHtml += `<div class="day-card-item" style="border-left:3px solid orange;">👤 ${a.user_name} Out</div>`;
+        });
+        listContainer.innerHTML = listHtml || `<div style="color:#888; padding:10px;">Nothing scheduled for this day.</div>`;
+    }
+
+    // Open the small Day Card
+    window.openModal('cal-action-modal');
+}
