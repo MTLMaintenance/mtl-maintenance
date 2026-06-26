@@ -203,12 +203,7 @@ window.calToday = () => {
     renderCalendar();
 };
 
-// Also bridge the day click
-window.calDayClick = (dateStr) => {
-    window.lastClickedDate = dateStr;
-    // Logic to open the Day Card modal...
-    openModal('cal-action-modal'); 
-};
+
 window.verifyTaskPinAction = () => {
     verifyTaskPinAction(currentUser).then(success => {
         if(success) {
@@ -289,44 +284,10 @@ const ADMIN_USERNAME = 'tangal99';
 
 function showErr(msg) { const e=document.getElementById('auth-err'); e.textContent=msg; e.style.display='block'; }
 
-function computeMonthlyCosts() {
-  const now=new Date();
-  return [3,2,1,0].map(ago=>{
-    const d=new Date(now.getFullYear(),now.getMonth()-ago,1);
-    const y=d.getFullYear(), m=d.getMonth();
-    return state.tasks.filter(t=>{
-      if(!t.due) return false;
-      const td=new Date(t.due);
-      return td.getFullYear()===y && td.getMonth()===m;
-    }).reduce((a,t)=>a+(t.cost||0),0);
-  });
-}
 
-/// ============================================================
-// HELPERS
-// ============================================================
 
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
-function viewPhoto(src){ document.getElementById('pv-img').src=src; document.getElementById('photo-viewer').classList.add('open'); }
-function closePhotoViewer(){ document.getElementById('photo-viewer').classList.remove('open'); }
 
-function handleDocUpload(input){
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    pendingDocFile={data:e.target.result, type:file.type, name:file.name};
-    document.getElementById('doc-file-preview').textContent='📎 '+file.name;
-  };
-  reader.readAsDataURL(file); input.value='';
-}
-
-function formatTime(timeStr) {
-    if(!timeStr) return '';
-    const [h, m] = timeStr.split(':');
-    const hrs = parseInt(h);
-    const suffix = hrs >= 12 ? 'PM' : 'AM';
-    return `${((hrs + 11) % 12 + 1)}:${m} ${suffix}`;
-}
 
 async function fillAdaptiveCalendarMarkers(year, month) {
     for (let e of state.equipment) {
@@ -361,99 +322,17 @@ async function fillAdaptiveForecasts() {
         }
     }
 }
-function renderMonthSchedList() {
-    const list = document.getElementById('sched-month-list');
-    if(!list) return;
-    
-    // Sort by date
-    const sorted = [...state.schedules].sort((a,b) => new Date(a.date) - new Date(b.date));
 
-    list.innerHTML = sorted.map(s => `
-        <div class="sched-item" style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
-            <div class="sched-body">
-                <div style="font-weight:600; font-size:13px">${s.name}</div>
-                <div style="font-size:11px; color:var(--text3)">${equipName(s.equipId)} · ${fmtDate(s.date)}</div>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="deleteSched('${s.id}')">✕</button>
-        </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">Nothing scheduled.</div>';
-}
 
 function toggleRecurType(){
   const t=document.getElementById('r-type').value;
   document.getElementById('r-interval-group').style.display=t==='calendar'?'block':'none';
   document.getElementById('r-hours-group').style.display=t==='hours'?'block':'none';
 }
-function renderRecurList() {
-    const list = document.getElementById('recur-list');
-    if(!list) return;
-    
-    list.innerHTML = state.recurrenceRules.map(r => `
-        <div class="recur-item" style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
-            <div style="flex:1">
-                <div style="font-weight:600; font-size:13px">${r.name}</div>
-                <div style="font-size:11px; color:var(--text3)">${equipName(r.equip_id)} · Every ${r.runtime_hours || r.interval_value} ${r.type === 'hours' ? 'hrs' : r.interval_unit}</div>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="deleteRecurRule('${r.id}')">✕</button>
-        </div>`).join('') || '<div style="color:var(--text3); font-size:12px; padding:10px">No rules set.</div>';
-}
 
 
 function getNextDue(id){ const o=state.tasks.filter(t=>t.equipId===id&&t.status!=='Completed'); if(!o.length)return'—'; const n=o.sort((a,b)=>new Date(a.due)-new Date(b.due))[0]; return `<span style="color:${isOverdue(n.due)?'var(--danger)':'inherit'}">${fmtDate(n.due)}</span>`; }
-async function deleteEquip(id) {
-  const e = state.equipment.find(x => x.id === id);
-  if (!e) return;
-
-  if (!confirm(`Permanently delete ${e.name}? This will also remove all observations and history.`)) return;
-
-  try {
-    // 1. Log the action FIRST while we still have data
-    logAuditAction("Deleted Machine", `Removed ${e.name} (S/N: ${e.serial || 'N/A'})`);
-
-    // 2. DELETE LINKED DATA FROM DATABASE (Clean up the ghosts!)
-    // This removes all observations associated with this equipment ID
-    await window._mpdb.from('observations').delete().eq('equip_id', id);
-    
-    // 3. DELETE EQUIPMENT FROM DATABASE
-    const { error } = await window._mpdb.from('equipment').delete().eq('id', id);
-    if (error) throw error;
-
-    // 4. CLEAN LOCAL MEMORY (Remove from state arrays)
-    state.equipment = state.equipment.filter(eq => eq.id !== id);
-    state.observations = state.observations.filter(o => o.equip_id !== id);
-    // Also clear linked tasks if necessary
-    state.tasks = state.tasks.filter(t => t.equipId !== id);
-
-    // 5. RE-RENDER UI
-    renderEquipmentTable();
-    renderDashboard(); // This will now run with the cleaned state.observations
-    
-    showToast(`${e.name} and all data removed ✓`);
-    
-  } catch (e) {
-    console.error("Delete failed:", e);
-    showToast("Delete failed. See console.");
-  }
-}
-// Custom fields
-
-function renderCustomFields(){
-  const list=document.getElementById('custom-fields-list'); if(!list)return;
-  list.innerHTML=Object.entries(customFieldsTemp).map(([k,v])=>
-    `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-      <input class="form-input" value="${k}" style="flex:1" placeholder="Field name" onchange="customFieldsTemp['${k}']=undefined;delete customFieldsTemp['${k}'];customFieldsTemp[this.value]='${v}'"/>
-      <input class="form-input" value="${v}" style="flex:1" placeholder="Value" onchange="customFieldsTemp['${k}']=this.value"/>
-      <button class="btn btn-danger" onclick="delete customFieldsTemp['${k}'];renderCustomFields()">✕</button>
-    </div>`
-  ).join('');
-}
 function addCustomField(){ customFieldsTemp['New Field '+Object.keys(customFieldsTemp).length]='' ; renderCustomFields(); }
-
-
-function renderAssignUsers(){
-  const list=document.getElementById('assign-users-list'); if(!list)return;
-  list.innerHTML='<div style="color:var(--text2);font-size:13px">Enter usernames to assign (comma separated):</div><input class="form-input" id="assign-input" placeholder="e.g. mike, sarah" style="margin-top:8px;width:100%" value="'+assignedUsersTemp.join(', ')+'"/>';
-}
-
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
   
