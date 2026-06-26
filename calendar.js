@@ -247,37 +247,42 @@ export function openAbsenceModal() {
 }
 
 export function calDayClick(dateStr) {
-    console.log("👆 Day clicked:", dateStr); 
+    console.log("Checkpoint 1: Function started for", dateStr);
     window.lastClickedDate = dateStr;
 
-    // Set the Title of the popup (e.g. "Monday, January 20")
-    const dateObj = new Date(dateStr + "T00:00:00");
-    const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    // Checkpoint 2: The Title
     const titleEl = document.getElementById('action-modal-readable');
-    if (titleEl) titleEl.textContent = readable;
+    if (titleEl) {
+        const dateObj = new Date(dateStr + "T00:00:00");
+        titleEl.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        console.log("Checkpoint 2: Header text set.");
+    }
 
-    // Find everything happening on this day
+    // Checkpoint 3: The List
     const dayTasks = (window.state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
     const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
-
     const listContainer = document.getElementById('day-items-list');
+
     if (listContainer) {
         let listHtml = "";
         dayTasks.forEach(t => {
-            listHtml += `<div class="day-card-item">🛠️ ${t.name} <span class="badge bi">${t.status}</span></div>`;
+            listHtml += `<div style="background:#333; padding:8px; border-radius:8px; margin-bottom:5px;">🛠️ ${t.name}</div>`;
         });
         dayAbs.forEach(a => {
-            listHtml += `<div class="day-card-item" style="border-left:3px solid orange;">👤 ${a.user_name} Out</div>`;
+            listHtml += `<div style="background:#ff9800; padding:8px; border-radius:8px; margin-bottom:5px;">👤 ${a.user_name} Out</div>`;
         });
-        listContainer.innerHTML = listHtml || `<div style="color:#888; padding:10px;">Nothing scheduled for this day.</div>`;
+        listContainer.innerHTML = listHtml || `<div style="color:#888; text-align:center; padding:10px;">Nothing scheduled.</div>`;
+        console.log("Checkpoint 3: Day list built.");
     }
-const modal = document.getElementById('cal-action-modal');
+
+    // Checkpoint 4: The Modal
+    const modal = document.getElementById('cal-action-modal');
     if (modal) {
-        modal.style.display = 'flex';
-        modal.classList.add('active');
+        console.log("Checkpoint 4: Modal found. Forcing display...");
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.classList.add('active'); 
+        console.log("🏁 SUCCESS: Modal should be visible now.");
     } else {
-        console.error("❌ Modal 'cal-action-modal' not found in HTML!");
+        console.error("❌ Checkpoint 4 FAILED: Could not find 'cal-action-modal' in HTML.");
     }
-    // Open the small Day Card
-    window.openModal('cal-action-modal');
 }
