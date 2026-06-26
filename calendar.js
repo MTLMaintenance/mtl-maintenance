@@ -237,3 +237,16 @@ export function isUserOutOnDate(absence, targetDateStr) {
     const end = absence.end_date.substring(0, 10);
     return target >= start && target <= end;
 }
+
+export function openAbsenceModal() {
+    console.log("Attempting to open absence modal...");
+    const modal = document.getElementById('absence-modal');
+    if (modal) {
+        // Use 'flex' if your modal is centered, or 'block' if standard
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.classList.add('active');
+        console.log("Modal opened ✓");
+    } else {
+        alert("HTML Error: Could not find id='absence-modal'");
+    }
+}
