@@ -28,58 +28,42 @@ export async function renderCalendar() {
     const daysEl = document.getElementById('cal-days');
     const headersEl = document.getElementById('cal-headers');
     
-    // Safety exit
     if(!titleEl || !daysEl) return;
 
-    // 1. Update Month Header
     titleEl.textContent = `${MONTHS[month]} ${year}`;
     
-    // 2. Draw Day-of-Week Headers (Sun, Mon...)
     if (headersEl) {
         headersEl.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
             .map(d => `<div class="cal-header">${d}</div>`).join('');
     }
 
-    // 3. Setup Grid Variables
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
     
     let cells = '';
 
-    // 4. Draw Padding (Previous Month's trailing days)
     for(let i = firstDay - 1; i >= 0; i--){
-        cells += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev - i}</div></div>`;
+        cells += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
     }
 
-    // 5. Draw Current Month Days
     for(let d = 1; d <= daysInMonth; d++){
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
-        
-        // Filter data for this specific day
         const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
         const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
 
-        // Create HTML for events inside the day box
         const eventsHtml = [
             ...dayTasks.map(t => `<div class="cal-event work-order">${t.name}</div>`),
             ...dayAbs.map(a => `<div class="cal-event absence">👤 ${a.user_name} Out</div>`)
         ].join('');
 
         cells += `
-            <div class="cal-day${isToday ? ' today' : ''}" 
-                 onclick="window.calDayClick('${dateStr}')" 
-                 style="cursor:pointer">
-                <!-- We add 'pointer-events: none' to the children so they don't block the click -->
-                <div class="cal-day-num" style="pointer-events: none;">${d}</div>
-                <div class="cal-event-container" style="pointer-events: none;"> 
-                    ${eventsHtml}
-                </div>
+            <div class="cal-day${isToday ? ' today' : ''}" onclick="window.calDayClick('${dateStr}')">
+                <div class="cal-day-num">${d}</div>
+                <div class="cal-event-container">${eventsHtml}</div>
             </div>`;
     }
-
-    // 6. Inject the grid into the HTML
     daysEl.innerHTML = cells;
 }
 
@@ -247,29 +231,32 @@ export function openAbsenceModal() {
 }
 
 export function calDayClick(dateStr) {
+    console.log("👆 Calendar Day Clicked:", dateStr);
     window.lastClickedDate = dateStr;
 
-    // 1. Set the Title of the modal
-    const dateObj = new Date(dateStr + "T00:00:00");
-    const readable = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('action-modal-readable').textContent = readable;
+    // Set the Title in the Modal
+    const titleEl = document.getElementById('action-modal-readable');
+    if (titleEl) {
+        const dateObj = new Date(dateStr + "T00:00:00");
+        titleEl.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
 
-    // 2. Build the list of items for that day
+    // Build the list of items
     const dayTasks = (window.state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
     const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
     const listContainer = document.getElementById('day-items-list');
 
     if (listContainer) {
-        let listHtml = "";
-        dayTasks.forEach(t => {
-            listHtml += `<div class="day-card-item">🛠️ ${t.name}</div>`;
-        });
-        dayAbs.forEach(a => {
-            listHtml += `<div class="day-card-item" style="border-left:4px solid orange;">👤 ${a.user_name} Out</div>`;
-        });
-        listContainer.innerHTML = listHtml || `<div style="color:#888; padding:10px;">Nothing scheduled.</div>`;
+        let html = "";
+        dayTasks.forEach(t => html += `<div class="day-card-item">🛠️ ${t.name}</div>`);
+        dayAbs.forEach(a => html += `<div class="day-card-item" style="border-left:4px solid #ff9800;">👤 ${a.user_name} Out</div>`);
+        listContainer.innerHTML = html || `<div style="color:#888; padding:10px;">Nothing scheduled.</div>`;
     }
 
-    // 3. Show the modal
-    window.openModal('cal-action-modal');
+    // OPEN THE MODAL
+    const modal = document.getElementById('cal-action-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
 }
