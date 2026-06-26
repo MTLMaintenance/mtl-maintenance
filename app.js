@@ -67,7 +67,6 @@ window.showRegister = () => {
 
 window.triggerAddEntryFromCal = triggerAddEntryFromCal;
 window.triggerAbsenceFromCal = triggerAbsenceFromCal;
-window.calDayClick = calDayClick;
 window.calDate = calDate;
 window.renderCalendar = renderCalendar;
 window.saveUserPerms = saveUserPerms;
