@@ -287,3 +287,4 @@ export function calDayClick(dateStr) {
         console.error("❌ Checkpoint 4 FAILED: Could not find 'cal-action-modal' in HTML.");
     }
 }
+window.calDayClick = calDayClick;
