@@ -19,7 +19,7 @@ import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline,renderFullHistoryList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools, checkAndSendOverdueEmails  } from './services.js';
-import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
+import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, compressImage  } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab,  } from './ui.js';
@@ -56,6 +56,8 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.showToast = showToast;
+window.compressImage = compressImage;
 window.deleteZerkView = deleteZerkView;
 window.renderObservationsList = renderObservationsList;
 window.renderZerkTab = renderZerkTab;
