@@ -349,11 +349,19 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
   };
 
   try {
-    // 1. Save to Supabase
-    await persist('equipment', 'upsert', record);
+    // 1. DIRECT SAVE TO SUPABASE (Bypass the persist wrapper)
+    console.log("🚀 Sending to Supabase:", record);
+    const { data, error } = await window._mpdb
+        .from('equipment')
+        .upsert(record);
 
-    
-    // This ensures that all files (app.js, views.js, dashboard.js) see the new machine
+    if (error) {
+        console.error("❌ SUPABASE ERROR:", error.message);
+        alert("Database Error: " + error.message);
+        return { success: false };
+    }
+
+    // 2. Update Local Memory (VITAL for the "Live Update")
     if (!window.state.equipment) window.state.equipment = [];
     window.state.equipment.push(record);
     
@@ -364,11 +372,12 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     pendingPhotos.equip = [];
     Object.keys(customFieldsTemp).forEach(key => delete customFieldsTemp[key]);
 
-    return { success: true }; // Send success signal back to app.js
+    showToast("Machine Saved to Database ✓");
+    return { success: true };
 
   } catch (e) {
-    console.error("Save Equipment Failed:", e);
-    showToast("Error saving machine");
+    console.error("Save process crashed:", e);
+    showToast("Save process crashed. Check console.");
     return { success: false };
   }
 }
