@@ -362,8 +362,7 @@ function toggleRecurType(){
 }
 
 
-function getNextDue(id){ const o=state.tasks.filter(t=>t.equipId===id&&t.status!=='Completed'); if(!o.length)return'—'; const n=o.sort((a,b)=>new Date(a.due)-new Date(b.due))[0]; return `<span style="color:${isOverdue(n.due)?'var(--danger)':'inherit'}">${fmtDate(n.due)}</span>`; }
-function addCustomField(){ customFieldsTemp['New Field '+Object.keys(customFieldsTemp).length]='' ; renderCustomFields(); }
+
 function openEditDocModal(docId = null) {
   _currentDocEditId = docId;
   
