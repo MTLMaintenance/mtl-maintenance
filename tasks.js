@@ -47,8 +47,10 @@ export async function saveTask(record) {
         showToast("Failed to save task");
         return false;
     }
+ if (typeof window.renderCalendar === 'function') {
+        window.renderCalendar();
 }
-
+}
 // 3. Checklist Logic: Toggle an item
 export async function toggleChecklistItem(taskId, index) {
     const task = window.state.tasks.find(t => t.id === taskId);
