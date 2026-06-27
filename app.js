@@ -57,6 +57,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.getLastService = getLastService
 window.calcHealth = calcHealth;
 window.renderConsumablesTable = renderConsumablesTable;
 window.renderPartsTable = renderPartsTable;
