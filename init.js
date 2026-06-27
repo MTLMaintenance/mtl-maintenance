@@ -9,32 +9,29 @@ import { applyUserPreferences } from './settings.js';
 import { fetchAbsences } from './calendar.js';
 
 export async function loadState() {
-  // 1. Grab the global folder from the window
-  const state = window.state; 
+  const state = window.state; // Grab the master folder
   
-  if (!state) {
-    console.error("Critical: Global state object not found on window.");
-    return false;
-  }
-
   setSyncStatus('syncing');
   try {
-    // 2. Fetch all main tables
+    console.log("📥 Refreshing data from Supabase...");
+
+    // 1. Fetch the data
     const [eq, tk, sc, pt, sup, docs, pu, rr, tl, wl, obs] = await Promise.all([
-      supabase.from('equipment').select('*'),
-      supabase.from('tasks').select('*'),
-      supabase.from('schedules').select('*'),
-      supabase.from('parts').select('*'),
-      supabase.from('suppliers').select('*'),
-      supabase.from('documents').select('*'),
-      supabase.from('part_usage').select('*'),
-      supabase.from('recurrence_rules').select('*'),
-      supabase.from('shop_tools').select('*'),
-      supabase.from('tool_requests').select('*').order('created_at', {ascending: false}),
-      supabase.from('observations').select('*').order('created_at', {ascending:false})
+      window._mpdb.from('equipment').select('*'),
+      window._mpdb.from('tasks').select('*'),
+      window._mpdb.from('schedules').select('*'),
+      window._mpdb.from('parts').select('*'),
+      window._mpdb.from('suppliers').select('*'),
+      window._mpdb.from('documents').select('*'),
+      window._mpdb.from('part_usage').select('*'),
+      window._mpdb.from('recurrence_rules').select('*'),
+      window._mpdb.from('shop_tools').select('*'),
+      window._mpdb.from('tool_requests').select('*').order('created_at', {ascending: false}),
+      window._mpdb.from('observations').select('*').order('created_at',{ascending:false})
     ]);
 
-    // 3. Map the data into the state
+    // 2. THE VITAL FIX: Assign the data to the Master State
+    // We check if eq.data exists to prevent wiping out the list with 'null'
     state.equipment = eq.data || [];
     state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = sc.data || [];
@@ -47,27 +44,17 @@ export async function loadState() {
     state.wishlist = wl.data || [];
     state.observations = obs.data || [];
 
-console.log("Data loaded, drawing calendar...");
-    if (typeof window.renderCalendar === 'function') {
-        window.renderCalendar();
-    }
-    
- if (typeof window.renderCalendar === 'function') {
-        window.renderCalendar();
-    }
-    
-     if (typeof window.renderChecklistTemplates === 'function') {
-        window.renderChecklistTemplates();
-    }
-    // 4. Trigger UI Refresh
-    if (typeof updateMetrics === 'function') updateMetrics();
+    console.log(`✅ Sync complete. Found ${state.equipment.length} machines in Database.`);
+
+    // 3. Trigger UI Redraw
+    if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
+    if (typeof window.updateMetrics === 'function') window.updateMetrics();
+
     setSyncStatus('online');
-    
-    console.log("✅ LoadState successful.");
     return true;
   } catch(e) { 
-    console.error('Load error:', e); 
-    setSyncStatus('offline'); 
+    console.error('❌ Data load failed:', e); 
+    setSyncStatus('offline');
     return false;
   }
 }
