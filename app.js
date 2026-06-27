@@ -41,15 +41,6 @@ import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed } from './analytics.js';
 
-
-window.saveEquipment = () => {
-    saveEquipment(state, currentUser, window.pendingPhotos, window.customFieldsTemp).then(res => {
-        if(success) {
-            closeModal('equip-modal');
-            renderEquipmentTable();
-        }
-    });
-};
 window.calDayClick = calDayClick; 
 window.resetUserPassword = resetUserPassword;
 window.unlockUser = unlockUser;
@@ -272,6 +263,17 @@ window.openAddConsumable = () => {
 document.addEventListener('DOMContentLoaded', () => {
     startApp(); 
 });
+
+window.saveEquipment = () => {
+    // We call the function and wait for the result ('res')
+    saveEquipment(state, window.currentUser, window.pendingPhotos, window.customFieldsTemp).then(res => {
+        if(res && res.success) { // <--- Added 'res.' here
+            closeModal('equip-modal');
+            // If you have the renderer function, call it here:
+            if (typeof renderEquipmentTable === 'function') renderEquipmentTable(state, window.currentUser, window.ICONS, calcHealth, healthColor, getLastService, getNextDue);
+        }
+    });
+};
 
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
