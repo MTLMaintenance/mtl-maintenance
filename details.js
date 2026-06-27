@@ -119,3 +119,23 @@ export function renderMiniTimeline(equipId, state, fmtDateFunc, badgeFunc) {
             <div>${badgeFunc(t.status)}</div>
         </div>`).join('') || '<div class="empty-text">No recent activity</div>';
 }
+
+export function renderFullHistoryList(equipId, state) {
+    const container = document.getElementById('eq-history-list');
+    if (!container) return;
+
+    // Filter for completed tasks linked to this machine
+    const history = state.tasks.filter(t => (t.equipId === equipId || t.equip_id === equipId) && t.status === 'Completed');
+    
+    // Sort newest first
+    history.sort((a,b) => new Date(b.completed_at || b.due) - new Date(a.completed_at || a.due));
+
+    container.innerHTML = history.map(t => `
+        <div class="history-item-row">
+            <div>
+                <div class="bold">${t.name}</div>
+                <div class="text-mini">${new Date(t.completed_at || t.due).toLocaleDateString()}</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="window.openTaskDetail('${t.id}')">Details</button>
+        </div>`).join('') || '<div class="empty-text">No service history recorded yet.</div>';
+}
