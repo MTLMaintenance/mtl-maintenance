@@ -350,7 +350,7 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     photos:         pendingPhotos.equip.slice(),
     custom_fields:  { ...customFieldsTemp }, // Clone the temporary fields
     health_score:   100,
-    created_at:     new Date().toISOString()
+    
   };
 
   try {
