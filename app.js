@@ -56,6 +56,7 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.renderEquipmentTable
 window.logAuditAction = logAuditAction;
 window.customFieldsTemp = customFieldsTemp;
 window.pendingPhotos = pendingPhotos; 
@@ -268,12 +269,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.saveEquipment = () => {
-    // We call the function and wait for the result ('res')
-    saveEquipment(state, window.currentUser, window.pendingPhotos, window.customFieldsTemp).then(res => {
-        if(res && res.success) { // <--- Added 'res.' here
+    // We pass the variables into the saver
+    saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp).then(res => {
+        if (res && res.success) {
             closeModal('equip-modal');
-            // If you have the renderer function, call it here:
-            if (typeof renderEquipmentTable === 'function') renderEquipmentTable(state, window.currentUser, window.ICONS, calcHealth, healthColor, getLastService, getNextDue);
+           
+            window.renderEquipmentTable(); 
+            
+            // Also update the big dashboard numbers
+            if (typeof window.updateMetrics === 'function') window.updateMetrics();
         }
     });
 };
