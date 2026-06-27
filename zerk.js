@@ -90,7 +90,7 @@ export async function addZerkViewWithTitle() {
     const equip = window.state.equipment.find(x => x.id === equipId);
     if (!equip) return;
 
-    const viewName = prompt("Name this view (e.g. Front Loader, Boom):");
+    const viewName = prompt("Name this view (e.g. Front Loader, Boom, Left Side):");
     if (!viewName) return;
 
     const input = document.createElement('input');
@@ -102,18 +102,68 @@ export async function addZerkViewWithTitle() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const compressed = await compressImage(event.target.result, 1200, 0.8);
+            // Compress and save
+            const compressed = await window.utils.compressImage(event.target.result, 1200, 0.8);
+            
             equip.zerk_photos = equip.zerk_photos || [];
             equip.zerk_names = equip.zerk_names || [];
+            
             equip.zerk_photos.push(compressed);
             equip.zerk_names.push(viewName);
-            await persist('equipment', 'upsert', equip);
+
+            // Update Supabase
+            await window._mpdb.from('equipment').update({ 
+                zerk_photos: equip.zerk_photos, 
+                zerk_names: equip.zerk_names 
+            }).eq('id', equipId);
+
             window._currentZerkViewIdx = equip.zerk_photos.length - 1;
             renderZerkTab(equipId);
+            window.showToast("View Added ✓");
         };
         reader.readAsDataURL(file);
     };
     input.click();
+}
+
+// 2. Delete the current photo view and all its points
+export async function deleteZerkView() {
+    const equipId = window._currentDetailEquipId;
+    const idx = window._currentZerkViewIdx || 0;
+    const equip = window.state.equipment.find(x => x.id === equipId);
+
+    if (!equip || !equip.zerk_photos) return;
+
+    const viewName = (equip.zerk_names && equip.zerk_names[idx]) ? equip.zerk_names[idx] : `View ${idx + 1}`;
+    if (!confirm(`Delete the view "${viewName}" and ALL its grease points?`)) return;
+
+    try {
+        // Remove from photos and names arrays
+        equip.zerk_photos.splice(idx, 1);
+        if (equip.zerk_names) equip.zerk_names.splice(idx, 1);
+
+        // Remove all dots that belonged to this specific view
+        if (equip.zerk_points) {
+            equip.zerk_points = equip.zerk_points.filter(p => p.view_index !== idx);
+            // Re-index remaining points so they don't shift
+            equip.zerk_points.forEach(p => {
+                if (p.view_index > idx) p.view_index--;
+            });
+        }
+
+        // Save back to Supabase
+        await window._mpdb.from('equipment').update({ 
+            zerk_photos: equip.zerk_photos, 
+            zerk_names: equip.zerk_names,
+            zerk_points: equip.zerk_points 
+        }).eq('id', equipId);
+
+        window._currentZerkViewIdx = 0; // Go back to first view
+        renderZerkTab(equipId);
+        window.showToast("View removed ✓");
+    } catch (e) {
+        console.error("Delete view failed:", e);
+    }
 }
 
 // 3. Edit instructions for a specific dot
