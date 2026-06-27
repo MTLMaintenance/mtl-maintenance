@@ -56,7 +56,10 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-window.renderEquipmentTable
+
+window.currentUser = window.currentUser || null;
+window.state = state;
+window.renderEquipmentTable;
 window.logAuditAction = logAuditAction;
 window.customFieldsTemp = customFieldsTemp;
 window.pendingPhotos = pendingPhotos; 
