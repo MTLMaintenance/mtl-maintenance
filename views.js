@@ -2,29 +2,40 @@
 import { fmtDate, badge, isOverdue } from './utils.js';
 
 // 1. Render the main Equipment Table
-export function renderEquipmentTable(state, currentUser, ICONS, calcHealth, healthColor, getLastService, getNextDue) {
-  const container = document.getElementById('equip-table-body');
-  if (!container) return;
-
-  const equip = window.activeGroupFilter === 'all' ? state.equipment : state.equipment.filter(e => e.group_tag === window.activeGroupFilter || e.group_tag === 'both');
-  
-  container.innerHTML = equip.map(e => {
-    const score = calcHealth(e.id, state.tasks, state.equipment);
-    const icon = e.photos && e.photos.length ? `<img src="${e.photos[0]}" style="width:30px;height:30px;object-fit:cover;border-radius:4px"/>` : (ICONS[e.type] || '⚙');
+export function renderEquipmentTable() {
+    // 1. Grab data from the global window
+    const state = window.state;
+    const currentUser = window.currentUser;
+    const container = document.getElementById('equip-table-body');
     
-    return `
-    <tr onclick="window.openEquipDetail('${e.id}')">
-      <td><div style="display:flex;align-items:center;gap:10px"><div>${icon}</div><div><b>${e.name}</b><br><small>${e.serial}</small></div></div></td>
-      <td>${badge(e.status)}</td>
-      <td><b>${e.hours.toLocaleString()}</b> hrs</td>
-      <td>
-        <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
-        <span style="font-size:11px;color:${healthColor(score)}">${score}%</span>
-      </td>
-      <td>${getLastService(e.id, state.tasks)}</td>
-      <td>${getNextDue(e.id, state.tasks)}</td>
-    </tr>`;
-  }).join('');
+    if (!container || !state.equipment) return;
+
+    console.log("Painting Equipment Table...");
+
+    // 2. Build the rows
+    container.innerHTML = state.equipment.map(e => {
+        const score = calcHealth(e.id, state.tasks, state.equipment);
+        const icon = e.photos?.length ? `<img src="${e.photos[0]}" class="equip-img-mini"/>` : (ICONS[e.type] || '⚙');
+
+        return `
+        <tr onclick="window.openEquipDetail('${e.id}')">
+            <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <div class="equip-icon-wrap">${icon}</div>
+                    <div><b>${e.name}</b><br><small>${e.serial || 'N/A'}</small></div>
+                </div>
+            </td>
+            <td>${badge(e.status)}</td>
+            <td><b>${e.hours.toLocaleString()}</b> hrs</td>
+            <td>
+                <div class="health-bar"><div class="health-fill" style="width:${score}%; background:${healthColor(score)}"></div></div>
+                <span style="font-size:11px; color:${healthColor(score)}">${score}%</span>
+            </td>
+            <td>${e.op || '—'}</td>
+            <td>${getLastService(e.id, state.tasks)}</td>
+            <td>${typeof window.getNextDue === 'function' ? window.getNextDue(e.id) : '—'}</td>
+        </tr>`;
+    }).join('');
 }
 
 // 2. Render the Parts Table
