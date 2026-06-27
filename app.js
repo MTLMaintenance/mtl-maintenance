@@ -23,7 +23,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } fr
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab,  } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue  } from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue,  } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms,  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool } from './tools.js';
@@ -57,6 +57,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.healthColor = healthColor;
 window.getNextDue = (id) => getNextDue(id, state.tasks);
 window.getLastService = getLastService
 window.calcHealth = calcHealth;
