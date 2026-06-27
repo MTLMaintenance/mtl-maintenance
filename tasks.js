@@ -34,22 +34,48 @@ export function renderTasksTable(containerId, filter = 'all') {
 }
 
 // 2. Save a new Work Order
-export async function saveTask(record) {
+export async function saveTask() {
+    const state = window.state;
+    
+    // 1. Grab values from the screen
+    const name = document.getElementById('t-name').value.trim();
+    const equipId = document.getElementById('t-equip').value; // This links the machine
+    const due = document.getElementById('t-due').value;
+
+    if (!name || !equipId) return window.showToast("Name and Equipment are required");
+
+    const record = {
+        id: window.utils.uid(),
+        name: name,
+        equip_id: equipId, // VITAL: This matches the 'id' in your equipment table
+        due: due,
+        priority: document.getElementById('t-priority').value,
+        assign: document.getElementById('t-assign').value,
+        notes: document.getElementById('t-notes').value,
+        status: 'Open',
+        created_at: new Date().toISOString()
+    };
+
     try {
-        const { error } = await supabase.from('tasks').insert(record);
+        // 2. Save to Supabase
+        const { error } = await window._mpdb.from('tasks').insert(record);
         if (error) throw error;
 
-        window.state.tasks.push(record);
-        showToast("Work Order Created ✓");
+        // 3. Update local memory (Sync)
+        // Note: We use 'equipId' here so the rest of your app can find it
+        state.tasks.push({ ...record, equipId: record.equip_id });
+
+        // 4. UI Refresh
+        window.closeModal('task-modal');
+        if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
+        if (typeof window.renderCalendar === 'function') window.renderCalendar();
+        
+        window.showToast("Work Order linked to " + window.equipName(equipId));
         return true;
     } catch (e) {
         console.error(e);
-        showToast("Failed to save task");
         return false;
     }
- if (typeof window.renderCalendar === 'function') {
-        window.renderCalendar();
-}
 }
 // 3. Checklist Logic: Toggle an item
 export async function toggleChecklistItem(taskId, index) {
