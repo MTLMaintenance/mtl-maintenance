@@ -79,21 +79,66 @@ export async function deleteZerk(id, equipId, state) {
 }
 
 // 3. Rename a Photo View
-export async function renameZerkView(idx, equipId, state) {
-    const equip = state.equipment.find(x => x.id === equipId);
+export async function renameZerkView(idx) {
+    const equipId = window._currentDetailEquipId;
+    const equip = window.state.equipment.find(x => x.id === equipId);
     if (!equip) return;
 
     const currentName = (equip.zerk_names && equip.zerk_names[idx]) ? equip.zerk_names[idx] : `View ${idx + 1}`;
     const newName = prompt("Rename this view:", currentName);
 
     if (newName && newName.trim() !== "") {
-        if (!equip.zerk_names) equip.zerk_names = [];
+        equip.zerk_names = equip.zerk_names || [];
         equip.zerk_names[idx] = newName.trim();
         await persist('equipment', 'upsert', equip);
-        showToast("Renamed ✓");
-        return true;
+        renderZerkTab(equipId); // Redraw
+        window.showToast("Renamed ✓");
     }
-    return false;
+}
+export async function addZerkViewWithTitle() {
+    const equipId = window._currentDetailEquipId;
+    const equip = window.state.equipment.find(x => x.id === equipId);
+    if (!equip) return;
+
+    const viewName = prompt("Name this view (e.g. Front Loader, Boom):");
+    if (!viewName) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const compressed = await compressImage(event.target.result, 1200, 0.8);
+            equip.zerk_photos = equip.zerk_photos || [];
+            equip.zerk_names = equip.zerk_names || [];
+            equip.zerk_photos.push(compressed);
+            equip.zerk_names.push(viewName);
+            await persist('equipment', 'upsert', equip);
+            window._currentZerkViewIdx = equip.zerk_photos.length - 1;
+            renderZerkTab(equipId);
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+// 3. Edit instructions for a specific dot
+export async function editZerkNote(id) {
+    const equipId = window._currentDetailEquipId;
+    const equip = window.state.equipment.find(e => e.id === equipId);
+    const point = equip.zerk_points.find(p => p.id === id);
+    if (!point) return;
+
+    const newNote = prompt("Edit grease instructions:", point.note || "");
+    if (newNote === null) return;
+
+    point.note = newNote;
+    await persist('equipment', 'upsert', equip);
+    renderZerkTab(equipId);
 }
 
 export function renderZerkTab(equipId) {
