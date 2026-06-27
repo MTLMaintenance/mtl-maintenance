@@ -120,7 +120,7 @@ if (typeof window.renderEquipmentTable === 'function') {
     }
 
     showPanel('dashboard');
-}
+
       if (currentUser && currentUser.role === 'admin') {
         const adminBtn = document.createElement('button');
         adminBtn.className = 'nav-btn';
