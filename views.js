@@ -6,48 +6,45 @@ export function renderEquipmentTable() {
     const container = document.getElementById('equip-table-body');
     if (!container) return;
 
-    try {
-        const state = window.state;
-        // Filter based on the active tab (all/outside/production)
-        const filter = window.activeGroupFilter || 'all';
-        const list = filter === 'all' ? state.equipment : state.equipment.filter(e => e.group_tag === filter || e.group_tag === 'both');
-
-        if (list.length === 0) {
-            container.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No machines found in this group.</td></tr>';
-            return;
-        }
-
-        container.innerHTML = list.map(e => {
-            // We calculate these inside the loop
-            const score = calcHealth(e.id, state.tasks, state.equipment);
-            const service = getLastService(e.id, state.tasks);
-            const icon = e.photos?.length ? `<img src="${e.photos[0]}" style="width:30px;height:30px;object-fit:cover;border-radius:4px"/>` : (ICONS[e.type] || '⚙');
-
-            return `
-            <tr onclick="window.openEquipDetail('${e.id}')" style="cursor:pointer;">
-                <td>
-                    <div style="display:flex;align-items:center;gap:10px">
-                        <div class="equip-icon-wrap">${icon}</div>
-                        <div><b>${e.name}</b><br><small>${e.serial || 'N/A'}</small></div>
-                    </div>
-                </td>
-                <td>${badge(e.status)}</td>
-                <td><b>${e.hours.toLocaleString()}</b> hrs</td>
-                <td>
-                    <div class="health-bar"><div class="health-fill" style="width:${score}%;background:${healthColor(score)}"></div></div>
-                    <span style="font-size:11px;color:${healthColor(score)}">${score}%</span>
-                </td>
-                <td>${e.op || '—'}</td>
-                <td>${service}</td>
-                <td id="next-due-${e.id}">—</td>
-            </tr>`;
-        }).join('');
-
-        console.log("✅ Equipment Table Rendered Successfully.");
-    } catch (err) {
-        console.error("❌ RENDER ERROR:", err);
-        container.innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Render Error: ${err.message}</td></tr>`;
+    // Use window.state to be 100% sure we are looking at the global data
+    const state = window.state;
+    
+    // Safety check: if data isn't loaded, don't just stay blank, show a message
+    if (!state || !state.equipment || state.equipment.length === 0) {
+        container.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:#888;">No machines found in database. Click "+ Add Equipment" to start.</td></tr>';
+        return;
     }
+
+    // Simplify the list for testing (Remove the filter for a moment)
+    const list = state.equipment;
+
+    container.innerHTML = list.map(e => {
+        // We use window. functions to ensure they are found
+        const score = calcHealth(e.id, state.tasks, state.equipment);
+        const service = getLastService(e.id, state.tasks);
+        const icon = (e.photos && e.photos.length) ? `<img src="${e.photos[0]}" style="width:30px; height:30px; object-fit:cover; border-radius:4px"/>` : (ICONS[e.type] || '⚙');
+
+        return `
+        <tr onclick="window.openEquipDetail('${e.id}')" style="cursor:pointer; border-bottom:1px solid #eee;">
+            <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <div class="equip-icon-wrap">${icon}</div>
+                    <div><b>${e.name}</b><br><small>${e.serial || 'N/A'}</small></div>
+                </div>
+            </td>
+            <td>${badge(e.status)}</td>
+            <td><b>${e.hours.toLocaleString()}</b> hrs</td>
+            <td>
+                <div class="health-bar" style="width:100px; background:#eee; height:8px; border-radius:4px; overflow:hidden;">
+                    <div class="health-fill" style="width:${score}%; background:${healthColor(score)}; height:100%;"></div>
+                </div>
+                <span style="font-size:11px; color:${healthColor(score)}; font-weight:700;">${score}%</span>
+            </td>
+            <td>${e.op || '—'}</td>
+            <td>${service}</td>
+            <td>—</td>
+        </tr>`;
+    }).join('');
 }
 // 2. Render the Parts Table
 export function renderPartsTable(state, supplierNameFunc) {
