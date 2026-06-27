@@ -35,7 +35,7 @@ import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory 
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
 import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
-import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates, calcHealth    } from './views.js';
+import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,     } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
