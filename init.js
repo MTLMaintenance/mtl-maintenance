@@ -71,7 +71,7 @@ export function teleportModals() {
 
 export async function enterApp(currentUser, state, canFunc) {
   console.log("Building application interface...");
-
+ await loadState(); 
   // --- THE VITAL MISSING PIECE ---
   // 1. Hide the login screen
   const authScreen = document.getElementById('auth-screen');
@@ -115,7 +115,12 @@ export async function enterApp(currentUser, state, canFunc) {
           `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
         nav.appendChild(b);
       });
+if (typeof window.renderEquipmentTable === 'function') {
+        window.renderEquipmentTable();
+    }
 
+    showPanel('dashboard');
+}
       if (currentUser && currentUser.role === 'admin') {
         const adminBtn = document.createElement('button');
         adminBtn.className = 'nav-btn';
