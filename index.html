@@ -1681,8 +1681,19 @@
   </div>
 </div>
 
- 
- <!-- Scripts -->
+ <script>
+ window.state = { 
+    equipment: [], tasks: [], schedules: [], parts: [], 
+    suppliers: [], documents: [], partUsage: [], tools: [], 
+    wishlist: [], observations: [], checklistTemplates: [] 
+  };
+  
+  // Create these too so the bridges don't crash
+  window.pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
+  window.customFieldsTemp = {};
+  window.woPartsAdded = [];
+ </script>
+  <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
