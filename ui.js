@@ -331,20 +331,25 @@ export function switchToolTab(tab) {
 }
 
 export function switchWOTab(tabId, btn) {
-    // 1. List of all the sections inside the Work Order modal
-    const tabs = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments'];
+    console.log("Switching Work Order tab to:", tabId);
+
+    // 1. Find ALL containers inside the modal that have the class 'wo-tab-content'
+    const containers = document.querySelectorAll('.wo-tab-content');
     
-    // 2. Hide all of them
-    tabs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+    // 2. Hide every single one of them
+    containers.forEach(div => {
+        div.style.display = 'none';
     });
 
-    // 3. Show the one we actually clicked
+    // 3. Show ONLY the one that matches the ID we clicked
     const target = document.getElementById(tabId);
-    if (target) target.style.display = 'block';
+    if (target) {
+        target.style.display = 'block';
+    } else {
+        console.error("Tab ID not found:", tabId);
+    }
 
-    // 4. Update the button colors (Active vs Inactive)
+    // 4. Update the button highlights (Active vs Inactive)
     const parent = btn.parentElement;
     parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
