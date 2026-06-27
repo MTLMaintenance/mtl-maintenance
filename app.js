@@ -60,7 +60,7 @@ window.showRegister = () => {
 window.renderObservationsList = renderObservationsList;
 window.renderZerkTab = renderZerkTab;
 window.renderFullHistoryList = (id) => renderFullHistoryList(id, state);
-window.renderQuickSpecs = renderQuickSpecs;
+window.renderQuickSpecs = (id) => renderQuickSpecs(id);
 window.healthColor = healthColor;
 window.getNextDue = (id) => getNextDue(id, state.tasks);
 window.getLastService = getLastService
