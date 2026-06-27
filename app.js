@@ -34,7 +34,7 @@ import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsence
 import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
-import { handleZerkMapClick, deleteZerk, renameZerkView,renderZerkTab } from './zerk.js';
+import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,     } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
@@ -59,6 +59,11 @@ window.showRegister = () => {
 
 window.renderObservationsList = renderObservationsList;
 window.renderZerkTab = renderZerkTab;
+window.handleZerkMapClick = handleZerkMapClick;
+window.deleteZerk = (id) => deleteZerk(id, window._currentDetailEquipId, window.state).then(() => renderZerkTab(window._currentDetailEquipId));
+window.renameZerkView = renameZerkView;
+window.addZerkViewWithTitle = addZerkViewWithTitle;
+window.editZerkNote = editZerkNote;
 window.renderFullHistoryList = (id) => renderFullHistoryList(id, state);
 window.renderQuickSpecs = (id) => renderQuickSpecs(id);
 window.healthColor = healthColor;
@@ -1302,50 +1307,6 @@ function showZerkInfo(event, zerkId) {
     }
     
     box.style.display = 'block';
-}
-async function addZerkViewWithTitle() {
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    if (!equip) return;
-
-    // 1. Ask for the Name first
-    const viewName = prompt("Name this view (e.g. Front Loader, Boom, Right Side):");
-    if (!viewName) return; // User cancelled
-
-    // 2. Create hidden file input to pick the image
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const imageData = event.target.result;
-
-            // 3. Initialize arrays if they don't exist
-            if (!equip.zerk_photos) equip.zerk_photos = [];
-            if (!equip.zerk_names) equip.zerk_names = [];
-
-            // 4. Save data
-            equip.zerk_photos.push(imageData);
-            equip.zerk_names.push(viewName);
-
-            // 5. Persist to Supabase/Database
-            await persist('equipment', 'upsert', equip);
-
-            // 6. UI Update
-            // Set the new view as the active one
-            window._currentZerkViewIdx = equip.zerk_photos.length - 1;
-            
-            // Refresh the switcher and the map
-            renderZerkTab(equip.id); 
-            showToast("View Added ✓");
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
 }
 
 
