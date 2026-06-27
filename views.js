@@ -67,18 +67,32 @@ export function renderPartsTable(state, supplierNameFunc) {
 }
 
 // 3. Render Quick Specs (The machine specs in the detail view)
-export function renderQuickSpecs(equipId, state) {
+export function renderQuickSpecs(equipId) {
+    // 1. THE FIX: Grab state from the window instead of waiting for a parameter
+    const state = window.state;
     const container = document.getElementById('eq-quick-specs');
-    if(!container) return;
-    const e = state.equipment.find(x => x.id === equipId);
-    const specs = e.custom_fields || {};
     
-    container.innerHTML = Object.entries(specs).map(([key, val]) => `
-        <div class="spec-row" style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee">
+    if(!container || !state || !state.equipment) return;
+
+    // 2. Find the machine
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    const specs = e.custom_fields || {};
+    const entries = Object.entries(specs);
+
+    if (entries.length === 0) {
+        container.innerHTML = '<div style="color:#888; font-style:italic; padding: 10px 0;">No specs added yet.</div>';
+        return;
+    }
+
+    // 3. Build the HTML
+    container.innerHTML = entries.map(([key, val]) => `
+        <div class="spec-row" style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.05)">
             <span style="color:#666">${key}:</span>
-            <b onclick="window.editQuickSpec('${equipId}', '${key}')" style="cursor:pointer">${val}</b>
+            <b style="cursor:pointer" onclick="window.editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">${val}</b>
         </div>
-    `).join('') || '<div style="color:#aaa">No specs added</div>';
+    `).join('');
 }
 export function renderConsumablesTable(state, supplierNameFunc) {
     const body = document.getElementById('consumables-table-body');
