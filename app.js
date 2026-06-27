@@ -65,7 +65,7 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-
+window.closeAbsenceModal = closeAbsenceModal;
 window.triggerAddEntryFromCal = triggerAddEntryFromCal;
 window.triggerAbsenceFromCal = triggerAbsenceFromCal;
 window.calDate = calDate;
