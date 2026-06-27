@@ -329,3 +329,23 @@ export function switchToolTab(tab) {
     if (tab === 'wishlist' && typeof window.renderToolWishlist === 'function') window.renderToolWishlist();
     if (tab === 'denied' && typeof window.renderToolDeniedHistory === 'function') window.renderToolDeniedHistory();
 }
+
+export function switchWOTab(tabId, btn) {
+    // 1. List of all the sections inside the Work Order modal
+    const tabs = ['wo-details', 'wo-checklist', 'wo-parts-tab', 'wo-comments'];
+    
+    // 2. Hide all of them
+    tabs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // 3. Show the one we actually clicked
+    const target = document.getElementById(tabId);
+    if (target) target.style.display = 'block';
+
+    // 4. Update the button colors (Active vs Inactive)
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
