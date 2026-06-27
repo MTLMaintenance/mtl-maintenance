@@ -58,12 +58,14 @@ window.showRegister = () => {
 };
 
 
+window.renderConsumablesTable = renderConsumablesTable;
+window.renderPartsTable = renderPartsTable;
 window.woPartsAdded = woPartsAdded;
 window.MONTHS = MONTHS;
 window.ICONS = ICONS;
 window.currentUser = window.currentUser || null;
 window.state = state;
-window.renderEquipmentTable;
+window.renderEquipmentTable = renderEquipmentTable;
 window.logAuditAction = logAuditAction;
 window.customFieldsTemp = customFieldsTemp;
 window.pendingPhotos = pendingPhotos; 
