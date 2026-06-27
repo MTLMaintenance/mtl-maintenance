@@ -273,8 +273,6 @@ window.saveEquipment = () => {
     saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp).then(res => {
         if (res && res.success) {
             closeModal('equip-modal');
-           
-            window.renderEquipmentTable(); 
             
             // Also update the big dashboard numbers
             if (typeof window.updateMetrics === 'function') window.updateMetrics();
