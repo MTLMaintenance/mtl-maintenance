@@ -180,11 +180,12 @@ export function switchDetailTab(tab, btn) {
   if (!id) return;
 
   if (tab === 'eq-overview') { renderMiniTimeline(id); renderQuickSpecs(id); }
-  if (tab === 'eq-zerks') renderZerkTab(id); // This function will handle widening the modal
-  if (tab === 'eq-history') renderFullHistoryList(id);
-  if (tab === 'eq-obs') renderObservationsList(id);
-  if (tab === 'eq-invoices') renderInvoicesList(id);
-  if (tab === 'eq-docs') renderDocsList(id);
+  if (tab === 'eq-zerks') window.renderZerkTab(id); // This function will handle widening the modal
+  if (tab === 'eq-history') window.renderFullHistoryList(id);
+  if (tab === 'eq-obs') window.renderObservationsList(id);
+  if (tab === 'eq-invoices') window.renderInvoicesList(id);
+  if (tab === 'eq-docs') window.renderDocsList(id);
+  
 }
 
 function switchPartsSubTab(tab) {
