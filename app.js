@@ -269,13 +269,22 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.saveEquipment = () => {
-    // We pass the variables into the saver
-    saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp).then(res => {
+    // 1. Run the save logic
+    saveEquipment(state, window.currentUser, window.pendingPhotos, window.customFieldsTemp).then(res => {
         if (res && res.success) {
+            // 2. Close the modal window
             closeModal('equip-modal');
             
-            // Also update the big dashboard numbers
+            // 3. THE MAGIC COMMAND: Redraw the table right now
+            // This calls the render function we moved to views.js
+            if (typeof window.renderEquipmentTable === 'function') {
+                window.renderEquipmentTable(); 
+            }
+            
+            // 4. Also update the big dashboard counts
             if (typeof window.updateMetrics === 'function') window.updateMetrics();
+            
+            showToast("Machine saved and list updated ✓");
         }
     });
 };
