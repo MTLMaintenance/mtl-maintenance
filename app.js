@@ -16,7 +16,7 @@ import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention  } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
-import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline } from './details.js';
+import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline,renderFullHistoryList } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools, checkAndSendOverdueEmails  } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName } from './utils.js';
@@ -34,7 +34,7 @@ import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsence
 import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
-import { handleZerkMapClick, deleteZerk, renameZerkView } from './zerk.js';
+import { handleZerkMapClick, deleteZerk, renameZerkView,renderZerkTab } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,     } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
@@ -57,6 +57,9 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.renderZerkTab = renderZerkTab;
+window.renderFullHistoryList = (id) => renderFullHistoryList(id, state);
+window.renderQuickSpecs = renderQuickSpecs;
 window.healthColor = healthColor;
 window.getNextDue = (id) => getNextDue(id, state.tasks);
 window.getLastService = getLastService
