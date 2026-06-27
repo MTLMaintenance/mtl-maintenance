@@ -6,7 +6,8 @@ export function openModal(id) {
     if (el) {
         el.style.display = 'flex';
         el.classList.add('open');
-        
+        if (id === 'task-modal') {
+            populateSelects();}
         // Safety: If the modal needs specific data loaded when it opens, 
         // we can trigger that here or in the specific module.
     } else {
