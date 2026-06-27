@@ -1,6 +1,6 @@
 // zerk.js - Interactive Grease Map Logic
 import { supabase, persist } from './db.js';
-import { uid, showToast } from './utils.js';
+import { uid, showToast,compressImage  } from './utils.js';
 
 // 1. Handle clicking on the image to add a new point
 export async function handleZerkMapClick(event, viewIdx) {
@@ -103,7 +103,7 @@ export async function addZerkViewWithTitle() {
         const reader = new FileReader();
         reader.onload = async (event) => {
             // Compress and save
-            const compressed = await window.utils.compressImage(event.target.result, 1200, 0.8);
+            const compressed = await compressImage(event.target.result, 1200, 0.8);
             
             equip.zerk_photos = equip.zerk_photos || [];
             equip.zerk_names = equip.zerk_names || [];
