@@ -324,14 +324,12 @@ export async function saveObservationChange(state) {
 }
 
 export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
-  // 1. Grab basic info from the screen
   const name = document.getElementById('e-name').value.trim(); 
   if(!name) {
       showToast('Please enter a name');
       return { success: false };
   }
   
-  // 2. Build the record object
   const record = {
     id: uid(), 
     name,
@@ -345,31 +343,28 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     group_tag:    document.getElementById('e-group')?.value || 'outside',
     monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value) || 0,
     yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value) || 0,
-    
-    // Use the variables passed from the bridge
     photos:         pendingPhotos.equip.slice(),
-    custom_fields:  { ...customFieldsTemp }, // Clone the temporary fields
-    health_score:   100,
-    
+    custom_fields:  { ...customFieldsTemp }, 
+    health_score:   100
   };
 
   try {
-    // 3. Save to Supabase
+    // 1. Save to Supabase
     await persist('equipment', 'upsert', record);
 
-    // 4. Update Local Memory (State)
-    state.equipment.push(record);
     
-    // 5. Log the action for accountability
+    // This ensures that all files (app.js, views.js, dashboard.js) see the new machine
+    if (!window.state.equipment) window.state.equipment = [];
+    window.state.equipment.push(record);
+    
+    // 3. Log the action
     await logAuditAction("Added Machine", `Added "${name}" to the fleet.`, currentUser);
 
-    // 6. Reset the temporary storage for the next machine
+    // 4. Cleanup UI State
     pendingPhotos.equip = [];
-    // We can't clear a constant reference easily, so we just empty it:
     Object.keys(customFieldsTemp).forEach(key => delete customFieldsTemp[key]);
 
-    showToast("Machine Saved ✓");
-    return { success: true };
+    return { success: true }; // Send success signal back to app.js
 
   } catch (e) {
     console.error("Save Equipment Failed:", e);
@@ -377,3 +372,4 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     return { success: false };
   }
 }
+
