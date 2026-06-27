@@ -34,7 +34,7 @@ import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsence
 import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl } from './checklists.js';
-import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote } from './zerk.js';
+import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView  } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,     } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
@@ -56,7 +56,7 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-
+window.deleteZerkView = deleteZerkView;
 window.renderObservationsList = renderObservationsList;
 window.renderZerkTab = renderZerkTab;
 window.handleZerkMapClick = handleZerkMapClick;
