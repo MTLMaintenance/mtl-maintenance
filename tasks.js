@@ -42,10 +42,10 @@ export async function saveTask() {
     const equipId = document.getElementById('t-equip').value; // This links the machine
     const due = document.getElementById('t-due').value;
 
-    if (!name || !equipId) return window.showToast("Name and Equipment are required");
+    if (!name || !equipId) return showToast("Name and Equipment are required");
 
     const record = {
-        id: window.utils.uid(),
+        id: uid(),
         name: name,
         equip_id: equipId, // VITAL: This matches the 'id' in your equipment table
         due: due,
@@ -66,11 +66,11 @@ export async function saveTask() {
         state.tasks.push({ ...record, equipId: record.equip_id });
 
         // 4. UI Refresh
-        window.closeModal('task-modal');
+        closeModal('task-modal');
         if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
         if (typeof window.renderCalendar === 'function') window.renderCalendar();
         
-        window.showToast("Work Order linked to " + window.equipName(equipId));
+        showToast("Work Order linked to " + window.equipName(equipId));
         return true;
     } catch (e) {
         console.error(e);
