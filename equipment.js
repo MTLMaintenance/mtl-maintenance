@@ -330,7 +330,6 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
   
   const assignInput = document.getElementById('assign-input');
   const assignedUsers = assignInput ? assignInput.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
-  
   const record = {
     id: uid(), 
     name,
@@ -348,6 +347,7 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     group_tag: document.getElementById('e-group')?.value||'outside',
     monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
     yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
+    photos: pPhotos.equip.slice(),  
   };
 
   try {
