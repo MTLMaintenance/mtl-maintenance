@@ -323,42 +323,57 @@ export async function saveObservationChange(state) {
     }
 }
 
-// 1. Save or Update machine with budgets and custom specs
 export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
+  // 1. Grab basic info from the screen
   const name = document.getElementById('e-name').value.trim(); 
-  if(!name) return { success: false, msg: 'Please enter a name' };
+  if(!name) {
+      showToast('Please enter a name');
+      return { success: false };
+  }
   
-  const assignInput = document.getElementById('assign-input');
-  const assignedUsers = assignInput ? assignInput.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  // 2. Build the record object
   const record = {
     id: uid(), 
     name,
-    type:   document.getElementById('e-type').value,
-    serial: document.getElementById('e-serial').value,
-    hours:  parseInt(document.getElementById('e-hours').value)||0,
-    status: document.getElementById('e-status').value,
-    op:     document.getElementById('e-op').value,
-    notes:  document.getElementById('e-notes').value,
-    photos: pendingPhotos.equip.slice(),
-    assigned_users: assignedUsers,
-    custom_fields: customFieldsTemp,
-    health_score: 100,
-    manufacturer: document.getElementById('e-manufacturer')?.value.trim()||'',
-    group_tag: document.getElementById('e-group')?.value||'outside',
-    monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value)||0,
-    yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value)||0,
-    photos: pPhotos.equip.slice(),  
+    type:         document.getElementById('e-type').value,
+    serial:       document.getElementById('e-serial').value,
+    manufacturer: document.getElementById('e-manufacturer')?.value.trim() || '',
+    hours:        parseInt(document.getElementById('e-hours').value) || 0,
+    status:       document.getElementById('e-status').value,
+    op:           document.getElementById('e-op').value,
+    notes:        document.getElementById('e-notes').value,
+    group_tag:    document.getElementById('e-group')?.value || 'outside',
+    monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value) || 0,
+    yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value) || 0,
+    
+    // Use the variables passed from the bridge
+    photos:         pendingPhotos.equip.slice(),
+    custom_fields:  { ...customFieldsTemp }, // Clone the temporary fields
+    health_score:   100,
+    created_at:     new Date().toISOString()
   };
 
   try {
+    // 3. Save to Supabase
     await persist('equipment', 'upsert', record);
+
+    // 4. Update Local Memory (State)
     state.equipment.push(record);
     
-    // Log for accountability
-    if (typeof window.logAuditAction === 'function') {
-        window.logAuditAction("Machine Update", `Saved details for ${name}`, currentUser);
-    }
-    
-    return { success: true, name };
-  } catch (e) { return { success: false, msg: 'Save failed' }; }
+    // 5. Log the action for accountability
+    await logAuditAction("Added Machine", `Added "${name}" to the fleet.`, currentUser);
+
+    // 6. Reset the temporary storage for the next machine
+    pendingPhotos.equip = [];
+    // We can't clear a constant reference easily, so we just empty it:
+    Object.keys(customFieldsTemp).forEach(key => delete customFieldsTemp[key]);
+
+    showToast("Machine Saved ✓");
+    return { success: true };
+
+  } catch (e) {
+    console.error("Save Equipment Failed:", e);
+    showToast("Error saving machine");
+    return { success: false };
+  }
 }
