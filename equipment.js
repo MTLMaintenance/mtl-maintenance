@@ -373,3 +373,12 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
   }
 }
 
+export function getNextDue(id, tasks) {
+  const openTasks = tasks.filter(t => (t.equipId === id || t.equip_id === id) && t.status !== 'Completed');
+  if(!openTasks.length) return '—';
+  
+  const sorted = openTasks.sort((a, b) => new Date(a.due) - new Date(b.due));
+  const next = sorted[0];
+  
+  return `<span style="color:${window.isOverdue(next.due) ? 'var(--danger)' : 'inherit'}">${fmtDate(next.due)}</span>`;
+}
