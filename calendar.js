@@ -144,7 +144,7 @@ export function togglePrivateReason(show) {
     const privBox = document.getElementById('priv-box');
     if (privBox) privBox.style.display = show ? 'block' : 'none';
 }
-export function triggerAddEntryFromCal(lastClickedDate) {
+export function triggerAddEntryFromCal() {
     // 1. Close the small day card
     const actionModal = document.getElementById('cal-action-modal');
     if (actionModal) {
@@ -152,16 +152,23 @@ export function triggerAddEntryFromCal(lastClickedDate) {
         actionModal.style.display = 'none';
     }
     
-    // 2. Open the work order modal
-    if (typeof window.openModal === 'function') {
-        window.openModal('calendar-entry-modal'); 
+    // 2. Clear the Work Order form so it's fresh
+    if (typeof window.resetPartForm === 'function') window.resetPartForm(); 
+
+    // 3. Pre-fill the Date in the DETAILED Work Order form
+    // Your Work Order modal uses the ID 't-due' for the date
+    const dateInput = document.getElementById('t-due');
+    if (dateInput) {
+        dateInput.value = window.lastClickedDate;
     }
 
-    // 3. Auto-fill the date
-    const dateInput = document.getElementById('cal-date') || document.getElementById('task-due');
-    if (dateInput) {
-        dateInput.value = lastClickedDate;
+    // 4. Open the DETAILED Work Order modal (The left picture)
+    if (typeof window.openModal === 'function') {
+        window.openModal('task-modal'); 
     }
+
+    // 5. Ensure dropdowns (Equipment/Users) are filled
+    if (typeof window.populateSelects === 'function') window.populateSelects();
 }
 
 export function triggerAbsenceFromCal(lastClickedDate) {
