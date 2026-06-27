@@ -3,10 +3,13 @@ import { fmtDate, badge, isOverdue } from './utils.js';
 import { openModal } from './ui.js';
 
 // 1. Render Machine Observations (The notes list)
-export function renderObservationsList(equipId, state, currentUser) {
+export function renderObservationsList(equipId) {
+    // 1. Grab state from window automatically
+    const state = window.state;
     const listContainer = document.getElementById(`obs-list-${equipId}`);
-    if (!listContainer) return;
+    if (!listContainer || !state) return;
 
+    // 2. This line was crashing because 'state' was undefined. Now it works!
     const obs = (state.observations || []).filter(o => o.equip_id === equipId);
     obs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -17,7 +20,6 @@ export function renderObservationsList(equipId, state, currentUser) {
                 <b>${o.body}</b>
                 <div class="text-mini">${o.author} · ${new Date(o.created_at).toLocaleDateString()}</div>
             </div>
-            <button class="btn-sm" onclick="window.globalEditObs('${o.id}')">Edit</button>
         </div>`).join('') || '<div class="empty-text">No history recorded yet.</div>';
 }
 
@@ -78,19 +80,16 @@ export function buildTaskDetailHTML(t, equipName) {
 }
 
 // 1. Build the chronological history (Work Orders + Notes)
-export function renderEquipTimeline(equipId, state, fmtDateFunc) {
+export function renderEquipTimeline(equipId) {
+  const state = window.state;
   const container = document.getElementById('eq-timeline-content');
-  if(!container) return;
+  if(!container || !state) return;
 
   const tasks = state.tasks.filter(t => t.equipId === equipId).map(t => ({ 
-      date: t.due, title: t.name, body: t.notes, type: 'WO', status: t.status 
+      date: t.due, title: t.name, body: t.notes, type: 'WO'
   }));
   
-  const obs = (state.observations || []).filter(o => o.equip_id === equipId).map(o => ({ 
-      date: o.created_at, title: o.severity.toUpperCase() + ' Note', body: o.body, type: 'OBS', author: o.author
-  }));
-  
-  const timeline = [...tasks, ...obs].sort((a,b) => new Date(b.date) - new Date(a.date));
+  const timeline = [...tasks].sort((a,b) => new Date(b.date) - new Date(a.date));
 
   if (!timeline.length) {
     container.innerHTML = '<div class="empty-text">No history found.</div>';
