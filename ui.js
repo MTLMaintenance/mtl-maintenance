@@ -63,14 +63,31 @@ export function showPanel(id) {
 }
 }
 // 4. Switch Tabs inside a modal or panel
-export function switchTab(group, tabId, btn) {
-    const parent = btn.parentElement;
-    // Remove active class from all buttons in this tab group
-    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    // Add active class to clicked button
-    btn.classList.add('active');
+export function switchTab(group, tab, btn) {
+  // 1. Find the modal this button belongs to
+  const modal = btn.closest('.modal-card') || btn.closest('.modal');
+  if (!modal) return;
 
-    // Logic to show/hide content could be added here or kept in modules
+  // 2. List the specific IDs used in the Equipment Modal
+  const eqSections = ['details-eq', 'custom-eq', 'assign-eq'];
+  
+  // 3. Hide those sections
+  eqSections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  // 4. Show the section the user clicked
+  const target = document.getElementById(tab);
+  if (target) target.style.display = 'block';
+
+  // 5. Highlight the button
+  modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // 6. Trigger sub-renders (These functions must be bridged to window in app.js)
+  if (tab === 'assign-eq' && typeof window.renderAssignUsers === 'function') window.renderAssignUsers();
+  if (tab === 'custom-eq' && typeof window.renderCustomFields === 'function') window.renderCustomFields();
 }
 export async function refreshAllDropdowns() {
     try {
