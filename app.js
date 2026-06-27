@@ -60,7 +60,7 @@ window.showRegister = () => {
 window.renderObservationsList = renderObservationsList;
 window.renderZerkTab = renderZerkTab;
 window.handleZerkMapClick = handleZerkMapClick;
-window.deleteZerk = (id) => deleteZerk(id, window._currentDetailEquipId, window.state).then(() => renderZerkTab(window._currentDetailEquipId));
+window.deleteZerk = deleteZerk; 
 window.renameZerkView = renameZerkView;
 window.addZerkViewWithTitle = addZerkViewWithTitle;
 window.editZerkNote = editZerkNote;
