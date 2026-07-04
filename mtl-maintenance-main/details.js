@@ -26,15 +26,15 @@ export function renderObservationsList(equipId) {
 // 2. The Big Machine Popup (openEquipDetail)
 export function buildEquipDetailHTML(e, score, healthColor) {
     // 1. EMERGENCY SAFETY CHECK
-    // If 'e' is missing, show an error instead of crashing the whole app
     if (!e) {
         console.error("Error: buildEquipDetailHTML received no data.");
         return `<div style="padding:20px; color:red;">Error: Machine data could not be loaded.</div>`;
     }
 
-    // 2. Safely grab hours (use 0 if missing)
+    // 2. Safely grab hours
     const displayHours = (e.hours || 0).toLocaleString();
 
+    // 3. THE FIX: Everything must be inside ONE set of backticks
     return `
     <div class="tab-bar">
       <button class="tab active" onclick="window.switchDetailTab('eq-overview',this)">Overview</button>
@@ -56,18 +56,20 @@ export function buildEquipDetailHTML(e, score, healthColor) {
             </div>
         </div>
     </div>
-    `;
 
-    
     <div id="eq-zerks" class="tab-content" style="display:none">
         <div id="tab-content-zerk"></div>
     </div>
 
     <div id="eq-obs" class="tab-content" style="display:none">
-        <textarea id="obs-input-${e.id}" class="form-textarea" placeholder="New observation..."></textarea>
-        <button class="btn-primary" onclick="window.addObservation('${e.id}')">Post Note</button>
+        <div style="padding:15px; background:#f9f9f9; border-radius:8px; margin-bottom:15px;">
+            <label style="display:block; font-size:11px; font-weight:bold; margin-bottom:5px;">ADD OBSERVATION</label>
+            <textarea id="obs-input-${e.id}" class="form-textarea" style="width:100%; height:60px;" placeholder="What do you see?"></textarea>
+            <button class="btn-primary btn-sm" style="margin-top:8px;" onclick="window.addObservation('${e.id}')">Post Note</button>
+        </div>
         <div id="obs-list-${e.id}"></div>
     </div>
+    `; 
 }
 
 
