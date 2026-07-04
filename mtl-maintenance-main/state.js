@@ -76,6 +76,7 @@ export let equipGroupFilter = 'all';
 console.log("✅ state.js initialized successfully.");
 
 
+
 export async function loadState() {
   const state = window.state;
   if (!state) return console.error("Global state folder not found!");
@@ -85,24 +86,24 @@ export async function loadState() {
   try {
     console.log("📥 Syncing all data from Supabase...");
 
-    // 1. THE MAPPING: 13 variables for 13 tables
+    // 1. THE MAPPING: There are exactly 13 names in this list
     const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki, msgs, con] = await Promise.all([
-      window._mpdb.from('equipment').select('*'),
-      window._mpdb.from('tasks').select('*'),
-      window._mpdb.from('schedules').select('*'),
-      window._mpdb.from('parts').select('*'),
-      window._mpdb.from('suppliers').select('*'),
-      window._mpdb.from('documents').select('*'),
-      window._mpdb.from('part_usage').select('*'),
-      window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('tool_requests').select('*'),
-      window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
-      window._mpdb.from('shop_wiki').select('*'),
-      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
-      window._mpdb.from('consumables').select('*') // Table #13
+      window._mpdb.from('equipment').select('*'),           // 1
+      window._mpdb.from('tasks').select('*'),               // 2
+      window._mpdb.from('schedules').select('*'),           // 3
+      window._mpdb.from('parts').select('*'),               // 4
+      window._mpdb.from('suppliers').select('*'),           // 5
+      window._mpdb.from('documents').select('*'),           // 6
+      window._mpdb.from('part_usage').select('*'),          // 7
+      window._mpdb.from('recurrence_rules').select('*'),    // 8
+      window._mpdb.from('tool_requests').select('*'),       // 9
+      window._mpdb.from('observations').select('*').order('created_at', { ascending: false }), // 10
+      window._mpdb.from('shop_wiki').select('*'),           // 11
+      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }), // 12
+      window._mpdb.from('consumables').select('*')          // 13
     ]);
 
-    // 2. SAVING: All variables now exist
+    // 2. SAVING TO STATE: This is where Line 48 was failing
     state.equipment = eq.data || [];
     state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = sc.data || [];
@@ -115,11 +116,11 @@ export async function loadState() {
     state.observations = obs.data || [];
     state.wiki = wiki.data || [];
     state.chatMessages = msgs.data || [];
-    state.consumables = con.data || []; // <--- This will now work!
+    state.consumables = con.data || []; // <--- Variable 'con' now exists!
 
-    console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.consumables.length} supplies.`);
+    console.log(`✅ Sync complete. ${state.equipment.length} machines and ${state.consumables.length} supplies loaded.`);
 
-    // 3. Trigger Redraws
+    // 3. Trigger UI Painters
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
     if (typeof window.renderTools === 'function') window.renderTools();
     if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
