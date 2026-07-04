@@ -233,6 +233,6 @@ export async function openTaskDetail(id, state) {
     `;
 
     openModal('detail-modal');
-}
+
 
 
