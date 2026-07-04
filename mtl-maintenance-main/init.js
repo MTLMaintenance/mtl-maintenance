@@ -1,5 +1,5 @@
 // init.js - Application Bootstrapping
-import { supabase, setSyncStatus } from './db.js';
+import { supabase, setSyncStatus,validateSession  } from './db.js';
 import { updateMetrics } from './dashboard.js';
 import { validateSession} from './db.js';
 import { fetchAllProfiles } from './profiles.js';
