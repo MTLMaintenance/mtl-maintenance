@@ -451,4 +451,4 @@ export async function deleteEquip(id) {
         console.error(e);
         return false;
     }
-
+}
