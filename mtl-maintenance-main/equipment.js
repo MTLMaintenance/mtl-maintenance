@@ -427,40 +427,28 @@ export async function saveEditObservation(obsId, equipId) {
 
 export async function deleteEquip(id) {
     const state = window.state;
-    const e = state.equipment.find(x => x.id === id);
-    if (!e) return;
-
-    // 1. Double-check confirmation
-    if (!confirm(`Permanently delete ${e.name || 'this machine'}? This will also remove all observations and history.`)) return;
+    if (!confirm("Are you sure? This is permanent.")) return;
 
     try {
-        // 2. Log the action for the Admin tab
-        if (typeof window.logAuditAction === 'function') {
-            await window.logAuditAction("Deleted Machine", `Removed ${e.name} (S/N: ${e.serial || 'N/A'})`, window.currentUser);
+        // 1. Delete from Supabase
+        const { error } = await window._mpdb
+            .from('equipment') // Verify this matches your Supabase table name
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error("Supabase Delete Error:", error.message);
+            alert("Delete failed in Database: " + error.message);
+            return false;
         }
 
-        // 3. CLEANUP: Delete linked observations from Supabase first
-        await window._mpdb.from('observations').delete().eq('equip_id', id);
+        // 2. Clear from Local Memory
+        state.equipment = state.equipment.filter(e => e.id !== id);
         
-        // 4. DELETE: Remove the machine from the equipment table
-        const { error } = await window._mpdb.from('equipment').delete().eq('id', id);
-        if (error) throw error;
-
-        // 5. MEMORY: Remove from the master state list
-        state.equipment = state.equipment.filter(eq => eq.id !== id);
-        state.observations = state.observations.filter(o => o.equip_id !== id);
-        state.tasks = state.tasks.filter(t => t.equipId !== id);
-
-        // 6. UI REFRESH: Update the main table and dashboard counts
-        if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
-        if (typeof window.updateMetrics === 'function') window.updateMetrics();
-
-        window.showToast(`${e.name} and all associated data removed ✓`);
-        return true; // Signal success
-
-    } catch (err) {
-        console.error("Delete failed:", err);
-        window.showToast("Delete failed. Check connection.");
+        window.showToast("Machine Deleted ✓");
+        return true;
+    } catch (e) {
+        console.error(e);
         return false;
     }
 }
