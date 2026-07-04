@@ -9,7 +9,7 @@ export function renderPerfectCard(equipId) {
 
     // Build the "Digital Twin" Vitals
     const fuel = e.fuel_level || e.vitals?.fuel || 0;
-    const health = window.utils.calcHealth(e.id, state.tasks, state.equipment);
+    const health = window.calcHealth(e.id, state.tasks, state.equipment);
 
     container.innerHTML = `
         <div class="mtl-os-container">
