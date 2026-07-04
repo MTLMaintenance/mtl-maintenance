@@ -45,7 +45,7 @@ export async function loadState() {
     state.observations = obs.data || [];
     state.wiki = wiki.data || [];
     state.chatMessages = msgs.data || [];
-
+    state.consumables = con.data || [];
     console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.chatMessages.length} messages.`);
 
     // 3. Trigger all the UI "Paintbrushes" to draw the data
