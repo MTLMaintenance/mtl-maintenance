@@ -163,7 +163,7 @@ export async function enterApp(currentUser, state, canFunc) {
   }, 100);
 }
 
-async function startApp() {
+export async function startApp() {
   console.log("--- Starting Application Init ---");
   window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   try {
