@@ -11,11 +11,14 @@ import { fetchAbsences } from './calendar.js';
 export async function loadState() {
   console.log("📥 Syncing all data from Supabase...");
   
-  // VITAL: Always use window.state to ensure we are using the global folder
   const state = window.state;
+  if (!state) return console.error("Global state folder not found!");
+
+  setSyncStatus('syncing');
 
   try {
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki] = await Promise.all([
+    // 1. Fetch EVERYTHING from the cloud at once
+    const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki, msgs] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -26,10 +29,11 @@ export async function loadState() {
       window._mpdb.from('recurrence_rules').select('*'),
       window._mpdb.from('tool_requests').select('*'),
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
-      window._mpdb.from('shop_wiki').select('*') // Get the new wiki tips too!
+      window._mpdb.from('shop_wiki').select('*'),
+      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true })
     ]);
 
-    // Save data to the Global Hallway
+    // 2. Save all data into the Master State folder
     state.equipment = eq.data || [];
     state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = sc.data || [];
@@ -41,38 +45,22 @@ export async function loadState() {
     state.tools = tr.data || [];
     state.observations = obs.data || [];
     state.wiki = wiki.data || [];
+    state.chatMessages = msgs.data || [];
 
-    console.log(`✅ State Hydrated: Found ${state.equipment.length} machines.`);
-    return true;
-  } catch(e) { 
-    console.error('❌ Data load failed:', e); 
-    return false;
-  }
-}
+    console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.chatMessages.length} messages.`);
 
-    // 2. Assign to Master State
-    state.wiki = wikiData.data || [];
-    state.equipment = eq.data || [];
-    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    state.schedules = sc.data || [];
-    state.parts = pt.data || [];
-    state.suppliers = sup.data || [];
-    state.documents = docs.data || [];
-    state.partUsage = pu.data || [];
-    state.recurrenceRules = rr.data || [];
-    state.tools = tr.data || []; // 'tr' now maps to tool_requests
-    state.observations = obs.data || [];
-    window.state.chatMessages = msgs.data || []; 
-    console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.tools.length} tools.`);
-
-    // 3. Trigger UI Redraw
+    // 3. Trigger all the UI "Paintbrushes" to draw the data
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
     if (typeof window.renderTools === 'function') window.renderTools();
+    if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
+    if (typeof window.renderConsumablesTable === 'function') window.renderConsumablesTable();
+    if (typeof window.renderChecklistTemplates === 'function') window.renderChecklistTemplates();
+    if (typeof window.renderDashboard === 'function') window.renderDashboard();
     if (typeof window.updateMetrics === 'function') window.updateMetrics();
-    if (typeof window.renderPartsTable === 'function') {window.renderPartsTable(); }
-    if (typeof window.renderDashboard === 'function') {window.renderDashboard();}
+    
     setSyncStatus('online');
     return true;
+
   } catch(e) { 
     console.error('❌ Data load failed:', e); 
     setSyncStatus('offline');
@@ -80,6 +68,7 @@ export async function loadState() {
   }
 }
 
+// Helper to keep modals on top
 export function teleportModals() {
     const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
     modalIds.forEach(id => {
