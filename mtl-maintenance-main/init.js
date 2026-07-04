@@ -70,7 +70,7 @@ export async function loadState() {
     if (typeof window.renderTools === 'function') window.renderTools();
     if (typeof window.updateMetrics === 'function') window.updateMetrics();
     if (typeof window.renderPartsTable === 'function') {window.renderPartsTable(); }
-    
+    if (typeof window.renderDashboard === 'function') {window.renderDashboard();}
     setSyncStatus('online');
     return true;
   } catch(e) { 
