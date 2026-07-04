@@ -110,12 +110,11 @@ export function renderQuickSpecs(equipId) {
 export function renderConsumablesTable(state, supplierNameFunc) {
     const body = document.getElementById('consumables-table-body');
     if (!body || !state.consumables) return;
-
-    if (state.consumables.length === 0) {
-        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No supplies found.</td></tr>';
+    const consumables = (window.state && window.state.consumables) ? window.state.consumables : [];
+  if (consumables.length === 0) {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">No supplies found.</td></tr>';
         return;
     }
-
     body.innerHTML = state.consumables.map(c => {
         const isLow = c.qty <= c.reorder;
         return `
