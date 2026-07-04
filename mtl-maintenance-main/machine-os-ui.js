@@ -56,12 +56,12 @@ export function renderPerfectCard(equipId) {
             <!-- 3. COMPONENT DEEP DIVE -->
             <h3 class="os-label">Components</h3>
             <div class="os-comp-scroll">
-                <div class="comp-card" onclick="window.openComponentOS('engine', '${e.id}')">⚙️ Engine</div>
-                <div class="comp-card" onclick="window.openComponentOS('hydraulics', '${e.id}')">💧 Hydraulics</div>
-                <div class="comp-card" onclick="window.openComponentOS('electrical', '${e.id}')">⚡ Electrical</div>
-                <div class="comp-card" onclick="window.openComponentOS('tracks', '${e.id}')">🚜 Under Carriage</div>
-            </div>
-
+    <div class="comp-card" onclick="window.filterTimeline('all', this)">🌍 All</div>
+    <div class="comp-card" onclick="window.filterTimeline('engine', this)">⚙️ Engine</div>
+    <div class="comp-card" onclick="window.filterTimeline('hydraulics', this)">💧 Hydraulics</div>
+    <div class="comp-card" onclick="window.filterTimeline('electrical', this)">⚡ Electrical</div>
+    <div class="comp-card" onclick="window.filterTimeline('tracks', this)">🚜 Tracks</div>
+</div>
             <!-- 4. THE UNIFIED TIMELINE -->
             <h3 class="os-label">Unified Machine Timeline</h3>
             <div id="mtl-timeline-stream" class="os-timeline">
