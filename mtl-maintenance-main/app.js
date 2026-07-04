@@ -65,15 +65,9 @@ window.openEquipDetailLegacy = (id) => {
 };
 
 window.deleteEquip = (id) => {
-    // 1. We call the logic from equipment.js
     deleteEquipLogic(id).then(success => {
         if (success) {
-            // 2. Hide the profile and go back to the list
-            window.showPanel('equipment'); 
-            // 3. Redraw the list so the machine is gone
-            if (typeof window.renderEquipmentTable === 'function') {
-                window.renderEquipmentTable();
-            }
+            window.showPanel('equipment'); // Only close if it actually worked
         }
     });
 };
