@@ -2482,3 +2482,18 @@ html {
     letter-spacing: 1px;
     margin-bottom: 10px;
 }
+
+.panel {
+    position: absolute;
+    top: var(--topbar-h, 60px); /* This accounts for your header height */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto; /* Allow scrolling inside the panel */
+    background: #001226; /* Match your background color */
+}
+
+.mtl-os-container {
+    margin-top: 0 !important; /* Ensure no extra gap at top */
+    padding-top: 10px;
+}
