@@ -13,7 +13,8 @@ if (!window.state) {
         observations: [],
         checklistTemplates: [],
         profiles: [],
-         wiki: [] 
+         wiki: [],
+        consumables: []
     };
 }
 
