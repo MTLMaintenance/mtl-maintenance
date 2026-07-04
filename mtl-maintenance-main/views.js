@@ -218,74 +218,51 @@ export function renderDocuments() {
   docContainer.innerHTML = others.map(buildDocHTML).join('') || '<div style="padding:20px; color:#999; text-align:center;">No documents</div>';
 }
 
-export function renderMachineTimeline(equipId) {
+export function renderMachineTimeline(equipId, componentFilter = 'all') {
     const container = document.getElementById('mtl-timeline-stream');
     if (!container) return;
 
     const state = window.state;
+    let events = [];
 
-    // 1. Gather all events for this machine
-    const events = [];
-
-    // Add Work Orders
+    // 1. Gather Work Orders
     state.tasks.filter(t => t.equipId === equipId || t.equip_id === equipId).forEach(t => {
         events.push({
-            date: t.completed_at || t.due || t.created_at,
+            date: t.completed_at || t.due,
             type: 'work-order',
             title: t.name,
-            body: t.notes || 'No notes recorded.',
-            user: t.assign || t.tech_user_name || 'System',
-            status: t.status,
-            id: t.id
+            body: t.notes || '',
+            component: (t.component || 'general').toLowerCase()
         });
     });
 
-    // Add Observations/Notes
-    state.observations.filter(o => o.equip_id === equipId).forEach(o => {
-        events.push({
-            date: o.created_at,
-            type: 'observation',
-            title: `${o.severity.toUpperCase()} Observation`,
-            body: o.body,
-            user: o.author,
-            status: o.severity,
-            id: o.id
-        });
-    });
-
-    // Add Wiki Tips
+    // 2. Gather Wiki Tips
     (state.wiki || []).filter(w => w.equip_id === equipId).forEach(w => {
         events.push({
             date: w.created_at,
             type: 'wiki',
             title: '💡 Shop Wisdom',
             body: w.body,
-            user: w.author,
-            status: 'tip',
-            id: w.id
+            component: w.component.toLowerCase()
         });
     });
 
-    // 2. Sort Newest First
-    events.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // 3. Build the HTML
-    if (events.length === 0) {
-        container.innerHTML = '<div class="empty-text">No history recorded for this machine.</div>';
-        return;
+    // 3. APPLY FILTER
+    if (componentFilter !== 'all') {
+        events = events.filter(ev => ev.component.includes(componentFilter.toLowerCase()));
     }
+
+    // 4. Sort and Build HTML
+    events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     container.innerHTML = events.map(ev => `
         <div class="os-timeline-card ${ev.type}">
             <div class="os-timeline-meta">
-                <span class="os-event-date">${new Date(ev.date).toLocaleDateString()}</span>
-                <span class="os-event-user">👤 ${ev.user}</span>
+                <span>${new Date(ev.date).toLocaleDateString()}</span>
+                <span class="badge bi">${ev.component}</span>
             </div>
-            <div class="os-event-content">
-                <h4>${ev.title}</h4>
-                <p>${ev.body}</p>
-                ${ev.type === 'work-order' ? `<button class="btn-link" onclick="window.openTaskDetail('${ev.id}')">View Work Order</button>` : ''}
-            </div>
+            <h4>${ev.title}</h4>
+            <p>${ev.body}</p>
         </div>
-    `).join('');
+    `).join('') || `<div class="empty-text">No ${componentFilter} history found.</div>`;
 }
