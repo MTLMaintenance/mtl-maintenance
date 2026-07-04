@@ -174,24 +174,24 @@ export async function enterApp(currentUser, state, canFunc) {
   }, 100);
 }
 
-export async function startApp() {
+async function startApp() {
   console.log("--- Starting Application Init ---");
-  
-  // No client creation here anymore! 
-  
+  window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   try {
     await fetchAllProfiles(); 
-    const sessionData = await validateSession();
-
+    const sessionData = await validateSession();    
     if(sessionData) {
       window.currentUser = sessionData.profiles;
-      await fetchAbsences(); 
-      if (typeof window.enterApp === 'function') window.enterApp(); 
+      await loadState(); 
+      await enterApp(window.currentUser, window.state, window.can); 
+      
+      console.log("🚀 App ready and data loaded.");
     } else {
-      if (typeof window.showPinLogin === 'function') window.showPinLogin();
+      showPinLogin();
     }
   } catch(e) { 
     console.error("Startup error:", e);
-    if (typeof window.showPinLogin === 'function') window.showPinLogin();
+    showPinLogin(); 
   }
 }
+
