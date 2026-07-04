@@ -85,7 +85,7 @@ export async function loadState() {
   try {
     console.log("📥 Syncing all data from Supabase...");
 
-    // 1. THE VITAL FIX: Added 'con' to this list below
+    // 1. THE MAPPING: 13 variables for 13 tables
     const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki, msgs, con] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
@@ -99,10 +99,10 @@ export async function loadState() {
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
       window._mpdb.from('shop_wiki').select('*'),
       window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
-      window._mpdb.from('consumables').select('*') // This must be the 13th item
+      window._mpdb.from('consumables').select('*') // Table #13
     ]);
 
-    // 2. Now 'con' is defined, so these lines will work:
+    // 2. SAVING: All variables now exist
     state.equipment = eq.data || [];
     state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = sc.data || [];
@@ -115,9 +115,9 @@ export async function loadState() {
     state.observations = obs.data || [];
     state.wiki = wiki.data || [];
     state.chatMessages = msgs.data || [];
-    state.consumables = con.data || []; // <--- SUCCESS
+    state.consumables = con.data || []; // <--- This will now work!
 
-    console.log(`✅ Sync complete. Found ${state.equipment.length} machines.`);
+    console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.consumables.length} supplies.`);
 
     // 3. Trigger Redraws
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
