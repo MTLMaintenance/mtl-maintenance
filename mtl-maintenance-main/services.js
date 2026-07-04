@@ -1,0 +1,191 @@
+// services.js - AI, Bug Reports, and External APIs
+import { supabase } from './db.js';
+import { uid, showToast, compressImage } from './utils.js';
+import { closeModal } from './ui.js';
+
+// 1. AI Invoice Scanning (Gemini API)
+export async function scanInvoiceWithAI(imageData, geminiKey) {
+  try {
+    const base64Data = imageData.split(',')[1];
+    const mediaType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
+    
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + geminiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mediaType, data: base64Data } },
+            { text: 'Extract invoice details. Respond ONLY with JSON: {"supplier":"","invoice_number":"","date":"YYYY-MM-DD","amount":0,"notes":""}' }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    console.error('AI Scan Error:', e);
+    throw e;
+  }
+}
+
+// 2. Submit Bug/Suggestion Report
+export async function submitBugReport(reportData, currentUser) {
+  const report = {
+    ...reportData,
+    id: uid(),
+    reporter: currentUser?.name || 'Unknown',
+    username: currentUser?.username || '',
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    // Save to Database
+    await supabase.from('bug_reports').insert(report);
+
+    // Send Email via EmailJS (Ensure emailjs is linked in HTML)
+    if (window.emailjs) {
+        await window.emailjs.send('service_o320zzu','template_je3rl4j', {
+            to_email: 'tannergalloway75@gmail.com',
+            message: `${report.type.toUpperCase()}: ${report.title}\n\nDetails: ${report.description}`
+        });
+    }
+
+    showToast("Report submitted ✓");
+    closeModal('bug-modal');
+    return true;
+  } catch(e) {
+    console.error("Report failed:", e);
+    return false;
+  }
+}
+
+// 1. Save the Gemini API Key to Supabase and LocalStorage
+export async function saveGeminiKey(currentUser) {
+  const keyInput = document.getElementById('gemini-key-input');
+  const key = keyInput?.value.trim();
+  
+  if(!key || key.startsWith('•')) { 
+      showToast('Enter a valid API key'); 
+      return; 
+  }
+
+  window._geminiKey = key;
+  localStorage.setItem('mp_gemini_key', key);
+
+  try {
+    await window._mpdb.from('profiles').update({ gemini_key: key }).eq('id', currentUser.id);
+    keyInput.value = '••••••••••••••••';
+    showToast('Gemini API key synced ✓');
+  } catch(e) { console.error(e); }
+}
+
+// 2. AI Logic: Suggest tools for a specific job name
+export async function suggestTools(woName, equipId, state, equipNameFunc) {
+  if(!window._geminiKey) return showToast('Set Gemini Key in Admin first');
+  
+  const btn = document.getElementById('suggest-tools-btn');
+  if(btn) { btn.textContent = '⏳ Thinking...'; btn.disabled = true; }
+
+  try {
+    const prompt = `Suggest tools for work order: "${woName}" on machine: ${equipNameFunc(equipId, state)}. Respond ONLY with a comma-separated list.`;
+
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + window._geminiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    const data = await response.json();
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    if(result) {
+      document.getElementById('tools-suggestion-text').textContent = result;
+      document.getElementById('tools-suggestion-area').style.display = 'block';
+      window._lastToolSuggestion = result;
+    }
+  } catch(e) { showToast('AI suggestion failed'); }
+  finally { if(btn) { btn.textContent = '✨ AI Suggest'; btn.disabled = false; } }
+}
+
+const OVERDUE_EMAIL_RECIPIENT = 'tannergalloway75@gmail.com';
+
+// 1. Check for overdue tasks and queue emails
+export async function checkAndSendOverdueEmails(state, currentUser) {
+  try {
+    const schedules = JSON.parse(localStorage.getItem('mp_email_schedule') || '{}');
+    const now = new Date();
+    const toSend = [];
+
+    for(const [taskId, info] of Object.entries(schedules)) {
+      if(new Date(info.sendAt) <= now) {
+        const task = state.tasks.find(t => t.id === taskId);
+        if(task && task.status !== 'Completed') toSend.push(task);
+        delete schedules[taskId];
+      }
+    }
+    localStorage.setItem('mp_email_schedule', JSON.stringify(schedules));
+
+    if(toSend.length > 0) {
+      await sendOverdueEmailBatch(toSend, currentUser);
+    }
+  } catch(e) { console.log('Email check error:', e); }
+}
+
+// 2. The actual "Send" command to the email server
+export async function sendOverdueEmailBatch(tasks, currentUser) {
+  try {
+    const { data: recentEmails } = await window._mpdb.from('email_log')
+      .select('*').eq('type','overdue')
+      .gte('sent_at', new Date(Date.now()-6*24*60*60*1000).toISOString());
+    
+    const recentIds = new Set((recentEmails||[]).flatMap(e=>e.task_ids||[]));
+    const newTasks = tasks.filter(t=>!recentIds.has(t.id));
+    if(!newTasks.length) return;
+
+    await window._mpdb.from('email_log').insert({
+      id: uid(), type:'overdue', recipient: OVERDUE_EMAIL_RECIPIENT,
+      subject: 'MTL Maintenance — Overdue Work Orders',
+      task_ids: newTasks.map(t=>t.id),
+    });
+
+    if(currentUser?.role === 'admin') {
+      showToast('📧 Overdue email queued');
+    }
+  } catch(e) { console.log('Email send error:', e); }
+}
+
+export function updateReportType() {
+    const isBug = document.getElementById('type-bug').checked;
+    
+    // 1. Find all the labels and inputs that need to change
+    const titleLabel = document.getElementById('bug-title-label');
+    const descLabel = document.getElementById('bug-desc-label');
+    const titleWrap = document.getElementById('bug-title-wrap');
+    const stepsWrap = document.getElementById('bug-steps-wrap');
+    const severityWrap = document.getElementById('bug-severity-wrap');
+    const descInput = document.getElementById('bug-desc');
+
+    if (isBug) {
+        // --- BUG MODE ---
+        if (titleLabel) titleLabel.textContent = 'What were you trying to do? *';
+        if (descLabel) descLabel.textContent = 'What happened? *';
+        if (descInput) descInput.placeholder = 'Describe what went wrong...';
+        
+        // Show extra bug fields
+        if (titleWrap) titleWrap.style.display = 'block';
+        if (stepsWrap) stepsWrap.style.display = 'block';
+        if (severityWrap) severityWrap.style.display = 'block';
+    } else {
+        // --- SUGGESTION MODE ---
+        if (descLabel) descLabel.textContent = 'What would you like to add or change? *';
+        if (descInput) descInput.placeholder = 'Describe your idea...';
+        
+        // Hide technical bug fields
+        if (titleWrap) titleWrap.style.display = 'none';
+        if (stepsWrap) stepsWrap.style.display = 'none';
+        if (severityWrap) severityWrap.style.display = 'none';
+    }
+}
