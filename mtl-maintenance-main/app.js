@@ -451,9 +451,15 @@ window.switchAdminTab = (tab, btn) => {
     }
 };
 
+window.filterTimeline = (component, btn) => {
+    const equipId = window._currentDetailEquipId;
+    window.renderMachineTimeline(equipId, component);
+    const cards = btn.parentElement.querySelectorAll('.comp-card');
+    cards.forEach(c => c.style.borderColor = '#eee'); // Reset others
+    btn.style.borderColor = 'var(--accent)'; 
+};
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
-    // Shows one asterisk for every digit typed
     display.textContent = "•".repeat(enteredPin.length);
 }
 
