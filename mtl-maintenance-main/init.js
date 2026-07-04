@@ -9,15 +9,13 @@ import { applyUserPreferences } from './settings.js';
 import { fetchAbsences } from './calendar.js';
 
 export async function loadState() {
+  console.log("📥 Syncing all data from Supabase...");
+  
+  // VITAL: Always use window.state to ensure we are using the global folder
   const state = window.state;
-  setSyncStatus('syncing');
 
   try {
-    console.log("📥 Refreshing data from Supabase...");
-
-    // 1. Fetch the data - FIXED COMMA AND TABLE ORDER
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, msgs,wikiData] = await Promise.all([
-       window._mpdb.from('shop_wiki').select('*'),
+    const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki] = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -26,10 +24,31 @@ export async function loadState() {
       window._mpdb.from('documents').select('*'),
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('tool_requests').select('*'), // This is where your tools live
+      window._mpdb.from('tool_requests').select('*'),
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
-       window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }) 
+      window._mpdb.from('shop_wiki').select('*') // Get the new wiki tips too!
     ]);
+
+    // Save data to the Global Hallway
+    state.equipment = eq.data || [];
+    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    state.schedules = sc.data || [];
+    state.parts = pt.data || [];
+    state.suppliers = sup.data || [];
+    state.documents = docs.data || [];
+    state.partUsage = pu.data || [];
+    state.recurrenceRules = rr.data || [];
+    state.tools = tr.data || [];
+    state.observations = obs.data || [];
+    state.wiki = wiki.data || [];
+
+    console.log(`✅ State Hydrated: Found ${state.equipment.length} machines.`);
+    return true;
+  } catch(e) { 
+    console.error('❌ Data load failed:', e); 
+    return false;
+  }
+}
 
     // 2. Assign to Master State
     state.wiki = wikiData.data || [];
