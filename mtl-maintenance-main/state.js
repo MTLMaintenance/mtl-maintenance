@@ -6,6 +6,82 @@ import { updateMetrics } from './dashboard.js';
 
 console.log("🛠️ init.js VERSION 2.0 LOADED");
 
+if (!window.state) {
+    window.state = {
+        equipment: [],
+        tasks: [],
+        schedules: [],
+        parts: [],
+        suppliers: [],
+        documents: [],
+        partUsage: [],
+        tools: [],
+        wishlist: [],
+        observations: [],
+        checklistTemplates: [],
+        profiles: [],
+        wiki: [],
+        consumables: [],
+        chatMessages: [],
+        users_list_cache: []
+    };
+}
+
+export const state = window.state;
+
+// --- VITAL EXPORTS FOR CALENDAR ---
+export const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+export const ICONS = {
+    Excavator:'🦾', Tractor:'🚜', 'Wheel Loader':'⚙', 'Skid Steer':'🔧', 
+    Compressor:'💨', Crane:'🏗', Compactor:'🔩', Truck:'🚛', Forklift:'🏭'
+};
+
+// Application State
+export let chatSub = null;
+export let chatChannel = 'general';
+export let currentEditingToolId = null;
+export let selectedLoginUser = null;
+export let enteredPin = "";
+export let lastClickedDate = "";
+export let currentDetailId = null;
+export let selectedAbsenceType = 'all'; 
+export let staffAbsences = [];
+export let zerkPinMode = 'dot'; 
+export let zerkDrawingStep = 1; 
+export let currentWOTab = 'details'; 
+export let woPartsTemp = [];
+export let currentZerkView = 'side_1';
+export let allMachineZerks = [];
+export let tempZerkCoords = { x: 0, y: 0 };
+export let calDate = new Date();
+export let currentCalEntryType = 'one-time';   
+export let _currentDocEditId = null; 
+export let _tempFileData = null; 
+export let taskPinEntry = "";
+export let currentTargetTaskId = null;
+
+// Photo & Temp Storage
+export let pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
+window.pendingPhotos = pendingPhotos;
+
+export let pendingDocFile = null;
+
+export let customFieldsTemp = {};
+window.customFieldsTemp = customFieldsTemp;
+
+export let assignedUsersTemp = [];
+
+export let woPartsAdded = [];
+window.woPartsAdded = woPartsAdded;
+
+// App Filters
+export let activeGroupFilter = 'all';
+export let equipGroupFilter = 'all';
+
+console.log("✅ state.js fully initialized with MONTHS and ICONS.");
+
+
 export async function loadState() {
   const state = window.state;
   if (!state) return console.error("Global state folder not found!");
