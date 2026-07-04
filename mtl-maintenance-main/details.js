@@ -57,7 +57,7 @@ export function buildEquipDetailHTML(e, score, healthColor) {
         </div>
     </div>
     `;
-}
+
     
     <div id="eq-zerks" class="tab-content" style="display:none">
         <div id="tab-content-zerk"></div>
@@ -68,10 +68,10 @@ export function buildEquipDetailHTML(e, score, healthColor) {
         <button class="btn-primary" onclick="window.addObservation('${e.id}')">Post Note</button>
         <div id="obs-list-${e.id}"></div>
     </div>
-    `;
 }
 
-// 3. The Work Order Popup (openTaskDetail)
+
+
 export function buildTaskDetailHTML(t, equipName) {
     return `
     <div class="task-detail-header">
