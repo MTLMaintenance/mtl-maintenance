@@ -165,22 +165,23 @@ export async function enterApp(currentUser, state, canFunc) {
 
 export async function startApp() {
   console.log("--- Starting Application Init ---");
-  window._mpdb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  try {
+  try {    
     await fetchAllProfiles(); 
-    const sessionData = await validateSession();    
+    const sessionData = await validateSession();
     if(sessionData) {
+      console.log("Found existing session for:", sessionData.username);
       window.currentUser = sessionData.profiles;
-      await loadState(); 
-      await enterApp(window.currentUser, window.state, window.can); 
-      
-      console.log("🚀 App ready and data loaded.");
+      await loadState();  
+      if (typeof window.enterApp === 'function') {
+          window.enterApp(); 
+      }
     } else {
-      showPinLogin();
+      console.log("No session. Showing login.");
+      if (typeof window.showPinLogin === 'function') window.showPinLogin();
     }
   } catch(e) { 
     console.error("Startup error:", e);
-    showPinLogin(); 
+    if (typeof window.showPinLogin === 'function') window.showPinLogin();
   }
 }
 
