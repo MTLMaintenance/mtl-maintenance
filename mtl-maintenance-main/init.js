@@ -1,24 +1,21 @@
-alert("INIT VERSION 3.0 IS ALIVE");
-// init.js - Application Bootstrapping
-import { supabase, setSyncStatus,validateSession  } from './db.js';
-import { updateMetrics } from './dashboard.js';
+import { supabase, setSyncStatus, validateSession } from './db.js';
 import { fetchAllProfiles } from './profiles.js';
-import { showPinLogin } from './auth.js';
-import { showPanel, adjustMobileLayout } from './ui.js';
-import { applyUserPreferences } from './settings.js';
 import { fetchAbsences } from './calendar.js';
+import { showPinLogin } from './auth.js';
+import { updateMetrics } from './dashboard.js';
+
+console.log("🚀 System Loader: init.js Version 3.0 Booting...");
 
 export async function loadState() {
-  console.log("📥 Syncing all data from Supabase...");
-  
-  const state = window.state;
-  if (!state) return console.error("Global state folder not found!");
+  const masterFolder = window.state;
+  if (!masterFolder) return console.error("Master Folder Missing");
 
   setSyncStatus('syncing');
 
   try {
-    // 1. Fetch EVERYTHING from the cloud at once
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki, msgs] = await Promise.all([
+    console.log("📥 Syncing from Supabase...");
+
+    const dbResponse = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -30,45 +27,61 @@ export async function loadState() {
       window._mpdb.from('tool_requests').select('*'),
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
       window._mpdb.from('shop_wiki').select('*'),
-      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true })
+      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
+      window._mpdb.from('consumables').select('*')
     ]);
 
-    // 2. Save all data into the Master State folder
-    state.equipment = eq.data || [];
-    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    state.schedules = sc.data || [];
-    state.parts = pt.data || [];
-    state.suppliers = sup.data || [];
-    state.documents = docs.data || [];
-    state.partUsage = pu.data || [];
-    state.recurrenceRules = rr.data || [];
-    state.tools = tr.data || [];
-    state.observations = obs.data || [];
-    state.wiki = wiki.data || [];
-    state.chatMessages = msgs.data || [];
-    state.consumables = con.data || [];
-    console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.chatMessages.length} messages.`);
+    // We use the results of the 13th table (index 12) 
+    // We are NOT using the name "con" anywhere in this code.
+    masterFolder.equipment       = dbResponse[0].data  || [];
+    masterFolder.tasks           = (dbResponse[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    masterFolder.schedules       = dbResponse[2].data  || [];
+    masterFolder.parts           = dbResponse[3].data  || [];
+    masterFolder.suppliers       = dbResponse[4].data  || [];
+    masterFolder.documents       = dbResponse[5].data  || [];
+    masterFolder.partUsage       = dbResponse[6].data  || [];
+    masterFolder.recurrenceRules = dbResponse[7].data  || [];
+    masterFolder.tools           = dbResponse[8].data  || [];
+    masterFolder.observations    = dbResponse[9].data  || [];
+    masterFolder.wiki            = dbResponse[10].data || [];
+    masterFolder.chatMessages    = dbResponse[11].data || [];
+    masterFolder.consumables     = dbResponse[12].data || []; 
 
-    // 3. Trigger all the UI "Paintbrushes" to draw the data
+    console.log(`✅ Sync complete. Total machines: ${masterFolder.equipment.length}`);
+
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
     if (typeof window.renderTools === 'function') window.renderTools();
     if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
     if (typeof window.renderConsumablesTable === 'function') window.renderConsumablesTable();
-    if (typeof window.renderChecklistTemplates === 'function') window.renderChecklistTemplates();
     if (typeof window.renderDashboard === 'function') window.renderDashboard();
-    if (typeof window.updateMetrics === 'function') window.updateMetrics();
     
     setSyncStatus('online');
     return true;
 
-  } catch(e) { 
-    console.error('❌ Data load failed:', e); 
+  } catch(err) { 
+    console.error('❌ CRITICAL LOAD FAILURE:', err); 
     setSyncStatus('offline');
     return false;
   }
 }
 
-// Helper to keep modals on top
+export async function startApp() {
+  try {
+    await fetchAllProfiles(); 
+    const sessionData = await validateSession();
+    if(sessionData) {
+      window.currentUser = sessionData.profiles;
+      await loadState(); 
+      if (typeof window.enterApp === 'function') window.enterApp(); 
+    } else {
+      showPinLogin();
+    }
+  } catch(e) { 
+    console.error("Startup error:", e);
+    showPinLogin(); 
+  }
+}
+
 export function teleportModals() {
     const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
     modalIds.forEach(id => {
@@ -76,7 +89,6 @@ export function teleportModals() {
         if (el) document.body.appendChild(el);
     });
 }
-
 
 
 export async function enterApp(currentUser, state, canFunc) {
