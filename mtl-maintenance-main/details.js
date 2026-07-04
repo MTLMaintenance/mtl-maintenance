@@ -39,7 +39,7 @@ export function buildEquipDetailHTML(e, score, healthColor) {
             <div class="eq-widget" style="border-left: 5px solid ${healthColor(score)}">
                 <div class="widget-label">Machine Status</div>
                 <div class="bold">${badge(e.status)}</div>
-                <div class="widget-val">${e.hours.toLocaleString()} hrs</div>
+                <div class="widget-val">${(e.hours || 0).toLocaleString()} hrs</div>
             </div>
             <div class="eq-widget">
                 <div class="widget-label">Quick Specs</div>
