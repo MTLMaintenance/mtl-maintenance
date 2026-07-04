@@ -25,7 +25,16 @@ export function renderObservationsList(equipId) {
 
 // 2. The Big Machine Popup (openEquipDetail)
 export function buildEquipDetailHTML(e, score, healthColor) {
-    // This function returns the massive HTML string for the Machine Detail modal
+    // 1. EMERGENCY SAFETY CHECK
+    // If 'e' is missing, show an error instead of crashing the whole app
+    if (!e) {
+        console.error("Error: buildEquipDetailHTML received no data.");
+        return `<div style="padding:20px; color:red;">Error: Machine data could not be loaded.</div>`;
+    }
+
+    // 2. Safely grab hours (use 0 if missing)
+    const displayHours = (e.hours || 0).toLocaleString();
+
     return `
     <div class="tab-bar">
       <button class="tab active" onclick="window.switchDetailTab('eq-overview',this)">Overview</button>
@@ -38,8 +47,8 @@ export function buildEquipDetailHTML(e, score, healthColor) {
         <div class="eq-dash-grid">
             <div class="eq-widget" style="border-left: 5px solid ${healthColor(score)}">
                 <div class="widget-label">Machine Status</div>
-                <div class="bold">${badge(e.status)}</div>
-                <div class="widget-val">${(e.hours || 0).toLocaleString()} hrs</div>
+                <div class="bold">${e.status || 'Unknown'}</div>
+                <div class="widget-val">${displayHours} hrs</div>
             </div>
             <div class="eq-widget">
                 <div class="widget-label">Quick Specs</div>
@@ -47,6 +56,8 @@ export function buildEquipDetailHTML(e, score, healthColor) {
             </div>
         </div>
     </div>
+    `;
+}
     
     <div id="eq-zerks" class="tab-content" style="display:none">
         <div id="tab-content-zerk"></div>
@@ -224,37 +235,4 @@ export async function openTaskDetail(id, state) {
     openModal('detail-modal');
 }
 
-export function buildEquipDetailHTML(e, score, healthColor) {
-    // 1. EMERGENCY SAFETY CHECK
-    // If 'e' is missing, show an error instead of crashing the whole app
-    if (!e) {
-        console.error("Error: buildEquipDetailHTML received no data.");
-        return `<div style="padding:20px; color:red;">Error: Machine data could not be loaded.</div>`;
-    }
 
-    // 2. Safely grab hours (use 0 if missing)
-    const displayHours = (e.hours || 0).toLocaleString();
-
-    return `
-    <div class="tab-bar">
-      <button class="tab active" onclick="window.switchDetailTab('eq-overview',this)">Overview</button>
-      <button class="tab" onclick="window.switchDetailTab('eq-zerks',this)">Zerk Map</button>
-      <button class="tab" onclick="window.switchDetailTab('eq-history',this)">History</button>
-      <button class="tab" onclick="window.switchDetailTab('eq-obs',this)">Observations</button>
-    </div>
-
-    <div id="eq-overview" class="tab-content active">
-        <div class="eq-dash-grid">
-            <div class="eq-widget" style="border-left: 5px solid ${healthColor(score)}">
-                <div class="widget-label">Machine Status</div>
-                <div class="bold">${e.status || 'Unknown'}</div>
-                <div class="widget-val">${displayHours} hrs</div>
-            </div>
-            <div class="eq-widget">
-                <div class="widget-label">Quick Specs</div>
-                <div id="eq-quick-specs"></div>
-            </div>
-        </div>
-    </div>
-    `;
-}
