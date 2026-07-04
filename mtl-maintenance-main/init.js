@@ -1,3 +1,4 @@
+alert("INIT VERSION 3.0 IS ALIVE");
 // init.js - Application Bootstrapping
 import { supabase, setSyncStatus,validateSession  } from './db.js';
 import { updateMetrics } from './dashboard.js';
