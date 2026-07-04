@@ -821,3 +821,7 @@ async function notifyManagers(text) {
     for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    // No need to pass SUPABASE_URL or KEY here anymore
+    startApp(); 
+});
