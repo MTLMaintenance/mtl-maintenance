@@ -418,29 +418,44 @@ export async function saveEditObservation(obsId, equipId) {
 }
 
 export async function deleteEquip(id) {
-    const state = window.state;
-    if (!confirm("Are you sure? This is permanent.")) return;
+    if (!id) return alert("Error: No ID provided for deletion.");
+    if (!confirm("Are you sure? This will permanently delete this machine from the cloud.")) return false;
 
     try {
-        // 1. Delete from Supabase
-        const { error } = await window._mpdb
-            .from('equipment') // Verify this matches your Supabase table name
-            .delete()
+        console.log("📡 Sending DIRECT delete to Supabase for ID:", id);
+
+        // 1. Direct call to Supabase
+        const { error, count } = await window._mpdb
+            .from('equipment')
+            .delete({ count: 'exact' }) // This counts how many rows were removed
             .eq('id', id);
 
+        // 2. Error Check
         if (error) {
-            console.error("Supabase Delete Error:", error.message);
-            alert("Delete failed in Database: " + error.message);
+            console.error("❌ SUPABASE REJECTED:", error);
+            alert("Database Error: " + error.message);
             return false;
         }
 
-        // 2. Clear from Local Memory
-        state.equipment = state.equipment.filter(e => e.id !== id);
+        // 3. Count Check (Did it actually find a row?)
+        if (count === 0) {
+            alert("Warning: Database said OK, but 0 machines were deleted. This usually means the ID in your code doesn't match the ID in the database.");
+            return false;
+        }
+
+        // 4. Success: Clear from local memory
+        window.state.equipment = window.state.equipment.filter(e => e.id !== id);
         
+        // 5. Success: Redraw the fleet table
+        if (typeof window.renderEquipmentTable === 'function') {
+            window.renderEquipmentTable();
+        }
+
         window.showToast("Machine Deleted ✓");
         return true;
+
     } catch (e) {
-        console.error(e);
+        console.error("💥 Delete Logic Crashed:", e);
         return false;
     }
 }
