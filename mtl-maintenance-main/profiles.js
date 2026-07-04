@@ -198,4 +198,4 @@ export function openProfileModal() {
         window.openModal('profile-modal');
     }
 }
-}
+
