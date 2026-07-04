@@ -323,63 +323,55 @@ export async function saveObservationChange(state) {
     }
 }
 
-export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
-  const name = document.getElementById('e-name').value.trim(); 
-  if(!name) {
-      showToast('Please enter a name');
-      return { success: false };
-  }
+export async function saveEquipment() {
+  const state = window.state;
   
+  // 1. THE VITAL FIX: Look for an existing ID first
+  // Your edit modal should have a hidden input like <input type="hidden" id="e-id">
+  const idField = document.getElementById('e-id');
+  const existingId = idField ? idField.value : null;
+
+  const name = document.getElementById('e-name').value.trim(); 
+  if(!name) return window.showToast('Name is required');
+  
+  // 2. If existingId exists, use it. Otherwise, make a new UID.
+  const machineId = (existingId && existingId !== "") ? existingId : uid();
+
   const record = {
-    id: uid(), 
-    name,
-    type:         document.getElementById('e-type').value,
-    serial:       document.getElementById('e-serial').value,
-    manufacturer: document.getElementById('e-manufacturer')?.value.trim() || '',
-    hours:        parseInt(document.getElementById('e-hours').value) || 0,
-    status:       document.getElementById('e-status').value,
-    op:           document.getElementById('e-op').value,
-    notes:        document.getElementById('e-notes').value,
-    group_tag:    document.getElementById('e-group')?.value || 'outside',
-    monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value) || 0,
-    yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value) || 0,
-    photos:         pendingPhotos.equip.slice(),
-    custom_fields:  { ...customFieldsTemp }, 
-    health_score:   100
+    id: machineId, // This is the key!
+    name: name,
+    type: document.getElementById('e-type').value,
+    serial: document.getElementById('e-serial').value,
+    hours: parseInt(document.getElementById('e-hours').value) || 0,
+    status: document.getElementById('e-status').value,
+    // ... rest of your columns ...
   };
 
   try {
-    // 1. DIRECT SAVE TO SUPABASE (Bypass the persist wrapper)
-    console.log("🚀 Sending to Supabase:", record);
-    const { data, error } = await window._mpdb
-        .from('equipment')
-        .upsert(record);
+    // 3. UPSERT handles both "Insert" and "Update"
+    const { error } = await window._mpdb.from('equipment').upsert(record);
+    if (error) throw error;
 
-    if (error) {
-        console.error("❌ SUPABASE ERROR:", error.message);
-        alert("Database Error: " + error.message);
-        return { success: false };
+    // 4. Update Local memory
+    const idx = state.equipment.findIndex(x => x.id === machineId);
+    if (idx !== -1) {
+        state.equipment[idx] = record; // Update existing
+    } else {
+        state.equipment.push(record); // Add new
     }
 
-    // 2. Update Local Memory (VITAL for the "Live Update")
-    if (!window.state.equipment) window.state.equipment = [];
-    window.state.equipment.push(record);
+    // 5. REFRESH THE SCREEN
+    window.closeModal('equip-modal');
     
-    // 3. Log the action
-    await logAuditAction("Added Machine", `Added "${name}" to the fleet.`, currentUser);
-
-    // 4. Cleanup UI State
-    pendingPhotos.equip = [];
-    Object.keys(customFieldsTemp).forEach(key => delete customFieldsTemp[key]);
-
-    showToast("Machine Saved to Database ✓");
+    // If we are looking at the machine profile, redraw the OS view!
+    if (window.currentPanel === 'machine-profile') {
+        window.renderPerfectCard(machineId); 
+    }
+    
+    window.renderEquipmentTable();
+    window.showToast("Machine Updated ✓");
     return { success: true };
-
-  } catch (e) {
-    console.error("Save process crashed:", e);
-    showToast("Save process crashed. Check console.");
-    return { success: false };
-  }
+  } catch (e) { console.error(e); return { success: false }; }
 }
 
 export function getNextDue(id, tasks) {
