@@ -1,3 +1,6 @@
+console.log("--- SYSTEM REBOOT VERSION 5.0 ---");
+alert("I am the new version!");
+
 import { 
     chatSub, chatChannel, currentEditingToolId, selectedLoginUser, 
     enteredPin, lastClickedDate, currentDetailId, selectedAbsenceType, 
