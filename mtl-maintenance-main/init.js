@@ -175,25 +175,5 @@ export async function enterApp(currentUser, state, canFunc) {
   }, 100);
 }
 
-export async function startApp() {
-  console.log("--- Starting Application Init ---");
-  try {    
-    await fetchAllProfiles(); 
-    const sessionData = await validateSession();
-    if(sessionData) {
-      console.log("Found existing session for:", sessionData.username);
-      window.currentUser = sessionData.profiles;
-      await loadState();  
-      if (typeof window.enterApp === 'function') {
-          window.enterApp(); 
-      }
-    } else {
-      console.log("No session. Showing login.");
-      if (typeof window.showPinLogin === 'function') window.showPinLogin();
-    }
-  } catch(e) { 
-    console.error("Startup error:", e);
-    if (typeof window.showPinLogin === 'function') window.showPinLogin();
-  }
-}
+
 
