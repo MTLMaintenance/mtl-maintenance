@@ -1,3 +1,11 @@
+import { supabase, setSyncStatus, validateSession } from './db.js';
+import { fetchAllProfiles } from './profiles.js';
+import { fetchAbsences } from './calendar.js';
+import { showPinLogin } from './auth.js';
+import { updateMetrics } from './dashboard.js';
+
+
+
 if (!window.state) {
     window.state = {
         equipment: [],
@@ -86,7 +94,7 @@ export async function loadState() {
   try {
     console.log("📥 Syncing all data from Supabase...");
 
-    // 1. THE MAPPING: There are exactly 13 names in this list
+    // 1. THE VITAL LIST: 13 names for 13 tables
     const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, wiki, msgs, con] = await Promise.all([
       window._mpdb.from('equipment').select('*'),           // 1
       window._mpdb.from('tasks').select('*'),               // 2
@@ -103,7 +111,7 @@ export async function loadState() {
       window._mpdb.from('consumables').select('*')          // 13
     ]);
 
-    // 2. SAVING TO STATE: This is where Line 48 was failing
+    // 2. SAVING DATA: All these variables (like 'con') now exist
     state.equipment = eq.data || [];
     state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = sc.data || [];
@@ -116,11 +124,11 @@ export async function loadState() {
     state.observations = obs.data || [];
     state.wiki = wiki.data || [];
     state.chatMessages = msgs.data || [];
-    state.consumables = con.data || []; // <--- Variable 'con' now exists!
+    state.consumables = con.data || []; // <--- SUCCESS! Line 48 is fixed.
 
-    console.log(`✅ Sync complete. ${state.equipment.length} machines and ${state.consumables.length} supplies loaded.`);
+    console.log(`✅ Sync complete. Found ${state.equipment.length} machines.`);
 
-    // 3. Trigger UI Painters
+    // 3. Trigger UI Redraws
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
     if (typeof window.renderTools === 'function') window.renderTools();
     if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
@@ -135,4 +143,33 @@ export async function loadState() {
     setSyncStatus('offline');
     return false;
   }
+}
+export async function startApp() {
+  console.log("--- Starting Application Init ---");
+
+  try {
+    await fetchAllProfiles(); 
+    const sessionData = await validateSession();
+    if(sessionData) {
+      console.log("Found existing session for:", sessionData.username);
+      window.currentUser = sessionData.profiles;
+      await loadState(); 
+      if (typeof window.enterApp === 'function') {
+          window.enterApp(); 
+      }
+    } else {
+      console.log("No session. Showing login.");
+      if (typeof window.showPinLogin === 'function') window.showPinLogin();
+    }
+  } catch(e) { 
+    console.error("Startup error:", e);
+    if (typeof window.showPinLogin === 'function') window.showPinLogin();
+  }
+}
+export function teleportModals() {
+    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
+    modalIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) document.body.appendChild(el);
+    });
 }
