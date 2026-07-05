@@ -873,8 +873,7 @@
     <div class="modal-header"><span class="modal-title">Add Equipment</span><button class="modal-close" onclick="closeModal('equip-modal')">✕</button></div>
     <div class="tab-bar">
       <button class="tab active" onclick="switchTab('equip-tab','details-eq',this)">Details</button>
-      <button class="tab" onclick="switchTab('equip-tab','custom-eq',this)">Custom Fields</button>
-      <button class="tab" onclick="switchTab('equip-tab','assign-eq',this)">Assign Users</button>
+         <button class="tab" onclick="switchTab('equip-tab','assign-eq',this)">Assign Users</button>
     </div>
     <div id="details-eq">
       <div class="form-grid">
@@ -897,11 +896,7 @@
         </div>
       </div>
     </div>
-    <div id="custom-eq" style="display:none">
-      <div style="margin-bottom:10px;font-size:13px;color:var(--text2)">Add custom fields for this equipment type (e.g. Tire Size, Engine Model)</div>
-      <div id="custom-fields-list"></div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addCustomField()">+ Add Field</button>
-    </div>
+   
     <div id="assign-eq" style="display:none">
       <div style="margin-bottom:10px;font-size:13px;color:var(--text2)">Select users who can be assigned work orders for this equipment</div>
       <div id="assign-users-list"></div>
@@ -1690,7 +1685,6 @@
   
   // Create these too so the bridges don't crash
   window.pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
-  window.customFieldsTemp = {};
   window.woPartsAdded = [];
  </script>
   <!-- Scripts -->
