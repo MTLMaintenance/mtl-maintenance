@@ -88,7 +88,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
-
+window.renderComponentSpecs = renderComponentSpecs;
 window.renderMachineTimeline = renderMachineTimeline;
 window.renderWikiSection = renderWikiSection;
 window.addWikiTip = addWikiTip;
@@ -466,22 +466,26 @@ window.filterTimeline = (component, btn) => {
     btn.style.borderColor = 'var(--accent)'; // Highlight active
 };
 
-function updatePinDisplay() {
-    const display = document.getElementById('pin-display');
-    display.textContent = "•".repeat(enteredPin.length);
-}
+window.filterOS = (component, btn) => {
+    const equipId = window._currentDetailEquipId;
 
+    // 1. Update the Specs box
+    if (typeof window.renderComponentSpecs === 'function') {
+        window.renderComponentSpecs(equipId, component);
+    }
 
-function checkDateSelection(val) {
-    if(val) document.getElementById('abs-options').style.display = 'block';
-}
+    // 2. Update the Timeline
+    if (typeof window.renderMachineTimeline === 'function') {
+        window.renderMachineTimeline(equipId, component);
+    }
+
+    // 3. Visual UI: Highlight the clicked card
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.comp-card').forEach(c => c.classList.remove('active-os'));
+    btn.classList.add('active-os');
+};
 
 const ADMIN_USERNAME = 'tangal99';
-
-function showErr(msg) { const e=document.getElementById('auth-err'); e.textContent=msg; e.style.display='block'; }
-
-
-
 const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 
 
@@ -554,10 +558,6 @@ function saveOfflineQueue() {
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
 
-
-// ============================================================
-// HOURS AUTO-TRACKER
-// ============================================================
 async function markComplete(taskId) {
   const t = state.tasks.find(x => x.id === taskId);
   if (!t) return;
