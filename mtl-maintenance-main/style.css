@@ -2547,3 +2547,26 @@ html {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
     gap: 10px;
 }
+
+#panel-machine-profile {
+    display: none; /* Controlled by showPanel */
+    padding-top: 10px !important;
+    align-items: flex-start !important; /* Forces content to top */
+    overflow-y: auto;
+}
+
+.mtl-os-container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto; /* Centers the card horizontally, but snaps to top */
+    padding: 10px 20px;
+}
+
+/* Makes the main white card feel more solid */
+.mtl-header {
+    background: white;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
