@@ -240,46 +240,56 @@ export function renderMachineTimeline(equipId, componentFilter = 'all') {
     const state = window.state;
     let events = [];
 
-    // 1. Gather Work Orders
-    state.tasks.filter(t => t.equipId === equipId || t.equip_id === equipId).forEach(t => {
+    // 1. Gather Work Orders (Match both ID formats)
+    const machineTasks = state.tasks.filter(t => t.equipId === equipId || t.equip_id === equipId);
+    
+    machineTasks.forEach(t => {
         events.push({
-            date: t.completed_at || t.due,
+            date: t.completed_at || t.due || t.created_at,
             type: 'work-order',
             title: t.name,
             body: t.notes || '',
+            // If component is missing, we label it 'General'
             component: (t.component || 'general').toLowerCase()
         });
     });
 
     // 2. Gather Wiki Tips
-    (state.wiki || []).filter(w => w.equip_id === equipId).forEach(w => {
+    const machineWiki = (state.wiki || []).filter(w => w.equip_id === equipId);
+    machineWiki.forEach(w => {
         events.push({
             date: w.created_at,
             type: 'wiki',
             title: '💡 Shop Wisdom',
             body: w.body,
-            component: w.component.toLowerCase()
+            component: (w.component || 'general').toLowerCase()
         });
     });
 
-    // 3. APPLY FILTER
+    // 3. THE SMART FILTER
     if (componentFilter !== 'all') {
+        // Only show items that match the specific component (Engine, Hydraulic, etc)
         events = events.filter(ev => ev.component.includes(componentFilter.toLowerCase()));
     }
 
     // 4. Sort and Build HTML
     events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    if (events.length === 0) {
+        container.innerHTML = `<div class="empty-text">No ${componentFilter} history found yet.</div>`;
+        return;
+    }
+
     container.innerHTML = events.map(ev => `
         <div class="os-timeline-card ${ev.type}">
             <div class="os-timeline-meta">
                 <span>${new Date(ev.date).toLocaleDateString()}</span>
-                <span class="badge bi">${ev.component}</span>
+                <span class="badge bi">${ev.component.toUpperCase()}</span>
             </div>
             <h4>${ev.title}</h4>
             <p>${ev.body}</p>
         </div>
-    `).join('') || `<div class="empty-text">No ${componentFilter} history found.</div>`;
+    `).join('');
 }
 
 export function renderComponentSpecs(equipId, componentFilter = 'all') {
