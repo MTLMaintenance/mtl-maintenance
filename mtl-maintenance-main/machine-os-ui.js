@@ -65,7 +65,7 @@ export function renderPerfectCard(equipId) {
               
                 <!--COMPONENT SPECS -->
         
-              <div id="mtl-component-specs" style="margin-bottom:20px;"></div>
+              <div id="mtl-component-specs" style="margin-bottom:10px;"></div>
 
             <!-- 4. THE UNIFIED TIMELINE -->
             <h3 class="os-label">Unified Machine Timeline</h3>
