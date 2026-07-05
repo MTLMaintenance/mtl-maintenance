@@ -364,3 +364,36 @@ export function startJobWorkflow(jobType, equipId) {
 
     window.showToast(`Starting ${jobType} workflow...`);
 }
+
+ * @param {string} jobType - 'repair', 'inspect', 'replace', or 'test'
+ * @param {string} equipId - The ID of the machine
+ */
+export function startJobWorkflow(jobType, equipId) {
+    const state = window.state;
+    const e = state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    // 1. Reset the form to clear old data
+    if (typeof window.resetPartForm === 'function') window.resetPartForm();
+
+    // 2. Open the modal
+    window.openModal('task-modal');
+
+    // 3. Pre-fill the data
+    const nameInput = document.getElementById('t-name');
+    const equipSelect = document.getElementById('t-equip');
+    
+    if (nameInput) {
+        // Set name to "REPAIR: CAT 289D - " so they just type the problem
+        nameInput.value = `${jobType.toUpperCase()}: ${e.name} - `;
+        nameInput.focus();
+    }
+
+    if (equipSelect) {
+        // We run this to make sure the dropdown HAS the machines in it first
+        if (typeof window.populateSelects === 'function') window.populateSelects();
+        equipSelect.value = equipId;
+    }
+
+    window.showToast(`Starting ${jobType} workflow...`);
+}
