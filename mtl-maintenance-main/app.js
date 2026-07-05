@@ -47,47 +47,8 @@ import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed,renderCostByEquip } from './analytics.js';
 import { openEquipDetail as openLegacy } from './equipment.js';
 
-window.openEquipDetailLegacy = (id) => {
-    // 1. Find the machine
-    const e = window.state.equipment.find(x => x.id === id);
-    if(!e) return;
 
-    // 2. Fill the hidden ID field so saveEquipment knows we are EDITING
-    const idField = document.getElementById('e-id');
-    if (idField) idField.value = e.id;
-
-    // 3. Fill the rest of the form
-    document.getElementById('e-name').value = e.name;
-    document.getElementById('e-hours').value = e.hours;
-    // ... fill other fields ...
-
-    window.openModal('equip-modal');
-};
-
-window.deleteEquip = (id) => {
-    deleteEquipLogic(id).then(success => {
-        if (success) {
-            window.showPanel('equipment'); // Only close if it actually worked
-        }
-    });
-};
-
-window.calDayClick = calDayClick; 
-window.resetUserPassword = resetUserPassword;
-window.unlockUser = unlockUser;
-window.showLogin = () => {
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('login-view').style.display = 'block';
-    document.getElementById('register-view').style.display = 'none';
-    if (typeof backToNames === 'function') backToNames();
-};
-
-window.showRegister = () => {
-    document.getElementById('login-view').style.display = 'none';
-    document.getElementById('register-view').style.display = 'grid';
-    document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
-};
-
+window.buildEquipDetailHTML = buildEquipDetailHTML;
 window.renderComponentSpecs = renderComponentSpecs;
 window.renderMachineTimeline = renderMachineTimeline;
 window.renderWikiSection = renderWikiSection;
@@ -274,7 +235,6 @@ window.tempZerkCoords = null; // Store the first click for lines
 window.deleteChecklistItem = deleteChecklistItem; 
 window.deleteTaskComment = deleteTaskComment;
 window._currentTaskTab = 'dt-info';
-window.openEquipDetailLegacy = (id) => openEquipDetail(id, state);
 window.openEquipDetail = (id) => {
     window.showPanel('machine-profile'); // Show the new full-screen page
     renderPerfectCard(id);               // Draw the new "MTL OS" view
@@ -483,6 +443,50 @@ window.filterOS = (component, btn) => {
     const parent = btn.parentElement;
     parent.querySelectorAll('.comp-card').forEach(c => c.classList.remove('active-os'));
     btn.classList.add('active-os');
+};
+
+window.openEquipDetailLegacy = (id) => {
+    // Fill the hidden ID box so saving works
+    const idField = document.getElementById('e-id');
+    if (idField) idField.value = id;
+
+    openLegacy(id); 
+};
+
+    // 2. Fill the hidden ID field so saveEquipment knows we are EDITING
+    const idField = document.getElementById('e-id');
+    if (idField) idField.value = e.id;
+
+    // 3. Fill the rest of the form
+    document.getElementById('e-name').value = e.name;
+    document.getElementById('e-hours').value = e.hours;
+    // ... fill other fields ...
+
+    window.openModal('equip-modal');
+};
+
+window.deleteEquip = (id) => {
+    deleteEquipLogic(id).then(success => {
+        if (success) {
+            window.showPanel('equipment'); // Only close if it actually worked
+        }
+    });
+};
+
+window.calDayClick = calDayClick; 
+window.resetUserPassword = resetUserPassword;
+window.unlockUser = unlockUser;
+window.showLogin = () => {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('register-view').style.display = 'none';
+    if (typeof backToNames === 'function') backToNames();
+};
+
+window.showRegister = () => {
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('register-view').style.display = 'grid';
+    document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
 const ADMIN_USERNAME = 'tangal99';
