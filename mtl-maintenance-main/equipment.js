@@ -83,28 +83,26 @@ export async function uploadZerkView(input, state) {
     input.value = "";
 }
 
-export function openEquipDetail(id, state) {
-  const e = state.equipment.find(x => x.id === id); 
-  if(!e) return;
-  
-  window._currentDetailEquipId = id; // Store for other functions
-  const score = calcHealth(id, state.tasks, state.equipment);
+export function openEquipDetail(id) {
+    const state = window.state;
+    const e = state.equipment.find(x => x.id === id); 
+    if(!e) return;
+    
+    // 1. Set the global ID so the save function knows who we are editing
+    window._currentDetailEquipId = id;
 
-  // 1. Set the Title
-  const titleEl = document.getElementById('detail-title');
-  if (titleEl) titleEl.textContent = e.name;
-  
-  // 2. Build and Inject the HTML
-  const bodyEl = document.getElementById('detail-body');
-  if (bodyEl) {
-      bodyEl.innerHTML = buildEquipDetailHTML(e, score, healthColor);
-  }
+    // 2. Build the legacy HTML using the paintbrush in details.js
+    const bodyEl = document.getElementById('detail-body');
+    if (bodyEl && typeof window.buildEquipDetailHTML === 'function') {
+        const score = window.calcHealth(e.id, state.tasks, state.equipment);
+        bodyEl.innerHTML = window.buildEquipDetailHTML(e, score, window.healthColor);
+    }
 
-  // 3. Open the Modal
-  openModal('detail-modal');
-
-  // 4. Trigger sub-renders (Fill in the specs and timeline)
-  renderQuickSpecs(id, state);
+    // 3. Open the Modal
+    window.openModal('detail-modal');
+    
+    // 4. Trigger the sub-renders for the legacy view
+    if (typeof window.renderQuickSpecs === 'function') window.renderQuickSpecs(id);
 }
 export async function addObservation(equipId, state, currentUser) {
     const input = document.getElementById(`obs-input-${equipId}`);
