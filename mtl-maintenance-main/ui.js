@@ -37,7 +37,15 @@ export function showPanel(id) {
         p.classList.remove('active');
     });
 
-    // Deactivate all nav buttons
+     const target = document.getElementById('panel-' + id);
+    if (target) {
+        if (id === 'machine-profile') {
+            target.style.display = 'block'; 
+        } else {
+            target.style.display = 'flex'; 
+        }
+        target.classList.add('active');
+    }
     const navButtons = document.querySelectorAll('.nav-btn');
     navButtons.forEach(b => b.classList.remove('active'));
 
