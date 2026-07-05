@@ -343,28 +343,6 @@ export function updateTotalCostDisplay() {
   if(otherEl) otherEl.textContent = '$' + otherCost.toFixed(2);
   if(totalEl) totalEl.textContent = '$' + total.toFixed(2);
 }
-
-export function startJobWorkflow(jobType, equipId) {
-    const e = window.state.equipment.find(x => x.id === equipId);
-    if (!e) return;
-
-    // 1. Open the Work Order Modal
-    window.openModal('task-modal');
-    
-    // 2. Pre-fill the data based on the "Job"
-    const nameInput = document.getElementById('t-name');
-    const equipSelect = document.getElementById('t-equip');
-    
-    if (nameInput) nameInput.value = `${jobType.toUpperCase()}: ${e.name} - `;
-    if (equipSelect) {
-        // Run the dropdown loader first
-        window.populateSelects();
-        equipSelect.value = equipId;
-    }
-
-    window.showToast(`Starting ${jobType} workflow...`);
-}
-
  * @param {string} jobType - 'repair', 'inspect', 'replace', or 'test'
  * @param {string} equipId - The ID of the machine
  */
@@ -397,3 +375,5 @@ export function startJobWorkflow(jobType, equipId) {
 
     window.showToast(`Starting ${jobType} workflow...`);
 }
+
+ 
