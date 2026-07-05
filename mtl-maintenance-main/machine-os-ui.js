@@ -62,6 +62,11 @@ export function renderPerfectCard(equipId) {
     <div class="comp-card" onclick="window.filterTimeline('electrical', this)">⚡ Electrical</div>
     <div class="comp-card" onclick="window.filterTimeline('tracks', this)">🚜 Tracks</div>
 </div>
+              
+                <!--COMPONENT SPECS -->
+        
+              <div id="mtl-component-specs" style="margin-bottom:20px;"></div>
+
             <!-- 4. THE UNIFIED TIMELINE -->
             <h3 class="os-label">Unified Machine Timeline</h3>
             <div id="mtl-timeline-stream" class="os-timeline">
