@@ -16,7 +16,7 @@ export function renderPerfectCard(equipId) {
             <div class="os-nav-header">
                 <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
                 <div class="os-admin-btns">
-                    <button class="btn-secondary" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit Info</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit Info</button>
                     <button class="btn-danger" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
                 </div>
             </div>
