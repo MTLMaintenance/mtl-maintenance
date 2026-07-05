@@ -429,19 +429,19 @@ window.filterTimeline = (component, btn) => {
 window.filterOS = (component, btn) => {
     const equipId = window._currentDetailEquipId;
 
-    // 1. Update the Specs box
+    // 1. Trigger the logic to draw the specs (Dark boxes)
     if (typeof window.renderComponentSpecs === 'function') {
         window.renderComponentSpecs(equipId, component);
     }
 
-    // 2. Update the Timeline
+    // 2. Trigger the logic to filter the timeline
     if (typeof window.renderMachineTimeline === 'function') {
         window.renderMachineTimeline(equipId, component);
     }
 
-    // 3. Visual UI: Highlight the clicked card
-    const parent = btn.parentElement;
-    parent.querySelectorAll('.comp-card').forEach(c => c.classList.remove('active-os'));
+    // 3. UI: Highlight the clicked card
+    const cards = btn.parentElement.querySelectorAll('.comp-card');
+    cards.forEach(c => c.classList.remove('active-os'));
     btn.classList.add('active-os');
 };
 
