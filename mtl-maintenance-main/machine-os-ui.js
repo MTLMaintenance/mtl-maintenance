@@ -46,12 +46,12 @@ export function renderPerfectCard(equipId) {
 
             <!-- 2. JOB HUB (The One-Tap Actions) -->
             <h3 class="os-label">Job Hub</h3>
-            <div class="os-job-grid">
-                <button onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
-                <button onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
-                <button onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
-                <button onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
-            </div>
+           <div class="os-job-grid">
+    <button onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
+    <button onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
+    <button onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
+    <button onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
+</div>
 
             <!-- 3. COMPONENT DEEP DIVE -->
             <h3 class="os-label">Components</h3>
