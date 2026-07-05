@@ -446,22 +446,17 @@ window.filterOS = (component, btn) => {
 };
 
 window.openEquipDetailLegacy = (id) => {
-    // Fill the hidden ID box so saving works
-    const idField = document.getElementById('e-id');
-    if (idField) idField.value = id;
-
-    openLegacy(id); 
-};
-
-    // 2. Fill the hidden ID field so saveEquipment knows we are EDITING
+    const e = window.state.equipment.find(x => x.id === id);
+    if (!e) return;
     const idField = document.getElementById('e-id');
     if (idField) idField.value = e.id;
-
-    // 3. Fill the rest of the form
-    document.getElementById('e-name').value = e.name;
-    document.getElementById('e-hours').value = e.hours;
-    // ... fill other fields ...
-
+    document.getElementById('e-name').value = e.name || "";
+    document.getElementById('e-hours').value = e.hours || 0;
+    document.getElementById('e-serial').value = e.serial || "";
+    document.getElementById('e-type').value = e.type || "";
+    document.getElementById('e-status').value = e.status || "Operational";
+    document.getElementById('e-op').value = e.op || "";
+    document.getElementById('e-notes').value = e.notes || "";
     window.openModal('equip-modal');
 };
 
