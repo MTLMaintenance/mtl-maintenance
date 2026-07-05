@@ -343,8 +343,7 @@ export function updateTotalCostDisplay() {
   if(otherEl) otherEl.textContent = '$' + otherCost.toFixed(2);
   if(totalEl) totalEl.textContent = '$' + total.toFixed(2);
 }
-  @param {string} jobType - 'repair', 'inspect', 'replace', or 'test'
-  @param {string} equipId - The ID of the machine
+
  
 export function startJobWorkflow(jobType, equipId) {
     const state = window.state;
