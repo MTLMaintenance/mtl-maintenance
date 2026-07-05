@@ -345,7 +345,7 @@ export function updateTotalCostDisplay() {
 }
  * @param {string} jobType - 'repair', 'inspect', 'replace', or 'test'
  * @param {string} equipId - The ID of the machine
- */
+ 
 export function startJobWorkflow(jobType, equipId) {
     const state = window.state;
     const e = state.equipment.find(x => x.id === equipId);
