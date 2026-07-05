@@ -6,80 +6,67 @@ export function renderPerfectCard(equipId) {
     if (!e) return window.showPanel('equipment');
 
     const container = document.getElementById('panel-machine-profile');
-
-    // Build the "Digital Twin" Vitals
-    const fuel = e.fuel_level || e.vitals?.fuel || 0;
-    const health = window.calcHealth(e.id, state.tasks, state.equipment);
+    
+    // --- FORCE PANEL TO TOP ---
+    container.style.display = 'block';
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.paddingTop = '20px';
 
     container.innerHTML = `
-        <div class="mtl-os-container">
-            <div class="os-nav-header">
-                <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
-                <div class="os-admin-btns">
-                  <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit Info</button>
-                    <button class="btn-danger" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+        <div class="mtl-os-container" style="margin-top:0 !important; padding-top:0 !important;">
+            <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
+
+            <div class="mtl-header">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div class="mtl-title">
+                        <h1 style="margin:0;">${e.name || 'test'}</h1>
+                        <span class="mtl-status-tag operational">${e.status || 'OPERATIONAL'}</span>
+                        <span class="badge bg" style="margin-left:10px;">⏱ ${(e.hours || 0).toLocaleString()} HRS</span>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+                    </div>
+                </div>
+                
+                <div class="mtl-vitals" style="margin-top:20px; display:flex; gap:15px;">
+                    <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
+                    <div class="v-item"><span>FLEET HEALTH</span><b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b></div>
+                    <div class="v-item warning"><span>PM DUE</span><b>42h</b></div>
                 </div>
             </div>
 
-            <!-- 1. HERO & VITALS -->
-            <div class="os-hero-card">
-                <div class="os-hero-main">
-                    <h1>${e.name || 'Unnamed Machine'}</h1>
-                    <div class="os-badge-row">
-                        <span class="badge ${e.status === 'Down' ? 'bd' : 'bs'}">${e.status}</span>
-                        <span class="badge bg">⏱ ${e.hours.toLocaleString()} hrs</span>
-                    </div>
-                </div>
-                <div class="os-vitals-grid">
-                    <div class="os-vital">
-                        <label>FUEL</label>
-                        <div class="os-progress"><div class="fill" style="width:${fuel}%"></div></div>
-                        <b>${fuel}%</b>
-                    </div>
-                    <div class="os-vital">
-                        <label>FLEET HEALTH</label>
-                        <div class="os-progress"><div class="fill" style="width:${health}%; background:green;"></div></div>
-                        <b>${health}%</b>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. JOB HUB (The One-Tap Actions) -->
             <h3 class="os-label">Job Hub</h3>
-           <div class="os-job-grid">
-    <button onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
-    <button onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
-    <button onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
-    <button onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
-</div>
+            <div class="os-job-grid">
+                <button class="job-btn" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
+                <button class="job-btn" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
+                <button class="job-btn" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
+                <button class="job-btn" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
+            </div>
 
-            <!-- 3. COMPONENT DEEP DIVE -->
             <h3 class="os-label">Components</h3>
             <div class="os-comp-scroll">
-    <div class="comp-card" onclick="window.filterTimeline('all', this)">🌍 All</div>
-    <div class="comp-card" onclick="window.filterTimeline('engine', this)">⚙️ Engine</div>
-    <div class="comp-card" onclick="window.filterTimeline('hydraulics', this)">💧 Hydraulics</div>
-    <div class="comp-card" onclick="window.filterTimeline('electrical', this)">⚡ Electrical</div>
-    <div class="comp-card" onclick="window.filterTimeline('tracks', this)">🚜 Tracks</div>
-</div>
-              
-                <!--COMPONENT SPECS -->
-        
-              <div id="mtl-component-specs" style="margin-bottom:10px;"></div>
-
-            <!-- 4. THE UNIFIED TIMELINE -->
-            <h3 class="os-label">Unified Machine Timeline</h3>
-            <div id="mtl-timeline-stream" class="os-timeline">
-                <!-- Data injected by renderMachineTimeline -->
+                <div class="comp-card" id="card-all" onclick="window.filterOS('all', this)">🌍 All</div>
+                <div class="comp-card" id="card-engine" onclick="window.filterOS('Engine', this)">⚙️ Engine</div>
+                <div class="comp-card" id="card-hyd" onclick="window.filterOS('Hydraulic', this)">💧 Hydraulics</div>
+                <div class="comp-card" id="card-elec" onclick="window.filterOS('Electrical', this)">⚡ Electrical</div>
+                <div class="comp-card" id="card-tracks" onclick="window.filterOS('Track', this)">🚜 Tracks</div>
             </div>
+
+            <!-- THE SPEC AREA (Added a border so we can see it) -->
+            <div id="mtl-component-specs" style="margin-bottom:20px; min-height:10px;"></div>
+
+            <h3 class="os-label">Unified Machine Timeline</h3>
+            <div id="mtl-timeline-stream" class="os-timeline"></div>
         </div>
     `;
 
-    // Trigger the automated logic
+    // Trigger sub-renders
     setTimeout(() => {
         if (window.renderMachineTimeline) window.renderMachineTimeline(e.id);
-        if (window.renderQuickSpecs) window.renderQuickSpecs(e.id);
-    }, 20);
+        if (window.renderComponentSpecs) window.renderComponentSpecs(e.id, 'all');
+    }, 50);
 }
 
 export function renderWikiSection(equipId) {
