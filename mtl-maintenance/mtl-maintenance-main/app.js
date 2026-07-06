@@ -435,6 +435,20 @@ window.switchAdminTab = (tab, btn) => {
     }
 };
 
+window.filterTimeline = (component, btn) => {
+    const equipId = window._currentDetailEquipId;
+    
+    // 1. Redraw the timeline with a filter
+    if (typeof window.renderMachineTimeline === 'function') {
+        window.renderMachineTimeline(equipId, component);
+    }
+
+    // 2. Visual: Highlight the active component card
+    const cards = btn.parentElement.querySelectorAll('.comp-card');
+    cards.forEach(c => c.style.borderColor = '#eee'); // Reset others
+    btn.style.borderColor = 'var(--accent)'; // Highlight active
+};
+
 function updatePinDisplay() {
     const display = document.getElementById('pin-display');
     // Shows one asterisk for every digit typed
