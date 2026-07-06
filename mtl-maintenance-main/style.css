@@ -2484,13 +2484,17 @@ html {
 }
 
 .panel {
-    position: absolute;
-    top: var(--topbar-h, 60px); /* This accounts for your header height */
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto; /* Allow scrolling inside the panel */
-    background: #001226; /* Match your background color */
+    width: 100%;
+    min-height: calc(100vh - 60px); /* Subtracts the topbar height */
+    position: relative;
+    display: none; /* Controlled by JS */
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.panel.active {
+    display: block !important; /* Show as a block, not flex, to prevent centering issues */
 }
 
 .mtl-os-container {
@@ -2569,4 +2573,9 @@ html {
     padding: 25px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     margin-bottom: 20px;
+}
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
 }
