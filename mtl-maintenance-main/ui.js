@@ -37,20 +37,7 @@ export function showPanel(id) {
         p.classList.remove('active');
     });
 
-     const target = document.getElementById('panel-' + id);
-    if (target) {
-        if (id === 'machine-profile') {
-            target.style.display = 'block'; 
-        } else {
-            target.style.display = 'flex'; 
-        }
-        target.classList.add('active');
-    }
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
-
-    // Show the requested panel
-    const target = document.getElementById('panel-' + id);
+      const target = document.getElementById('panel-' + id);
     if (target) {
         target.style.display = (id === 'machine-profile') ? 'block' : 'flex';
         target.classList.add('active');
@@ -59,6 +46,10 @@ export function showPanel(id) {
         target.style.opacity = "1";
         target.style.visibility = "visible";
     }
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(b => b.classList.remove('active'));
+
+    
  if (id === 'calendar') {
         const grid = document.getElementById('cal-grid-container');
         if (grid) grid.style.display = 'block';
