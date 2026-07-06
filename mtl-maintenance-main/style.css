@@ -2574,9 +2574,4 @@ html {
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     margin-bottom: 20px;
 }
-#app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
 
