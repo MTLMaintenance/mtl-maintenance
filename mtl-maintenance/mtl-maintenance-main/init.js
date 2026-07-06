@@ -13,11 +13,12 @@ console.log("🚀 System Loader: init.js Version 3.0 Booting...");
 export async function loadState() {
   const state = window.state;
   setSyncStatus('syncing');
-  console.log("📥 Starting Data Sync...");
+  
+  // 1. UNIQUE LOG: If you don't see "LOG VERSION: 10" in your console, the file didn't update
+  console.log("📥 LOG VERSION: 10 - FETCHING FROM SUPABASE...");
 
   try {
-    // 1. Fetch exactly 13 tables
-    const res = await Promise.all([
+    const response = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -33,59 +34,53 @@ export async function loadState() {
       window._mpdb.from('consumables').select('*')
     ]);
 
-  console.log("Raw Supabase Equipment Response:", res[0]);
+    // 2. Save data using indices [0, 1, 2...] 
+    // This is 100% safe from "Variable not defined" errors.
+    state.equipment       = response[0].data  || [];
+    state.tasks           = (response[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    state.schedules       = response[2].data  || [];
+    state.parts           = response[3].data  || [];
+    state.suppliers       = response[4].data  || [];
+    state.documents       = response[5].data  || [];
+    state.partUsage       = response[6].data  || [];
+    state.recurrenceRules = response[7].data  || [];
+    state.tools           = response[8].data  || [];
+    state.observations    = response[9].data  || [];
+    state.wiki            = response[10].data || [];
+    state.chatMessages    = response[11].data || [];
+    state.consumables     = response[12].data || [];
 
-    // 2. Assign with extra safety
-    state.equipment = res[0].data || [];
-    state.tasks = (res[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    state.schedules = res[2].data || [];
-    state.parts = res[3].data || [];
-    state.suppliers = res[4].data || [];
-    state.documents = res[5].data || [];
-    state.partUsage = res[6].data || [];
-    state.recurrenceRules = res[7].data || [];
-    state.tools = res[8].data || [];
-    state.observations = res[9].data || [];
-    state.wiki = res[10].data || [];
-    state.chatMessages = res[11].data || [];
-    state.consumables = res[12].data || [];
+    console.log(`✅ SYNC SUCCESS: Found ${state.equipment.length} machines in database.`);
 
-    // 3. Log the final result
-    console.log(`✅ State Hydrated: Found ${state.equipment.length} machines in Master State.`);
-    // 3. Trigger UI Redraw
-    if (window.renderEquipmentTable) window.renderEquipmentTable();
-    if (window.renderDashboard) window.renderDashboard();
-    if (window.updateMetrics) window.updateMetrics();
+    // 3. Trigger UI redraws
+    if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
+    if (typeof window.renderDashboard === 'function') window.renderDashboard();
     
     setSyncStatus('online');
     return true;
   } catch(e) { 
-    console.error("❌ Sync Failed:", e); 
+    console.error("❌ SYNC FAILED:", e); 
     setSyncStatus('offline'); 
     return false; 
   }
 }
-
 export async function startApp() {
-  console.log("🚀 Initializing App...");
   try {
-    // 1. Load profiles first
     await fetchAllProfiles(); 
-
-    // 2. Check session
     const sessionData = await validateSession();
-    
-    if(sessionData && sessionData.profiles) {
+    if(sessionData) {
       window.currentUser = sessionData.profiles;
-      // 3. VITAL: Wait for data to load BEFORE entering the app
+      
+      // VITAL: This 'await' makes the app stay on the loading screen 
+      // until the machines actually arrive from Supabase.
       await loadState(); 
+      
       window.enterApp(); 
     } else {
-      window.showPinLogin();
+      showPinLogin();
     }
   } catch(e) { 
-    console.error("Startup Error:", e);
-    window.showPinLogin(); 
+    showPinLogin(); 
   }
 }
 
