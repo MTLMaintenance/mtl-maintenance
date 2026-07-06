@@ -487,3 +487,43 @@ export async function addSpecToComponent(equipId, componentName) {
         }
     } catch (err) { console.error(err); }
 }
+
+export function openAddEquip() {
+    console.log("🆕 Preparing form for new equipment...");
+
+    // 1. Reset the Modal Title
+    const title = document.getElementById('equip-modal-title');
+    if (title) title.textContent = "Add New Equipment";
+
+    // 2. VITAL: Clear the hidden ID field
+    // This tells the save function: "This is a NEW machine, not an edit."
+    const idField = document.getElementById('e-id');
+    if (idField) idField.value = "";
+
+    // 3. Clear all input fields
+    const fields = ['e-name', 'e-serial', 'e-manufacturer', 'e-hours', 'e-op', 'e-notes', 'e-budget-monthly', 'e-budget-yearly'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = (id === 'e-hours' || id.includes('budget')) ? 0 : "";
+    });
+
+    // 4. Reset the status to default
+    const statusSelect = document.getElementById('e-status');
+    if (statusSelect) statusSelect.value = "Operational";
+
+    // 5. Clear temporary memory (Photos and Custom Specs)
+    if (window.pendingPhotos) window.pendingPhotos.equip = [];
+    
+    // Clear the custom fields object
+    if (window.customFieldsTemp) {
+        Object.keys(window.customFieldsTemp).forEach(key => delete window.customFieldsTemp[key]);
+    }
+
+    // 6. Refresh the "Custom Fields" list in the modal so it's empty
+    if (typeof window.renderCustomFields === 'function') {
+        window.renderCustomFields();
+    }
+
+    // 7. Open the modal
+    window.openModal('equip-modal');
+}
