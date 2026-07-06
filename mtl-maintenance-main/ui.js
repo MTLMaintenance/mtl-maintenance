@@ -37,49 +37,51 @@ export function showPanel(id) {
         p.classList.remove('active');
     });
 
-    // 2. Find the one we want (e.g., 'panel-machine-profile')
+    // 2. Find the one we want
     const target = document.getElementById('panel-' + id);
     
     if (target) {
-        // 3. FORCE it to show
-        target.style.setProperty('display', 'block', 'important');
+        // Use 'block' for Profile and Calendar to avoid centering issues
+        if (id === 'machine-profile' || id === 'calendar') {
+            target.style.setProperty('display', 'block', 'important');
+        } else {
+            target.style.setProperty('display', 'flex', 'important');
+        }
         target.classList.add('active');
-        
-        // 4. Ensure it's not transparent
         target.style.opacity = "1";
         target.style.visibility = "visible";
-        
-        console.log(`✅ Panel 'panel-${id}' is now live.`);
     } else {
         console.error(`❌ UI Error: Could not find id='panel-${id}'`);
     }
 
-    // 5. Deactivate old nav buttons and highlight the new one
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${id}'`));
-    });
-}
+    // 3. --- SPECIFIC PANEL LOGIC ---
     
- if (id === 'calendar') {
+    // CALENDAR LOGIC
+    if (id === 'calendar') {
         const grid = document.getElementById('cal-grid-container');
         if (grid) grid.style.display = 'block';
-        
-        // Trigger the draw immediately
         if (typeof window.renderCalendar === 'function') {
             window.renderCalendar();
         }
-    // Highlight the button
-    navButtons.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
+    }
+
+    // CHAT LOGIC
+    if (id === 'chat') {
+        if (typeof window.renderChat === 'function') {
+            window.renderChat();
+        }
+    }
+
+    // 4. Update Navigation Button Highlights
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const onClickAttr = btn.getAttribute('onclick') || "";
+        // If the button's click command contains the panel ID, highlight it
+        if (onClickAttr.includes(`'${id}'`)) {
             btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
         }
     });
-}
-if (id === 'chat') {
-    // This tells chat.js to start loading the history
-    if (typeof window.renderChat === 'function') {
-        window.renderChat();
-    }
 }
 
 // 4. Switch Tabs inside a modal or panel
