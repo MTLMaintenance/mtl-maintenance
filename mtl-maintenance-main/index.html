@@ -218,7 +218,7 @@
       <button class="btn btn-sm" id="eq-grp-production" onclick="setEquipGroupFilter('production')">Production</button>
     </div>
     <div class="section-header"><span class="section-title">Equipment Registry</span>
-      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export CSV</button><button class="btn btn-primary" onclick="openModal('equip-modal')">+ Add Equipment</button></div>
+      <div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="exportEquipCSV()" style="color:#fff;border-color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5)">Export CSV</button><button class="btn btn-primary" onclick="window.openAddEquip()">+ Add Equipment</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Equipment</th><th>Status</th><th>Hours</th><th>Health</th><th>Assigned To</th><th>Last Service</th><th>Next Due</th><th></th></tr></thead>
