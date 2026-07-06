@@ -310,38 +310,32 @@ export function renderComponentSpecs(equipId, componentFilter = 'all') {
     if (!container) return;
 
     const e = window.state.equipment.find(x => x.id === equipId);
-    if (!e || !e.custom_fields) {
-        container.innerHTML = ''; // Hide if no data
-        return;
-    }
+    if (!e) return;
 
-    // 1. Get all specs (e.g., {"Engine: Oil": "15W40", "Tracks: Type": "Heavy Duty"})
-    const allSpecs = Object.entries(e.custom_fields);
-
-    // 2. Filter based on the clicked component
-    // If 'Engine' is clicked, we look for keys containing 'Engine'
+    const allSpecs = Object.entries(e.custom_fields || {});
     const filtered = allSpecs.filter(([key]) => {
         if (componentFilter === 'all') return true;
         return key.toLowerCase().includes(componentFilter.toLowerCase());
     });
 
-    if (filtered.length === 0) {
-        container.innerHTML = `
-            <div style="padding:15px; background:#f8f9fa; border-radius:12px; border:1px dashed #ddd; text-align:center;">
-                <span style="font-size:12px; color:#888;">No ${componentFilter} specs found. Click Edit Info to add them.</span>
-            </div>`;
-        return;
-    }
-
-    // 3. Draw the spec cards
+    // --- THE UI CHANGE ---
+    // We add a header with an ADD button that knows which component we are in
     container.innerHTML = `
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:12px; color:#888; text-transform:uppercase;">
+                ${componentFilter} Specifications
+            </h4>
+            <button class="btn-add-spec" onclick="window.addSpecToComponent('${equipId}', '${componentFilter}')">
+                + Add Spec
+            </button>
+        </div>
+        <div class="os-spec-grid">
             ${filtered.map(([key, val]) => `
                 <div class="spec-card-os">
-                    <label>${key.replace(componentFilter + ':', '').trim().toUpperCase()}</label>
-                    <b>${val}</b>
+                    <label>${key.split(':').pop().trim().toUpperCase()}</label>
+                    <b onclick="window.editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">${val}</b>
                 </div>
-            `).join('')}
+            `).join('') || `<p class="empty-text">No specs for ${componentFilter}</p>`}
         </div>
     `;
 }
