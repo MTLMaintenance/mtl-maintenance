@@ -2493,3 +2493,21 @@ html {
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     margin-bottom: 20px;
 }
+
+.os-label {
+    color: #ffffff !important; /* Force white text */
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 30px 0 15px 0;
+    display: block;
+}
+
+.empty-text {
+    color: #888;
+    font-style: italic;
+    font-size: 13px;
+    padding: 20px;
+    text-align: center;
+}
