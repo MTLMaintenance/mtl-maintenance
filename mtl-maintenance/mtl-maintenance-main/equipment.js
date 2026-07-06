@@ -462,3 +462,33 @@ export async function deleteEquip(id) {
         return false;
     }
 }
+
+export async function addSpecToComponent(equipId, componentName) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    const specName = prompt(`New ${componentName} Spec Name: (e.g. "Filter Part #")`);
+    if (!specName) return;
+    
+    const specValue = prompt(`Value for ${specName}:`);
+    if (!specValue) return;
+
+    // 1. Automatically format the key (e.g., "Engine: Filter Part #")
+    // If we are in 'all', we don't add a prefix
+    const finalKey = (componentName === 'all') ? specName : `${componentName}: ${specName}`;
+
+    // 2. Save to local memory
+    if (!e.custom_fields) e.custom_fields = {};
+    e.custom_fields[finalKey] = specValue;
+
+    // 3. Save to Supabase
+    try {
+        await window._mpdb.from('equipment').update({ custom_fields: e.custom_fields }).eq('id', equipId);
+        window.showToast("Spec added ✓");
+        
+        // 4. Redraw the specs immediately
+        if (typeof window.renderComponentSpecs === 'function') {
+            window.renderComponentSpecs(equipId, componentName);
+        }
+    } catch (err) { console.error(err); }
+}
