@@ -205,7 +205,7 @@ export function switchPartsSubTab(tab) {
         consView.style.display = 'none';
         partBtn.style.display = 'block';
         consBtn.style.display = 'none';
-        renderParts();
+        renderPartsTable();
     } else {
         invView.style.display = 'none';
         consView.style.display = 'block';
