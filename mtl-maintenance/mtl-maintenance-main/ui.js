@@ -455,3 +455,15 @@ export function switchChannel(channel, btn) {
         window.toggleChatSidebar();
     }
 }
+
+export async function fetchConsumables(state) {
+    try {
+        const { data, error } = await supabase.from('consumables').select('*').order('name');
+        if (error) throw error;
+        state.consumables = data || [];
+        return state.consumables;
+    } catch (e) {
+        console.error("Consumable fetch error:", e);
+        return [];
+    }
+}
