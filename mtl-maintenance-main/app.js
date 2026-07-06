@@ -236,8 +236,10 @@ window.deleteChecklistItem = deleteChecklistItem;
 window.deleteTaskComment = deleteTaskComment;
 window._currentTaskTab = 'dt-info';
 window.openEquipDetail = (id) => {
-    window.showPanel('machine-profile'); // Show the new full-screen page
-    renderPerfectCard(id);               // Draw the new "MTL OS" view
+    console.log("🖱️ Row clicked for machine:", id);
+    window._currentDetailEquipId = id;
+    window.showPanel('machine-profile'); 
+    renderPerfectCard(id); 
 };
 window.savePart = savePart;
 window.openModal = openModal;
