@@ -271,19 +271,6 @@ export function addPartToWO(){
   updateWOCostFromParts();
   renderWOPartsList();
 }
-// 1. Fetch supplies from Supabase
-export async function fetchConsumables(state) {
-    try {
-        const { data, error } = await supabase.from('consumables').select('*').order('name');
-        if (error) throw error;
-        state.consumables = data || [];
-        return state.consumables;
-    } catch (e) {
-        console.error("Consumable fetch error:", e);
-        return [];
-    }
-}
-
 // 2. Open modal to EDIT a supply item
 export function editConsumable(id, state) {
     const item = state.consumables.find(c => c.id === id);
