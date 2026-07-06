@@ -30,7 +30,7 @@ import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerk
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc,openEditDocModal,openAddDocModal,openDocModal, handleDocUpload } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
-import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto } from './inventory.js';
+import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO, fetchConsumables, editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto,switchPartsSubTab } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, saveCalendarEntry  } from './calendar.js'
@@ -69,6 +69,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.switchPartsSubTab = switchPartsSubTab;
 window.renderComponentSpecs = renderComponentSpecs;
 window.loadState = loadState;
 window.addSpecToComponent = addSpecToComponent;
