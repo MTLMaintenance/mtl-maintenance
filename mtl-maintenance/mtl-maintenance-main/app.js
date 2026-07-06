@@ -72,6 +72,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.buildEquipDetailHTML = buildEquipDetailHTML;
 window.renderMachineTimeline = renderMachineTimeline;
 window.renderWikiSection = renderWikiSection;
 window.addWikiTip = addWikiTip;
@@ -257,11 +258,7 @@ window.tempZerkCoords = null; // Store the first click for lines
 window.deleteChecklistItem = deleteChecklistItem; 
 window.deleteTaskComment = deleteTaskComment;
 window._currentTaskTab = 'dt-info';
-window.openEquipDetailLegacy = (id) => openEquipDetail(id, state);
-window.openEquipDetail = (id) => {
-    window.showPanel('machine-profile'); // Show the new full-screen page
-    renderPerfectCard(id);               // Draw the new "MTL OS" view
-};
+window.openEquipDetailLegacy = (id) => { openLegacy(id);};
 window.savePart = savePart;
 window.openModal = openModal;
 window.closeModal = closeModal;
