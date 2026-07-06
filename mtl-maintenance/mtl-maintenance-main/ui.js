@@ -27,15 +27,21 @@ export function closeModal(id) {
 
 // 3. Switch between main screens (Dashboard, Calendar, etc.)
 export function showPanel(id) {
-    // Scroll to top
     window.scrollTo(0, 0);
-
-    // Hide all panels
     const panels = document.querySelectorAll('.panel');
-    panels.forEach(p => {
-        p.style.display = 'none';
-        p.classList.remove('active');
-    });
+    panels.forEach(p => p.style.display = 'none');
+
+    const target = document.getElementById('panel-' + id);
+    if (target) {
+        // --- THE FIX ---
+        // If it's the machine profile, don't use flex-center
+        if (id === 'machine-profile') {
+            target.style.display = 'block'; 
+        } else {
+            target.style.display = 'flex'; // Or whatever your default is
+        }
+        target.classList.add('active');
+    }
 
     // Deactivate all nav buttons
     const navButtons = document.querySelectorAll('.nav-btn');
