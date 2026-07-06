@@ -13,7 +13,10 @@ console.log("🚀 System Loader: init.js Version 3.0 Booting...");
 export async function loadState() {
   const state = window.state;
   setSyncStatus('syncing');
+  console.log("📥 Starting Data Sync...");
+
   try {
+    // 1. Fetch exactly 13 tables
     const res = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
@@ -30,7 +33,7 @@ export async function loadState() {
       window._mpdb.from('consumables').select('*')
     ]);
 
-    // Save to window.state
+    // 2. Map data to window.state
     state.equipment = res[0].data || [];
     state.tasks = (res[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = res[2].data || [];
@@ -45,23 +48,43 @@ export async function loadState() {
     state.chatMessages = res[11].data || [];
     state.consumables = res[12].data || [];
 
-    // Trigger Initial Paints
+    console.log(`✅ Data Sync Complete. Found ${state.equipment.length} machines.`);
+
+    // 3. Trigger UI Redraw
     if (window.renderEquipmentTable) window.renderEquipmentTable();
     if (window.renderDashboard) window.renderDashboard();
+    if (window.updateMetrics) window.updateMetrics();
     
     setSyncStatus('online');
     return true;
-  } catch(e) { console.error(e); setSyncStatus('offline'); return false; }
+  } catch(e) { 
+    console.error("❌ Sync Failed:", e); 
+    setSyncStatus('offline'); 
+    return false; 
+  }
 }
 
 export async function startApp() {
-  await fetchAllProfiles(window.state); 
-  const sessionData = await validateSession();
-  if(sessionData) {
-    window.currentUser = sessionData.profiles;
-    await loadState(); 
-    window.enterApp(); 
-  } else { window.showPinLogin(); }
+  console.log("🚀 Initializing App...");
+  try {
+    // 1. Load profiles first
+    await fetchAllProfiles(); 
+
+    // 2. Check session
+    const sessionData = await validateSession();
+    
+    if(sessionData && sessionData.profiles) {
+      window.currentUser = sessionData.profiles;
+      // 3. VITAL: Wait for data to load BEFORE entering the app
+      await loadState(); 
+      window.enterApp(); 
+    } else {
+      window.showPinLogin();
+    }
+  } catch(e) { 
+    console.error("Startup Error:", e);
+    window.showPinLogin(); 
+  }
 }
 
 export async function enterApp(currentUser, state, canFunc) {
