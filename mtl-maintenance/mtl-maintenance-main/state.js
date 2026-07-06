@@ -1,19 +1,9 @@
 // This ensures window.state exists the microsecond this file is read.
 if (!window.state) {
     window.state = {
-        equipment: [],
-        tasks: [],
-        schedules: [],
-        parts: [],
-        suppliers: [],
-        documents: [],
-        partUsage: [],
-        tools: [],
-        wishlist: [],
-        observations: [],
-        checklistTemplates: [],
-        profiles: [],
-         wiki: [] 
+        equipment: [], tasks: [], schedules: [], parts: [], suppliers: [], 
+        documents: [], partUsage: [], tools: [], wishlist: [], observations: [],
+        checklistTemplates: [], wiki: [], chatMessages: [], users_list_cache: [], consumables: []
     };
 }
 
