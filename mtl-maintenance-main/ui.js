@@ -50,10 +50,14 @@ export function showPanel(id) {
     navButtons.forEach(b => b.classList.remove('active'));
 
     // Show the requested panel
-    const targetPanel = document.getElementById('panel-' + id);
-    if (targetPanel) {
-        targetPanel.style.display = 'block';
-        targetPanel.classList.add('active');
+    const target = document.getElementById('panel-' + id);
+    if (target) {
+        target.style.display = (id === 'machine-profile') ? 'block' : 'flex';
+        target.classList.add('active');
+        
+        // Ensure opacity isn't 0
+        target.style.opacity = "1";
+        target.style.visibility = "visible";
     }
  if (id === 'calendar') {
         const grid = document.getElementById('cal-grid-container');
