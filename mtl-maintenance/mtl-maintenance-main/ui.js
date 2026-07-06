@@ -456,11 +456,32 @@ export function switchChannel(channel, btn) {
     }
 }
 
-export async function fetchConsumables(state) {
+export async function fetchConsumables() {
+    // 1. THE FIX: Grab the master folder from the window
+    const state = window.state;
+    
+    if (!state) {
+        console.error("Global state not found while fetching consumables.");
+        return [];
+    }
+
     try {
-        const { data, error } = await supabase.from('consumables').select('*').order('name');
+        console.log("📥 Syncing consumables from Supabase...");
+        const { data, error } = await window._mpdb
+            .from('consumables')
+            .select('*')
+            .order('name');
+            
         if (error) throw error;
+
+        // 2. Save into the global folder
         state.consumables = data || [];
+        
+        // 3. Redraw the table if the painter exists
+        if (typeof window.renderConsumablesTable === 'function') {
+            window.renderConsumablesTable();
+        }
+
         return state.consumables;
     } catch (e) {
         console.error("Consumable fetch error:", e);
