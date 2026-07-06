@@ -11,15 +11,10 @@ import { fetchAbsences } from './calendar.js';
 console.log("🚀 System Loader: init.js Version 3.0 Booting...");
 
 export async function loadState() {
-  const masterFolder = window.state;
-  if (!masterFolder) return console.error("Master Folder Missing");
-
+  const state = window.state;
   setSyncStatus('syncing');
-
   try {
-    console.log("📥 Syncing from Supabase...");
-
-    const dbResponse = await Promise.all([
+    const res = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -35,38 +30,38 @@ export async function loadState() {
       window._mpdb.from('consumables').select('*')
     ]);
 
-    // We use the results of the 13th table (index 12) 
-    // We are NOT using the name "con" anywhere in this code.
-    masterFolder.equipment       = dbResponse[0].data  || [];
-    masterFolder.tasks           = (dbResponse[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    masterFolder.schedules       = dbResponse[2].data  || [];
-    masterFolder.parts           = dbResponse[3].data  || [];
-    masterFolder.suppliers       = dbResponse[4].data  || [];
-    masterFolder.documents       = dbResponse[5].data  || [];
-    masterFolder.partUsage       = dbResponse[6].data  || [];
-    masterFolder.recurrenceRules = dbResponse[7].data  || [];
-    masterFolder.tools           = dbResponse[8].data  || [];
-    masterFolder.observations    = dbResponse[9].data  || [];
-    masterFolder.wiki            = dbResponse[10].data || [];
-    masterFolder.chatMessages    = dbResponse[11].data || [];
-    masterFolder.consumables     = dbResponse[12].data || []; 
+    // Save to window.state
+    state.equipment = res[0].data || [];
+    state.tasks = (res[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    state.schedules = res[2].data || [];
+    state.parts = res[3].data || [];
+    state.suppliers = res[4].data || [];
+    state.documents = res[5].data || [];
+    state.partUsage = res[6].data || [];
+    state.recurrenceRules = res[7].data || [];
+    state.tools = res[8].data || [];
+    state.observations = res[9].data || [];
+    state.wiki = res[10].data || [];
+    state.chatMessages = res[11].data || [];
+    state.consumables = res[12].data || [];
 
-    console.log(`✅ Sync complete. Total machines: ${masterFolder.equipment.length}`);
-
-    if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
-    if (typeof window.renderTools === 'function') window.renderTools();
-    if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
-    if (typeof window.renderConsumablesTable === 'function') window.renderConsumablesTable();
-    if (typeof window.renderDashboard === 'function') window.renderDashboard();
+    // Trigger Initial Paints
+    if (window.renderEquipmentTable) window.renderEquipmentTable();
+    if (window.renderDashboard) window.renderDashboard();
     
     setSyncStatus('online');
     return true;
+  } catch(e) { console.error(e); setSyncStatus('offline'); return false; }
+}
 
-  } catch(err) { 
-    console.error('❌ CRITICAL LOAD FAILURE:', err); 
-    setSyncStatus('offline');
-    return false;
-  }
+export async function startApp() {
+  await fetchAllProfiles(window.state); 
+  const sessionData = await validateSession();
+  if(sessionData) {
+    window.currentUser = sessionData.profiles;
+    await loadState(); 
+    window.enterApp(); 
+  } else { window.showPinLogin(); }
 }
 
 export async function enterApp(currentUser, state, canFunc) {
@@ -151,23 +146,6 @@ export async function enterApp(currentUser, state, canFunc) {
   setTimeout(() => {
       if (typeof window.adjustMobileLayout === 'function') window.adjustMobileLayout();
   }, 100);
-}
-
-export async function startApp() {
-  try {
-    await fetchAllProfiles(); 
-    const sessionData = await validateSession();
-    if(sessionData) {
-      window.currentUser = sessionData.profiles;
-      await loadState(); 
-      if (typeof window.enterApp === 'function') window.enterApp(); 
-    } else {
-      showPinLogin();
-    }
-  } catch(e) { 
-    console.error("Startup error:", e);
-    showPinLogin(); 
-  }
 }
 
 export function teleportModals() {
