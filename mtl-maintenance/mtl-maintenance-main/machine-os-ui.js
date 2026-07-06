@@ -39,7 +39,7 @@ export function renderPerfectCard(equipId) {
     <button onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
 </div>
             </div>
-<div id="mtl-component-specs" style="margin-bottom:20px;"></div>
+<div id="mtl-component-specs" style="margin-bottom:10px;"></div>
             <!-- COMPONENT SELECTOR: "Where is the problem?" -->
             <div class="mtl-section">
                 <h3 class="section-label">Components</h3>
