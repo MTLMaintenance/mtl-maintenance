@@ -1,61 +1,84 @@
 // machine-os-ui.js - The "Perfect Card" Builder
 
 export function renderPerfectCard(equipId) {
+    console.log("🚀 renderPerfectCard started for ID:", equipId);
+    
     const container = document.getElementById('panel-machine-profile');
-    if (!container) return;
+    if (!container) return console.error("❌ Container 'panel-machine-profile' missing!");
 
-    // --- THE VISUAL LOCATOR FIX ---
-    container.style.border = "5px solid red"; // If you don't see a red box, the panel is hidden!
-    container.style.minHeight = "100vh";      // Force it to be full screen height
-    container.style.width = "100%";
-    container.style.display = "block";        // Use 'block' instead of 'flex' for now
-    container.style.background = "#001226";   // Match your app background
-    // ------------------------------
+    try {
+        const state = window.state;
+        const e = state.equipment.find(x => x.id === equipId);
+        
+        if (!e) {
+            alert("Machine not found!");
+            window.showPanel('equipment');
+            return;
+        }
 
-    const state = window.state;
-    const e = state.equipment.find(x => x.id === equipId);
+        // --- LAYOUT SNAP ---
+        container.style.display = 'block';
+        container.style.minHeight = '100vh';
+        container.style.paddingTop = '10px';
 
+        // --- HTML BUILDER ---
         container.innerHTML = `
-            <div class="mtl-os-container" style="color:white !important; padding: 20px;">
-                <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
+            <div class="mtl-os-container" style="padding: 20px; max-width: 1100px; margin: 0 auto;">
+                <button onclick="window.showPanel('equipment')" class="os-back-btn" style="margin-bottom:15px; cursor:pointer;">← Back to Fleet</button>
 
-                <div class="mtl-header" style="background:white; color:black; padding:20px; border-radius:15px; margin-top:10px;">
+                <div class="mtl-header" style="background:white; color:black; padding:25px; border-radius:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin-bottom:25px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
-                            <h1 style="margin:0; font-size:24px;">${e.name || 'test'}</h1>
-                            <span class="badge bs">${e.status || 'OPERATIONAL'}</span>
+                            <h1 style="margin:0; font-size:32px; font-weight:800;">${e.name || 'test'}</h1>
+                            <span class="badge bs" style="margin-top:8px; display:inline-block;">${e.status || 'OPERATIONAL'}</span>
                         </div>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-secondary" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit</button>
+                            <button class="btn btn-danger" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
                         </div>
                     </div>
                     
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:20px;">
-                        <div style="background:#f0f0f0; padding:10px; border-radius:10px; text-align:center;">
-                            <label style="font-size:10px; color:#888;">FUEL</label><br><b>${e.fuel_level || 0}%</b>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:15px; margin-top:25px; border-top:1px solid #eee; padding-top:20px;">
+                        <div class="v-item" style="text-align:center;">
+                            <label style="display:block; font-size:10px; color:#888; font-weight:bold;">FUEL</label>
+                            <b style="font-size:20px;">${e.fuel_level || 0}%</b>
                         </div>
-                        <div style="background:#f0f0f0; padding:10px; border-radius:10px; text-align:center;">
-                            <label style="font-size:10px; color:#888;">HEALTH</label><br><b>${health}%</b>
+                        <div class="v-item" style="text-align:center;">
+                            <label style="display:block; font-size:10px; color:#888; font-weight:bold;">HOURS</label>
+                            <b style="font-size:20px;">${(e.hours || 0).toLocaleString()}</b>
                         </div>
-                        <div style="background:#f0f0f0; padding:10px; border-radius:10px; text-align:center;">
-                            <label style="font-size:10px; color:#888;">HOURS</label><br><b>${(e.hours || 0).toLocaleString()}</b>
+                        <div class="v-item" style="text-align:center; border-left:3px solid #ff9800;">
+                            <label style="display:block; font-size:10px; color:#888; font-weight:bold;">PM DUE</label>
+                            <b style="font-size:20px; color:#f59e0b;">42h</b>
                         </div>
                     </div>
                 </div>
 
-                <div style="margin-top:20px;">
-                    <h3 style="font-size:12px; color:#888;">UNIFIED TIMELINE</h3>
-                    <div id="mtl-timeline-stream">
-                        <!-- History injected here -->
-                    </div>
+                <h3 class="os-label" style="color:#aaa; font-size:11px; margin-bottom:12px; font-weight:bold; letter-spacing:1px;">JOB HUB</h3>
+                <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:30px;">
+                    <button class="job-btn" onclick="window.openJobWorkflow('repair', '${e.id}')" style="background:#1a1a1a; color:white; padding:15px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">🛠 Repair</button>
+                    <button class="job-btn" onclick="window.openJobWorkflow('inspect', '${e.id}')" style="background:#1a1a1a; color:white; padding:15px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">🔍 Inspect</button>
+                    <button class="job-btn" onclick="window.openJobWorkflow('replace', '${e.id}')" style="background:#1a1a1a; color:white; padding:15px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">🔄 Replace</button>
+                    <button class="job-btn" onclick="window.openJobWorkflow('test', '${e.id}')" style="background:#1a1a1a; color:white; padding:15px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">⚡ Test</button>
                 </div>
+
+                <h3 class="os-label" style="color:#aaa; font-size:11px; margin-bottom:12px; font-weight:bold; letter-spacing:1px;">COMPONENTS</h3>
+                <div class="os-comp-scroll" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:15px; margin-bottom:25px;">
+                    <div class="comp-card" onclick="window.filterOS('all', this)" style="min-width:130px; background:white; padding:15px; border-radius:12px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; color:black;">🌍 All</div>
+                    <div class="comp-card" onclick="window.filterOS('engine', this)" style="min-width:130px; background:white; padding:15px; border-radius:12px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; color:black;">⚙️ Engine</div>
+                    <div class="comp-card" onclick="window.filterOS('hydraulics', this)" style="min-width:130px; background:white; padding:15px; border-radius:12px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); cursor:pointer; color:black;">💧 Hydraulics</div>
+                </div>
+
+                <div id="mtl-component-specs"></div>
+
+                <h3 class="os-label" style="color:#aaa; font-size:11px; margin-bottom:12px; font-weight:bold; letter-spacing:1px;">UNIFIED TIMELINE</h3>
+                <div id="mtl-timeline-stream"></div>
             </div>
         `;
 
-        console.log("✅ HTML Injected. Now triggering sub-renders...");
+        console.log("✅ HTML Built Successfully.");
 
-        // 3. Trigger Timeline
+        // 3. Trigger Sub-Renders
         setTimeout(() => {
             if (typeof window.renderMachineTimeline === 'function') {
                 window.renderMachineTimeline(e.id);
@@ -63,11 +86,10 @@ export function renderPerfectCard(equipId) {
         }, 50);
 
     } catch (err) {
-        // --- THIS WILL FINALLY SHOW THE ERROR ---
         console.error("💥 CRASH IN RENDERER:", err);
-        alert("Render Error: " + err.message);
     }
 }
+
 export function renderWikiSection(equipId) {
     // 1. Get the tips from the global state
     const allTips = window.state.wiki || [];
