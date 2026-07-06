@@ -6,44 +6,26 @@ export function renderEquipmentTable() {
     const container = document.getElementById('equip-table-body');
     if (!container) return;
 
-    // Use window.state to be 100% sure we are looking at the global data
     const state = window.state;
-    
-    // Safety check: if data isn't loaded, don't just stay blank, show a message
-    if (!state || !state.equipment || state.equipment.length === 0) {
+    // 1. Check if the database has ANY machines at all
+    if (!state.equipment || state.equipment.length === 0) {
         container.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:#888;">No machines found in database. Click "+ Add Equipment" to start.</td></tr>';
         return;
     }
 
-    // Simplify the list for testing (Remove the filter for a moment)
-    const list = state.equipment;
+    // 2. Filter logic (all / outside / production)
+    const filter = window.activeGroupFilter || 'all';
+    const list = filter === 'all' ? state.equipment : state.equipment.filter(e => e.group_tag === filter || e.group_tag === 'both');
 
+    // 3. If filter resulted in 0, but DB has machines
+    if (list.length === 0) {
+        container.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px; color:#888;">No machines found in the "${filter}" group.</td></tr>`;
+        return;
+    }
+
+    // 4. Paint the table
     container.innerHTML = list.map(e => {
-        // We use window. functions to ensure they are found
-        const score = calcHealth(e.id, state.tasks, state.equipment);
-        const service = getLastService(e.id, state.tasks);
-        const icon = (e.photos && e.photos.length) ? `<img src="${e.photos[0]}" style="width:30px; height:30px; object-fit:cover; border-radius:4px"/>` : (ICONS[e.type] || '⚙');
-
-        return `
-        <tr onclick="window.openEquipDetail('${e.id}')" style="cursor:pointer; border-bottom:1px solid #eee;">
-            <td>
-                <div style="display:flex; align-items:center; gap:10px">
-                    <div class="equip-icon-wrap">${icon}</div>
-                    <div><b>${e.name}</b><br><small>${e.serial || 'N/A'}</small></div>
-                </div>
-            </td>
-            <td>${badge(e.status)}</td>
-           <td><b>${(e.hours || 0).toLocaleString()}</b> hrs</td>
-            <td>
-                <div class="health-bar" style="width:100px; background:#eee; height:8px; border-radius:4px; overflow:hidden;">
-                    <div class="health-fill" style="width:${score}%; background:${healthColor(score)}; height:100%;"></div>
-                </div>
-                <span style="font-size:11px; color:${healthColor(score)}; font-weight:700;">${score}%</span>
-            </td>
-            <td>${e.op || '—'}</td>
-            <td>${service}</td>
-            <td>—</td>
-        </tr>`;
+        // ... (keep your existing return `<tr>...` code here)
     }).join('');
 }
 // 2. Render the Parts Table
