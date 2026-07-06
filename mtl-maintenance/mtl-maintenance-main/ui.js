@@ -194,7 +194,7 @@ export function switchDetailTab(tab, btn) {
   
 }
 
-function switchPartsSubTab(tab) {
+export function switchPartsSubTab(tab) {
     const invView = document.getElementById('parts-inventory-view');
     const consView = document.getElementById('parts-consumables-view');
     const partBtn = document.getElementById('add-part-btn');
