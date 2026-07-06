@@ -236,9 +236,10 @@ window.deleteChecklistItem = deleteChecklistItem;
 window.deleteTaskComment = deleteTaskComment;
 window._currentTaskTab = 'dt-info';
 window.openEquipDetail = (id) => {
-    console.log("🖱️ Row clicked for machine:", id);
-    window._currentDetailEquipId = id;
+    // 1. Show the panel FIRST
     window.showPanel('machine-profile'); 
+    
+    // 2. Then draw the content
     renderPerfectCard(id); 
 };
 window.savePart = savePart;
