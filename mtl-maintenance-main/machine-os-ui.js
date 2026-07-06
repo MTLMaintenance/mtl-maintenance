@@ -1,21 +1,26 @@
 // machine-os-ui.js - The "Perfect Card" Builder
 
 export function renderPerfectCard(equipId) {
+    console.log("🚀 renderPerfectCard started for ID:", equipId);
+
+    // VITAL: Use window.state to be 100% sure we are looking at the same data app.js has
     const state = window.state;
     const e = state.equipment.find(x => x.id === equipId);
     
-    if (!e) return window.showPanel('equipment');
+    if (!e) {
+        console.error("❌ ERROR: Machine data not found for ID:", equipId);
+        // Let's alert so we can see it on mobile/desktop immediately
+        alert("Machine not found. Returning to fleet.");
+        window.showPanel('equipment');
+        return;
+    }
+
+    console.log("✅ Machine found:", e.name);
 
     const container = document.getElementById('panel-machine-profile');
-    if (!container) return;
-
-    // 1. CLEANUP STYLES: Remove any conflicting "Absolute" styles
-    container.style.position = "relative";
-    container.style.top = "0";
-    container.style.display = "block";
-    container.style.width = "100%";
-    container.style.minHeight = "100vh";
-    container.style.background = "transparent"; // Let the app background show through
+    if (!container) {
+        return console.error("❌ ERROR: Could not find 'panel-machine-profile' in your index.html");
+    }
 
     // 2. Build the HTML
     container.innerHTML = `
