@@ -51,50 +51,17 @@ export async function createSession(username, userId) {
   } catch(e) { console.error('Session create failed:', e); }
   return token;
 }
-export async function validateSession () {
+export async function validateSession() {
   const token = localStorage.getItem('mp_session_token');
   if(!token) return null;
   try {
-    // 1. Fetch only the session data first
-    const { data: session, error: sErr } = await window._mpdb.from('app_sessions')
-      .select('*')
-      .eq('token', token)
-      .single();
-
-    if(!session || sErr) return null;
-
-    // Check expiry
-    if(new Date(session.expires_at) < new Date()) {
-      await window._mpdb.from('app_sessions').delete().eq('token', token);
-      localStorage.removeItem('mp_session_token');
-      localStorage.removeItem('mp_session');
-      return null;
-    }
-
-    // 2. Fetch the profile data separately using the username from the session
-    const { data: profile, error: pErr } = await window._mpdb.from('profiles')
-      .select('*')
-      .eq('username', session.username)
-      .single();
-
-    if(!profile || pErr) return null;
-
-    // Refresh last_active and extend expiry
-    const newExpiry = new Date(Date.now() + 8*60*60*1000).toISOString();
-    await window._mpdb.from('app_sessions').update({
-      last_active: new Date().toISOString(),
-      expires_at: newExpiry
-    }).eq('token', token);
-
-    // Return combined data so the rest of the app works as expected
+    const { data: session } = await supabase.from('app_sessions').select('*').eq('token', token).single();
+    if(!session || new Date(session.expires_at) < new Date()) return null;
+    
+    const { data: profile } = await supabase.from('profiles').select('*').eq('username', session.username).single();
     return { ...session, profiles: profile };
-
-  } catch(e) { 
-    console.error("Session validation error:", e);
-    return null; 
-  }
+  } catch(e) { return null; }
 }
-
 export async function syncOfflineQueue() {
   if (!offlineQueue || !offlineQueue.length) {
     const banner = document.getElementById('offline-queue-banner');
