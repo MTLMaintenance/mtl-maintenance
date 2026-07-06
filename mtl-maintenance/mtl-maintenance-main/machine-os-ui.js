@@ -1,28 +1,19 @@
 // machine-os-ui.js - The "Perfect Card" Builder
 
 export function renderPerfectCard(equipId) {
-    const state = window.state;
-    const e = state.equipment.find(x => x.id === equipId);
+    const e = window.state.equipment.find(x => x.id === equipId);
     if (!e) return window.showPanel('equipment');
 
     const container = document.getElementById('panel-machine-profile');
-    
-    // --- FORCE PANEL TO TOP ---
-    container.style.display = 'block';
-    container.style.position = 'absolute';
-    container.style.top = '0';
-    container.style.paddingTop = '20px';
-
     container.innerHTML = `
-        <div class="mtl-os-container" style="margin-top:0 !important; padding-top:0 !important;">
+        <div class="mtl-os-container">
             <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
 
-            <div class="mtl-header">
+            <div class="mtl-header" style="background:white; color:black; border-radius:15px; padding:25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div class="mtl-title">
-                        <h1 style="margin:0;">${e.name || 'test'}</h1>
-                        <span class="mtl-status-tag operational">${e.status || 'OPERATIONAL'}</span>
-                        <span class="badge bg" style="margin-left:10px;">⏱ ${(e.hours || 0).toLocaleString()} HRS</span>
+                    <div>
+                        <h1 style="margin:0;">${e.name || 'Unnamed Machine'}</h1>
+                        <span class="badge bs" style="margin-top:8px;">${e.status || 'OPERATIONAL'}</span>
                     </div>
                     <div style="display:flex; gap:10px;">
                         <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit</button>
@@ -30,52 +21,37 @@ export function renderPerfectCard(equipId) {
                     </div>
                 </div>
                 
-               <div class="mtl-vitals" style="margin-top:20px; display:flex; gap:15px;">
-    <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
-    <div class="v-item"><span>FLEET HEALTH</span><b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b></div>
-    
-    <!-- NEW: FAULT CODES VITAL -->
-    <div class="v-item" onclick="window.openFaultCodeDetail('3252-0')" style="cursor:pointer; border-bottom: 3px solid ${e.active_faults ? 'red' : 'green'}">
-        <span>ACTIVE FAULTS</span>
-        <b style="color: ${e.active_faults ? 'red' : 'green'}">${e.active_faults || 'NONE'}</b>
-    </div>
-    
-    <div class="v-item warning"><span>PM DUE</span><b>42h</b></div>
-</div>
+                <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+                    <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
+                    <div class="v-item"><span>HOURS</span><b>${(e.hours || 0).toLocaleString()}</b></div>
+                    <div class="v-item" style="border-left:4px solid #f59e0b"><span>PM DUE</span><b>42h</b></div>
+                </div>
             </div>
 
-            <h3 class="os-label">Job Hub</h3>
-            <div class="os-job-grid">
+            <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin:25px 0;">
                 <button class="job-btn" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
                 <button class="job-btn" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
                 <button class="job-btn" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
                 <button class="job-btn" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
             </div>
 
-            <h3 class="os-label">Components</h3>
-            <div class="os-comp-scroll">
-                <div class="comp-card" id="card-all" onclick="window.filterOS('all', this)">🌍 All</div>
-                <div class="comp-card" id="card-engine" onclick="window.filterOS('Engine', this)">⚙️ Engine</div>
-                <div class="comp-card" id="card-hyd" onclick="window.filterOS('Hydraulic', this)">💧 Hydraulics</div>
-                <div class="comp-card" id="card-elec" onclick="window.filterOS('Electrical', this)">⚡ Electrical</div>
-                <div class="comp-card" id="card-tracks" onclick="window.filterOS('Track', this)">🚜 Tracks</div>
+            <div class="os-comp-scroll" style="display:flex; gap:10px; overflow-x:auto; margin-bottom:20px;">
+                <div class="comp-card" onclick="window.filterOS('all', this)">🌍 All</div>
+                <div class="comp-card" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
+                <div class="comp-card" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
             </div>
 
-            <!-- THE SPEC AREA (Added a border so we can see it) -->
-            <div id="mtl-component-specs" style="margin-bottom:20px; min-height:10px;"></div>
-
-            <h3 class="os-label">Unified Machine Timeline</h3>
-            <div id="mtl-timeline-stream" class="os-timeline"></div>
+            <div id="mtl-component-specs"></div>
+            <h3 class="os-label" style="color:white; margin-top:30px;">Unified Timeline</h3>
+            <div id="mtl-timeline-stream"></div>
         </div>
     `;
 
-    // Trigger sub-renders
     setTimeout(() => {
-        if (window.renderMachineTimeline) window.renderMachineTimeline(e.id);
-        if (window.renderComponentSpecs) window.renderComponentSpecs(e.id, 'all');
+        window.renderMachineTimeline(e.id);
+        window.renderComponentSpecs(e.id, 'all');
     }, 50);
 }
-
 
 export function renderWikiSection(equipId) {
     // 1. Get the tips from the global state
