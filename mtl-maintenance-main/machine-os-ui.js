@@ -1,40 +1,19 @@
 // machine-os-ui.js - The "Perfect Card" Builder
 
 export function renderPerfectCard(equipId) {
-    console.log("🚀 renderPerfectCard started for ID:", equipId);
+    const container = document.getElementById('panel-machine-profile');
+    if (!container) return;
 
-    try {
-        const state = window.state;
-        const e = state.equipment.find(x => x.id === equipId);
-        
-        if (!e) {
-            alert("Machine not found!");
-            window.showPanel('equipment');
-            return;
-        }
+    // --- THE VISUAL LOCATOR FIX ---
+    container.style.border = "5px solid red"; // If you don't see a red box, the panel is hidden!
+    container.style.minHeight = "100vh";      // Force it to be full screen height
+    container.style.width = "100%";
+    container.style.display = "block";        // Use 'block' instead of 'flex' for now
+    container.style.background = "#001226";   // Match your app background
+    // ------------------------------
 
-        const container = document.getElementById('panel-machine-profile');
-        if (!container) {
-            alert("HTML Container 'panel-machine-profile' is missing!");
-            return;
-        }
-
-        // --- THE VITAL PART: BUILD PIECE BY PIECE TO AVOID CRASHING ---
-        
-        // 1. Check if health calculator exists
-        let health = 0;
-        if (typeof window.calcHealth === 'function') {
-            health = window.calcHealth(e.id, state.tasks, state.equipment);
-        } else {
-            console.warn("⚠️ window.calcHealth is missing!");
-        }
-
-        // 2. Safely build the HTML
-        console.log("🛠️ Attempting to inject HTML into container...");
-        
-        container.style.display = 'block';
-        container.style.opacity = '1';
-        container.style.visibility = 'visible';
+    const state = window.state;
+    const e = state.equipment.find(x => x.id === equipId);
 
         container.innerHTML = `
             <div class="mtl-os-container" style="color:white !important; padding: 20px;">
