@@ -27,28 +27,38 @@ export function closeModal(id) {
 
 // 3. Switch between main screens (Dashboard, Calendar, etc.)
 export function showPanel(id) {
-    // Scroll to top
+    console.log("🖥️ Switching to Panel:", id);
     window.scrollTo(0, 0);
 
-    // Hide all panels
+    // 1. Hide every panel in the app
     const panels = document.querySelectorAll('.panel');
     panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-      const target = document.getElementById('panel-' + id);
+    // 2. Find the one we want (e.g., 'panel-machine-profile')
+    const target = document.getElementById('panel-' + id);
+    
     if (target) {
-        target.style.display = (id === 'machine-profile') ? 'block' : 'flex';
+        // 3. FORCE it to show
+        target.style.setProperty('display', 'block', 'important');
         target.classList.add('active');
         
-        // Ensure opacity isn't 0
+        // 4. Ensure it's not transparent
         target.style.opacity = "1";
         target.style.visibility = "visible";
+        
+        console.log(`✅ Panel 'panel-${id}' is now live.`);
+    } else {
+        console.error(`❌ UI Error: Could not find id='panel-${id}'`);
     }
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
 
+    // 5. Deactivate old nav buttons and highlight the new one
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${id}'`));
+    });
+}
     
  if (id === 'calendar') {
         const grid = document.getElementById('cal-grid-container');
