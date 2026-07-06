@@ -1,5 +1,5 @@
 // init.js - Application Bootstrapping
-import { supabase, setSyncStatus } from './db.js';
+import { supabase, setSyncStatus,validateSession  } from './db.js';
 import { updateMetrics } from './dashboard.js';
 import { validateSession} from './db.js';
 import { fetchAllProfiles } from './profiles.js';
@@ -8,16 +8,18 @@ import { showPanel, adjustMobileLayout } from './ui.js';
 import { applyUserPreferences } from './settings.js';
 import { fetchAbsences } from './calendar.js';
 
+console.log("🚀 System Loader: init.js Version 3.0 Booting...");
+
 export async function loadState() {
-  const state = window.state;
+  const masterFolder = window.state;
+  if (!masterFolder) return console.error("Master Folder Missing");
+
   setSyncStatus('syncing');
 
   try {
-    console.log("📥 Refreshing data from Supabase...");
+    console.log("📥 Syncing from Supabase...");
 
-    // 1. Fetch the data - FIXED COMMA AND TABLE ORDER
-    const [eq, tk, sc, pt, sup, docs, pu, rr, tr, obs, msgs,wikiData] = await Promise.all([
-       window._mpdb.from('shop_wiki').select('*'),
+    const dbResponse = await Promise.all([
       window._mpdb.from('equipment').select('*'),
       window._mpdb.from('tasks').select('*'),
       window._mpdb.from('schedules').select('*'),
@@ -26,50 +28,46 @@ export async function loadState() {
       window._mpdb.from('documents').select('*'),
       window._mpdb.from('part_usage').select('*'),
       window._mpdb.from('recurrence_rules').select('*'),
-      window._mpdb.from('tool_requests').select('*'), // This is where your tools live
+      window._mpdb.from('tool_requests').select('*'),
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
-       window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }) 
+      window._mpdb.from('shop_wiki').select('*'),
+      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
+      window._mpdb.from('consumables').select('*')
     ]);
 
-    // 2. Assign to Master State
-    state.wiki = wikiData.data || [];
-    state.equipment = eq.data || [];
-    state.tasks = (tk.data || []).map(t => ({ ...t, equipId: t.equip_id }));
-    state.schedules = sc.data || [];
-    state.parts = pt.data || [];
-    state.suppliers = sup.data || [];
-    state.documents = docs.data || [];
-    state.partUsage = pu.data || [];
-    state.recurrenceRules = rr.data || [];
-    state.tools = tr.data || []; // 'tr' now maps to tool_requests
-    state.observations = obs.data || [];
-    window.state.chatMessages = msgs.data || []; 
-    console.log(`✅ Sync complete. Found ${state.equipment.length} machines and ${state.tools.length} tools.`);
+    // We use the results of the 13th table (index 12) 
+    // We are NOT using the name "con" anywhere in this code.
+    masterFolder.equipment       = dbResponse[0].data  || [];
+    masterFolder.tasks           = (dbResponse[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
+    masterFolder.schedules       = dbResponse[2].data  || [];
+    masterFolder.parts           = dbResponse[3].data  || [];
+    masterFolder.suppliers       = dbResponse[4].data  || [];
+    masterFolder.documents       = dbResponse[5].data  || [];
+    masterFolder.partUsage       = dbResponse[6].data  || [];
+    masterFolder.recurrenceRules = dbResponse[7].data  || [];
+    masterFolder.tools           = dbResponse[8].data  || [];
+    masterFolder.observations    = dbResponse[9].data  || [];
+    masterFolder.wiki            = dbResponse[10].data || [];
+    masterFolder.chatMessages    = dbResponse[11].data || [];
+    masterFolder.consumables     = dbResponse[12].data || []; 
 
-    // 3. Trigger UI Redraw
+    console.log(`✅ Sync complete. Total machines: ${masterFolder.equipment.length}`);
+
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
     if (typeof window.renderTools === 'function') window.renderTools();
-    if (typeof window.updateMetrics === 'function') window.updateMetrics();
-    if (typeof window.renderPartsTable === 'function') {window.renderPartsTable(); }
+    if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
+    if (typeof window.renderConsumablesTable === 'function') window.renderConsumablesTable();
+    if (typeof window.renderDashboard === 'function') window.renderDashboard();
     
     setSyncStatus('online');
     return true;
-  } catch(e) { 
-    console.error('❌ Data load failed:', e); 
+
+  } catch(err) { 
+    console.error('❌ CRITICAL LOAD FAILURE:', err); 
     setSyncStatus('offline');
     return false;
   }
 }
-
-export function teleportModals() {
-    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
-    modalIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) document.body.appendChild(el);
-    });
-}
-
-
 
 export async function enterApp(currentUser, state, canFunc) {
   console.log("Building application interface...");
@@ -156,23 +154,26 @@ export async function enterApp(currentUser, state, canFunc) {
 }
 
 export async function startApp() {
-  console.log("--- Starting Application Init ---");
-  
-  // No client creation here anymore! 
-  
   try {
     await fetchAllProfiles(); 
     const sessionData = await validateSession();
-
     if(sessionData) {
       window.currentUser = sessionData.profiles;
-      await fetchAbsences(); 
+      await loadState(); 
       if (typeof window.enterApp === 'function') window.enterApp(); 
     } else {
-      if (typeof window.showPinLogin === 'function') window.showPinLogin();
+      showPinLogin();
     }
   } catch(e) { 
     console.error("Startup error:", e);
-    if (typeof window.showPinLogin === 'function') window.showPinLogin();
+    showPinLogin(); 
   }
+}
+
+export function teleportModals() {
+    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
+    modalIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) document.body.appendChild(el);
+    });
 }
