@@ -3,83 +3,92 @@
 export function renderPerfectCard(equipId) {
     console.log("🚀 renderPerfectCard started for ID:", equipId);
 
-    // VITAL: Use window.state to be 100% sure we are looking at the same data app.js has
-    const state = window.state;
-    const e = state.equipment.find(x => x.id === equipId);
-    
-    if (!e) {
-        console.error("❌ ERROR: Machine data not found for ID:", equipId);
-        // Let's alert so we can see it on mobile/desktop immediately
-        alert("Machine not found. Returning to fleet.");
-        window.showPanel('equipment');
-        return;
-    }
+    try {
+        const state = window.state;
+        const e = state.equipment.find(x => x.id === equipId);
+        
+        if (!e) {
+            alert("Machine not found!");
+            window.showPanel('equipment');
+            return;
+        }
 
-    console.log("✅ Machine found:", e.name);
+        const container = document.getElementById('panel-machine-profile');
+        if (!container) {
+            alert("HTML Container 'panel-machine-profile' is missing!");
+            return;
+        }
 
-    const container = document.getElementById('panel-machine-profile');
-    if (!container) {
-        return console.error("❌ ERROR: Could not find 'panel-machine-profile' in your index.html");
-    }
+        // --- THE VITAL PART: BUILD PIECE BY PIECE TO AVOID CRASHING ---
+        
+        // 1. Check if health calculator exists
+        let health = 0;
+        if (typeof window.calcHealth === 'function') {
+            health = window.calcHealth(e.id, state.tasks, state.equipment);
+        } else {
+            console.warn("⚠️ window.calcHealth is missing!");
+        }
 
-    // 2. Build the HTML
-    container.innerHTML = `
-        <div class="mtl-os-container" style="padding-top: 20px;">
-            <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
+        // 2. Safely build the HTML
+        console.log("🛠️ Attempting to inject HTML into container...");
+        
+        container.style.display = 'block';
+        container.style.opacity = '1';
+        container.style.visibility = 'visible';
 
-            <!-- WHITE CARD -->
-            <div class="mtl-header" style="background: white !important; color: black !important; border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div class="mtl-title">
-                        <h1 style="margin:0; color: black !important;">${e.name || 'test'}</h1>
-                        <span class="mtl-status-tag operational" style="margin-top:5px; display:inline-block;">${e.status || 'OPERATIONAL'}</span>
+        container.innerHTML = `
+            <div class="mtl-os-container" style="color:white !important; padding: 20px;">
+                <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
+
+                <div class="mtl-header" style="background:white; color:black; padding:20px; border-radius:15px; margin-top:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <h1 style="margin:0; font-size:24px;">${e.name || 'test'}</h1>
+                            <span class="badge bs">${e.status || 'OPERATIONAL'}</span>
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:20px;">
+                        <div style="background:#f0f0f0; padding:10px; border-radius:10px; text-align:center;">
+                            <label style="font-size:10px; color:#888;">FUEL</label><br><b>${e.fuel_level || 0}%</b>
+                        </div>
+                        <div style="background:#f0f0f0; padding:10px; border-radius:10px; text-align:center;">
+                            <label style="font-size:10px; color:#888;">HEALTH</label><br><b>${health}%</b>
+                        </div>
+                        <div style="background:#f0f0f0; padding:10px; border-radius:10px; text-align:center;">
+                            <label style="font-size:10px; color:#888;">HOURS</label><br><b>${(e.hours || 0).toLocaleString()}</b>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="mtl-vitals" style="margin-top:25px; display:flex; gap:15px; color: black !important;">
-                    <div class="v-item" style="background:#f5f5f5;"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
-                    <div class="v-item" style="background:#f5f5f5;"><span>FLEET HEALTH</span><b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b></div>
-                    <div class="v-item warning" style="background:#fff3e0;"><span>PM DUE</span><b>42h</b></div>
+
+                <div style="margin-top:20px;">
+                    <h3 style="font-size:12px; color:#888;">UNIFIED TIMELINE</h3>
+                    <div id="mtl-timeline-stream">
+                        <!-- History injected here -->
+                    </div>
                 </div>
             </div>
+        `;
 
-            <!-- JOB HUB -->
-            <h3 class="os-label" style="color: white !important; margin-top: 25px;">Job Hub</h3>
-            <div class="os-job-grid">
-                <button class="job-btn" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
-                <button class="job-btn" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
-                <button class="job-btn" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
-                <button class="job-btn" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
-            </div>
+        console.log("✅ HTML Injected. Now triggering sub-renders...");
 
-            <!-- COMPONENTS -->
-            <h3 class="os-label" style="color: white !important;">Components</h3>
-            <div class="os-comp-scroll">
-                <div class="comp-card" onclick="window.filterOS('all', this)">🌍 All</div>
-                <div class="comp-card" onclick="window.filterOS('Engine', this)">⚙️ Engine</div>
-                <div class="comp-card" onclick="window.filterOS('Hydraulic', this)">💧 Hydraulics</div>
-                <div class="comp-card" onclick="window.filterOS('Electrical', this)">⚡ Electrical</div>
-                <div class="comp-card" onclick="window.filterOS('Track', this)">🚜 Tracks</div>
-            </div>
+        // 3. Trigger Timeline
+        setTimeout(() => {
+            if (typeof window.renderMachineTimeline === 'function') {
+                window.renderMachineTimeline(e.id);
+            }
+        }, 50);
 
-            <div id="mtl-component-specs"></div>
-
-            <h3 class="os-label" style="color: white !important;">Unified Machine Timeline</h3>
-            <div id="mtl-timeline-stream"></div>
-        </div>
-    `;
-
-    // 3. Trigger secondary painters
-    setTimeout(() => {
-        if (window.renderMachineTimeline) window.renderMachineTimeline(e.id);
-        if (window.renderComponentSpecs) window.renderComponentSpecs(e.id, 'all');
-    }, 50);
+    } catch (err) {
+        // --- THIS WILL FINALLY SHOW THE ERROR ---
+        console.error("💥 CRASH IN RENDERER:", err);
+        alert("Render Error: " + err.message);
+    }
 }
-
 export function renderWikiSection(equipId) {
     // 1. Get the tips from the global state
     const allTips = window.state.wiki || [];
