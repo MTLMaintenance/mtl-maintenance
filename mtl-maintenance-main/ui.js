@@ -30,59 +30,39 @@ export function showPanel(id) {
     console.log("🖥️ Switching to Panel:", id);
     window.scrollTo(0, 0);
 
-    // 1. Hide every panel in the app
+    // 1. Hide every panel
     const panels = document.querySelectorAll('.panel');
     panels.forEach(p => {
         p.style.display = 'none';
         p.classList.remove('active');
     });
 
-    // 2. Find the one we want
+    // 2. Find the target panel
     const target = document.getElementById('panel-' + id);
     
     if (target) {
-        // Use 'block' for Profile and Calendar to avoid centering issues
-        if (id === 'machine-profile' || id === 'calendar') {
-            target.style.setProperty('display', 'block', 'important');
-        } else {
-            target.style.setProperty('display', 'flex', 'important');
-        }
+        // --- THE FIX ---
+        // We remove the manual 'flex' or 'block' commands.
+        // This allows the CSS you already wrote to take over.
+        target.style.display = ""; 
         target.classList.add('active');
-        target.style.opacity = "1";
-        target.style.visibility = "visible";
-    } else {
-        console.error(`❌ UI Error: Could not find id='panel-${id}'`);
     }
 
-    // 3. --- SPECIFIC PANEL LOGIC ---
-    
-    // CALENDAR LOGIC
-    if (id === 'calendar') {
-        const grid = document.getElementById('cal-grid-container');
-        if (grid) grid.style.display = 'block';
-        if (typeof window.renderCalendar === 'function') {
-            window.renderCalendar();
-        }
+    // 3. Trigger specific logic
+    if (id === 'calendar' && typeof window.renderCalendar === 'function') window.renderCalendar();
+    if (id === 'chat' && typeof window.renderChat === 'function') window.renderChat();
+    if (id === 'machine-profile' && typeof window.renderPerfectCard === 'function') {
+        // Use the ID we saved earlier
+        window.renderPerfectCard(window._currentDetailEquipId);
     }
 
-    // CHAT LOGIC
-    if (id === 'chat') {
-        if (typeof window.renderChat === 'function') {
-            window.renderChat();
-        }
-    }
-
-    // 4. Update Navigation Button Highlights
+    // 4. Update Nav Highlights
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const onClickAttr = btn.getAttribute('onclick') || "";
-        // If the button's click command contains the panel ID, highlight it
-        if (onClickAttr.includes(`'${id}'`)) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        btn.classList.toggle('active', onClickAttr.includes(`'${id}'`));
     });
 }
+
 
 // 4. Switch Tabs inside a modal or panel
 export function switchTab(group, tab, btn) {
