@@ -81,7 +81,7 @@ if (id === 'chat') {
         window.renderChat();
     }
 }
-}
+
 // 4. Switch Tabs inside a modal or panel
 export function switchTab(group, tab, btn) {
   // 1. Find the modal this button belongs to
