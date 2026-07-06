@@ -2420,3 +2420,31 @@ html {
     cursor: pointer;
     text-decoration: underline;
 }
+
+.spec-card-os {
+    background: #1a1a1a; /* Dark background */
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.spec-card-os label {
+    display: block;
+    font-size: 9px;
+    font-weight: 800;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+.spec-card-os b {
+    font-size: 15px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.comp-card.active-os {
+    border: 2px solid #3b82f6 !important;
+    background: #f0f7ff !important;
+}
