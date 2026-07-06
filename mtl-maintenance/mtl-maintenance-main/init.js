@@ -33,7 +33,9 @@ export async function loadState() {
       window._mpdb.from('consumables').select('*')
     ]);
 
-    // 2. Map data to window.state
+  console.log("Raw Supabase Equipment Response:", res[0]);
+
+    // 2. Assign with extra safety
     state.equipment = res[0].data || [];
     state.tasks = (res[1].data || []).map(t => ({ ...t, equipId: t.equip_id }));
     state.schedules = res[2].data || [];
@@ -48,8 +50,8 @@ export async function loadState() {
     state.chatMessages = res[11].data || [];
     state.consumables = res[12].data || [];
 
-    console.log(`✅ Data Sync Complete. Found ${state.equipment.length} machines.`);
-
+    // 3. Log the final result
+    console.log(`✅ State Hydrated: Found ${state.equipment.length} machines in Master State.`);
     // 3. Trigger UI Redraw
     if (window.renderEquipmentTable) window.renderEquipmentTable();
     if (window.renderDashboard) window.renderDashboard();
