@@ -32,12 +32,12 @@ export function renderPerfectCard(equipId) {
             <!-- THE JOB HUB: "What do you want to do?" -->
             <div class="mtl-section">
                 <h3 class="section-label">Job Hub</h3>
-                <div class="job-grid">
-                    <button class="job-btn" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
-                    <button class="job-btn" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
-                    <button class="job-btn" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
-                    <button class="job-btn" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
-                </div>
+               <div class="os-job-grid">
+    <button onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
+    <button onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
+    <button onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
+    <button onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
+</div>
             </div>
 
             <!-- COMPONENT SELECTOR: "Where is the problem?" -->
