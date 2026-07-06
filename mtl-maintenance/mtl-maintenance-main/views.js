@@ -304,3 +304,44 @@ export function renderMachineTimeline(equipId) {
         </div>
     `).join('');
 }
+
+export function renderComponentSpecs(equipId, componentFilter = 'all') {
+    const container = document.getElementById('mtl-component-specs');
+    if (!container) return;
+
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e || !e.custom_fields) {
+        container.innerHTML = ''; // Hide if no data
+        return;
+    }
+
+    // 1. Get all specs (e.g., {"Engine: Oil": "15W40", "Tracks: Type": "Heavy Duty"})
+    const allSpecs = Object.entries(e.custom_fields);
+
+    // 2. Filter based on the clicked component
+    // If 'Engine' is clicked, we look for keys containing 'Engine'
+    const filtered = allSpecs.filter(([key]) => {
+        if (componentFilter === 'all') return true;
+        return key.toLowerCase().includes(componentFilter.toLowerCase());
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div style="padding:15px; background:#f8f9fa; border-radius:12px; border:1px dashed #ddd; text-align:center;">
+                <span style="font-size:12px; color:#888;">No ${componentFilter} specs found. Click Edit Info to add them.</span>
+            </div>`;
+        return;
+    }
+
+    // 3. Draw the spec cards
+    container.innerHTML = `
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+            ${filtered.map(([key, val]) => `
+                <div class="spec-card-os">
+                    <label>${key.replace(componentFilter + ':', '').trim().toUpperCase()}</label>
+                    <b>${val}</b>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
