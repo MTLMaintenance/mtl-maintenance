@@ -38,7 +38,8 @@ export async function saveTask() {
     const name = document.getElementById('t-name').value.trim();
     const equipId = document.getElementById('t-equip').value;
     const due = document.getElementById('t-due').value;
-
+    const component = document.getElementById('t-component').value; 
+    
     if (!name || !equipId) return showToast("Name and Equipment required");
 
     const record = {
