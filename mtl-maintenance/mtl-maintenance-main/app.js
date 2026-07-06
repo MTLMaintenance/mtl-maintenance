@@ -14,7 +14,7 @@ import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import {  handleLogoClick,openMobileSearch } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
-import { startApp, loadState, teleportModals, enterApp } from './init.js';
+import { startApp, loadState, teleportModals, enterApp } from './init.js?v=99';
 import { handleGlobalSearch } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention, openProfileModal   } from './profiles.js';
