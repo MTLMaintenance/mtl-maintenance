@@ -30,11 +30,18 @@ export function renderPerfectCard(equipId) {
                     </div>
                 </div>
                 
-                <div class="mtl-vitals" style="margin-top:20px; display:flex; gap:15px;">
-                    <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
-                    <div class="v-item"><span>FLEET HEALTH</span><b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b></div>
-                    <div class="v-item warning"><span>PM DUE</span><b>42h</b></div>
-                </div>
+               <div class="mtl-vitals" style="margin-top:20px; display:flex; gap:15px;">
+    <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
+    <div class="v-item"><span>FLEET HEALTH</span><b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b></div>
+    
+    <!-- NEW: FAULT CODES VITAL -->
+    <div class="v-item" onclick="window.openFaultCodeDetail('3252-0')" style="cursor:pointer; border-bottom: 3px solid ${e.active_faults ? 'red' : 'green'}">
+        <span>ACTIVE FAULTS</span>
+        <b style="color: ${e.active_faults ? 'red' : 'green'}">${e.active_faults || 'NONE'}</b>
+    </div>
+    
+    <div class="v-item warning"><span>PM DUE</span><b>42h</b></div>
+</div>
             </div>
 
             <h3 class="os-label">Job Hub</h3>
