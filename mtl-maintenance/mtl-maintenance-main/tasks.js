@@ -345,20 +345,29 @@ export function updateTotalCostDisplay() {
 }
 
 export function startJobWorkflow(jobType, equipId) {
-    const e = window.state.equipment.find(x => x.id === equipId);
+    const state = window.state;
+    const e = state.equipment.find(x => x.id === equipId);
     if (!e) return;
 
-    // 1. Open the Work Order Modal
+    // 1. Reset the form to clear old data
+    if (typeof window.resetPartForm === 'function') window.resetPartForm();
+
+    // 2. Open the modal
     window.openModal('task-modal');
-    
-    // 2. Pre-fill the data based on the "Job"
+
+    // 3. Pre-fill the data
     const nameInput = document.getElementById('t-name');
     const equipSelect = document.getElementById('t-equip');
     
-    if (nameInput) nameInput.value = `${jobType.toUpperCase()}: ${e.name} - `;
+    if (nameInput) {
+        // Set name to "REPAIR: CAT 289D - " so they just type the problem
+        nameInput.value = `${jobType.toUpperCase()}: ${e.name} - `;
+        nameInput.focus();
+    }
+
     if (equipSelect) {
-        // Run the dropdown loader first
-        window.populateSelects();
+        // We run this to make sure the dropdown HAS the machines in it first
+        if (typeof window.populateSelects === 'function') window.populateSelects();
         equipSelect.value = equipId;
     }
 
