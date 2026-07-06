@@ -27,53 +27,46 @@ export function closeModal(id) {
 
 // 3. Switch between main screens (Dashboard, Calendar, etc.)
 export function showPanel(id) {
+    console.log("🖥️ Switching to Room:", id);
+    
+    // 1. Scroll to top so you don't start halfway down a new page
     window.scrollTo(0, 0);
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(p => p.style.display = 'none');
 
+    // 2. THE VITAL FIX: Find EVERY element with the class 'panel'
+    const allPanels = document.querySelectorAll('.panel');
+    
+    // 3. Hide them all and remove the 'active' class
+    allPanels.forEach(p => {
+        p.style.display = 'none';
+        p.classList.remove('active');
+    });
+
+    // 4. Find the ONE panel we actually want to see
     const target = document.getElementById('panel-' + id);
+    
     if (target) {
-        // --- THE FIX ---
-        // If it's the machine profile, don't use flex-center
-        if (id === 'machine-profile') {
-            target.style.display = 'block'; 
-        } else {
-            target.style.display = 'flex'; // Or whatever your default is
-        }
+        // Show it. We use "" to let your CSS file handle the layout (flex/grid/block)
+        target.style.display = "block"; 
         target.classList.add('active');
+        console.log(`✅ Room 'panel-${id}' is now open.`);
+    } else {
+        console.error(`❌ UI Error: Room 'panel-${id}' does not exist in HTML.`);
     }
 
-    // Deactivate all nav buttons
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(b => b.classList.remove('active'));
-
-    // Show the requested panel
-    const targetPanel = document.getElementById('panel-' + id);
-    if (targetPanel) {
-        targetPanel.style.display = 'block';
-        targetPanel.classList.add('active');
-    }
- if (id === 'calendar') {
-        const grid = document.getElementById('cal-grid-container');
-        if (grid) grid.style.display = 'block';
-        
-        // Trigger the draw immediately
-        if (typeof window.renderCalendar === 'function') {
-            window.renderCalendar();
-        }
-    // Highlight the button
-    navButtons.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + id + "'")) {
+    // 5. Update the Topbar Buttons (Light up the one we clicked)
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const command = btn.getAttribute('onclick') || "";
+        if (command.includes(`'${id}'`)) {
             btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
         }
     });
-}
-if (id === 'chat') {
-    // This tells chat.js to start loading the history
-    if (typeof window.renderChat === 'function') {
-        window.renderChat();
-    }
-}
+
+    // 6. Run specific logic for that room
+    if (id === 'dashboard' && typeof window.renderDashboard === 'function') window.renderDashboard();
+    if (id === 'calendar' && typeof window.renderCalendar === 'function') window.renderCalendar();
+    if (id === 'equipment' && typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
 }
 // 4. Switch Tabs inside a modal or panel
 export function switchTab(group, tab, btn) {
