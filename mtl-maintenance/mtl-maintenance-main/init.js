@@ -171,6 +171,11 @@ export async function enterApp(currentUser, state, canFunc) {
   }, 100);
 }
 
+console.log("Forcing initial table draw...");
+if (typeof window.renderEquipmentTable === 'function') {
+    window.renderEquipmentTable();
+}
+
 export function teleportModals() {
     const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
     modalIds.forEach(id => {
