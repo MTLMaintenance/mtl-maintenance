@@ -1657,6 +1657,31 @@
   </div>
 </div>
 </div>
+
+ <!-- DEDICATED SPEC ENTRY MODAL -->
+<div id="spec-modal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card" style="background:white; padding:25px; border-radius:15px; width:90%; max-width:400px; color:black !important;">
+    <h3 id="spec-modal-title" style="margin-top:0; font-weight:800;">Add Specification</h3>
+    
+    <input type="hidden" id="spec-equip-id">
+    <input type="hidden" id="spec-component">
+
+    <div style="margin-bottom:15px;">
+        <label style="display:block; font-size:11px; font-weight:700; color:#666; margin-bottom:5px;">PROPERTY NAME</label>
+        <input type="text" id="spec-name-input" placeholder="e.g. Oil Filter #" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+    </div>
+
+    <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:11px; font-weight:700; color:#666; margin-bottom:5px;">VALUE</label>
+        <input type="text" id="spec-value-input" placeholder="e.g. 1R-1808" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-secondary" onclick="window.closeModal('spec-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="window.saveNewSpec()" style="background:black !important; color:white !important; border:none; font-weight:bold;">Save Spec</button>
+    </div>
+  </div>
+</div>
  
 <!-- DEDICATED EDIT MODAL -->
 <div id="obs-edit-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
@@ -1689,7 +1714,6 @@
     wishlist: [], observations: [], checklistTemplates: [] 
   };
   
-  // Create these too so the bridges don't crash
   window.pendingPhotos = { task: [], equip: [], memorial: [], obs: [] };
   window.customFieldsTemp = {};
   window.woPartsAdded = [];
