@@ -492,3 +492,47 @@ export async function addSpecToComponent(equipId, componentName) {
         }
     } catch (err) { console.error(err); }
 }
+
+export function openSpecModal(equipId, componentName) {
+    document.getElementById('spec-equip-id').value = equipId;
+    document.getElementById('spec-component').value = componentName;
+    document.getElementById('spec-name-input').value = "";
+    document.getElementById('spec-value-input').value = "";
+    
+    document.getElementById('spec-modal-title').textContent = `Add ${componentName} Spec`;
+    
+    window.openModal('spec-modal');
+}
+
+// 2. The logic that actually sends the data to Supabase
+export async function saveNewSpec() {
+    const equipId = document.getElementById('spec-equip-id').value;
+    const componentName = document.getElementById('spec-component').value;
+    const specName = document.getElementById('spec-name-input').value.trim();
+    const specValue = document.getElementById('spec-value-input').value.trim();
+
+    if (!specName || !specValue) return alert("Please fill in both boxes.");
+
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    // Build the key (e.g., "Engine: Oil Filter")
+    const finalKey = (componentName === 'all') ? specName : `${componentName}: ${specName}`;
+
+    if (!e.custom_fields) e.custom_fields = {};
+    e.custom_fields[finalKey] = specValue;
+
+    try {
+        await window._mpdb.from('equipment').update({ custom_fields: e.custom_fields }).eq('id', equipId);
+        
+        window.closeModal('spec-modal');
+        window.showToast("Spec Saved ✓");
+
+        // Refresh the UI
+        if (typeof window.renderComponentSpecs === 'function') {
+            window.renderComponentSpecs(equipId, componentName);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
