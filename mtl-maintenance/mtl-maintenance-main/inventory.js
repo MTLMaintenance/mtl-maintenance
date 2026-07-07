@@ -389,3 +389,47 @@ export async function viewInvoicePhoto(photoPath) {
     showToast('Could not load photo');
   }
 }
+
+export async function deleteConsumable() {
+    // 1. Grab the ID from the hidden input in the modal
+    const idField = document.getElementById('c-edit-id');
+    const id = idField ? idField.value : null;
+
+    if (!id) {
+        console.error("Delete failed: No ID found in 'c-edit-id'");
+        return;
+    }
+
+    // 2. Find the name for the confirmation box
+    const item = window.state.consumables.find(c => c.id === id);
+    const itemName = item ? item.name : "this item";
+
+    if (!confirm(`Permanently delete "${itemName}"?`)) return;
+
+    try {
+        window.showToast("Removing...");
+
+        // 3. Delete from Supabase
+        const { error } = await window._mpdb
+            .from('consumables')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // 4. Update Local Memory (State)
+        window.state.consumables = window.state.consumables.filter(c => c.id !== id);
+
+        // 5. Success - Refresh UI
+        window.closeModal('consumable-modal');
+        if (typeof window.renderConsumablesTable === 'function') {
+            window.renderConsumablesTable();
+        }
+        
+        window.showToast("Item removed ✓");
+
+    } catch (e) {
+        console.error("Delete error:", e);
+        alert("Delete failed: " + e.message);
+    }
+}
