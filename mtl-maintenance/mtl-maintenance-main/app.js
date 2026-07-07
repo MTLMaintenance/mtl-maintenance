@@ -68,6 +68,7 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.deleteEquip = deleteEquip;
 window.deleteConsumable = deleteConsumable;
 window.fetchConsumables = fetchConsumables; 
 window.switchPartsSubTab = switchPartsSubTab;
