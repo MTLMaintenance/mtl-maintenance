@@ -52,8 +52,6 @@ export function showPanel(id) {
     } else {
         console.error(`❌ UI Error: Room 'panel-${id}' does not exist in HTML.`);
     }
-
-    // 5. Update the Topbar Buttons (Light up the one we clicked)
     document.querySelectorAll('.nav-btn').forEach(btn => {
         const command = btn.getAttribute('onclick') || "";
         if (command.includes(`'${id}'`)) {
@@ -63,7 +61,14 @@ export function showPanel(id) {
         }
     });
 
-    // 6. Run specific logic for that room
+      if (id === 'parts') {
+        if (typeof window.renderPartsTable === 'function') {
+            window.renderPartsTable();
+        }
+        if (typeof window.switchPartsSubTab === 'function') {
+            window.switchPartsSubTab('inventory');
+        }
+    }
     if (id === 'dashboard' && typeof window.renderDashboard === 'function') window.renderDashboard();
     if (id === 'calendar' && typeof window.renderCalendar === 'function') window.renderCalendar();
     if (id === 'equipment' && typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
@@ -197,26 +202,22 @@ export function switchDetailTab(tab, btn) {
 export function switchPartsSubTab(tab) {
     const invView = document.getElementById('parts-inventory-view');
     const consView = document.getElementById('parts-consumables-view');
-    const partBtn = document.getElementById('add-part-btn');
-    const consBtn = document.getElementById('add-consumable-btn');
 
     if (tab === 'inventory') {
-        invView.style.display = 'block';
-        consView.style.display = 'none';
-        partBtn.style.display = 'block';
-        consBtn.style.display = 'none';
-        renderPartsTable();
+        if (invView) invView.style.display = 'block';
+        if (consView) consView.style.display = 'none'; // Hide the other
+        if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
     } else {
-        invView.style.display = 'none';
-        consView.style.display = 'block';
-        partBtn.style.display = 'none';
-        consBtn.style.display = 'block';
-        fetchConsumables(); // Load data when clicking the tab
+        if (invView) invView.style.display = 'none'; // Hide the other
+        if (consView) consView.style.display = 'block';
+        if (typeof window.fetchConsumables === 'function') window.fetchConsumables();
     }
 
-    // Update button highlighting
-    document.getElementById('btn-parts-inv').classList.toggle('active', tab === 'inventory');
-    document.getElementById('btn-parts-cons').classList.toggle('active', tab === 'consumables');
+    // Update button highlights
+    document.querySelectorAll('#panel-parts .tab').forEach(b => b.classList.remove('active'));
+    const btnId = tab === 'inventory' ? 'btn-parts-inv' : 'btn-parts-cons';
+    const activeBtn = document.getElementById(btnId);
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
 export function switchAdminTab(tab, btn) {
