@@ -427,6 +427,22 @@ window.saveEquipment = () => {
     });
 };
 
+window.setupSpecModalEnter = () => {
+    const valInput = document.getElementById('spec-value-input');
+    if (valInput) {
+        valInput.onkeydown = (e) => {
+            if (e.key === 'Enter') window.saveNewSpec();
+        };
+    }
+};
+
+// And update your openSpecModal bridge to call it:
+const _origOpenSpecModal = openSpecModal;
+window.openSpecModal = (id, comp) => {
+    _origOpenSpecModal(id, comp);
+    window.setupSpecModalEnter(); // Activate the Enter key
+};
+
 const _origSwitchAdminTab = window.switchAdminTab;
 window.switchAdminTab = (tab, btn) => {
     _origSwitchAdminTab(tab, btn); // Run the tab switch
