@@ -2552,3 +2552,30 @@ html {
     border: 1px solid #eee !important;
     margin-bottom: 10px;
 }
+
+@media (max-width: 768px) {
+    /* 1. Vitals go 1-per-line instead of side-by-side */
+    .mtl-vitals {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 2. Job Hub buttons go 2-per-line */
+    .os-job-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* 3. Header text gets smaller */
+    .os-section.header h1 {
+        font-size: 24px !important;
+    }
+
+    /* 4. Hide non-essential words on small buttons */
+    .hide-mobile {
+        display: none;
+    }
+
+    /* 5. Make the big white card fill the phone width */
+    .mtl-os-container {
+        padding: 10px;
+    }
+}
