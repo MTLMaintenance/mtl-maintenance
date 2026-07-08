@@ -30,7 +30,8 @@ export async function loadState() {
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
       window._mpdb.from('shop_wiki').select('*'),
       window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
-      window._mpdb.from('consumables').select('*')
+      window._mpdb.from('consumables').select('*'),
+      window._mpdb.from('fault_logs').select('*') 
     ]);
 
     // 2. Save data using indices [0, 1, 2...] 
@@ -48,7 +49,8 @@ export async function loadState() {
     state.wiki            = response[10].data || [];
     state.chatMessages    = response[11].data || [];
     state.consumables     = response[12].data || [];
-
+    state.faults = response[13].data || [];
+    
     console.log(`✅ SYNC SUCCESS: Found ${state.equipment.length} machines in database.`);
 
     // 3. Trigger UI redraws
