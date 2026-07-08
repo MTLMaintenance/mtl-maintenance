@@ -11,7 +11,9 @@ export function renderPerfectCard(equipId) {
 
     // Use window.calcHealth since it's bridged
     const healthScore = typeof window.calcHealth === 'function' ? window.calcHealth(e.id, state.tasks, state.equipment) : 100;
-
+const faultCount = window.getActiveFaultsCount(e.id);
+  const faultBoxColor = faultCount > 0 ? '#ef4444' : '#22c55e'; 
+    
     // START OF HTML STRING (Backtick)
     container.innerHTML = `
         <div class="mtl-os-container" style="padding-top: 20px;">
@@ -38,10 +40,12 @@ export function renderPerfectCard(equipId) {
                         <div class="v-item"><span>HEALTH</span><b>${healthScore}%</b></div>
                         
                    <div class="v-item" onclick="window.openFaultList('${e.id}')" 
-     style="cursor:pointer; border-bottom: 3px solid ${activeFaults.length > 0 ? '#ef4444' : '#22c55e'};">
+   <div class="v-item" 
+     onclick="window.openFaultList('${e.id}')" 
+     style="cursor:pointer; border-bottom: 3px solid ${faultBoxColor};">
     <span>ACTIVE FAULTS</span>
-    <b style="color: ${activeFaults.length > 0 ? '#ef4444' : '#22c55e'};">
-        ${activeFaults.length} ACTIVE
+    <b style="color: ${faultBoxColor};">
+        ${faultCount} ACTIVE
     </b>
 </div>
                 </div>
