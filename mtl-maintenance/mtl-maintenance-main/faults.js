@@ -1,5 +1,6 @@
 // faults.js - The Mechanic's Diagnostic Library
-import { openModal } from './ui.js';
+import { uid, showToast } from './utils.js';
+import { openModal, closeModal } from './ui.js';
 
 export function openFaultCodeDetail(code) {
     const titleEl = document.getElementById('detail-title');
@@ -89,4 +90,77 @@ export async function saveActiveFault() {
     } catch (err) {
         console.error(err);
     }
+}
+export function openFaultList(equipId) {
+    window._currentDetailEquipId = equipId;
+    const activeFaults = window.state.faults.filter(f => f.equip_id === equipId && f.status === 'active');
+    
+    const container = document.getElementById('fault-list-container');
+    document.getElementById('fault-list-count').textContent = activeFaults.length;
+
+    container.innerHTML = activeFaults.map(f => `
+        <div class="fault-list-item" onclick="window.openFaultEditor('${f.id}')">
+            <div style="flex:1">
+                <b style="font-size:16px; color:red;">${f.code}</b>
+                <div style="font-size:12px; color:#666;">${f.description || 'No description'}</div>
+            </div>
+            <span style="color:#aaa;">Edit 〉</span>
+        </div>
+    `).join('') || '<p style="text-align:center; padding:20px; color:#888;">No active faults found.</p>';
+
+    openModal('fault-list-modal');
+}
+
+// 2. Open the Editor for a specific fault (or a new one)
+export function openFaultEditor(faultId = null) {
+    // Clear the form
+    document.getElementById('f-edit-id').value = faultId || "";
+    document.getElementById('f-code').value = "";
+    document.getElementById('f-desc').value = "";
+    document.getElementById('f-cause').value = "";
+    document.getElementById('f-fix').value = "";
+    document.getElementById('f-parts').value = "";
+
+    if (faultId) {
+        const f = window.state.faults.find(x => x.id === faultId);
+        if (f) {
+            document.getElementById('f-code').value = f.code;
+            document.getElementById('f-desc').value = f.description;
+            document.getElementById('f-cause').value = f.cause;
+            document.getElementById('f-fix').value = f.shop_fix;
+            document.getElementById('f-parts').value = f.parts_needed;
+        }
+    }
+    openModal('fault-edit-modal');
+}
+
+// 3. Save the full fault details to Supabase
+export async function saveFaultRecord() {
+    const id = document.getElementById('f-edit-id').value || uid();
+    const equipId = window._currentDetailEquipId;
+
+    const record = {
+        id: id,
+        equip_id: equipId,
+        code: document.getElementById('f-code').value.trim(),
+        description: document.getElementById('f-desc').value.trim(),
+        cause: document.getElementById('f-cause').value.trim(),
+        shop_fix: document.getElementById('f-fix').value.trim(),
+        parts_needed: document.getElementById('f-parts').value.trim(),
+        status: 'active'
+    };
+
+    try {
+        await window._mpdb.from('fault_logs').upsert(record);
+        
+        // Update local memory
+        const idx = window.state.faults.findIndex(f => f.id === id);
+        if (idx !== -1) window.state.faults[idx] = record;
+        else window.state.faults.push(record);
+
+        closeModal('fault-edit-modal');
+        openFaultList(equipId); // Go back to the list
+        window.renderPerfectCard(equipId); // Update the counter on the main card
+        showToast("Fault Log Updated ✓");
+    } catch (e) { console.error(e); }
 }
