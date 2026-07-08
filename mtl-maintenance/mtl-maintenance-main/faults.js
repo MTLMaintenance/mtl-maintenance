@@ -50,3 +50,43 @@ export function openFaultCodeDetail(code) {
 
     openModal('detail-modal');
 }
+
+// 1. Open the entry box
+export function openAddFaultModal(equipId) {
+    document.getElementById('fault-equip-id').value = equipId;
+    document.getElementById('fault-code-input').value = "";
+    window.openModal('fault-entry-modal');
+    // Auto-focus the input for speed
+    setTimeout(() => document.getElementById('fault-code-input').focus(), 100);
+}
+
+// 2. Save the code to Supabase
+export async function saveActiveFault() {
+    const equipId = document.getElementById('fault-equip-id').value;
+    const code = document.getElementById('fault-code-input').value.trim();
+
+    if (!code) return;
+
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    // Update locally and in DB
+    e.active_faults = code;
+    e.status = 'Down'; // Automatically mark machine as Down if it has a fault
+
+    try {
+        await window._mpdb.from('equipment').update({ 
+            active_faults: code,
+            status: 'Down'
+        }).eq('id', equipId);
+
+        window.closeModal('fault-entry-modal');
+        window.showToast("Fault Reported: " + code);
+        
+        // Refresh the OS card to show the red box
+        window.renderPerfectCard(equipId);
+        window.renderEquipmentTable(); // Update main list too
+    } catch (err) {
+        console.error(err);
+    }
+}
