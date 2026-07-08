@@ -164,3 +164,15 @@ export async function saveFaultRecord() {
         showToast("Fault Log Updated ✓");
     } catch (e) { console.error(e); }
 }
+
+export function getActiveFaultsCount(equipId) {
+    const state = window.state;
+    if (!state || !state.faults) return 0;
+
+    // Look in the 'faults' drawer and filter for this machine + 'active' status
+    const machineFaults = state.faults.filter(f => 
+        f.equip_id === equipId && f.status === 'active'
+    );
+
+    return machineFaults.length;
+}
