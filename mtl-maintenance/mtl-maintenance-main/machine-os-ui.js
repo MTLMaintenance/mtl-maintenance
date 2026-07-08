@@ -37,12 +37,11 @@ export function renderPerfectCard(equipId) {
                         <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
                         <div class="v-item"><span>HEALTH</span><b>${healthScore}%</b></div>
                         
-                    <div class="v-item" 
-     onclick="${e.active_faults ? `window.openFaultCodeDetail('${e.active_faults}')` : `window.openAddFaultModal('${e.id}')`}" 
-     style="cursor:pointer; border-bottom: 3px solid ${e.active_faults ? '#ef4444' : '#22c55e'};">
+                   <div class="v-item" onclick="window.openFaultList('${e.id}')" 
+     style="cursor:pointer; border-bottom: 3px solid ${activeFaults.length > 0 ? '#ef4444' : '#22c55e'};">
     <span>ACTIVE FAULTS</span>
-    <b style="color: ${e.active_faults ? '#ef4444' : '#22c55e'};">
-        ${e.active_faults || 'NONE +'}
+    <b style="color: ${activeFaults.length > 0 ? '#ef4444' : '#22c55e'};">
+        ${activeFaults.length} ACTIVE
     </b>
 </div>
                 </div>
