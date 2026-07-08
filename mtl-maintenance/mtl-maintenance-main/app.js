@@ -27,7 +27,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, com
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal   } from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal,setGroupFilter,setEquipGroupFilter   } from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc,openEditDocModal,openAddDocModal,openDocModal, handleDocUpload } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
@@ -70,6 +70,8 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.setGroupFilter = setGroupFilter;
+window.setEquipGroupFilter = setEquipGroupFilter;
 window.getActiveFaultsCount = getActiveFaultsCount;
 window.openFaultList = openFaultList;
 window.openFaultEditor = openFaultEditor;
@@ -644,13 +646,6 @@ await window._mpdb.from('meter_history').insert({
 }
 (function(){try{const s=JSON.parse(localStorage.getItem('mp_tpl')||'null');if(s){const ids=new Set(state.checklistTemplates.map(t=>t.id));s.forEach(t=>{if(!ids.has(t.id))state.checklistTemplates.push(t);});}}catch(e){}})();
 (function(){try{state.downtimeLog=JSON.parse(localStorage.getItem('mp_downtime')||'[]');}catch(e){}})();
-
-
-// ── GROUPS ───────────────────────────────────────────────────
-function setGroupFilter(group){activeGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
-function setEquipGroupFilter(group){equipGroupFilter=group;['all','outside','production'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});renderEquipmentTable();}
-function filteredEquipment(filter){const f=filter||activeGroupFilter;if(f==='all')return state.equipment;return state.equipment.filter(e=>e.group_tag===f||e.group_tag==='both');}
-function applyUserGroupFilter(){if(!currentUser)return;const g=currentUser.group_tag;if(g&&g!=='all'){setGroupFilter(g);setEquipGroupFilter(g);}}
 
 
 function openUserPerms(userId,userName,userRole,customPerms){editingUserId=userId;editingUserRole=userRole;editingPerms={...PERMISSIONS[userRole]||PERMISSIONS.tech,...(customPerms||{})};document.getElementById('user-perms-title').textContent=userName+' — Permissions';document.getElementById('user-perms-role').textContent=userRole;renderUserPermsList();openModal('user-perms-modal');}
