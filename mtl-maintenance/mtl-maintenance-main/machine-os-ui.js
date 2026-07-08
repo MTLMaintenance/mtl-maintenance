@@ -29,46 +29,37 @@ export function renderPerfectCard(equipId) {
                         </div>
                     </div>
                     
-                    <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
-                        <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
-                        <div class="v-item"><span>FLEET HEALTH</span><b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b></div>
-                        <div class="v-item warning"><span>PM DUE</span><b>42h</b></div>
-                    </div>
-                </div>
+                   <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(4, 1fr); gap:15px;">
+    
+    <!-- 1. FUEL -->
+    <div class="v-item">
+        <span>FUEL</span>
+        <b>${e.fuel_level || 0}%</b>
+    </div>
 
-                <!-- 2. JOB HUB AREA -->
-                <div class="os-section">
-                    <h3 class="os-label-dark">Job Hub</h3>
-                    <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
-                    </div>
-                </div>
+    <!-- 2. HEALTH -->
+    <div class="v-item">
+        <span>FLEET HEALTH</span>
+        <b>${window.calcHealth(e.id, state.tasks, state.equipment)}%</b>
+    </div>
 
-                <!-- 3. COMPONENTS AREA -->
-                <div class="os-section">
-                    <h3 class="os-label-dark">Components</h3>
-                    <div class="os-comp-scroll" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
-                        <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('tracks', this)">🚜 Tracks</div>
-                    </div>
-                    <div id="mtl-component-specs" style="margin-top:15px;"></div>
-                </div>
+    <!-- 3. FAULTS (Clickable) -->
+    <div class="v-item" 
+         onclick="window.openFaultCodeDetail('3252-0')" 
+         style="cursor:pointer; border-bottom: 3px solid ${e.active_faults ? '#ef4444' : '#22c55e'}; transition: all 0.2s;">
+        <span>ACTIVE FAULTS</span>
+        <b style="color: ${e.active_faults ? '#ef4444' : '#22c55e'};">
+            ${e.active_faults || 'NONE'}
+        </b>
+    </div>
 
-                <!-- 4. TIMELINE AREA -->
-                <div class="os-section no-border">
-                    <h3 class="os-label-dark">Machine Timeline</h3>
-                    <div id="mtl-timeline-stream"></div>
-                </div>
+    <!-- 4. PM DUE -->
+    <div class="v-item warning" style="border-left:4px solid #f59e0b">
+        <span>PM DUE</span>
+        <b style="color:#f59e0b;">42h</b>
+    </div>
 
-            </div> <!-- END BIG CARD -->
-        </div>
-    `;
-
+</div>
     setTimeout(() => {
         window.renderMachineTimeline(e.id);
         window.renderComponentSpecs(e.id, 'all');
