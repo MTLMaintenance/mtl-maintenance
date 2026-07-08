@@ -71,7 +71,7 @@ window.showRegister = () => {
 };
 
 
-windwindow.openFaultList = openFaultList;
+window.openFaultList = openFaultList;
 window.openFaultEditor = openFaultEditor;
 window.saveFaultRecord = saveFaultRecord;ow.openFaultCodeDetail = openFaultCodeDetail;
 window.openAddFaultModal = openAddFaultModal;
