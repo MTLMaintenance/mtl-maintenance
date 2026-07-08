@@ -312,8 +312,8 @@ export function renderComponentSpecs(equipId, componentFilter = 'all') {
             <h4 style="margin:0; font-size:12px; color:#888; text-transform:uppercase;">
                 ${componentFilter} Specifications
             </h4>
-            <button class="btn-add-spec" onclick="window.addSpecToComponent('${equipId}', '${componentFilter}')">
-                + Add Spec
+            <button class="btn-add-spec" onclick="window.openSpecModal('${equipId}', '${componentFilter}')">
+            + Add Spec
             </button>
         </div>
         <div class="os-spec-grid">
