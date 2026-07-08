@@ -1682,6 +1682,25 @@
     </div>
   </div>
 </div>
+
+<!-- FAULT ENTRY MODAL -->
+<div id="fault-entry-modal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card" style="background:white; padding:25px; border-radius:15px; width:90%; max-width:400px; color:black !important;">
+    <h3 style="margin-top:0; font-weight:800;">Report Fault Code</h3>
+    
+    <input type="hidden" id="fault-equip-id">
+
+    <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:11px; font-weight:700; color:#666; margin-bottom:5px;">ENTER CODE (e.g. 3252-0)</label>
+        <input type="text" id="fault-code-input" placeholder="0000-0" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:18px; font-weight:bold; text-align:center;">
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-secondary" onclick="window.closeModal('fault-entry-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="window.saveActiveFault()" style="background:red !important; color:white !important; border:none; font-weight:bold;">Report Fault</button>
+    </div>
+  </div>
+</div>
  
 <!-- DEDICATED EDIT MODAL -->
 <div id="obs-edit-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
