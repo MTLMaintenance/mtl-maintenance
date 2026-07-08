@@ -9,7 +9,7 @@ import {
 
 
 // --- INITIALIZATION BRIDGES ---
-import { openFaultCodeDetail } from './faults.js';
+import { openFaultCodeDetail, openAddFaultModal, saveActiveFault } from './faults.js';
 import { addWikiTip, fetchWiki } from './knowledge.js';
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
@@ -69,6 +69,10 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+
+window.openFaultCodeDetail = openFaultCodeDetail;
+window.openAddFaultModal = openAddFaultModal;
+window.saveActiveFault = saveActiveFault;
 window.openFaultCodeDetail = openFaultCodeDetail;
 window.openSpecModal = openSpecModal;
 window.saveNewSpec = saveNewSpec;
