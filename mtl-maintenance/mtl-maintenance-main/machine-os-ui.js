@@ -12,12 +12,14 @@ export function renderPerfectCard(equipId) {
     // Use window.calcHealth since it's bridged
     const healthScore = typeof window.calcHealth === 'function' ? window.calcHealth(e.id, state.tasks, state.equipment) : 100;
 
+    // START OF HTML STRING (Backtick)
     container.innerHTML = `
         <div class="mtl-os-container" style="padding-top: 20px;">
             <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
 
             <div class="mtl-main-card">
                 
+                <!-- HEADER SECTION -->
                 <div class="os-section header" style="background:#fafafa;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
                         <div>
@@ -35,7 +37,6 @@ export function renderPerfectCard(equipId) {
                         <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
                         <div class="v-item"><span>HEALTH</span><b>${healthScore}%</b></div>
                         
-                        <!-- FAULT BOX -->
                         <div class="v-item" onclick="window.openFaultCodeDetail('3252-0')" style="cursor:pointer; border-bottom: 3px solid ${e.active_faults ? '#ef4444' : '#22c55e'};">
                             <span>ACTIVE FAULTS</span>
                             <b style="color: ${e.active_faults ? '#ef4444' : '#22c55e'};">${e.active_faults || 'NONE'}</b>
@@ -45,6 +46,7 @@ export function renderPerfectCard(equipId) {
                     </div>
                 </div>
 
+                <!-- JOB HUB -->
                 <div class="os-section">
                     <h3 class="os-label-dark">Job Hub</h3>
                     <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
@@ -55,6 +57,7 @@ export function renderPerfectCard(equipId) {
                     </div>
                 </div>
 
+                <!-- COMPONENTS -->
                 <div class="os-section">
                     <h3 class="os-label-dark">Components</h3>
                     <div class="os-comp-scroll" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
@@ -66,6 +69,7 @@ export function renderPerfectCard(equipId) {
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
                 </div>
 
+                <!-- TIMELINE -->
                 <div class="os-section no-border">
                     <h3 class="os-label-dark">Machine Timeline</h3>
                     <div id="mtl-timeline-stream"></div>
@@ -73,8 +77,9 @@ export function renderPerfectCard(equipId) {
 
             </div>
         </div>
-    `;
+    `; 
 
+    // Trigger sub-renders after a tiny delay
     setTimeout(() => {
         if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
         if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
