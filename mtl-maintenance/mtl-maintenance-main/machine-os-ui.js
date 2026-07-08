@@ -69,6 +69,17 @@ export function renderPerfectCard(equipId) {
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
                 </div>
 
+                  
+                   <!-- 4. SHOP WISDOM AREA -->
+                  <div class="os-section" style="background:#fffcf5;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 class="os-label-dark" style="margin:0;">Shop Wisdom</h3>
+            <button class="btn-add-spec" onclick="window.addWikiTip('${e.id}', 'general')">+ Add Tip</button>
+        </div>
+        <div id="shop-wiki-list">
+            ${renderWikiSection(e.id)} <!-- THIS IS THE CALL -->
+        </div>
+    </div>
                 <!-- TIMELINE -->
                 <div class="os-section no-border">
                     <h3 class="os-label-dark">Machine Timeline</h3>
@@ -84,4 +95,31 @@ export function renderPerfectCard(equipId) {
         if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
         if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
     }, 50);
+}
+
+export function renderWikiSection(equipId) {
+    // 1. Get the tips from the global state
+    const allTips = window.state.wiki || [];
+    
+    // 2. Filter for this machine only
+    const machineTips = allTips.filter(t => t.equip_id === equipId);
+    
+    if (machineTips.length === 0) {
+        return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for this machine yet.</p>`;
+    }
+
+    // 3. Sort by newest first
+    machineTips.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // 4. Build the HTML cards
+    return machineTips.map(t => `
+        <div class="wiki-note-card" style="background:#fffbeb; border-left:4px solid #f59e0b; padding:12px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <span style="font-weight:bold; font-size:12px; color:#92400e;">👤 ${t.author}</span>
+                <span style="font-size:10px; color:#b45309; background:#fef3c7; padding:2px 6px; border-radius:4px; font-weight:bold; text-transform:uppercase;">${t.component}</span>
+            </div>
+            <div style="font-size:13px; color:#451a03; line-height:1.4;">"${t.body}"</div>
+            <div style="font-size:10px; color:#d97706; margin-top:5px; text-align:right;">${new Date(t.created_at).toLocaleDateString()}</div>
+        </div>
+    `).join('');
 }
