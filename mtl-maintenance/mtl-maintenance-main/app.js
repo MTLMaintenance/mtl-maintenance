@@ -70,6 +70,7 @@ window.showRegister = () => {
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
 
+window.renderZerkOS = renderZerkOS;
 window.setGroupFilter = setGroupFilter;
 window.setEquipGroupFilter = setEquipGroupFilter;
 window.getActiveFaultsCount = getActiveFaultsCount;
@@ -265,8 +266,6 @@ window.verifyUserPin = verifyUserPin;
 window.selectUserForLogin = selectUserForLogin;
 window.handleGlobalSearch = () => handleGlobalSearch(state);
 window.formatDuration = formatDuration;
-window.deleteZerk = deleteZerk;
-window.handleZerkMapClick = handleZerkMapClick;
 window.renameZerkView = renameZerkView;
 window.zerkPinMode = 'dot';   // Start in simple dot mode
 window.zerkDrawingStep = 1;   // Start at the first click
