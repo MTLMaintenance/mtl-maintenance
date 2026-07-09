@@ -38,7 +38,7 @@ import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsence
 import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
-import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode  } from './zerk.js';
+import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs  } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
@@ -448,6 +448,17 @@ window.setupSpecModalEnter = () => {
     }
 };
 
+window.openZerkOS = (id, btn) => {
+    // 1. Highlight the card
+    const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
+    cards.forEach(c => c.style.borderColor = '#eee');
+    btn.style.borderColor = 'var(--accent)';
+
+    // 2. Call the OS specialized renderer
+    if (typeof renderZerkOS === 'function') {
+        renderZerkOS(id);
+    }
+};
 // And update your openSpecModal bridge to call it:
 const _origOpenSpecModal = openSpecModal;
 window.openSpecModal = (id, comp) => {
@@ -478,21 +489,13 @@ window.filterTimeline = (component, btn) => {
     btn.style.borderColor = 'var(--accent)'; // Highlight active
 };
 
-
 window.filterOS = (component, btn) => {
-    const equipId = window._currentDetailEquipId;
-
-    // 1. Trigger the logic to draw the specs (Dark boxes)
-    if (typeof window.renderComponentSpecs === 'function') {
-        window.renderComponentSpecs(equipId, component);
-    }
-
-    // 2. Trigger the logic to filter the timeline
-    if (typeof window.renderMachineTimeline === 'function') {
-        window.renderMachineTimeline(equipId, component);
-    }
-
-    // 3. UI: Highlight the clicked card
+    const id = window._currentDetailEquipId;
+    document.getElementById('mtl-zerk-os-area').style.display = 'none'; 
+    document.getElementById('mtl-timeline-stream').style.display = 'block'; 
+    document.getElementById('mtl-component-specs').style.display = 'block'; 
+    window.renderComponentSpecs(id, component);
+    window.renderMachineTimeline(id, component);
     const cards = btn.parentElement.querySelectorAll('.comp-card');
     cards.forEach(c => c.classList.remove('active-os'));
     btn.classList.add('active-os');
