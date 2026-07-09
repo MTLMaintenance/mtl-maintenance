@@ -323,7 +323,9 @@ export async function saveObservationChange(state) {
 
 export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
   const name = document.getElementById('e-name').value.trim(); 
-  if(!name) {
+   const existingMachine = window.state.equipment.find(x => x.id === machineId);
+    
+    if(!name) {
       showToast('Please enter a name');
       return { success: false };
   }
@@ -343,7 +345,10 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value) || 0,
     photos:         pendingPhotos.equip.slice(),
     custom_fields:  { ...customFieldsTemp }, 
-    health_score:   100
+    health_score:   100,
+    zerk_photos: existingMachine?.zerk_photos || [],
+    zerk_names:  existingMachine?.zerk_names || [],
+    zerk_points: existingMachine?.zerk_points || []  
   };
 
   try {
