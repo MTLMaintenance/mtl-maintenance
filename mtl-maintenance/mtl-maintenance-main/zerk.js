@@ -111,6 +111,13 @@ export async function addZerkViewWithTitle() {
             equip.zerk_photos.push(compressed);
             equip.zerk_names.push(viewName);
 
+            const { error } = await window._mpdb
+    .from('equipment')
+    .update({ 
+        zerk_photos: equip.zerk_photos, 
+        zerk_names: equip.zerk_names 
+    })
+    .eq('id', equipId);
             // Update Supabase
             await window._mpdb.from('equipment').update({ 
                 zerk_photos: equip.zerk_photos, 
