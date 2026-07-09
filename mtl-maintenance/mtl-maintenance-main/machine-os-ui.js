@@ -68,8 +68,10 @@ const faultCount = window.getActiveFaultsCount(e.id);
                         <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
                         <div class="comp-card-grey" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
                         <div class="comp-card-grey" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
+                         <div class="comp-card-grey" onclick="window.openZerkOS('${e.id}', this)">⛽ Grease Map</div>
                         <div class="comp-card-grey" onclick="window.filterOS('tracks', this)">🚜 Tracks</div>
                     </div>
+                    <div id="mtl-zerk-os-area" style="display:none; margin-bottom:25px;">
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
                 </div>
 
