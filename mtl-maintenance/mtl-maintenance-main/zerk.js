@@ -2,70 +2,44 @@
 import { supabase, persist } from './db.js';
 import { uid, showToast,compressImage  } from './utils.js';
 
-// 1. Handle clicking on the image to add a new point
+
 export async function handleZerkMapClick(event, viewIdx) {
-    const state = window.state; // Grab state from window
-    const equipId = window._currentDetailEquipId; // Grab ID from window
-    const zerkPinMode = window.zerkPinMode;
-
-    if (window.currentUser.role === 'viewer') return;
-
-    // Find the machine
-    const equip = state.equipment.find(e => e.id === equipId);
-    if (!equip) return;
-
+    const equipId = window._currentDetailEquipId;
+    const e = window.state.equipment.find(x => x.id === equipId);
+    
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    if (zerkPinMode === 'dot') {
-        const note = prompt("Grease Instructions:");
-        if (note === null) return;
+    const note = prompt("Instructions:");
+    if (note === null) return;
 
-        equip.zerk_points = equip.zerk_points || [];
-        equip.zerk_points.push({
-            id: uid(), x: x.toFixed(2), y: y.toFixed(2),
-            lx: null, ly: null, note: note || "", view_index: viewIdx
-        });
-    } else {
-        // Line Logic
-        if (!window.zerkDrawingStep || window.zerkDrawingStep === 1) {
-            window.tempZerkCoords = { x, y };
-            window.zerkDrawingStep = 2;
-            showToast("Fitting set! Click for label.");
-            return;
-        } else {
-            const note = prompt("Grease Instructions:");
-            if (note === null) { window.zerkDrawingStep = 1; return; }
-            equip.zerk_points.push({
-                id: uid(), x: window.tempZerkCoords.x.toFixed(2), y: window.tempZerkCoords.y.toFixed(2),
-                lx: x.toFixed(2), ly: y.toFixed(2), note: note || "", view_index: viewIdx
-            });
-            window.zerkDrawingStep = 1;
-        }
-    }
+    // A. Update local memory immediately
+    if (!e.zerk_points) e.zerk_points = [];
+    e.zerk_points.push({ id: uid(), x: x.toFixed(2), y: y.toFixed(2), note, view_index: viewIdx });
 
-    await persist('equipment', 'upsert', equip);
-    renderZerkTab(equipId);
+    // B. REDRAW THE SCREEN NOW (Instant)
+    renderZerkOS(equipId);
+
+    // C. Save to cloud in background
+    await window._mpdb.from('equipment').update({ zerk_points: e.zerk_points }).eq('id', equipId);
 }
-// 2. Delete a grease point
-export async function deleteZerk(id) {
-    const state = window.state;
+
+export async function deleteZerk(pointId) {
     const equipId = window._currentDetailEquipId;
-    if (!confirm("Delete this grease point?")) return;
+    const e = window.state.equipment.find(x => x.id === equipId);
+    
+    if (!confirm("Delete this point?")) return;
 
-    const equip = state.equipment.find(x => x.id === equipId);
-    if (!equip || !equip.zerk_points) return;
+    // A. Update memory immediately
+    e.zerk_points = e.zerk_points.filter(p => p.id !== pointId);
 
-    equip.zerk_points = equip.zerk_points.filter(p => p.id !== id);
+    // B. Redraw instantly
+    renderZerkOS(equipId);
 
-    try {
-        await supabase.from('equipment').update({ zerk_points: equip.zerk_points }).eq('id', equipId);
-        showToast("Point removed ✓");
-        renderZerkTab(equipId);
-    } catch (e) { console.error(e); }
+    // C. Save in background
+    await window._mpdb.from('equipment').update({ zerk_points: e.zerk_points }).eq('id', equipId);
 }
-
 
 // 3. Rename a Photo View
 export async function renameZerkView(idx) {
@@ -88,52 +62,31 @@ export async function renameZerkView(idx) {
 export async function addZerkViewWithTitle() {
     const equipId = window._currentDetailEquipId;
     const equip = window.state.equipment.find(x => x.id === equipId);
-    if (!equip) return;
 
-    const viewName = prompt("Name this view (e.g. Boom, Front Loader):");
+    const viewName = prompt("View Name (e.g. Boom):");
     if (!viewName) return;
 
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    
     input.onchange = async (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        
-        window.showToast("⚙️ Processing image...");
-        
         const reader = new FileReader();
         reader.onload = async (event) => {
-            // 1. Compress
-            const compressed = await window.utils.compressImage(event.target.result, 1200, 0.8);
+            const compressed = await compressImage(event.target.result, 1200, 0.8);
             
-            // 2. Update Local Lists
-            if (!equip.zerk_photos) equip.zerk_photos = [];
-            if (!equip.zerk_names) equip.zerk_names = [];
-            
+            // A. Update memory
+            equip.zerk_photos = equip.zerk_photos || [];
+            equip.zerk_names = equip.zerk_names || [];
             equip.zerk_photos.push(compressed);
             equip.zerk_names.push(viewName);
 
-            // 3. Save only the Zerk columns to Supabase
-            const { error } = await window._mpdb
-                .from('equipment')
-                .update({ 
-                    zerk_photos: equip.zerk_photos, 
-                    zerk_names: equip.zerk_names 
-                })
-                .eq('id', equipId);
-
-            if (error) {
-                alert("Upload failed: " + error.message);
-                return;
-            }
-
-            // 4. UI Refresh: Show the new map immediately
+            // B. Switch to new view and Redraw
             window._currentZerkViewIdx = equip.zerk_photos.length - 1;
-            if (typeof window.renderZerkOS === 'function') window.renderZerkOS(equipId);
-            
-            window.showToast("Map View Added ✓");
+            renderZerkOS(equipId);
+
+            // C. Save
+            await window._mpdb.from('equipment').update({ zerk_photos: equip.zerk_photos, zerk_names: equip.zerk_names }).eq('id', equipId);
         };
         reader.readAsDataURL(file);
     };
@@ -141,59 +94,48 @@ export async function addZerkViewWithTitle() {
 }
 
 
+
 // 2. Delete the current photo view and all its points
 export async function deleteZerkView() {
     const equipId = window._currentDetailEquipId;
-    const idx = window._currentZerkViewIdx || 0;
-    const equip = window.state.equipment.find(x => x.id === equipId);
+    const idx = window._currentZerkViewIdx;
+    const e = window.state.equipment.find(x => x.id === equipId);
 
-    if (!equip || !equip.zerk_photos) return;
+    if (!confirm("Delete this entire map view?")) return;
 
-    const viewName = (equip.zerk_names && equip.zerk_names[idx]) ? equip.zerk_names[idx] : `View ${idx + 1}`;
-    if (!confirm(`Delete the view "${viewName}" and ALL its grease points?`)) return;
+    // A. Update local arrays
+    e.zerk_photos.splice(idx, 1);
+    e.zerk_names.splice(idx, 1);
+    e.zerk_points = e.zerk_points.filter(p => p.view_index !== idx);
 
-    try {
-        // Remove from photos and names arrays
-        equip.zerk_photos.splice(idx, 1);
-        if (equip.zerk_names) equip.zerk_names.splice(idx, 1);
+    // B. Reset index and redraw
+    window._currentZerkViewIdx = 0;
+    renderZerkOS(equipId);
 
-        // Remove all dots that belonged to this specific view
-        if (equip.zerk_points) {
-            equip.zerk_points = equip.zerk_points.filter(p => p.view_index !== idx);
-            // Re-index remaining points so they don't shift
-            equip.zerk_points.forEach(p => {
-                if (p.view_index > idx) p.view_index--;
-            });
-        }
-
-        // Save back to Supabase
-        await window._mpdb.from('equipment').update({ 
-            zerk_photos: equip.zerk_photos, 
-            zerk_names: equip.zerk_names,
-            zerk_points: equip.zerk_points 
-        }).eq('id', equipId);
-
-        window._currentZerkViewIdx = 0; // Go back to first view
-        renderZerkTab(equipId);
-        window.showToast("View removed ✓");
-    } catch (e) {
-        console.error("Delete view failed:", e);
-    }
+    // C. Save
+    await window._mpdb.from('equipment').update({ 
+        zerk_photos: e.zerk_photos, 
+        zerk_names: e.zerk_names, 
+        zerk_points: e.zerk_points 
+    }).eq('id', equipId);
 }
-
 // 3. Edit instructions for a specific dot
-export async function editZerkNote(id) {
+export async function editZerkNote(pointId) {
     const equipId = window._currentDetailEquipId;
-    const equip = window.state.equipment.find(e => e.id === equipId);
-    const point = equip.zerk_points.find(p => p.id === id);
-    if (!point) return;
-
-    const newNote = prompt("Edit grease instructions:", point.note || "");
+    const e = window.state.equipment.find(x => x.id === equipId);
+    const point = e.zerk_points.find(p => p.id === pointId);
+    
+    const newNote = prompt("Edit instructions:", point.note || "");
     if (newNote === null) return;
 
+    // A. Update memory
     point.note = newNote;
-    await persist('equipment', 'upsert', equip);
-    renderZerkTab(equipId);
+
+    // B. Redraw instantly
+    renderZerkOS(equipId);
+
+    // C. Save in background
+    await window._mpdb.from('equipment').update({ zerk_points: e.zerk_points }).eq('id', equipId);
 }
 
 export function renderZerkTab(equipId) {
@@ -368,28 +310,25 @@ export function renderZerkOS(equipId) {
     const container = document.getElementById('mtl-zerk-os-area');
     if (!e || !container) return;
 
-    // 1. Determine which photo we are looking at (defaults to 0)
     if (window._currentZerkViewIdx === undefined) window._currentZerkViewIdx = 0;
     const viewIdx = window._currentZerkViewIdx;
 
-    // 2. Hide other sections
+    // Ensure container is visible
+    container.style.display = 'block';
     const specs = document.getElementById('mtl-component-specs');
     const timeline = document.getElementById('mtl-timeline-stream');
     if (specs) specs.style.display = 'none';
     if (timeline) timeline.style.display = 'none';
-    container.style.display = 'block';
 
-    // 3. Handle Empty State
     if (!e.zerk_photos || e.zerk_photos.length === 0) {
         container.innerHTML = `
             <div style="text-align:center; padding:40px; border:2px dashed #ddd; border-radius:15px; background:#f9f9f9;">
-                <p style="color:#666;">No grease maps added yet.</p>
+                <p>No grease maps added yet.</p>
                 <button class="btn btn-primary" onclick="window.addZerkViewWithTitle()">+ Add Photo Map</button>
             </div>`;
         return;
     }
 
-    // 4. Build the "Sub-Tabs" for multiple views
     const viewTabs = e.zerk_photos.map((_, i) => {
         const name = (e.zerk_names && e.zerk_names[i]) ? e.zerk_names[i] : `View ${i + 1}`;
         const activeStyle = viewIdx === i ? 'background:#1a1a1a; color:white;' : 'background:#eee; color:#666;';
@@ -399,7 +338,6 @@ export function renderZerkOS(equipId) {
 
     const points = (e.zerk_points || []).filter(p => p.view_index === viewIdx);
 
-    // 5. Main Layout
     container.innerHTML = `
         <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; gap:8px;">${viewTabs}</div>
@@ -410,11 +348,10 @@ export function renderZerkOS(equipId) {
         </div>
 
         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; background:#f5f5f5; padding:15px; border-radius:15px;">
-            <!-- MAP -->
             <div id="os-zerk-map" style="position:relative; background:black; border-radius:10px; overflow:hidden; cursor:crosshair;" 
                  onclick="window.handleZerkMapClick(event, ${viewIdx})">
                 <img src="${e.zerk_photos[viewIdx]}" style="width:100%; display:block; opacity:0.8;">
-                <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
+                <div style="position:absolute; inset:0;">
                     ${points.map((p, idx) => `
                         <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
                             ${idx + 1}
@@ -422,16 +359,15 @@ export function renderZerkOS(equipId) {
                 </div>
             </div>
 
-            <!-- TABLE -->
             <div style="max-height:450px; overflow-y:auto;">
-                <h4 style="font-size:11px; color:#999; margin-top:0;">FITTINGS ON THIS VIEW</h4>
+                <h4 style="font-size:11px; color:#999; margin-top:0; text-transform:uppercase;">Fittings</h4>
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     ${points.map((p, idx) => `
                         <tr style="border-bottom:1px solid #ddd;">
-                            <td style="padding:12px 5px; font-weight:bold; color:#3b82f6;">#${idx + 1}</td>
-                            <td style="padding:12px 5px; color:#333;">${p.note || 'Fitting'}</td>
+                            <td style="padding:10px 5px; font-weight:bold; color:#3b82f6;">#${idx + 1}</td>
+                            <td style="padding:10px 5px; color:#333; cursor:pointer;" onclick="window.editZerkNote('${p.id}')">${p.note || 'Grease fitting'}</td>
                             <td style="text-align:right;"><button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:red; cursor:pointer;">✕</button></td>
-                        </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">Tap the photo to mark a fitting</td></tr>'}
+                        </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">Tap map to add</td></tr>'}
                 </table>
             </div>
         </div>
