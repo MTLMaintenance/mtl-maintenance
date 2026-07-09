@@ -117,6 +117,8 @@ export async function addZerkViewWithTitle() {
                 zerk_names: equip.zerk_names 
             }).eq('id', equipId);
 
+            window._currentZerkViewIdx = equip.zerk_photos.length - 1; 
+            renderZerkOS(equipId); 
             window._currentZerkViewIdx = equip.zerk_photos.length - 1;
             renderZerkTab(equipId);
             window.showToast("View Added ✓");
@@ -351,62 +353,72 @@ export function setZerkMode(mode) {
 export function renderZerkOS(equipId) {
     const e = window.state.equipment.find(x => x.id === equipId);
     const container = document.getElementById('mtl-zerk-os-area');
-    
-    // THE SAFETY CHECK:
-    if (!container) {
-        console.error("❌ UI Error: Container 'mtl-zerk-os-area' not found. Refreshing the card...");
-        // If the bucket is missing, try redrawing the whole card once
-        window.renderPerfectCard(equipId);
-        return;
-    }
+    if (!e || !container) return;
 
-    // Now it is safe to touch .style
-    container.style.display = 'block';
-    
-    // Hide the other areas to make room for the big map
+    // 1. Determine which photo we are looking at (defaults to 0)
+    if (window._currentZerkViewIdx === undefined) window._currentZerkViewIdx = 0;
+    const viewIdx = window._currentZerkViewIdx;
+
+    // 2. Hide other sections
     const specs = document.getElementById('mtl-component-specs');
     const timeline = document.getElementById('mtl-timeline-stream');
     if (specs) specs.style.display = 'none';
     if (timeline) timeline.style.display = 'none';
+    container.style.display = 'block';
 
+    // 3. Handle Empty State
     if (!e.zerk_photos || e.zerk_photos.length === 0) {
         container.innerHTML = `
-            <div class="wiki-empty-state" style="border: 2px dashed #ddd; padding:40px;">
-                <p>No grease maps uploaded for this machine.</p>
+            <div style="text-align:center; padding:40px; border:2px dashed #ddd; border-radius:15px; background:#f9f9f9;">
+                <p style="color:#666;">No grease maps added yet.</p>
                 <button class="btn btn-primary" onclick="window.addZerkViewWithTitle()">+ Add Photo Map</button>
             </div>`;
         return;
     }
 
-    const viewIdx = window._currentZerkViewIdx || 0;
+    // 4. Build the "Sub-Tabs" for multiple views
+    const viewTabs = e.zerk_photos.map((_, i) => {
+        const name = (e.zerk_names && e.zerk_names[i]) ? e.zerk_names[i] : `View ${i + 1}`;
+        const activeStyle = viewIdx === i ? 'background:#1a1a1a; color:white;' : 'background:#eee; color:#666;';
+        return `<button class="btn-sm" style="${activeStyle} border:none; padding:5px 12px; border-radius:6px; cursor:pointer;" 
+                        onclick="window._currentZerkViewIdx=${i}; window.renderZerkOS('${equipId}')">${name}</button>`;
+    }).join('');
+
     const points = (e.zerk_points || []).filter(p => p.view_index === viewIdx);
 
+    // 5. Main Layout
     container.innerHTML = `
-        <div class="os-zerk-layout" style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; background:#f9f9f9; padding:15px; border-radius:15px; border:1px solid #eee;">
-            
-            <!-- LEFT: THE INTERACTIVE IMAGE -->
-            <div id="os-zerk-map" style="position:relative; background:black; border-radius:10px; overflow:hidden;">
+        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:8px;">${viewTabs}</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-add-spec" onclick="window.addZerkViewWithTitle()">+ New View</button>
+                <button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">🗑 Delete View</button>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; background:#f5f5f5; padding:15px; border-radius:15px;">
+            <!-- MAP -->
+            <div id="os-zerk-map" style="position:relative; background:black; border-radius:10px; overflow:hidden; cursor:crosshair;" 
+                 onclick="window.handleZerkMapClick(event, ${viewIdx})">
                 <img src="${e.zerk_photos[viewIdx]}" style="width:100%; display:block; opacity:0.8;">
                 <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
                     ${points.map((p, idx) => `
-                        <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%">
+                        <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
                             ${idx + 1}
                         </div>`).join('')}
                 </div>
             </div>
 
-            <!-- RIGHT: THE INSTRUCTION LIST -->
-            <div class="os-zerk-list" style="overflow-y:auto; max-height:400px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h4 style="margin:0; font-size:12px; color:#888;">GREASE POINTS</h4>
-                    <button class="btn btn-secondary btn-sm" onclick="window.renderZerkTab('${e.id}')">⚙️ Edit Map</button>
-                </div>
+            <!-- TABLE -->
+            <div style="max-height:450px; overflow-y:auto;">
+                <h4 style="font-size:11px; color:#999; margin-top:0;">FITTINGS ON THIS VIEW</h4>
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     ${points.map((p, idx) => `
-                        <tr style="border-bottom:1px solid #eee;">
-                            <td style="padding:10px 5px; font-weight:bold; color:var(--accent);">#${idx + 1}</td>
-                            <td style="padding:10px 5px; color:#444;">${p.note || 'Grease fitting'}</td>
-                        </tr>`).join('') || '<tr><td>Click "Edit Map" to add points</td></tr>'}
+                        <tr style="border-bottom:1px solid #ddd;">
+                            <td style="padding:12px 5px; font-weight:bold; color:#3b82f6;">#${idx + 1}</td>
+                            <td style="padding:12px 5px; color:#333;">${p.note || 'Fitting'}</td>
+                            <td style="text-align:right;"><button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:red; cursor:pointer;">✕</button></td>
+                        </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">Tap the photo to mark a fitting</td></tr>'}
                 </table>
             </div>
         </div>
