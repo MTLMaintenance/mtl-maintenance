@@ -449,15 +449,17 @@ window.setupSpecModalEnter = () => {
 };
 
 window.openZerkOS = (id, btn) => {
-    // 1. Highlight the card
+    // 1. Visually highlight the card
     const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
     cards.forEach(c => c.style.borderColor = '#eee');
     btn.style.borderColor = 'var(--accent)';
 
-    // 2. Call the OS specialized renderer
-    if (typeof renderZerkOS === 'function') {
-        renderZerkOS(id);
-    }
+    // 2. Clear the hidden state of the Zerk Area
+    const zerkArea = document.getElementById('mtl-zerk-os-area');
+    if (zerkArea) zerkArea.style.display = 'block';
+
+    // 3. Draw the map
+    renderZerkOS(id);
 };
 // And update your openSpecModal bridge to call it:
 const _origOpenSpecModal = openSpecModal;
