@@ -347,3 +347,59 @@ export function setZerkMode(mode) {
     document.getElementById('mode-line')?.classList.toggle('active', mode === 'line');
     renderZerkDots(); // Clear any temp dots
 }
+
+export function renderZerkOS(equipId) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    const container = document.getElementById('mtl-zerk-os-area');
+    
+    if (!e || !container) return;
+
+    // Show the container
+    container.style.display = 'block';
+    // Hide the specs and timeline temporarily to give the map room
+    document.getElementById('mtl-component-specs').style.display = 'none';
+    document.getElementById('mtl-timeline-stream').style.display = 'none';
+
+    if (!e.zerk_photos || e.zerk_photos.length === 0) {
+        container.innerHTML = `
+            <div class="wiki-empty-state" style="border: 2px dashed #ddd; padding:40px;">
+                <p>No grease maps uploaded for this machine.</p>
+                <button class="btn btn-primary" onclick="window.addZerkViewWithTitle()">+ Add Photo Map</button>
+            </div>`;
+        return;
+    }
+
+    const viewIdx = window._currentZerkViewIdx || 0;
+    const points = (e.zerk_points || []).filter(p => p.view_index === viewIdx);
+
+    container.innerHTML = `
+        <div class="os-zerk-layout" style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; background:#f9f9f9; padding:15px; border-radius:15px; border:1px solid #eee;">
+            
+            <!-- LEFT: THE INTERACTIVE IMAGE -->
+            <div id="os-zerk-map" style="position:relative; background:black; border-radius:10px; overflow:hidden;">
+                <img src="${e.zerk_photos[viewIdx]}" style="width:100%; display:block; opacity:0.8;">
+                <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
+                    ${points.map((p, idx) => `
+                        <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%">
+                            ${idx + 1}
+                        </div>`).join('')}
+                </div>
+            </div>
+
+            <!-- RIGHT: THE INSTRUCTION LIST -->
+            <div class="os-zerk-list" style="overflow-y:auto; max-height:400px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; font-size:12px; color:#888;">GREASE POINTS</h4>
+                    <button class="btn btn-secondary btn-sm" onclick="window.renderZerkTab('${e.id}')">⚙️ Edit Map</button>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    ${points.map((p, idx) => `
+                        <tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:10px 5px; font-weight:bold; color:var(--accent);">#${idx + 1}</td>
+                            <td style="padding:10px 5px; color:#444;">${p.note || 'Grease fitting'}</td>
+                        </tr>`).join('') || '<tr><td>Click "Edit Map" to add points</td></tr>'}
+                </table>
+            </div>
+        </div>
+    `;
+}
