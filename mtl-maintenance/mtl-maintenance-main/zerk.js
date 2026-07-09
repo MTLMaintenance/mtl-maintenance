@@ -90,7 +90,7 @@ export async function addZerkViewWithTitle() {
     const equip = window.state.equipment.find(x => x.id === equipId);
     if (!equip) return;
 
-    const viewName = prompt("Name this view (e.g. Front Loader, Boom, Left Side):");
+    const viewName = prompt("Name this view (e.g. Boom, Front Loader):");
     if (!viewName) return;
 
     const input = document.createElement('input');
@@ -100,40 +100,46 @@ export async function addZerkViewWithTitle() {
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        
+        window.showToast("⚙️ Processing image...");
+        
         const reader = new FileReader();
         reader.onload = async (event) => {
-            // Compress and save
-            const compressed = await compressImage(event.target.result, 1200, 0.8);
+            // 1. Compress
+            const compressed = await window.utils.compressImage(event.target.result, 1200, 0.8);
             
-            equip.zerk_photos = equip.zerk_photos || [];
-            equip.zerk_names = equip.zerk_names || [];
+            // 2. Update Local Lists
+            if (!equip.zerk_photos) equip.zerk_photos = [];
+            if (!equip.zerk_names) equip.zerk_names = [];
             
             equip.zerk_photos.push(compressed);
             equip.zerk_names.push(viewName);
 
+            // 3. Save only the Zerk columns to Supabase
             const { error } = await window._mpdb
-    .from('equipment')
-    .update({ 
-        zerk_photos: equip.zerk_photos, 
-        zerk_names: equip.zerk_names 
-    })
-    .eq('id', equipId);
-            // Update Supabase
-            await window._mpdb.from('equipment').update({ 
-                zerk_photos: equip.zerk_photos, 
-                zerk_names: equip.zerk_names 
-            }).eq('id', equipId);
+                .from('equipment')
+                .update({ 
+                    zerk_photos: equip.zerk_photos, 
+                    zerk_names: equip.zerk_names 
+                })
+                .eq('id', equipId);
 
-            window._currentZerkViewIdx = equip.zerk_photos.length - 1; 
-            renderZerkOS(equipId); 
+            if (error) {
+                alert("Upload failed: " + error.message);
+                return;
+            }
+
+            // 4. UI Refresh: Show the new map immediately
             window._currentZerkViewIdx = equip.zerk_photos.length - 1;
-            renderZerkTab(equipId);
-            window.showToast("View Added ✓");
+            if (typeof window.renderZerkOS === 'function') window.renderZerkOS(equipId);
+            
+            window.showToast("Map View Added ✓");
         };
         reader.readAsDataURL(file);
     };
     input.click();
 }
+
 
 // 2. Delete the current photo view and all its points
 export async function deleteZerkView() {
