@@ -352,13 +352,22 @@ export function renderZerkOS(equipId) {
     const e = window.state.equipment.find(x => x.id === equipId);
     const container = document.getElementById('mtl-zerk-os-area');
     
-    if (!e || !container) return;
+    // THE SAFETY CHECK:
+    if (!container) {
+        console.error("❌ UI Error: Container 'mtl-zerk-os-area' not found. Refreshing the card...");
+        // If the bucket is missing, try redrawing the whole card once
+        window.renderPerfectCard(equipId);
+        return;
+    }
 
-    // Show the container
+    // Now it is safe to touch .style
     container.style.display = 'block';
-    // Hide the specs and timeline temporarily to give the map room
-    document.getElementById('mtl-component-specs').style.display = 'none';
-    document.getElementById('mtl-timeline-stream').style.display = 'none';
+    
+    // Hide the other areas to make room for the big map
+    const specs = document.getElementById('mtl-component-specs');
+    const timeline = document.getElementById('mtl-timeline-stream');
+    if (specs) specs.style.display = 'none';
+    if (timeline) timeline.style.display = 'none';
 
     if (!e.zerk_photos || e.zerk_photos.length === 0) {
         container.innerHTML = `
