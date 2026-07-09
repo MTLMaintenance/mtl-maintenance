@@ -322,17 +322,20 @@ export async function saveObservationChange(state) {
 }
 
 export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
-  const name = document.getElementById('e-name').value.trim(); 
-   const existingMachine = window.state.equipment.find(x => x.id === machineId);
-    
-    if(!name) {
-      showToast('Please enter a name');
-      return { success: false };
-  }
+  // 1. Determine if we are EDITING or CREATING
+  const idField = document.getElementById('e-id');
+  const existingId = idField ? idField.value : "";
   
+  const name = document.getElementById('e-name').value.trim(); 
+  if(!name) return window.showToast('Please enter a name');
+
+  // 2. Find existing data to prevent wiping out Zerk maps
+  const existingMachine = window.state.equipment.find(x => x.id === existingId);
+  const machineId = existingId || uid(); // Use old ID or make new one
+
   const record = {
-    id: uid(), 
-    name,
+    id: machineId, 
+    name: name,
     type:         document.getElementById('e-type').value,
     serial:       document.getElementById('e-serial').value,
     manufacturer: document.getElementById('e-manufacturer')?.value.trim() || '',
@@ -346,41 +349,39 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     photos:         pendingPhotos.equip.slice(),
     custom_fields:  { ...customFieldsTemp }, 
     health_score:   100,
+    // THE VITAL FIX: Carry over existing grease map data
     zerk_photos: existingMachine?.zerk_photos || [],
     zerk_names:  existingMachine?.zerk_names || [],
     zerk_points: existingMachine?.zerk_points || []  
   };
 
   try {
-    // 1. DIRECT SAVE TO SUPABASE (Bypass the persist wrapper)
-    console.log("🚀 Sending to Supabase:", record);
-    const { data, error } = await window._mpdb
-        .from('equipment')
-        .upsert(record);
+    console.log("🚀 Syncing machine to Supabase...");
+    const { error } = await window._mpdb.from('equipment').upsert(record);
 
-    if (error) {
-        console.error("❌ SUPABASE ERROR:", error.message);
-        alert("Database Error: " + error.message);
-        return { success: false };
-    }
+    if (error) throw error;
 
-    // 2. Update Local Memory (VITAL for the "Live Update")
-    if (!window.state.equipment) window.state.equipment = [];
-    window.state.equipment.push(record);
+    // Update Local Memory (Sync)
+    const idx = window.state.equipment.findIndex(x => x.id === machineId);
+    if (idx !== -1) window.state.equipment[idx] = record;
+    else window.state.equipment.push(record);
     
-    // 3. Log the action
-    await logAuditAction("Added Machine", `Added "${name}" to the fleet.`, currentUser);
+    // Log Audit
+    await logAuditAction(existingId ? "Updated Machine" : "Added Machine", `Machine: "${name}"`, currentUser);
 
-    // 4. Cleanup UI State
-    pendingPhotos.equip = [];
+    // Cleanup
+    window.pendingPhotos.equip = [];
     Object.keys(customFieldsTemp).forEach(key => delete customFieldsTemp[key]);
 
-    showToast("Machine Saved to Database ✓");
+    window.closeModal('equip-modal');
+    if (window.renderEquipmentTable) window.renderEquipmentTable();
+    
+    window.showToast("Saved to Cloud ✓");
     return { success: true };
 
   } catch (e) {
-    console.error("Save process crashed:", e);
-    showToast("Save process crashed. Check console.");
+    console.error("Save failed:", e);
+    window.showToast("Save Error");
     return { success: false };
   }
 }
