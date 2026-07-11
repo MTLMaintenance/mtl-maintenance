@@ -25,78 +25,46 @@ export function closeModal(id) {
     }
 }
 
-// 3. Switch between main screens (Dashboard, Calendar, etc.)
 export function showPanel(id) {
-    console.log("🖥️ Switching to Room:", id);
+    console.log("🖥️ Opening Room:", id);
     
-    // 1. Scroll to top so you don't start halfway down a new page
+    // 1. Force the scrollbar to the very top
     window.scrollTo(0, 0);
 
-    // 2. THE VITAL FIX: Find EVERY element with the class 'panel'
-    const allPanels = document.querySelectorAll('.panel');
-    
-    // 3. Hide them all and remove the 'active' class
-    allPanels.forEach(p => {
-        p.style.display = 'none';
+    // 2. Hide every panel
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p => {
         p.classList.remove('active');
+        p.style.display = 'none'; // Ensure it is physically removed
     });
 
-    // 4. Find the ONE panel we actually want to see
+    // 3. Show the requested panel
     const target = document.getElementById('panel-' + id);
-    
     if (target) {
-        // Show it. We use "" to let your CSS file handle the layout (flex/grid/block)
-        target.style.display = "block"; 
         target.classList.add('active');
-        console.log(`✅ Room 'panel-${id}' is now open.`);
-    } else {
-        console.error(`❌ UI Error: Room 'panel-${id}' does not exist in HTML.`);
+        // We use "" to let the CSS Classes (.panel.active) decide the display type
+        target.style.display = ""; 
     }
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        const command = btn.getAttribute('onclick') || "";
-        if (command.includes(`'${id}'`)) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
 
-      if (id === 'parts') {
-        if (typeof window.renderPartsTable === 'function') {
-            window.renderPartsTable();
-        }
-        if (typeof window.switchPartsSubTab === 'function') {
-            window.switchPartsSubTab('inventory');
-        }
-    }
-    if (id === 'dashboard' && typeof window.renderDashboard === 'function') window.renderDashboard();
+    // 4. Trigger the Painter for that specific room
     if (id === 'calendar' && typeof window.renderCalendar === 'function') window.renderCalendar();
-    if (id === 'equipment' && typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
+    if (id === 'tools' && typeof window.renderTools === 'function') window.renderTools();
+    if (id === 'parts' && typeof window.renderPartsTable === 'function') window.renderPartsTable();
+    if (id === 'dashboard' && typeof window.renderDashboard === 'function') window.renderDashboard();
 }
 // 4. Switch Tabs inside a modal or panel
 export function switchTab(group, tab, btn) {
-  // 1. Find the modal this button belongs to
   const modal = btn.closest('.modal-card') || btn.closest('.modal');
   if (!modal) return;
-
-  // 2. List the specific IDs used in the Equipment Modal
   const eqSections = ['details-eq', 'custom-eq', 'assign-eq'];
-  
-  // 3. Hide those sections
   eqSections.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
-
-  // 4. Show the section the user clicked
   const target = document.getElementById(tab);
   if (target) target.style.display = 'block';
-
-  // 5. Highlight the button
   modal.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-
-  // 6. Trigger sub-renders (These functions must be bridged to window in app.js)
   if (tab === 'assign-eq' && typeof window.renderAssignUsers === 'function') window.renderAssignUsers();
   if (tab === 'custom-eq' && typeof window.renderCustomFields === 'function') window.renderCustomFields();
 }
