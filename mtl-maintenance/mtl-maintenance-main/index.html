@@ -299,13 +299,25 @@
     </div>
   </div>
 
-  <!-- CHECKLIST TEMPLATES -->
-  <div class="panel" id="panel-checklists">
-    <div class="section-header"><span class="section-title">Inspection Checklist Templates</span><button class="btn btn-primary" onclick="openModal('tpl-modal')">+ Add Template</button></div>
-    <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-bottom:12px">Templates auto-fill the checklist when you pick a machine on a work order.</div>
-    <div id="tpl-list"></div>
+ <!-- CHECKLIST TEMPLATES -->
+<div class="panel" id="panel-checklists">
+  <div class="section-header">
+    <span class="section-title">Inspection Checklist Templates</span>
+    <button class="btn btn-primary" onclick="openModal('tpl-modal')">+ Add Template</button>
   </div>
-
+ 
+  <div class="card">
+    <div style="margin-bottom:15px; font-size:13px; color: #666; font-style: italic; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
+      ℹ️ Templates auto-fill the checklist when you pick a machine on a work order.
+    </div>
+    
+    <div id="tpl-list">
+      <div style="padding: 40px; text-align: center; color: #999; font-size: 14px;">
+        No templates found. Click "+ Add Template" to create your first inspection list.
+      </div>
+    </div>
+  </div>
+</div>
   <!-- CLEAN CHAT PANEL -->
 <div class="panel" id="panel-chat">
   <div class="section-header"><span class="section-title">Team Chat</span></div>
