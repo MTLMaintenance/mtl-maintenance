@@ -1,139 +1,275 @@
 /* ============================================================
-   1. GLOBAL RESET & NAVY BACKGROUND
+   1. VARIABLES & CORE RESET
    ============================================================ */
 :root {
-  --accent: #185FA5;
-  --navy: #001f3f;
-  --radius: 12px;
-  --topbar-h: 70px;
+    --bg-navy: #001f3f;
+    --bg-gradient: radial-gradient(circle at top, #003366 0%, #001f3f 100%);
+    --accent: #185FA5;
+    --accent-light: #E6F1FB;
+    --text-dark: #1a1a18;
+    --text-light: #ffffff;
+    --danger: #dc3545;
+    --success: #28a745;
+    --warning: #f59e0b;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --glass-white: rgba(255, 255, 255, 0.94);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  height: 100%;
-  font-family: -apple-system, system-ui, sans-serif;
-  background-color: var(--navy) !important;
-  color: white;
-  overflow-x: hidden;
-}
-
-#app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+    height: 100%;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 14px;
+    background: var(--bg-navy);
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text-light);
+    overflow-x: hidden;
 }
 
 /* ============================================================
-   2. TOPBAR FIX (The "Squash" Fix)
+   2. GLOBAL UI COMPONENTS (Cards, Tables, Metrics)
    ============================================================ */
-.topbar {
-  display: flex !important;
-  flex-direction: row !important; /* Forces it to stay horizontal */
-  align-items: center !important;
-  justify-content: space-between !important;
-  height: var(--topbar-h) !important;
-  width: 100% !important;
-  background: #000 !important;
-  padding: 0 20px !important;
-  position: fixed;
-  top: 0;
-  z-index: 1000;
+.card, .table-wrap, .metric-card, .mtl-main-card {
+    background: var(--glass-white) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-top: 4px solid var(--accent) !important;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    color: var(--text-dark) !important;
+    margin-bottom: 20px;
+    transition: transform 0.2s ease;
 }
 
-#main-nav {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  flex: 1;
-  margin-left: 20px;
+/* Force dark text inside white glass containers */
+.card *, .table-wrap *, .metric-card *, .modal * {
+    color: var(--text-dark) !important;
 }
 
-.nav-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.1);
-  color: white;
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
+.section-title, .section-header span, h2 {
+    color: var(--text-light) !important;
 }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; }
+th { 
+    text-align: left; font-size: 11px; font-weight: 700; color: #666 !important; 
+    text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid rgba(0,0,0,0.05);
+}
+td { padding: 12px 10px; border-bottom: 1px solid rgba(0,0,0,0.05); font-weight: 500; }
+tbody tr:hover td { background: rgba(0, 0, 0, 0.03); cursor: pointer; }
+
+/* Metrics Grid */
+.metrics { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+    gap: 15px; 
+    margin-bottom: 20px; 
+}
+
+/* ============================================================
+   3. BUTTONS & NAV
+   ============================================================ */
+.btn, .nav-btn, .btn-primary {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn:hover, .nav-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
 
 .nav-btn.active {
-  background: white !important;
-  color: black !important;
+    background-color: #ffffff !important;
+    color: var(--text-dark) !important;
+    border-color: #ffffff !important;
 }
+
+.btn-danger { background: var(--danger) !important; }
+.btn-success { background: var(--success) !important; }
 
 /* ============================================================
-   3. PANEL & DASHBOARD LAYOUT (The "Vertical" Fix)
-   ============================================================ */
-.panel {
-    display: none;
-    width: 100%;
-    margin-top: var(--topbar-h); /* Pushes content below the fixed header */
-    padding: 25px;
-    box-sizing: border-box;
-}
-
-.panel.active {
-    display: block !important; /* Block is safer than Flex here */
-}
-
-/* DASHBOARD GRID: Restores your 3-column look */
-#panel-dashboard.active {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
-    align-items: start;
-}
-
-/* ============================================================
-   4. CARDS & TABLES (The "Width" Fix)
-   ============================================================ */
-.card, .table-wrap, .metric-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-radius: var(--radius);
-  color: #1a1a18 !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
-  padding: 20px;
-  margin-bottom: 20px;
-  width: 100%; /* Ensures they span the space */
-}
-
-/* Force dark text inside white cards */
-.card *, .table-wrap *, .metric-card * {
-    color: #1a1a1a !important;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th { text-align: left; padding: 12px; background: #f1f1f1; font-size: 11px; text-transform: uppercase; color: #666 !important; }
-td { padding: 15px 12px; border-bottom: 1px solid #eee; }
-
-/* ============================================================
-   5. MODALS
+   4. MODALS & OVERLAYS (Unified Z-Index)
    ============================================================ */
 .modal-backdrop {
     display: none;
     position: fixed !important;
     inset: 0 !important;
-    background: rgba(0,0,0,0.85);
-    z-index: 5000;
-    justify-content: center;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(5px);
+    z-index: 5000 !important;
     align-items: center;
-    backdrop-filter: blur(4px);
+    justify-content: center;
 }
 
-.modal-backdrop.active { display: flex !important; }
+.modal-backdrop.active, .modal-backdrop.open { display: flex !important; }
+
+.modal {
+    background: #ffffff !important;
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    width: 95%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-top: 6px solid var(--accent) !important;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+}
+
+/* PIN Pad Overlay (Always on top of Modals) */
+#task-pin-modal, #auth-screen { z-index: 7000 !important; }
+
+/* Toasts / Notifications */
+#toast-container, .toast, #toast {
+    z-index: 9999 !important;
+    position: fixed !important;
+    bottom: 20px;
+    right: 20px;
+    pointer-events: auto !important;
+}
 
 /* ============================================================
-   6. MOBILE OVERRIDES
+   5. PIN PAD LOGIC (Consolidated)
    ============================================================ */
-@media (max-width: 768px) {
-    .topbar { flex-direction: column !important; height: auto !important; padding: 10px !important; }
-    #main-nav { overflow-x: auto; padding-bottom: 5px; width: 100%; }
-    #panel-dashboard.active { grid-template-columns: 1fr !important; }
+.pin-pad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    max-width: 280px;
+    margin: 20px auto !important;
+}
+
+.pin-btn {
+    aspect-ratio: 1/1;
+    font-size: 22px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+.pin-dot.filled { 
+    background: var(--success) !important; 
+    box-shadow: 0 0 10px var(--success); 
+}
+
+/* ============================================================
+   6. FEATURE SPECIFIC (Calendar & Chat)
+   ============================================================ */
+/* Calendar Days */
+.cal-day {
+    min-height: 80px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #eee;
+    padding: 5px;
+    transition: background 0.2s;
+}
+.cal-day.today { border: 2px solid var(--accent) !important; background: #e7f3ff !important; }
+
+/* Calendar Badges */
+.cal-event {
+    font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px;
+    font-weight: 600; color: white !important;
+}
+.cal-event.work-order { background: #007bff !important; }
+.cal-event.staff-absence { background: #ffc107 !important; color: #856404 !important; }
+
+/* Chat Bubbles */
+.chat-row.me .chat-bubble { background: #1a1a1a; color: white !important; border-radius: 15px 15px 2px 15px; }
+.chat-row.them .chat-bubble { background: white; color: black !important; border: 1px solid #ddd; border-radius: 15px 15px 15px 2px; }
+
+/* ============================================================
+   7. ZERK MAP LOGIC
+   ============================================================ */
+#zerk-map-container {
+    position: relative; background: #000; border-radius: 12px; overflow: hidden;
+}
+#zerk-svg-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+#zerk-dots-overlay { position: absolute; inset: 0; z-index: 20; cursor: crosshair; }
+.zerk-dot { 
+    position: absolute; width: 18px; height: 18px; background: #ffec00; 
+    border: 2px solid #000; border-radius: 50%; transform: translate(-50%, -50%); 
+}
+
+/* ============================================================
+   8. MEDIA QUERIES (Split PC & Mobile)
+   ============================================================ */
+
+/* --- MOBILE ONLY --- */
+@media screen and (max-width: 768px) {
+    .topbar { 
+        flex-direction: column !important; height: auto !important; padding: 10px !important;
+        background: #000 !important; position: fixed; top: 0; width: 100%;
+    }
+    .user-chip, #pc-search-wrap { display: none !important; }
+    #main-nav { overflow-x: auto; width: 100%; padding: 10px 0; }
+    
+    .metrics, .grid-2 { display: flex !important; flex-direction: column !important; }
+    .card, .metric-card { width: 100% !important; }
+    
+    div#zerk-sidebar-container { display: none !important; }
+    .zerk-main-layout { display: block !important; }
+}
+
+/* --- DESKTOP ONLY --- */
+@media screen and (min-width: 769px) {
+    .topbar {
+        display: flex !important; flex-direction: row !important;
+        height: 60px !important; position: fixed; top: 0; left: 0; right: 0;
+        background: #000 !important; z-index: 1000; padding: 0 20px;
+        justify-content: space-between; align-items: center;
+    }
+    
+    #panel-calendar.active {
+        display: flex !important; flex-direction: column;
+        height: calc(100vh - 80px) !important;
+    }
+    
+    .metrics-row {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;
+    }
+}
+
+/* ============================================================
+   9. MISC FIXES (Status Dots & Helpers)
+   ============================================================ */
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.sync-dot.online { background: var(--success); }
+.sync-dot.syncing { background: var(--warning); animation: pulse 1s infinite; }
+.sync-dot.offline { background: var(--danger); }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+.badge {
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; color: white !important;
+}
+.badge.bs { background: var(--success) !important; }
+.badge.bd { background: var(--danger) !important; }
+.badge.bw { background: var(--warning) !important; }
+
+/* Form Elements */
+.form-input, .form-select, .form-textarea {
+    width: 100%; padding: 10px; border-radius: var(--radius);
+    border: 1px solid #ddd; background: #fff; color: var(--text-dark);
 }
