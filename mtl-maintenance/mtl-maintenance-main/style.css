@@ -1815,19 +1815,12 @@ html {
     padding: 0 !important;
   }
 
-  /* 3. SET INDIVIDUAL SPACING */
-  .logo { 
-    flex-shrink: 0 !important; 
-    margin-right: 10px !important;
-    white-space: nowrap !important;
-}
+.logo { flex-shrink: 0 !important; margin-right: 15px !important; white-space: nowrap !important; }
 
-
-#pc-search-wrap {
-    width: 180px !important;
-    flex-shrink: 0 !important;
-}
-  #global-search {
+#pc-search-wrap { width: 150px !important; flex-shrink: 0 !important; margin-right: 15px !important; }
+  
+    
+    #global-search {
     width: 100% !important;
     height: 28px !important;
     background: rgba(255,255,255,0.1) !important;
@@ -1837,27 +1830,32 @@ html {
     padding: 0 8px !important;
   }
 
- #main-nav {
+#main-nav {
     display: flex !important;
     flex-direction: row !important;
-    gap: 4px !important;
-    flex-shrink: 1 !important; /* Allow it to shrink slightly if needed */
-    overflow: hidden !important;
+    gap: 5px !important;
+    flex: 1 !important; /* Take up available middle space */
+    overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
+    scrollbar-width: none; /* Hide scrollbar for clean look */
+    padding: 0 10px !important;
 }
+#main-nav::-webkit-scrollbar { display: none; }
 
-.nav-btn {
-    padding: 4px 8px !important;
-    font-size: 11px !important; /* Smaller text to fit all 12 buttons */
-    white-space: nowrap !important;
+  .nav-btn {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important; /* Stop text from wrapping to 2 lines */
+    background: rgba(255,255,255,0.1) !important;
 }
 
 /* 3. The Right Side (The Magic Fix) */
 .topbar-right {
-    margin-left: auto !important; /* THIS PUSHES EVERYTHING TO THE FAR RIGHT */
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
     flex-shrink: 0 !important;
+    margin-left: 15px !important;
 }
 .topbar-right .btn-sm {
     padding: 4px 8px !important;
@@ -2681,52 +2679,49 @@ html {
 #app {
     display: flex !important;
     flex-direction: column !important;
-    min-height: 100vh !important;
-    padding-top: 80px !important; /* Reduced from 320px to 80px */
+    padding-top: 90px !important; /* Pushes content safely below the 60px topbar */
     background: #001f3f !important;
+    min-height: 100vh;
 }
-
-
 /* Ensure the Topbar stays at the very top */
 .topbar {
     display: flex !important;
-    flex-direction: row !important; /* Force horizontal */
+    flex-direction: row !important;
     align-items: center !important;
-    justify-content: flex-start !important; /* Align left by default */
+    justify-content: space-between !important;
     height: 60px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
     padding: 0 15px !important;
-    gap: 10px !important;
-    overflow: hidden !important;
 }
 
 
-#panel-dashboard.active {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 20px !important;
-    width: 98% !important;
-    max-width: 1600px !important;
-    margin: 0 auto !important;
-    padding-bottom: 40px !important;
-}
-
-/* The 4 small boxes (Metrics) */
 .metrics {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
-    gap: 15px !important;
+    gap: 20px !important;
+    width: 100% !important;
+    min-height: 110px !important; /* Guaranteed height */
 }
 
+.metric-card {
+    background: white !important;
+    border-radius: 12px !important;
+    padding: 15px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+/* Force the large cards to stay in 2 columns */
 .grid-2 {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 15px !important;
+    gap: 20px !important;
+    width: 100% !important;
 }
-
 /* Card Styling */
 .card, .metric-card {
     background: white !important;
