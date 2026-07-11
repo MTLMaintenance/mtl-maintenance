@@ -125,7 +125,6 @@ html, body {
     z-index: 10000;
   }
 
-  .logo { width: 100% !important; text-align: center !important; padding: 5px 0 !important; }
   .user-chip, #pc-search-wrap, .pc-only-search { display: none !important; }
 
   /* Horizontal Swipe for Nav/Buttons */
@@ -1818,16 +1817,16 @@ html {
 
   /* 3. SET INDIVIDUAL SPACING */
   .logo { 
-    margin-right: 20px !important; 
-    font-weight: bold;
+    flex-shrink: 0 !important; 
+    margin-right: 10px !important;
     white-space: nowrap !important;
-  }
+}
 
-  #pc-search-wrap { 
-    width: 180px !important;             /* Locked search width */
-    margin-right: 20px !important; 
-  }
 
+#pc-search-wrap {
+    width: 180px !important;
+    flex-shrink: 0 !important;
+}
   #global-search {
     width: 100% !important;
     height: 28px !important;
@@ -1838,24 +1837,39 @@ html {
     padding: 0 8px !important;
   }
 
-  /* 4. NAVIGATION (Middle Section) */
-  #main-nav { 
-    gap: 5px !important;
-    flex-shrink: 1 !important;           /* Allow nav to shrink if screen is tiny */
-  }
+ #main-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    flex-shrink: 1 !important; /* Allow it to shrink slightly if needed */
+    overflow: hidden !important;
+}
 
-  .nav-btn {
+.nav-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important; /* Smaller text to fit all 12 buttons */
     white-space: nowrap !important;
-    font-size: 12px !important;
-    padding: 4px 10px !important;
-  }
+}
 
-  /* 5. TOPBAR RIGHT (PDF, Profile, etc.) */
-  .topbar-right { 
-    margin-left: auto !important;        /* THE MAGIC: Pushes this box to the far right */
-    gap: 8px !important;
-  }
- 
+/* 3. The Right Side (The Magic Fix) */
+.topbar-right {
+    margin-left: auto !important; /* THIS PUSHES EVERYTHING TO THE FAR RIGHT */
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+}
+.topbar-right .btn-sm {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    height: 28px !important;
+}
+
+#user-profile-trigger {
+    margin-right: 5px !important;
+    white-space: nowrap !important;
+    padding: 4px 10px !important;
+}  
  /* 3. --- THE CALENDAR POWER FIX --- */
   /* This forces the calendar panel to fill the monitor height from the topbar down */
   body #panel-calendar.active {
@@ -2668,11 +2682,10 @@ html {
     display: flex !important;
     flex-direction: column !important;
     min-height: 100vh !important;
-    /* Increase this to 320px to clear all 4 rows of buttons/search */
-    padding-top: 320px !important; 
+    padding-top: 80px !important; /* Reduced from 320px to 80px */
     background: #001f3f !important;
-    width: 100% !important;
 }
+
 
 /* Ensure the Topbar stays at the very top */
 .topbar {
@@ -2691,31 +2704,27 @@ html {
 }
 
 
-/* Force Dashboard into a clean vertical stack */
 #panel-dashboard.active {
     display: flex !important;
     flex-direction: column !important;
-    gap: 25px !important;
-    width: 95% !important;
-    max-width: 1400px !important;
+    gap: 20px !important;
+    width: 98% !important;
+    max-width: 1600px !important;
     margin: 0 auto !important;
+    padding-bottom: 40px !important;
 }
 
 /* The 4 small boxes (Metrics) */
 .metrics {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
-    gap: 20px !important;
-    width: 100% !important;
-    min-height: 120px !important; /* Force visibility */
+    gap: 15px !important;
 }
 
-/* The 4 large boxes (Grid-2) */
 .grid-2 {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 20px !important;
-    width: 100% !important;
+    gap: 15px !important;
 }
 
 /* Card Styling */
