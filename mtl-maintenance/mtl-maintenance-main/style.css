@@ -992,16 +992,6 @@ body.dark-mode .modal * {
 .auth-switch{font-size:13px;color:rgba(255,255,255,0.6);text-align:center;margin-top:14px}
 .auth-switch a{color:#85B7EB;cursor:pointer}
 .auth-divider{border:none;border-top:1px solid rgba(255,255,255,0.15);margin:16px 0}
-/* APP */
-#app {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    padding-top: 80px !important; /* This pushes EVERYTHING down */
-    background: #001f3f;
-}
-
-
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -2558,24 +2548,11 @@ html {
     gap: 15px;
     margin-bottom: 10px;
 }
-
-
-/* 1. Force the dashboard to be a vertical stack, not a horizontal line */
-#panel-dashboard.active {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    max-width: 100% !important; /* Spans the whole monitor */
-    padding: 20px !important;
-    gap: 20px !important;
-    box-sizing: border-box !important;
-}
-
-/* 2. The 4 Small Stats: 4 columns across the top */
 .metrics {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 20px !important;
+    margin-bottom: 30px !important;
     width: 100% !important;
 }
 
@@ -2588,15 +2565,22 @@ html {
 }
 
 /* 4. Force cards to fill the space */
-.card, .metric-card {
-    width: 100% !important;
-    margin: 0 !important;
-    min-width: 0 !important;
+.metric-card {
+    background: white !important;
+    border-radius: 12px !important;
+    height: 110px !important; /* Fixed height so they don't stretch */
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
 }
 
 /* 5. Add space for the topbar */
 #app {
-    padding-top: 80px !important;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 160px !important; /* Increased from 120 to 160 */
+    background: #001f3f;
+    width: 100%;
 }
 
 /* 6. Mobile Fix: Stack everything to 1 column */
@@ -2673,13 +2657,13 @@ html {
     background: white !important;
 }
 
-/* 4. Fix the Dashboard Layout (4 across top, 2 across bottom) */
 #panel-dashboard.active {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 25px !important;
-    padding: 30px !important;
-    padding-top: 120px !important; /* Pushes everything below the topbar */
+    display: block !important; /* Changed from flex to block */
+    width: 100% !important;
+    max-width: 1400px;
+    margin: 0 auto !important; /* This centers the whole grid on the screen */
+    padding: 20px !important;
+    box-sizing: border-box;
 }
 
 
