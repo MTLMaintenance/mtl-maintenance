@@ -1,15 +1,11 @@
 /* ============================================================
-   1. VARIABLES & CORE
+   1. GLOBAL RESET & NAVY BACKGROUND
    ============================================================ */
 :root {
-  --bg: #ffffff; 
+  --accent: #185FA5;
   --navy: #001f3f;
-  --accent: #185FA5; 
-  --danger: #E24B4A; 
-  --warning: #BA7517; 
-  --success: #3B6D11; 
   --radius: 12px;
-  --topbar-h: 60px;
+  --topbar-h: 70px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,136 +13,127 @@
 html, body {
   height: 100%;
   font-family: -apple-system, system-ui, sans-serif;
-  background: var(--navy);
+  background-color: var(--navy) !important;
   color: white;
   overflow-x: hidden;
 }
 
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 /* ============================================================
-   2. THE MASTER SWITCHBOARD (Panels)
+   2. TOPBAR FIX (The "Squash" Fix)
+   ============================================================ */
+.topbar {
+  display: flex !important;
+  flex-direction: row !important; /* Forces it to stay horizontal */
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: var(--topbar-h) !important;
+  width: 100% !important;
+  background: #000 !important;
+  padding: 0 20px !important;
+  position: fixed;
+  top: 0;
+  z-index: 1000;
+}
+
+#main-nav {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  flex: 1;
+  margin-left: 20px;
+}
+
+.nav-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-btn.active {
+  background: white !important;
+  color: black !important;
+}
+
+/* ============================================================
+   3. PANEL & DASHBOARD LAYOUT (The "Vertical" Fix)
    ============================================================ */
 .panel {
-    display: none; 
+    display: none;
     width: 100%;
-    min-height: calc(100vh - var(--topbar-h));
-    padding: 20px;
-    position: relative;
-    top: 0;
+    margin-top: var(--topbar-h); /* Pushes content below the fixed header */
+    padding: 25px;
+    box-sizing: border-box;
 }
 
-/* Base "Visible" state - snaps to top */
 .panel.active {
-    display: block !important;
+    display: block !important; /* Block is safer than Flex here */
 }
 
-/* Dashboard Specific: Force Grid Layout */
+/* DASHBOARD GRID: Restores your 3-column look */
 #panel-dashboard.active {
     display: grid !important;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px;
-    align-content: start; /* Snaps cards to top */
-}
-
-/* Equipment OS Specific: Force Block Layout */
-#panel-machine-profile.active {
-    display: block !important;
+    align-items: start;
 }
 
 /* ============================================================
-   3. SHARED UI ELEMENTS (Cards & Tables)
+   4. CARDS & TABLES (The "Width" Fix)
    ============================================================ */
 .card, .table-wrap, .metric-card {
   background: rgba(255, 255, 255, 0.95) !important;
   border-radius: var(--radius);
   color: #1a1a18 !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
   padding: 20px;
   margin-bottom: 20px;
-  border: none;
+  width: 100%; /* Ensures they span the space */
 }
 
-/* Force all text inside white cards to be dark */
-.card *, .table-wrap *, .metric-card *, .modal-card * {
+/* Force dark text inside white cards */
+.card *, .table-wrap *, .metric-card * {
     color: #1a1a1a !important;
 }
 
-table { width: 100%; border-collapse: collapse; }
-th { text-align: left; font-size: 11px; text-transform: uppercase; color: #888; padding: 12px; border-bottom: 2px solid #eee; }
-td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
-
-/* Buttons */
-.btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
-.btn-primary { background: var(--accent); color: white !important; }
-.btn-danger { background: var(--danger); color: white !important; }
-.btn-secondary { background: #eee; color: #333 !important; }
-
-/* Badges */
-.badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; color: white !important; }
-.bs { background: var(--success) !important; }
-.bd { background: var(--danger) !important; }
-.bi { background: #007bff !important; }
-.bw { background: var(--warning) !important; }
-
-/* ============================================================
-   4. EQUIPMENT OS (The Perfect Card)
-   ============================================================ */
-.mtl-main-card {
-    background: white !important;
-    border-radius: 20px;
+table {
     width: 100%;
-    overflow: hidden;
+    border-collapse: collapse;
 }
 
-.os-section { padding: 25px; border-bottom: 1px solid #eee; }
-.os-section.header { background: #f8f9fa; }
-
-.v-item {
-    background: white;
-    border: 1px solid #eee;
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.os-job-grid button {
-    background: #1a1a1a;
-    color: white !important;
-    padding: 15px;
-    border: none;
-    border-radius: 12px;
-    font-weight: bold;
-}
-
-.comp-card-grey {
-    min-width: 120px;
-    background: #eee;
-    padding: 12px;
-    border-radius: 10px;
-    text-align: center;
-    cursor: pointer;
-}
+th { text-align: left; padding: 12px; background: #f1f1f1; font-size: 11px; text-transform: uppercase; color: #666 !important; }
+td { padding: 15px 12px; border-bottom: 1px solid #eee; }
 
 /* ============================================================
-   5. MODALS & OVERLAYS
+   5. MODALS
    ============================================================ */
 .modal-backdrop {
     display: none;
     position: fixed !important;
     inset: 0 !important;
-    background: rgba(0,0,0,0.8);
-    z-index: 20000;
+    background: rgba(0,0,0,0.85);
+    z-index: 5000;
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(4px);
 }
 
 .modal-backdrop.active { display: flex !important; }
 
 /* ============================================================
-   6. MOBILE RESPONSIVENESS
+   6. MOBILE OVERRIDES
    ============================================================ */
 @media (max-width: 768px) {
-    .mtl-vitals, .os-job-grid { grid-template-columns: 1fr !important; }
-    .topbar { flex-direction: column; height: auto; padding: 10px; }
-    #main-nav { overflow-x: auto; width: 100%; }
+    .topbar { flex-direction: column !important; height: auto !important; padding: 10px !important; }
+    #main-nav { overflow-x: auto; padding-bottom: 5px; width: 100%; }
+    #panel-dashboard.active { grid-template-columns: 1fr !important; }
 }
