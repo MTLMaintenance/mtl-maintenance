@@ -2543,38 +2543,49 @@ html {
 }
 
 .panel {
-    display: none; /* Hidden by default */
+    display: none;
     width: 100%;
-    min-height: calc(100vh - 70px); /* Fill the screen minus topbar */
     padding: 20px;
     box-sizing: border-box;
-    
-    /* THE VITAL FIX: Force content to start at the top */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start !important; 
-    align-items: stretch !important;
+    position: relative;
+    /* We do NOT put flex or grid here yet */
 }
 
-/* 2. Ensure active panels are visible and at the top */
+/* 2. Active Panel: Just makes it visible */
 .panel.active {
-    display: flex !important;
+    display: block !important; 
 }
 
-/* 3. Specific fix for the Table Cards (Parts, Tools, Calendar) */
+/* 3. Dashboard ONLY: This forces the Grid layout specifically for the home screen */
+#panel-dashboard.active {
+    display: grid !important;
+    /* This creates the columns and lets them wrap to the next line */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+/* 4. Tables & Cards: This ensures they stay wide and at the top */
+#panel-equipment .card, 
 #panel-parts .card, 
+#panel-suppliers .card, 
 #panel-tools .card, 
 #panel-calendar .card {
-    margin-top: 0 !important; /* Remove any top gaps */
+    margin-top: 0 !important;
     width: 100%;
-    max-width: 1200px;
-    align-self: center; /* Centers the card horizontally, but stays at top */
+    max-width: 1250px;
+    margin-left: auto;
+    margin-right: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
-/* 4. Fix for the Dashboard Stacking */
-#panel-dashboard.active {
-    display: grid !important; /* Dashboard stays a grid */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    align-content: start; /* Snaps grid rows to the top */
+/* 5. Metrics row at the very top of the dashboard */
+.metrics-row {
+    grid-column: 1 / -1; /* Makes the small 0-0-0-0 boxes span the whole top */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 10px;
 }
