@@ -27,12 +27,7 @@ html, body {
   background-color: #001f3f !important; /* The Navy Blue */
 }
 
-.panel, 
-.panel.active,
-#app {
-  background-color: transparent !important;
-  background-image: none !important;
-}
+
 
 .card, .table-wrap, .metric-card {
   background: rgba(255, 255, 255, 0.94) !important; /* Glossy White */
@@ -155,9 +150,6 @@ html, body {
     width: 100% !important;
     -webkit-overflow-scrolling: touch;
   }
-
-  /* Panel Spacing */
-  .panel { margin-top: 135px !important; padding: 10px !important; }
 
   /* Grid Stacking */
   .metrics, .grid-2 { 
@@ -1901,21 +1893,7 @@ html {
     margin-left: auto !important;        /* THE MAGIC: Pushes this box to the far right */
     gap: 8px !important;
   }
-
-  /* 6. FIX PANEL POSITION (Pushes content below the 60px bar) */
-   .panel {
-    display: none;
-    margin-top: 80px !important; /* Push below fixed bar */
-    padding: 0 20px !important;
-    width: 100%;
-    max-width: 1600px;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-  
-  /* Standard Panels stay as Blocks */
-  .panel.active { display: block !important; }
-
+ 
  //* 3. --- THE CALENDAR POWER FIX --- */
   /* This forces the calendar panel to fill the monitor height from the topbar down */
   body #panel-calendar.active {
@@ -2562,4 +2540,41 @@ html {
 #os-zerk-map::-webkit-scrollbar-thumb {
     background: #444;
     border-radius: 10px;
+}
+
+.panel {
+    display: none; /* Hidden by default */
+    width: 100%;
+    min-height: calc(100vh - 70px); /* Fill the screen minus topbar */
+    padding: 20px;
+    box-sizing: border-box;
+    
+    /* THE VITAL FIX: Force content to start at the top */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start !important; 
+    align-items: stretch !important;
+}
+
+/* 2. Ensure active panels are visible and at the top */
+.panel.active {
+    display: flex !important;
+}
+
+/* 3. Specific fix for the Table Cards (Parts, Tools, Calendar) */
+#panel-parts .card, 
+#panel-tools .card, 
+#panel-calendar .card {
+    margin-top: 0 !important; /* Remove any top gaps */
+    width: 100%;
+    max-width: 1200px;
+    align-self: center; /* Centers the card horizontally, but stays at top */
+}
+
+/* 4. Fix for the Dashboard Stacking */
+#panel-dashboard.active {
+    display: grid !important; /* Dashboard stays a grid */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    align-content: start; /* Snaps grid rows to the top */
 }
