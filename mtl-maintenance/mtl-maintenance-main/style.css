@@ -984,14 +984,7 @@ body.dark-mode .modal * {
     display: none !important;
 }
 
-/* 2. Hide any stray form rows or grids that might be loose at the bottom */
-body > .form-row, 
-body > .form-grid, 
-body > .modal,
-body > #invoice-scanning,
-body > #invoice-photo-area {
-    display: none !important;
-}
+
 
 /* AUTH */
 #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
@@ -2061,7 +2054,7 @@ html {
     color: white !important;
     border: none !important;
 }
-/* Container for the emoji/dot */
+/* Container for the emojidot */
 .status-hover-wrap {
     position: relative;
     display: inline-flex;
