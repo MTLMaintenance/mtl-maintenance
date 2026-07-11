@@ -313,62 +313,65 @@ export function renderZerkOS(equipId) {
     if (window._currentZerkViewIdx === undefined) window._currentZerkViewIdx = 0;
     const viewIdx = window._currentZerkViewIdx;
 
-    // Ensure container is visible
     container.style.display = 'block';
-    const specs = document.getElementById('mtl-component-specs');
-    const timeline = document.getElementById('mtl-timeline-stream');
-    if (specs) specs.style.display = 'none';
-    if (timeline) timeline.style.display = 'none';
-
+    
     if (!e.zerk_photos || e.zerk_photos.length === 0) {
-        container.innerHTML = `
-            <div style="text-align:center; padding:40px; border:2px dashed #ddd; border-radius:15px; background:#f9f9f9;">
-                <p>No grease maps added yet.</p>
-                <button class="btn btn-primary" onclick="window.addZerkViewWithTitle()">+ Add Photo Map</button>
-            </div>`;
+        container.innerHTML = `<div class="empty-text" style="border:2px dashed #ddd; padding:40px; border-radius:15px;">
+            <p>No grease maps added.</p>
+            <button class="btn btn-primary" onclick="window.addZerkViewWithTitle()">+ Add Photo Map</button>
+        </div>`;
         return;
     }
 
     const viewTabs = e.zerk_photos.map((_, i) => {
         const name = (e.zerk_names && e.zerk_names[i]) ? e.zerk_names[i] : `View ${i + 1}`;
-        const activeStyle = viewIdx === i ? 'background:#1a1a1a; color:white;' : 'background:#eee; color:#666;';
-        return `<button class="btn-sm" style="${activeStyle} border:none; padding:5px 12px; border-radius:6px; cursor:pointer;" 
-                        onclick="window._currentZerkViewIdx=${i}; window.renderZerkOS('${equipId}')">${name}</button>`;
+        const activeClass = viewIdx === i ? 'btn-primary' : 'btn-secondary';
+        return `<button class="btn ${activeClass} btn-sm" onclick="window._currentZerkViewIdx=${i}; window.renderZerkOS('${equipId}')">${name}</button>`;
     }).join('');
 
     const points = (e.zerk_points || []).filter(p => p.view_index === viewIdx);
 
     container.innerHTML = `
-        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; gap:8px;">${viewTabs}</div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn-add-spec" onclick="window.addZerkViewWithTitle()">+ New View</button>
-                <button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">🗑 Delete View</button>
-            </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; background:#f5f5f5; padding:15px; border-radius:15px;">
-            <div id="os-zerk-map" style="position:relative; background:black; border-radius:10px; overflow:hidden; cursor:crosshair;" 
-                 onclick="window.handleZerkMapClick(event, ${viewIdx})">
-                <img src="${e.zerk_photos[viewIdx]}" style="width:100%; display:block; opacity:0.8;">
-                <div style="position:absolute; inset:0;">
-                    ${points.map((p, idx) => `
-                        <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
-                            ${idx + 1}
-                        </div>`).join('')}
+        <div class="os-zerk-wrapper" style="background:#f1f3f5; padding:15px; border-radius:15px; border:1px solid #e1e4e8;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="display:flex; gap:5px; overflow-x:auto;">${viewTabs}</div>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn btn-outline-primary btn-sm" style="font-size:10px;" onclick="window.addZerkViewWithTitle()">+ New</button>
+                    <button class="btn btn-outline-danger btn-sm" style="font-size:10px;" onclick="window.deleteZerkView()">Delete View</button>
                 </div>
             </div>
 
-            <div style="max-height:450px; overflow-y:auto;">
-                <h4 style="font-size:11px; color:#999; margin-top:0; text-transform:uppercase;">Fittings</h4>
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                    ${points.map((p, idx) => `
-                        <tr style="border-bottom:1px solid #ddd;">
-                            <td style="padding:10px 5px; font-weight:bold; color:#3b82f6;">#${idx + 1}</td>
-                            <td style="padding:10px 5px; color:#333; cursor:pointer;" onclick="window.editZerkNote('${p.id}')">${p.note || 'Grease fitting'}</td>
-                            <td style="text-align:right;"><button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:red; cursor:pointer;">✕</button></td>
-                        </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">Tap map to add</td></tr>'}
-                </table>
+            <!-- THE COMPACT GRID -->
+            <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:15px; height:450px;">
+                
+                <!-- LEFT: THE MAP (Height Constrained) -->
+                <div id="os-zerk-map" style="position:relative; background:black; border-radius:10px; overflow:auto; display:flex; align-items:center; justify-content:center; border:2px solid #333;">
+                    <div style="position:relative; width:100%; height:fit-content;" onclick="window.handleZerkMapClick(event, ${viewIdx})">
+                        <img src="${e.zerk_photos[viewIdx]}" style="width:100%; display:block; opacity:0.85;">
+                        <div id="zerk-dots-overlay" style="position:absolute; inset:0; pointer-events:none;">
+                            ${points.map((p, idx) => `
+                                <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%; pointer-events:auto;" onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
+                                    ${idx + 1}
+                                </div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: THE LIST (Scrollable) -->
+                <div style="background:white; border-radius:10px; border:1px solid #ddd; display:flex; flex-direction:column; overflow:hidden;">
+                    <div style="padding:10px; border-bottom:1px solid #eee; background:#fafafa; font-size:10px; font-weight:800; color:#888;">FITTINGS LIST</div>
+                    <div style="flex:1; overflow-y:auto; padding:5px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                            ${points.map((p, idx) => `
+                                <tr style="border-bottom:1px solid #f0f0f0;">
+                                    <td style="padding:10px 5px; font-weight:bold; color:#3b82f6; width:25px;">#${idx + 1}</td>
+                                    <td style="padding:10px 5px; color:#333; cursor:pointer;" onclick="window.editZerkNote('${p.id}')">${p.note || 'Fitting'}</td>
+                                    <td style="text-align:right;"><button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:#ccc; cursor:pointer; padding:5px;">✕</button></td>
+                                </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:30px; color:#aaa;">Tap map to mark fitting</td></tr>'}
+                        </table>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" style="margin:10px; font-size:10px;" onclick="window.renderZerkTab('${e.id}')">⚙️ Open Advanced Editor</button>
+                </div>
             </div>
         </div>
     `;
