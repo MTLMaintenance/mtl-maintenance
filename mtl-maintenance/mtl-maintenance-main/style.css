@@ -916,7 +916,24 @@ body > #invoice-photo-area {
     background: #001f3f;
 }
 
+#panel-calendar.active {
+    display: block !important;
+    height: auto !important;
+    padding-top: 0 !important;
+}
 
+#panel-calendar .card {
+    margin-top: 0 !important;
+    min-height: 600px; /* Gives it a good height without forcing it to the bottom */
+}
+
+#cal-days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 2px;
+    background: #ddd; /* This creates the lines between days */
+    border: 1px solid #ddd;
+}
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -2372,21 +2389,3 @@ html {
     border-radius: 10px;
 }
 
-#panel-calendar.active {
-    display: block !important;
-    height: auto !important;
-    padding-top: 0 !important;
-}
-
-#panel-calendar .card {
-    margin-top: 0 !important;
-    min-height: 600px; /* Gives it a good height without forcing it to the bottom */
-}
-
-#cal-days {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    gap: 2px;
-    background: #ddd; /* This creates the lines between days */
-    border: 1px solid #ddd;
-}
