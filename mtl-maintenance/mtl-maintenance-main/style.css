@@ -2517,8 +2517,17 @@ html {
     position: relative;
     /* We do NOT put flex or grid here yet */
 }
+/* 1. Make the panel visible and scrollable */
+#panel-machine-profile.active {
+    display: block !important;
+    width: 100% !important;
+    padding: 20px !important;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
 
-/* 2. Active Panel: Just makes it visible */
+    
+    /* 2. Active Panel: Just makes it visible */
 .panel.active {
     margin-top: 20px !important;
     display: block;
