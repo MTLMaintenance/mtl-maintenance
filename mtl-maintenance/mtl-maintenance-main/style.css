@@ -1,5 +1,4 @@
 
-/* 1. The Container */
 
 /* FORCE the edit modal to the absolute front */
 #obs-edit-modal-backdrop {
@@ -968,10 +967,22 @@ body.dark-mode .modal * {
     display: none !important;
 }
 
+#app[style*="display:none"], 
+#app[style*="display: none"] {
+    display: none !important;
+}
 
 
 /* AUTH */
-#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
+#auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 999999; /* Higher than everything else */
+    background: #001f3f !important; /* Matches your navy blue */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 .auth-card{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius-lg);padding:36px;width:100%;max-width:400px;backdrop-filter:blur(12px)}
 .auth-logo{font-size:24px;font-weight:700;margin-bottom:4px;color:#fff;display:flex;align-items:center;gap:8px}
 .auth-sub{font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:20px}
@@ -2539,16 +2550,6 @@ html {
     gap: 15px;
     margin-bottom: 10px;
 }
-.metrics {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 20px !important;
-    width: 100% !important;
-    margin-bottom: 10px !important;
-}
-
-/* 3. The Big Cards: 2 wide columns, taking up 100% width */
-
 
 /* 4. Force cards to fill the space */
 .metric-card {
@@ -2557,16 +2558,6 @@ html {
     height: 110px !important; /* Fixed height so they don't stretch */
     padding: 15px !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-}
-
-/* 5. Add space for the topbar */
-#app {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 100vh !important;
-    padding-top: 240px !important; /* This is the key - pushing everything down 240px */
-    background: #001f3f !important;
-    width: 100% !important;
 }
 
 /* 6. Mobile Fix: Stack everything to 1 column */
@@ -2673,14 +2664,58 @@ html {
 }
 .search-result-item:hover { background: #f0f7ff !important; }
 
-/* 6. Clean up the Topbar spacing */
-.topbar {
-    height: 65px !important;
-    padding: 0 20px !important;
+#app {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+    /* Increase this to 320px to clear all 4 rows of buttons/search */
+    padding-top: 320px !important; 
+    background: #001f3f !important;
+    width: 100% !important;
 }
+
+/* Ensure the Topbar stays at the very top */
+.topbar {
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    z-index: 10000;
+    background: #000 !important;
+    padding: 10px 20px !important;
+    display: block !important; /* Allows rows to stack naturally */
+}
+
+/* Force Dashboard into a clean vertical stack */
+#panel-dashboard.active {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 25px !important;
+    width: 95% !important;
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+}
+
+/* The 4 small boxes (Metrics) */
+.metrics {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 20px !important;
+    width: 100% !important;
+    min-height: 120px !important; /* Force visibility */
+}
+
+/* The 4 large boxes (Grid-2) */
 .grid-2 {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 20px !important;
     width: 100% !important;
+}
+
+/* Card Styling */
+.card, .metric-card {
+    background: white !important;
+    color: #1a1a1a !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
+    border-top: 4px solid var(--accent) !important;
 }
