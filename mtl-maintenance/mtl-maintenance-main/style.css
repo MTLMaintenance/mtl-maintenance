@@ -1,44 +1,6 @@
 
 /* 1. The Container */
-#panel-dashboard.active {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 20px !important;
-    width: 100% !important;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-}
 
-/* 2. Top Row (The 4 small boxes) */
-.metrics {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 20px !important;
-}
-
-/* 3. Middle & Bottom Rows (The large boxes) */
-.grid-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 20px !important;
-}
-
-/* 4. Card Sizing */
-.metric-card {
-    min-height: 120px;
-}
-
-.card {
-    min-height: 300px; /* Gives the large boxes more height */
-}
-
-/* Mobile Fix: Stack them back to 1 column on phones */
-@media screen and (max-width: 768px) {
-    .metrics, .grid-2 {
-        grid-template-columns: 1fr !important;
-    }
-}
 /* FORCE the edit modal to the absolute front */
 #obs-edit-modal-backdrop {
     display: none; 
@@ -2564,16 +2526,6 @@ html {
     padding: 0 20px;
 }
 
-
-/* 3. Dashboard ONLY: This forces the Grid layout specifically for the home screen */
-#panel-dashboard.active {
-    display: grid !important;
-    /* This creates the columns and lets them wrap to the next line */
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
-    align-items: start;
-}
-
 /* 4. Tables & Cards: This ensures they stay wide and at the top */
 #panel-equipment .card, 
 #panel-parts .card, 
@@ -2597,4 +2549,51 @@ html {
     grid-template-columns: repeat(4, 1fr);
     gap: 15px;
     margin-bottom: 10px;
+}
+
+
+/* 1. Force the dashboard to be a vertical stack, not a horizontal line */
+#panel-dashboard.active {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important; /* Spans the whole monitor */
+    padding: 20px !important;
+    gap: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* 2. The 4 Small Stats: 4 columns across the top */
+.metrics {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 20px !important;
+    width: 100% !important;
+}
+
+/* 3. The Big Cards: 2 wide columns, taking up 100% width */
+.grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    width: 100% !important;
+}
+
+/* 4. Force cards to fill the space */
+.card, .metric-card {
+    width: 100% !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+}
+
+/* 5. Add space for the topbar */
+#app {
+    padding-top: 80px !important;
+}
+
+/* 6. Mobile Fix: Stack everything to 1 column */
+@media screen and (max-width: 768px) {
+    .metrics, .grid-2 {
+        grid-template-columns: 1fr !important;
+    }
 }
