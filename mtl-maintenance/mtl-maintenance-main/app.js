@@ -448,32 +448,28 @@ window.setupSpecModalEnter = () => {
 };
 
 window.openZerkOS = (id, btn) => {
-    // 1. Visually highlight the card
-    const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
-    cards.forEach(c => c.style.borderColor = '#eee');
-    btn.style.borderColor = 'var(--accent)';
+    window._currentDetailEquipId = id;
 
-    // 2. Clear the hidden state of the Zerk Area
+    // 1. HIDE the standard sections to make room
+    document.getElementById('mtl-component-specs').style.display = 'none';
+    
+    // Hide the Wisdom and Timeline sections specifically
+    const sections = document.querySelectorAll('.os-section');
+    // We keep index 0 (Header) and index 1 (Job Hub) but hide the rest
+    sections.forEach((sec, index) => {
+        if (index > 2) sec.style.display = 'none'; 
+    });
+
+    // 2. SHOW and DRAW the Grease Map
     const zerkArea = document.getElementById('mtl-zerk-os-area');
     if (zerkArea) zerkArea.style.display = 'block';
+    
+    window.renderZerkOS(id);
 
-    // 3. Draw the map
-    renderZerkOS(id);
-};
-// And update your openSpecModal bridge to call it:
-const _origOpenSpecModal = openSpecModal;
-window.openSpecModal = (id, comp) => {
-    _origOpenSpecModal(id, comp);
-    window.setupSpecModalEnter(); // Activate the Enter key
-};
-
-const _origSwitchAdminTab = window.switchAdminTab;
-window.switchAdminTab = (tab, btn) => {
-    _origSwitchAdminTab(tab, btn); // Run the tab switch
-    if (tab === 'permissions' || tab === 'users') {
-        populateAdminUserSelect();
-        renderPermissionsMatrix();
-    }
+    // 3. Highlight the Grease Map card
+    const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
+    cards.forEach(c => c.style.border = '1px solid #eee');
+    btn.style.border = '2px solid var(--accent)';
 };
 
 window.filterTimeline = (component, btn) => {
@@ -492,14 +488,26 @@ window.filterTimeline = (component, btn) => {
 
 window.filterOS = (component, btn) => {
     const id = window._currentDetailEquipId;
-    document.getElementById('mtl-zerk-os-area').style.display = 'none'; 
-    document.getElementById('mtl-timeline-stream').style.display = 'block'; 
-    document.getElementById('mtl-component-specs').style.display = 'block'; 
+
+    // 1. HIDE the Grease Map area
+    const zerkArea = document.getElementById('mtl-zerk-os-area');
+    if (zerkArea) zerkArea.style.display = 'none';
+
+    // 2. SHOW the standard OS sections (Specs, Wisdom, Timeline)
+    // We target the 'os-section' containers to hide the whole blocks
+    document.getElementById('mtl-component-specs').style.display = 'block';
+    document.querySelectorAll('.os-section').forEach(section => {
+        section.style.display = 'block'; 
+    });
+
+    // 3. Run the standard filters
     window.renderComponentSpecs(id, component);
     window.renderMachineTimeline(id, component);
-    const cards = btn.parentElement.querySelectorAll('.comp-card');
-    cards.forEach(c => c.classList.remove('active-os'));
-    btn.classList.add('active-os');
+
+    // 4. Highlight the active card
+    const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
+    cards.forEach(c => c.style.border = '1px solid #eee');
+    btn.style.border = '2px solid var(--accent)';
 };
 
 const ADMIN_USERNAME = 'tangal99';
