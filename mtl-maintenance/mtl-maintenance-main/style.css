@@ -366,11 +366,6 @@ button[onclick="saveInvoice()"] {
   border-color: var(--accent) !important;
 }
 
-/* If the app container is hidden, force the topbar to stay hidden */
-#app[style*="display: none"],
-#app[style*="display:none"] {
-    display: none !important;
-}
 /* The "Quick Note" Dashboard Widget style */
 .personal-note-card {
     background: rgba(255, 255, 255, 0.05);
@@ -378,9 +373,6 @@ button[onclick="saveInvoice()"] {
     padding: 15px;
     border-radius: 8px;
     margin-top: 15px;
-}
-#app[style*="display: none"] .topbar {
-    display: none !important;
 }
 /* Styles for the avatar shapes */
 .avatar-style-initial { border-radius: 50%; }
@@ -534,18 +526,17 @@ input::-webkit-calendar-picker-indicator {
 #btn-delete-view { margin-top: 10px; display: none; }
   /* --- UNIVERSAL PRO THEME (Glassmorphism + Accent Bars) --- */
 
-/* 1. All Cards, Metric Boxes, and Table Containers */
-.card, .metric-card, .table-wrap {
-  background: rgba(255, 255, 255, 0.94) !important; /* Unified Glossy White */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  border-top: 4px solid var(--accent) !important; /* The Blue Bar */
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
-  padding: 20px;
-  margin-bottom: 20px;
-  transition: transform 0.2s ease;
+.card, .metric-card {
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+    color: #1a1a1a !important;
+}
+
+.metric-card {
+    height: 120px !important;
+}
+
   
   /* Force dark text inside these white boxes so it's readable */
   color: #1a1a18 !important;
@@ -2552,17 +2543,12 @@ html {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 20px !important;
-    margin-bottom: 30px !important;
     width: 100% !important;
+    margin-bottom: 10px !important;
 }
 
 /* 3. The Big Cards: 2 wide columns, taking up 100% width */
-.grid-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 20px !important;
-    width: 100% !important;
-}
+
 
 /* 4. Force cards to fill the space */
 .metric-card {
@@ -2575,12 +2561,12 @@ html {
 
 /* 5. Add space for the topbar */
 #app {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    padding-top: 160px !important; /* Increased from 120 to 160 */
-    background: #001f3f;
-    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+    padding-top: 240px !important; /* This is the key - pushing everything down 240px */
+    background: #001f3f !important;
+    width: 100% !important;
 }
 
 /* 6. Mobile Fix: Stack everything to 1 column */
@@ -2658,20 +2644,17 @@ html {
 }
 
 #panel-dashboard.active {
-    display: block !important; /* Changed from flex to block */
+    display: flex !important;
+    flex-direction: column !important; /* Stack: Metrics first, then Grid-2 */
+    gap: 30px !important;
     width: 100% !important;
-    max-width: 1400px;
-    margin: 0 auto !important; /* This centers the whole grid on the screen */
+    max-width: 1600px !important;
+    margin: 0 auto !important;
     padding: 20px !important;
-    box-sizing: border-box;
 }
 
 
-.grid-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 20px !important;
-}
+
 
 /* 5. Fix Text in Search Results */
 .search-cat-header {
@@ -2694,4 +2677,10 @@ html {
 .topbar {
     height: 65px !important;
     padding: 0 20px !important;
+}
+.grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    width: 100% !important;
 }
