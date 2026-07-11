@@ -2676,13 +2676,20 @@ html {
 
 /* Ensure the Topbar stays at the very top */
 .topbar {
+    display: flex !important;
+    flex-direction: row !important; /* Force horizontal */
+    align-items: center !important;
+    justify-content: flex-start !important; /* Align left by default */
+    height: 60px !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
-    z-index: 10000;
     background: #000 !important;
-    padding: 10px 20px !important;
-    display: block !important; /* Allows rows to stack naturally */
+    z-index: 10000 !important;
+    padding: 0 15px !important;
+    gap: 10px !important;
+    overflow: hidden !important;
 }
+
 
 /* Force Dashboard into a clean vertical stack */
 #panel-dashboard.active {
