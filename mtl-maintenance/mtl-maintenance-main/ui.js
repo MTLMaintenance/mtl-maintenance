@@ -42,7 +42,6 @@ export function showPanel(id) {
     const target = document.getElementById('panel-' + id);
     if (target) {
         target.classList.add('active');
-        // We use "" to let the CSS Classes (.panel.active) decide the display type
         target.style.display = ""; 
     }
 
