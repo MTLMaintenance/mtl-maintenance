@@ -1016,7 +1016,6 @@ body.dark-mode .modal * {
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
 .section-title{font-size:16px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* METRICS */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
 .metric-card{background:rgba(255,255,255,0.88);border-radius:var(--radius);padding:12px 14px}
 .metric-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .metric-value{font-size:24px;font-weight:600;line-height:1}
@@ -2683,11 +2682,6 @@ html {
     padding-top: 120px !important; /* Pushes everything below the topbar */
 }
 
-.metrics {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 20px !important;
-}
 
 .grid-2 {
     display: grid !important;
