@@ -2606,3 +2606,32 @@ html {
         grid-template-columns: 1fr !important;
     }
 }
+
+#tpl-list .tpl-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+}
+
+#tpl-list .tpl-item:hover {
+    background: #f9f9f9;
+}
+
+#tpl-list .tpl-item:last-child {
+    border-bottom: none;
+}
+
+.tpl-info h4 {
+    margin: 0;
+    font-size: 15px;
+    color: #1a1a1a;
+}
+
+.tpl-info p {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #777;
+}
