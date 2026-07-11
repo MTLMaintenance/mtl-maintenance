@@ -1,4 +1,44 @@
 
+/* 1. The Container */
+#panel-dashboard.active {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 2. Top Row (The 4 small boxes) */
+.metrics {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 20px !important;
+}
+
+/* 3. Middle & Bottom Rows (The large boxes) */
+.grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+}
+
+/* 4. Card Sizing */
+.metric-card {
+    min-height: 120px;
+}
+
+.card {
+    min-height: 300px; /* Gives the large boxes more height */
+}
+
+/* Mobile Fix: Stack them back to 1 column on phones */
+@media screen and (max-width: 768px) {
+    .metrics, .grid-2 {
+        grid-template-columns: 1fr !important;
+    }
+}
 /* FORCE the edit modal to the absolute front */
 #obs-edit-modal-backdrop {
     display: none; 
@@ -137,15 +177,6 @@ html, body {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Grid Stacking */
-  .metrics, .grid-2 { 
-      display: flex !important; 
-      flex-direction: column !important; 
-      gap: 10px !important; 
-  }
-  .metric-card, .card { width: 100% !important; }
-  
-  .modal { width: 95% !important; padding: 15px !important; }
 
   /* Zerk Map Mobile Fixes */
   div#zerk-sidebar-container {
@@ -1033,7 +1064,6 @@ body.dark-mode .modal * {
 .card{background:rgba(255,255,255,0.92);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
 .card-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
 .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 /* TABLES */
 .table-wrap{background:rgba(255,255,255,0.92);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto}
@@ -1926,10 +1956,6 @@ html {
     margin-bottom: 5px !important;
   }
 
-  /* 4. Restore Dashboard Grid (2 Columns) */
-  .metrics, .grid-2 { display: flex !important; flex-direction: row !important; gap: 20px !important; }
-  .metric-card, .card { flex: 1 !important; background: #f8f9fa; color: #333; }
-}
 /* -------end of pc block ----------*/
 .modern-login-card {
     background-color: rgba(255, 255, 255, 0.1) !important;
