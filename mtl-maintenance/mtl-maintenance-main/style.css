@@ -1007,7 +1007,13 @@ body > #invoice-photo-area {
 .auth-switch a{color:#85B7EB;cursor:pointer}
 .auth-divider{border:none;border-top:1px solid rgba(255,255,255,0.15);margin:16px 0}
 /* APP */
-#app{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 110px !important; /* This pushes EVERYTHING down */
+    background: #001f3f;
+}
 
 
 /* BUTTONS */
@@ -2533,8 +2539,12 @@ html {
 
 /* 2. Active Panel: Just makes it visible */
 .panel.active {
-    display: block !important; 
+    margin-top: 20px !important;
+    display: block;
+    width: 100%;
+    padding: 0 20px;
 }
+
 
 /* 3. Dashboard ONLY: This forces the Grid layout specifically for the home screen */
 #panel-dashboard.active {
