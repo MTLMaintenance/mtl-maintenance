@@ -28,6 +28,7 @@ html, body {
 }
 
 
+
 .section-title, 
 .section-header span,
 #panel-tasks h2 {
@@ -88,8 +89,6 @@ html, body {
     pointer-events: none;
     z-index: 110;
 }
-#zerk-svg-layer { z-index: 50; }   
-
 /* Mobile Floating Card Styles (Shared) */
 #zerk-mobile-card, #mobile-zerk-info-card {
     display: none; 
@@ -113,8 +112,6 @@ html, body {
    3. MOBILE ONLY (max-width: 768px)
    ============================================================ */
 @media screen and (max-width: 768px) {
-  html, body { background-color: #001f3f !important; }
-
   /* Topbar Stacking */
   .topbar {
     display: flex !important;
@@ -141,7 +138,11 @@ html, body {
   }
 
   /* Grid Stacking */
-  
+  .metrics, .grid-2 { 
+      display: flex !important; 
+      flex-direction: column !important; 
+      gap: 10px !important; 
+  }
   .metric-card, .card { width: 100% !important; }
   
   .modal { width: 95% !important; padding: 15px !important; }
@@ -166,13 +167,87 @@ html, body {
       animation: slideUp 0.2s ease-out;
   }
 }
+/* ============================================================
+   LOGIN PIN PAD STYLING
+   ============================================================ */
+
+/* 1. The Grid Layout for buttons (3 columns) */
+.pin-pad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    max-width: 280px;
+    margin: 20px auto !important;
+}
+
+/* 2. Individual Button Style */
+.pin-btn {
+    height: 60px !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.pin-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 3. Special Colors for Clear and Submit */
+.pin-btn.btn-clear {
+    color: #ff4444 !important; /* Red for Clear */
+    font-size: 12px !important;
+}
+
+.pin-btn.btn-submit {
+    background: var(--accent) !important; /* Your Blue color */
+    color: white !important;
+}
+
+/* 4. PIN Dots (The visualization of the entered pin) */
+#pin-display {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+/* The Placeholder (Empty Outline) */
+.pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2); /* Faint white outline */
+    background: transparent;
+    transition: all 0.1s ease;
+}
+
+/* The Filled State (Active) */
+.pin-dot.filled {
+    background-color: #28a745 !important; /* Solid Green */
+    border-color: #28a745 !important;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);
+    transform: scale(1.1);
+}
 
 @keyframes pop {
     0% { transform: scale(0.5); }
     100% { transform: scale(1); }
 }
 /* FORCE ALL TABLE DATA TO BE BLACK/DARK */
-
+table tbody td, 
+table tbody td span, 
+table tbody td div,
+table tbody td b {
+    color: #1a1a18 !important; /* Professional dark charcoal */
+}
 
 /* Ensure the currency and numbers pop */
 table tbody td {
@@ -191,6 +266,14 @@ table tbody tr:nth-child(even) {
   right: 20px;
 }
 
+#toast-container, .toast, .toast-notification {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 9999999 !important; /* 7 nines to be safe */
+    display: block !important;
+    pointer-events: auto !important;
+}
 
 /* Ensure the modal backdrop is lower than the toast */
 .modal-backdrop {
@@ -236,6 +319,13 @@ table tbody tr:nth-child(even) {
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body {
+  height: 100%;
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 14px;
+  background: #001f3f; /* Your preferred Navy Blue background */
+  color: white;
+}
 /* ============================================================
    GLOBAL BUTTON STYLES (Applies to PC & Mobile)
    ============================================================ */
@@ -263,6 +353,18 @@ table tbody tr:nth-child(even) {
   background-color: #ffffff !important;
   color: #111111 !important; /* Dark text so you can read it on the white */
   border-color: #ffffff !important;
+}
+/* --- GHOST INVOICE CLEANUP --- */
+#invoice-photo-preview-area, #invoice-scanning, #invoice-extracted-badge, 
+button[onclick="saveInvoice()"] {
+    display: none !important;
+}
+
+.modal-backdrop.open #invoice-photo-preview-area,
+.modal-backdrop.open #invoice-scanning,
+.modal-backdrop.open #invoice-extracted-badge,
+.modal-backdrop.open button[onclick="saveInvoice()"] {
+    display: block !important;
 }
 
 /* Update your primary buttons and highlights to use the variable */
@@ -497,12 +599,9 @@ body.dark-mode .modal * {
     /* --- ANALYTICS LOOK & FEEL POLISH --- */
 #panel-analytics .metric-card {
     border-top: 4px solid var(--accent); /* Adds a blue bar to the top */
-    background: rgba(255, 255, 255, 0.98) !important; /* Slightly more solid for readability */
 }
 
 #panel-analytics .card {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(10px); /* Blurs the background image behind the card */
 }
 
@@ -908,32 +1007,9 @@ body > #invoice-photo-area {
 .auth-switch a{color:#85B7EB;cursor:pointer}
 .auth-divider{border:none;border-top:1px solid rgba(255,255,255,0.15);margin:16px 0}
 /* APP */
-#app {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    padding-top: 70px; /* This pushes the dashboard down so the topbar doesn't cover it */
-    background: #001f3f;
-}
+#app{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0d1b2a 0%,#1a2f4a 50%,#0d1b2a 100%)}
 
-#panel-calendar.active {
-    display: block !important;
-    height: auto !important;
-    padding-top: 0 !important;
-}
 
-#panel-calendar .card {
-    margin-top: 0 !important;
-    min-height: 600px; /* Gives it a good height without forcing it to the bottom */
-}
-
-#cal-days {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    gap: 2px;
-    background: #ddd; /* This creates the lines between days */
-    border: 1px solid #ddd;
-}
 /* BUTTONS */
 .btn{padding:6px 14px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
 .btn-primary{background:var(--text);color:var(--bg);border:none;font-weight:500}
@@ -1638,11 +1714,8 @@ select.form-select:focus {
     background-color: #ffffff !important;
     color: #1a1a1a !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-}
-
     font-weight: 800 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-      border: none !important;
+    border: none !important;
 }
 #review-modal.active {
     display: flex !important;
@@ -1706,6 +1779,13 @@ select.form-select:focus {
   z-index: 100000 !important;
 }
 
+body {
+    background-color: #001f3f; /* Your Navy Blue */
+    background-attachment: fixed;
+    /* Optional: This subtle gradient makes the screen look less "flat" */
+    background: radial-gradient(circle at top, #003366 0%, #001f3f 100%);
+    color: #ffffff;
+}
 
 /* This prevents that "white flash" when scrolling past the top on iPhone */
 html {
@@ -1794,6 +1874,59 @@ html {
     gap: 8px !important;
   }
  
+ /* 3. --- THE CALENDAR POWER FIX --- */
+  /* This forces the calendar panel to fill the monitor height from the topbar down */
+  body #panel-calendar.active {
+    display: flex !important; 
+    flex-direction: column !important;
+    /* Calculated as: Full Height - Topbar Height - Top Buttons Height */
+    height: calc(100vh - 80px) !important; 
+    overflow: hidden !important;
+    padding-bottom: 10px !important; /* Tiny gap at the very bottom of the monitor */
+  }
+
+  /* Force the white card to stretch and fill the space */
+  #panel-calendar.active .card {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;             
+    height: 100% !important;
+    min-height: calc(100vh - 160px) !important; /* FORCES the card to the bottom */
+    background: #f8f9fa !important;
+    border-radius: 12px;
+    padding: 15px !important;
+    margin: 0 auto !important;
+    width: 98% !important;
+  }
+
+  /* Ensure the grid area takes up every pixel of the now-stretched card */
+  #cal-days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    /* Divide the rows: 1fr makes each week perfectly tall to fill the card */
+    grid-template-rows: repeat(auto-fit, minmax(0, 1fr)) !important;
+    flex: 1 !important; 
+    height: 100% !important;
+    border: 1px solid #ddd;
+    background: white;
+  }
+
+  /* Make individual date boxes fill the tall grid cells */
+  .cal-day {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border: 1px solid #f0f0f0 !important;
+    padding: 8px !important;
+    color: #333 !important;
+  }
+
+  /* Prevent headers from shrinking */
+  #cal-header, .cal-day-labels {
+    flex-shrink: 0 !important;
+    margin-bottom: 5px !important;
+  }
+
   /* 4. Restore Dashboard Grid (2 Columns) */
   .metrics, .grid-2 { display: flex !important; flex-direction: row !important; gap: 20px !important; }
   .metric-card, .card { flex: 1 !important; background: #f8f9fa; color: #333; }
@@ -2389,3 +2522,50 @@ html {
     border-radius: 10px;
 }
 
+.panel {
+    display: none;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+    /* We do NOT put flex or grid here yet */
+}
+
+/* 2. Active Panel: Just makes it visible */
+.panel.active {
+    display: block !important; 
+}
+
+/* 3. Dashboard ONLY: This forces the Grid layout specifically for the home screen */
+#panel-dashboard.active {
+    display: grid !important;
+    /* This creates the columns and lets them wrap to the next line */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+/* 4. Tables & Cards: This ensures they stay wide and at the top */
+#panel-equipment .card, 
+#panel-parts .card, 
+#panel-suppliers .card, 
+#panel-tools .card, 
+#panel-calendar .card {
+    margin-top: 0 !important;
+    width: 100%;
+    max-width: 1250px;
+    margin-left: auto;
+    margin-right: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* 5. Metrics row at the very top of the dashboard */
+.metrics-row {
+    grid-column: 1 / -1; /* Makes the small 0-0-0-0 boxes span the whole top */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 10px;
+}
