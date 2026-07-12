@@ -1787,12 +1787,13 @@ html {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
-    height: 60px !important;
+    min-height: 60px !important;
+    height: auto !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
-    padding: 0 20px !important;
+    padding: 8px 20px !important;
   }
 
 
@@ -2674,7 +2675,7 @@ html {
 #app {
     display: flex !important;
     flex-direction: column !important;
-    padding-top: 90px !important; /* Pushes content safely below the 60px topbar */
+    padding-top: 110px !important; /* Pushes content safely below the topbar, with extra margin in case topbar content wraps */
     background: #001f3f !important;
     min-height: 100vh;
 }
@@ -2684,12 +2685,13 @@ html {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
-    height: 60px !important;
+    min-height: 60px !important;
+    height: auto !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
     background: #000 !important;
     z-index: 10000 !important;
-    padding: 0 15px !important;
+    padding: 8px 15px !important;
 }
 
 
