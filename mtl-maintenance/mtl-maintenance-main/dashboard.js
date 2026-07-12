@@ -2,6 +2,13 @@
 import { fmtDate, badge, isOverdue } from './utils.js';
 import { supabase } from './db.js';
 
+// Helper: look up an equipment's display name from its ID.
+// (Was called in renderRecentTasks/renderSchedule but never defined/imported.)
+function equipName(equipId) {
+    const eq = (window.state.equipment || []).find(e => e.id === equipId);
+    return eq ? eq.name : 'Unknown Equipment';
+}
+
 // 1. Update the big numbers at the top (Open, Overdue, Total)
 export function updateMetrics() {
     const tasks = window.state.tasks || [];
@@ -85,17 +92,32 @@ export async function getAdaptivePrediction(equipId) {
     };
 }
 export function renderRecentTasks(){
-  const recent=[...state.tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
-  document.getElementById('task-count-badge').textContent=state.tasks.length+' work orders';
-  document.getElementById('recent-tasks').innerHTML=recent.map(t=>{
-    const partsUsed=state.partUsage.filter(p=>p.task_id===t.id).length;
+  const tasks = window.state.tasks || [];
+  const partUsage = window.state.partUsage || [];
+  const recent = [...tasks].sort((a,b)=>new Date(b.due)-new Date(a.due)).slice(0,5);
+
+  const badgeEl = document.getElementById('task-count-badge');
+  if (badgeEl) badgeEl.textContent = tasks.length+' work orders';
+
+  const el = document.getElementById('recent-tasks');
+  if (!el) return;
+
+  el.innerHTML = recent.map(t=>{
+    const partsUsed = partUsage.filter(p=>p.task_id===t.id).length;
     return `<div class="parts-row" onclick="openTaskDetail('${t.id}')">
       <div style="flex:1"><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--text2)">${equipName(t.equipId)}${partsUsed?` · ${partsUsed} part(s) used`:''}</div></div>
       ${badge(t.status)}<div style="font-size:12px;color:var(--text2);min-width:52px;text-align:right">$${(t.cost||0).toLocaleString()}</div>
     </div>`;
-  }).join('');
+  }).join('') || '<div style="color:var(--text3);font-size:12px;padding:8px 0">No work orders yet.</div>';
 }
 
+// TODO/BROKEN: This function references undefined names (TODAY, MONTHS,
+// state.schedules) and builds an `mk()` template that is never appended
+// anywhere — nothing in this function writes to the DOM. It does NOT
+// populate the dashboard's #sched-list-dash (that's renderSchedDash, above,
+// which works fine). This looks like it belongs to a separate, unfinished
+// full-schedule/calendar panel. Left untouched until we know its intended
+// container and where TODAY/MONTHS/state are supposed to come from.
 export function renderSchedule(){
   const nw = new Date(TODAY); nw.setDate(nw.getDate() + 7);
   const n30 = new Date(TODAY); n30.setDate(n30.getDate() + 30);
@@ -125,15 +147,38 @@ export function renderSchedule(){
   };
 }
 
+// Per-equipment observations list (e.g. equipment detail view).
+// Fixed: was referencing bare `state` instead of `window.state`.
 export function renderDashboardObs(equipId) {
     const container = document.getElementById('eq-obs-list-dash');
     if(!container) return;
-    const obs = state.observations.filter(o => o.equip_id === equipId).slice(0, 3);
+    const obs = (window.state.observations || []).filter(o => o.equip_id === equipId).slice(0, 3);
     container.innerHTML = obs.map(o => `
         <div style="padding:6px 0; border-bottom:1px solid var(--border); font-size:12px">
             <div style="color:var(--text3); font-size:10px">${o.author} · ${fmtDate(o.created_at)}</div>
             <div>${o.body.slice(0, 50)}${o.body.length > 50 ? '...' : ''}</div>
         </div>
     `).join('') || '<div style="color:var(--text3); font-size:11px">No notes</div>';
+}
+
+
+export function renderRecentObsDash() {
+    const container = document.getElementById('recent-obs-list');
+    if (!container) return;
+
+    const allObs = window.state.observations || [];
+    const recent = [...allObs]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5);
+
+    const badgeEl = document.getElementById('obs-count-badge');
+    if (badgeEl) badgeEl.textContent = allObs.length + ' notes';
+
+    container.innerHTML = recent.map(o => `
+        <div style="padding:6px 0; border-bottom:1px solid var(--border); font-size:12px">
+            <div style="color:var(--text3); font-size:10px">${o.author} · ${equipName(o.equip_id)} · ${fmtDate(o.created_at)}</div>
+            <div>${o.body.slice(0, 50)}${o.body.length > 50 ? '...' : ''}</div>
+        </div>
+    `).join('') || '<div style="color:var(--text3); font-size:11px; padding:8px 0">No observations yet.</div>';
 }
     
