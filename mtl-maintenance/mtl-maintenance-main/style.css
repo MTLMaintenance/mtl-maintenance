@@ -1834,6 +1834,8 @@ html {
     overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
     scrollbar-width: none; /* Hide scrollbar for clean look */
     padding: 0 10px !important;
+    margin-left: 30px !important;
+
 }
 #main-nav::-webkit-scrollbar { display: none; }
 
