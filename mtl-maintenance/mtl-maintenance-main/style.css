@@ -1833,13 +1833,13 @@ html {
     flex: 1 !important; /* Take up available middle space */
     overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
     scrollbar-width: none; /* Hide scrollbar for clean look */
-    padding: 6 12px !important;
+    padding: 0 10px !important;
 }
 #main-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
     padding: 4px 10px !important;
-    font-size: 11px !important;
+    font-size: 15px !important;
     font-weight: 700 !important;
     white-space: nowrap !important; /* Stop text from wrapping to 2 lines */
     background: var(--accent) !important;
