@@ -2604,7 +2604,6 @@ html {
     color: #777;
 }
 #global-search {
-    margin-right: 250px !important;
     background: rgba(255, 255, 255, 0.15) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     border-radius: 6px !important;
