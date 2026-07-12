@@ -2603,7 +2603,18 @@ html {
     font-size: 12px;
     color: #777;
 }
-
+#global-search {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 6px !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    width: 220px !important;
+    height: 34px !important;
+    outline: none !important;
+}
+#global-search::placeholder { color: rgba(255,255,255,0.5); }
 /* 2. Fix the Search Dropdown (The menu that pops up) */
 #search-results {
     position: absolute !important;
