@@ -1786,7 +1786,7 @@ html {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     min-height: 60px !important;
     height: auto !important;
     position: fixed !important;
@@ -1811,9 +1811,9 @@ html {
     padding: 0 !important;
   }
 
-.logo { flex-shrink: 0 !important; margin-right: 15px !important; white-space: nowrap !important; }
+.logo { flex-shrink: 0 !important; margin-right: 20px !important; white-space: nowrap !important; }
 
-#pc-search-wrap { width: 150px !important; flex-shrink: 0 !important; margin-right: 15px !important; }
+#pc-search-wrap { width: 110px !important; flex-shrink: 0 !important; margin-right: 15px !important; }
   
     
     #global-search {
@@ -1842,7 +1842,7 @@ html {
     font-size: 11px !important;
     font-weight: 700 !important;
     white-space: nowrap !important; /* Stop text from wrapping to 2 lines */
-    background: rgba(255,255,255,0.1) !important;
+    background: var(--accent) !important;
 }
 
 /* 3. The Right Side (The Magic Fix) */
@@ -1851,7 +1851,7 @@ html {
     align-items: center !important;
     gap: 8px !important;
     flex-shrink: 0 !important;
-    margin-left: 15px !important;
+    margin-left: auto !important;
 }
 .topbar-right .btn-sm {
     padding: 4px 8px !important;
@@ -2684,7 +2684,7 @@ html {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     min-height: 60px !important;
     height: auto !important;
     position: fixed !important;
