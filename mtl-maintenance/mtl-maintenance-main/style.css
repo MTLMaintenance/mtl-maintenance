@@ -1833,7 +1833,7 @@ html {
     flex: 1 !important; /* Take up available middle space */
     overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
     scrollbar-width: none; /* Hide scrollbar for clean look */
-    padding: 0 10px !important;
+    padding: 6 12px !important;
 }
 #main-nav::-webkit-scrollbar { display: none; }
 
@@ -2685,7 +2685,7 @@ html {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    min-height: 70px !important;
+    min-height: 60px !important;
     height: auto !important;
     position: fixed !important;
     top: 0; left: 0; right: 0;
