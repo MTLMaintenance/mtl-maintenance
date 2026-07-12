@@ -1811,7 +1811,7 @@ html {
     padding: 0 !important;
   }
 
-.logo { flex-shrink: 0 !important; margin-right: 20px !important; white-space: nowrap !important; }
+.logo { flex-shrink: 0 !important; margin-right: 10px !important; white-space: nowrap !important; }
 
 #pc-search-wrap { width: 110px !important; flex-shrink: 0 !important; margin-right: 15px !important; }
   
