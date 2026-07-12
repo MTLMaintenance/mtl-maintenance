@@ -1839,7 +1839,7 @@ html {
 
   .nav-btn {
     padding: 4px 10px !important;
-    font-size: 15px !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
     white-space: nowrap !important; /* Stop text from wrapping to 2 lines */
     background: var(--accent) !important;
