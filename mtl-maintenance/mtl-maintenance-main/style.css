@@ -1830,7 +1830,7 @@ html {
 #main-nav {
     display: flex !important;
     flex-direction: row !important;
-    justify-content: center !important;
+    justify-content: space-between !important;
     gap: 5px !important;
     flex: 1 !important; /* Take up available middle space */
     overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
