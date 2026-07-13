@@ -2686,7 +2686,7 @@ html {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 12px !important;
+    gap: 5px !important;
     min-height: 60px !important;
     height: auto !important;
     position: fixed !important;
