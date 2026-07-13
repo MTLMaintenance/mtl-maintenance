@@ -28,35 +28,34 @@ export function handleGlobalSearch() {
   }
 
   // Each category: which state array to search, what heading to show,
-  // and what clicking a result should do. Where we know the real
-  // "open this record" function (equipment, tasks) we use it directly.
-  // Everywhere else, we jump to that section's panel instead of guessing
-  // at a detail function that might not exist.
+  // and the real "open this record" function for that type (confirmed
+  // against the app's window.* bindings). Only `schedules` has no known
+  // detail opener, so it falls back to jumping to the calendar panel.
   const categories = [
     { key: 'equipment', label: 'EQUIPMENT',
       onClick: e => `window.openEquipDetail('${e.id}')` },
     { key: 'tasks', label: 'WORK ORDERS',
       onClick: t => `window.openTaskDetail('${t.id}')` },
     { key: 'observations', label: 'OBSERVATIONS',
-      onClick: o => o.equip_id ? `window.openEquipDetail('${o.equip_id}')` : `window.showPanel('equipment')` },
+      onClick: o => `window.globalEditObs('${o.id}')` },
     { key: 'faults', label: 'FAULTS',
-      onClick: f => f.equip_id ? `window.openEquipDetail('${f.equip_id}')` : `window.showPanel('equipment')` },
+      onClick: f => `window.openFaultCodeDetail('${f.id}')` },
     { key: 'parts', label: 'PARTS',
-      onClick: () => `window.showPanel('parts')` },
+      onClick: p => `window.editPart('${p.id}')` },
     { key: 'consumables', label: 'CONSUMABLES',
-      onClick: () => `window.showPanel('parts')` },
+      onClick: c => `window.editConsumable('${c.id}')` },
     { key: 'suppliers', label: 'SUPPLIERS',
-      onClick: () => `window.showPanel('suppliers')` },
+      onClick: s => `window.openSupplierDetail('${s.id}')` },
     { key: 'tools', label: 'TOOL CRIB',
-      onClick: () => `window.showPanel('tools')` },
+      onClick: t => `window.editTool('${t.id}')` },
     { key: 'documents', label: 'DOCUMENTS',
-      onClick: () => `window.showPanel('documents')` },
+      onClick: d => `window.openDocDetail('${d.id}')` },
     { key: 'checklistTemplates', label: 'CHECKLISTS',
-      onClick: () => `window.showPanel('checklists')` },
+      onClick: c => `window.editTemplate('${c.id}')` },
+    { key: 'wishlist', label: 'WISHLIST',
+      onClick: w => `window.openWishDetailCard('${w.id}')` },
     { key: 'schedules', label: 'SCHEDULED MAINTENANCE',
       onClick: () => `window.showPanel('calendar')` },
-    { key: 'wishlist', label: 'WISHLIST',
-      onClick: () => `window.showPanel('parts')` },
   ];
 
   let html = '';
