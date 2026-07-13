@@ -2635,6 +2635,24 @@ html {
     z-index: 100000 !important;
     padding: 10px 0 !important;
     display: none; /* JS will toggle this */
+    color: #1a1a1a !important;
+}
+#search-results .search-header {
+    padding: 6px 14px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #888 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+#search-results .search-item {
+    padding: 8px 14px !important;
+    color: #1a1a1a !important;
+    cursor: pointer;
+    font-size: 13px !important;
+}
+#search-results .search-item:hover {
+    background: rgba(0,0,0,0.05) !important;
 }
 
 /* 3. Bring the Metric Cards back to life */
