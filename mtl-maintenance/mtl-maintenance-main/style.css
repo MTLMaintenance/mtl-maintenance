@@ -1840,8 +1840,8 @@ html {
 #main-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
-    padding: 4px 10px !important;
-    font-size: 11px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
     white-space: nowrap !important; /* Stop text from wrapping to 2 lines */
     background: var(--accent) !important;
@@ -1856,9 +1856,9 @@ html {
     margin-left: auto !important;
 }
 .topbar-right .btn-sm {
-    padding: 6px 16px !important;
-    font-size: 12px !important;
-    height: 32px !important;
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+    height: 28px !important;
 }
 
 #user-profile-trigger {
