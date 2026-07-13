@@ -1,5 +1,6 @@
 // search.js - Global Search Logic
-export function handleGlobalSearch(state) {
+export function handleGlobalSearch() {
+  const state = window.state;
   const input = document.getElementById('global-search');
   const resultsContainer = document.getElementById('search-results');
   if (!input || !resultsContainer) return;
