@@ -1830,7 +1830,7 @@ html {
 #main-nav {
     display: flex !important;
     flex-direction: row !important;
-    gap: 15px !important;
+    gap: 10px !important;
     flex: 1 !important; /* Take up available middle space */
     overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
     scrollbar-width: none; /* Hide scrollbar for clean look */
