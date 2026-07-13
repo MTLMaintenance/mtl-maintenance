@@ -1787,6 +1787,7 @@ html {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-start !important;
+    gap: 12px !important;
     min-height: 60px !important;
     height: auto !important;
     position: fixed !important;
@@ -1811,9 +1812,9 @@ html {
     padding: 0 !important;
   }
 
-.logo { flex-shrink: 0 !important; margin-right: 10px !important; white-space: nowrap !important; }
+.logo { flex-shrink: 0 !important; margin-right: 0 !important; white-space: nowrap !important; }
 
-#pc-search-wrap { width: 110px !important; flex-shrink: 0 !important; margin-right: 15px !important; }
+#pc-search-wrap { width: 110px !important; flex-shrink: 0 !important; margin-right: 0 !important; }
   
     
     #global-search {
@@ -1834,13 +1835,12 @@ html {
     overflow-x: auto !important; /* Allow side-scrolling if buttons don't fit */
     scrollbar-width: none; /* Hide scrollbar for clean look */
     padding: 0 10px !important;
-  
 }
 #main-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
     padding: 4px 10px !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     white-space: nowrap !important; /* Stop text from wrapping to 2 lines */
     background: var(--accent) !important;
@@ -2604,6 +2604,7 @@ html {
     font-size: 12px;
     color: #777;
 }
+
 #global-search {
     background: rgba(255, 255, 255, 0.15) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -2611,11 +2612,12 @@ html {
     color: white !important;
     padding: 6px 12px !important;
     font-size: 13px !important;
-    width: 220px !important;
-    height: 34px !important;
+    width: 100% !important;
+    height: 28px !important;
     outline: none !important;
 }
 #global-search::placeholder { color: rgba(255,255,255,0.5); }
+
 /* 2. Fix the Search Dropdown (The menu that pops up) */
 #search-results {
     position: absolute !important;
@@ -2684,6 +2686,7 @@ html {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-start !important;
+    gap: 12px !important;
     min-height: 60px !important;
     height: auto !important;
     position: fixed !important;
