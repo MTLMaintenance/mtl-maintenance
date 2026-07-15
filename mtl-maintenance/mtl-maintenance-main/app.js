@@ -69,7 +69,11 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-window.refreshDashboard =refreshDashboard;
+window.refreshDashboard = refreshDashboard;
+window.updateMetrics = updateMetrics;
+window.renderEquipListDash = renderEquipListDash;
+window.renderSchedDash = renderSchedDash;
+window.renderRecentTasks = renderRecentTasks;
 window.renderRecentObsDash = renderRecentObsDash;
 window.renderZerkOS = renderZerkOS;
 window.getActiveFaultsCount = getActiveFaultsCount;
