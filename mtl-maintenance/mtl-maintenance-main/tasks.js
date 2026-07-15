@@ -67,6 +67,7 @@ export async function saveTask() {
         if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
         if (typeof window.renderCalendar === 'function') window.renderCalendar();
         if (typeof window.updateMetrics === 'function') window.updateMetrics();
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         
         showToast("Work Order Saved ✓");
     } catch (e) { console.error(e); }
@@ -108,6 +109,7 @@ export async function finalizeTask(taskId, currentUser) {
 
     await persist('tasks', 'upsert', task);
     showToast("Status Updated ✓");
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     return true;
 }
 
@@ -167,6 +169,7 @@ export async function verifyTaskPinAction(currentUser) {
     }
 
     await persist('tasks', 'upsert', task);
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     return true;
 }
 
@@ -245,6 +248,7 @@ export async function deleteTask(id) {
         // Redraw EVERYTHING
         if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
         if (typeof window.renderCalendar === 'function') window.renderCalendar();
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         
         showToast("Work Order Removed");
     } catch (e) { console.error(e); }
