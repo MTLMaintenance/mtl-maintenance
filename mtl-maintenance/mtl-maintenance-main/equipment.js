@@ -521,3 +521,5 @@ export async function saveNewSpec() {
     }
 }
 
+export function setGroupFilter(group){window.activeGroupFilter=group;['all'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});if(typeof window.refreshDashboard==='function')window.refreshDashboard();}
+export function setEquipGroupFilter(group){window.equipGroupFilter=group;['all'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});if(typeof window.renderEquipmentTable==='function')window.renderEquipmentTable();}
