@@ -55,7 +55,8 @@ export async function loadState() {
 
     // 3. Trigger UI redraws
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
-    if (typeof window.renderDashboard === 'function') window.renderDashboard();
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
+    if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
     
     setSyncStatus('online');
     return true;
