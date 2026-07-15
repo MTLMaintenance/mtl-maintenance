@@ -48,6 +48,7 @@ export async function updateEquipStatus(equipId, newStatus, equipment) {
     try {
         await persist('equipment', 'upsert', e);
         showToast(`${e.name} is now ${newStatus}`);
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         return true;
     } catch (err) {
         showToast("Status update failed");
@@ -145,6 +146,7 @@ export async function addObservation(equipId, state, currentUser) {
         // 4. Cleanup
         input.value = '';
         showToast("Observation added ✓");
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         return true;
     } catch (e) {
         console.error("Observation error:", e);
@@ -224,6 +226,7 @@ export async function toggleLockout(equipId, isLocked, currentUser) {
         }
 
         showToast(isLocked ? "Machine LOCKED" : "Lockout Cleared");
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         return true;
     } catch(err) {
         showToast("Update failed");
@@ -375,6 +378,7 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
 
     window.closeModal('equip-modal');
     if (window.renderEquipmentTable) window.renderEquipmentTable();
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     
     window.showToast("Saved to Cloud ✓");
     return { success: true };
@@ -458,6 +462,7 @@ export async function deleteEquip(id) {
         // 6. UI REFRESH: Update the main table and dashboard counts
         if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
         if (typeof window.updateMetrics === 'function') window.updateMetrics();
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
 
         window.showToast(`${e.name} and all associated data removed ✓`);
         return true; // Signal success
