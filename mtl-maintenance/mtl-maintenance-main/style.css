@@ -501,8 +501,7 @@ input::-webkit-calendar-picker-indicator {
 }
 
 #panel-admin .tab,
-#panel-equipment .sub-toggle .btn,
-#panel-calendar .view-toggle .btn {
+#panel-equipment .sub-toggle .btn,{
   color: rgba(255,255,255,0.85) !important;
 }
 
