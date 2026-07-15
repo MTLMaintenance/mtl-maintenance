@@ -161,63 +161,89 @@ export async function openTaskDetail(id, state) {
     // 4. Update the Modal Header
     document.getElementById('detail-title').textContent = t.name;
 
-    // 5. Build and Inject the HTML Layout
+    // 5. Build and Inject the HTML Layout — styled to match the New Work Order modal
     document.getElementById('detail-body').innerHTML = `
-        <div class="tab-bar">
-          <button class="tab ${activeTab === 'dt-info' ? 'active' : ''}" onclick="window.switchTaskTab('dt-info',this)">Info</button>
+        <div class="tab-bar" style="padding: 10px 20px; background: #fafafa; border-bottom: 1px solid #eee;">
+          <button class="tab ${activeTab === 'dt-info' ? 'active' : ''}" onclick="window.switchTaskTab('dt-info',this)">Details</button>
           <button class="tab ${activeTab === 'dt-checklist' ? 'active' : ''}" onclick="window.switchTaskTab('dt-checklist',this)">Checklist (${done}/${totalCheck})</button>
-          <button class="tab ${activeTab === 'dt-parts' ? 'active' : ''}" onclick="window.switchTaskTab('dt-parts',this)">Parts (${partsUsed.length})</button>
+          <button class="tab ${activeTab === 'dt-parts' ? 'active' : ''}" onclick="window.switchTaskTab('dt-parts',this)">Parts Used (${partsUsed.length})</button>
           <button class="tab ${activeTab === 'dt-comments' ? 'active' : ''}" onclick="window.switchTaskTab('dt-comments',this)">Comments (${comments.length})</button>
         </div>
 
-        <div id="dt-info" class="dt-section" style="display:${activeTab === 'dt-info' ? 'block' : 'none'}">
-            <div class="task-info-grid">
-                <div><span>Machine:</span> <b>${equipName(t.equipId || t.equip_id, state)}</b></div>
-                <div><span>Assigned:</span> ${t.assign || '—'}</div>
-                <div><span>Priority:</span> ${badge(t.priority)}</div>
-                <div><span>Due:</span> <b style="color:${isOverdue(t.due) ? 'red' : 'inherit'}">${fmtDate(t.due)}</b></div>
-            </div>
-            <div class="task-notes-display">${t.notes || 'No notes.'}</div>
-        </div>
+        <div style="padding: 20px; max-height: 70vh; overflow-y: auto;">
 
-        <div id="dt-checklist" class="dt-section" style="display:${activeTab === 'dt-checklist' ? 'block' : 'none'}">
-            <div class="flex-gap-10">
-                <input type="text" id="new-check-item" placeholder="Add step..." class="form-input">
-                <button class="btn-primary" onclick="window.addTaskCheckItem('${t.id}')">Add</button>
-            </div>
-            <div class="checklist-list">
-                ${(t.checklist || []).map((c, i) => `
-                    <div class="check-item" onclick="window.toggleTaskCheck('${t.id}', ${i})">
-                        <div class="check-box ${c.done ? 'done' : ''}">${c.done ? '✓' : ''}</div>
-                        <span>${c.text}</span>
+            <div id="dt-info" class="dt-section" style="display:${activeTab === 'dt-info' ? 'block' : 'none'}">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666 !important;">Machine</label>
+                        <div style="color: black !important; font-weight: 700;">${equipName(t.equipId || t.equip_id, state)}</div>
                     </div>
-                `).join('')}
-            </div>
-        </div>
-
-        <div id="dt-parts" class="dt-section" style="display:${activeTab === 'dt-parts' ? 'block' : 'none'}">
-            <button class="btn-secondary" onclick="window.addPartToActiveTask('${t.id}')">+ Log Part Usage</button>
-            <div class="parts-usage-list">
-                ${partsUsed.map(p => `
-                    <div class="usage-row">
-                        <div><b>${p.part_name}</b> x${p.qty_used}</div>
-                        <button class="btn-danger" onclick="window.removePartUsage('${p.id}', '${t.id}')">✕</button>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666 !important;">Assigned To</label>
+                        <div style="color: black !important;">${t.assign || '—'}</div>
                     </div>
-                `).join('')}
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666 !important;">Priority</label>
+                        <div>${badge(t.priority)}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666 !important;">Due Date</label>
+                        <div style="color:${isOverdue(t.due) ? '#dc3545' : 'black'} !important; font-weight: 700;">${fmtDate(t.due)}</div>
+                    </div>
+                    <div class="form-group full">
+                        <label class="form-label" style="color: #666 !important;">Notes</label>
+                        <div class="form-textarea" style="height:auto; min-height:60px; color: black !important; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fafafa;">${t.notes || 'No notes provided.'}</div>
+                    </div>
+                </div>
             </div>
+
+            <div id="dt-checklist" class="dt-section" style="display:${activeTab === 'dt-checklist' ? 'block' : 'none'}">
+                <div style="background:#f5f5f5; padding:15px; border-radius:8px; margin-bottom:15px">
+                    <label class="form-label" style="color: #666 !important;">Add a Step</label>
+                    <div style="display:flex; gap:8px">
+                        <input type="text" id="new-check-item" placeholder="e.g. Torque bolts to spec" class="form-input" style="flex:1; color: black !important; border: 1px solid #ddd;">
+                        <button class="btn btn-secondary btn-sm" onclick="window.addTaskCheckItem('${t.id}')">Add</button>
+                    </div>
+                </div>
+                <div class="checklist-list">
+                    ${(t.checklist || []).map((c, i) => `
+                        <div class="check-item" onclick="window.toggleTaskCheck('${t.id}', ${i})" style="cursor:pointer;">
+                            <div class="check-box ${c.done ? 'done' : ''}">${c.done ? '✓' : ''}</div>
+                            <span>${c.text}</span>
+                        </div>
+                    `).join('') || '<div style="color:#999; font-size:13px; text-align:center">No checklist steps yet</div>'}
+                </div>
+            </div>
+
+            <div id="dt-parts" class="dt-section" style="display:${activeTab === 'dt-parts' ? 'block' : 'none'}">
+                <div style="background:#f5f5f5; padding:15px; border-radius:8px; margin-bottom:15px">
+                    <button class="btn btn-secondary btn-sm" onclick="window.addPartToActiveTask('${t.id}')">+ Log Part Usage</button>
+                </div>
+                <div class="parts-usage-list">
+                    ${partsUsed.map(p => `
+                        <div class="usage-row">
+                            <div><b>${p.part_name}</b> x${p.qty_used}</div>
+                            <button class="btn-danger btn-sm" onclick="window.removePartUsage('${p.id}', '${t.id}')">✕</button>
+                        </div>
+                    `).join('') || '<div style="color:#999; font-size:13px; text-align:center">No parts added yet</div>'}
+                </div>
+            </div>
+
+            <div id="dt-comments" class="dt-section" style="display:${activeTab === 'dt-comments' ? 'block' : 'none'}">
+                <div class="comment-list" style="margin-bottom:12px; color: black !important;">
+                    ${comments.map(c => `<div class="comment-card"><b>${c.author}:</b> ${c.body}</div>`).join('') || '<div style="color:#999; font-size:13px">No comments yet</div>'}
+                </div>
+                <textarea id="dt-comment-input-large" class="form-textarea" placeholder="Add an update..." style="color: black !important; border: 1px solid #ddd;"></textarea>
+                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="window.addTaskComment('${t.id}')">Post</button>
+                </div>
+            </div>
+
         </div>
 
-        <div id="dt-comments" class="dt-section" style="display:${activeTab === 'dt-comments' ? 'block' : 'none'}">
-            <textarea id="dt-comment-input-large" class="form-textarea" placeholder="Update..."></textarea>
-            <button class="btn-primary" onclick="window.addTaskComment('${t.id}')">Post</button>
-            <div class="comment-list">
-                ${comments.map(c => `<div class="comment-card"><b>${c.author}:</b> ${c.body}</div>`).join('')}
-            </div>
-        </div>
-
-        <div class="modal-footer-btns">
-            ${isManager ? `<button class="btn-danger" onclick="window.deleteTask('${t.id}')">Delete WO</button>` : ''}
-            <button class="btn-primary" onclick="window.openTaskSignoff('${t.id}')">Finalize Work</button>
+        <div class="form-row" style="padding: 15px 20px; background: #f9f9f9; border-top: 1px solid #eee; border-radius: 0 0 12px 12px; justify-content: flex-end;">
+            ${isManager ? `<button class="btn btn-secondary" style="color:#dc3545; border-color:#dc3545;" onclick="window.deleteTask('${t.id}')">Delete WO</button>` : ''}
+            <button class="btn btn-primary" onclick="window.openTaskSignoff('${t.id}')">Finalize Work</button>
         </div>
     `;
 
