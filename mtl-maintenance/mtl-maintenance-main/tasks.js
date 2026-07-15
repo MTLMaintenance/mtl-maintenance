@@ -5,6 +5,26 @@ import { openModal, closeModal } from './ui.js';
 import { logAuditAction } from './admin.js';
 
 // 1. Render the main Work Orders table
+export function resetTaskForm() {
+    const ids = ['t-name', 't-due', 't-notes', 't-tools', 't-checklist', 'wo-comment-input'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const equip = document.getElementById('t-equip'); if (equip) equip.selectedIndex = 0;
+    const priority = document.getElementById('t-priority'); if (priority) priority.selectedIndex = 0;
+    const assign = document.getElementById('t-assign'); if (assign) assign.selectedIndex = 0;
+
+    if (window.woPartsAdded) window.woPartsAdded.length = 0;
+    const partsListEl = document.getElementById('wo-parts-list');
+    if (partsListEl) partsListEl.innerHTML = '<div style="color:#999; font-size:13px; text-align:center">No parts added yet</div>';
+
+    const commentListEl = document.getElementById('wo-comment-list');
+    if (commentListEl) commentListEl.innerHTML = '<div style="color:#999; font-size:13px">No comments yet</div>';
+
+    // Reset to the Details tab
+    const firstTab = document.querySelector('#task-modal .tab-bar .tab');
+    if (typeof window.switchWOTab === 'function' && firstTab) window.switchWOTab('wo-details', firstTab);
+}
+
+// 2. Render the main Work Orders table
 export function renderTasksTable(containerId, filter = 'all') {
     const container = document.getElementById(containerId);
     if (!container || !window.state.tasks) return;
@@ -41,6 +61,16 @@ export async function saveTask() {
 
     if (!name || !equipId) return showToast("Name and Equipment required");
 
+    // Pull checklist steps (one per line) from the Checklist tab
+    const checklistRaw = document.getElementById('t-checklist')?.value || '';
+    const checklist = checklistRaw.split('\n').map(line => line.trim()).filter(Boolean).map(text => ({ text, done: false }));
+
+    // Pull any parts staged in the Parts Used tab
+    const partsToLog = window.woPartsAdded || [];
+
+    // Pull the initial comment, if any, from the Comments tab
+    const initialComment = document.getElementById('wo-comment-input')?.value.trim() || '';
+
     const record = {
         id: uid(),
         name: name,
@@ -50,6 +80,7 @@ export async function saveTask() {
         assign: document.getElementById('t-assign').value,
         notes: document.getElementById('t-notes').value,
         status: 'Open',
+        checklist: checklist,
         created_at: new Date().toISOString()
     };
 
@@ -60,8 +91,51 @@ export async function saveTask() {
         // 1. Update State
         window.state.tasks.push({ ...record, equipId: record.equip_id });
 
-        // 2. THE SEAMLESS REFRESH
+        // 2. Carry over any parts staged during creation
+        if (partsToLog.length) {
+            for (const p of partsToLog) {
+                const part = window.state.parts.find(x => x.id === p.part_id);
+                const usage = {
+                    id: uid(),
+                    task_id: record.id,
+                    part_id: p.part_id,
+                    part_name: p.part_name,
+                    qty_used: p.qty_used,
+                    unit_cost: p.unit_cost || 0,
+                    line_total: (p.unit_cost || 0) * p.qty_used,
+                    used_by: window.currentUser?.name || 'Unknown',
+                    used_at: new Date().toISOString()
+                };
+                try {
+                    await window._mpdb.from('part_usage').insert(usage);
+                    window.state.partUsage = window.state.partUsage || [];
+                    window.state.partUsage.push(usage);
+                    if (part) {
+                        part.qty = Math.max(0, (part.qty || 0) - p.qty_used);
+                        await persist('parts', 'upsert', part);
+                    }
+                } catch (err) { console.error("Failed to carry over part usage:", err); }
+            }
+        }
+
+        // 3. Carry over the initial comment, if one was written
+        if (initialComment) {
+            const comment = {
+                id: uid(),
+                task_id: record.id,
+                author: window.currentUser?.name || 'Unknown',
+                body: initialComment,
+                created_at: new Date().toISOString()
+            };
+            try {
+                const { error: cErr } = await supabase.from('wo_comments').insert(comment);
+                if (cErr) throw cErr;
+            } catch (err) { console.error("Failed to carry over initial comment:", err); }
+        }
+
+        // 4. THE SEAMLESS REFRESH
         window.closeModal('task-modal');
+        resetTaskForm();
         
         // Redraw EVERYTHING
         if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
