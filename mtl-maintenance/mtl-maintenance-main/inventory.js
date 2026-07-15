@@ -119,7 +119,15 @@ export async function savePart() {
         if (typeof window.renderPartsTable === 'function') {
             window.renderPartsTable();
         }
-        
+        // NEW: keep the dashboard's "Parts Low" metric and any parts-related
+        // dashboard widgets in sync with this change.
+        if (typeof window.updateDashboardParts === 'function') {
+            window.updateDashboardParts(state);
+        }
+        if (typeof window.refreshDashboard === 'function') {
+            window.refreshDashboard();
+        }
+
         showToast("Part saved ✓");
         return true;
     } catch (e) {
@@ -165,6 +173,13 @@ export async function deletePart() {
         // 4. Refresh UI
         if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
         window.closeModal('part-modal');
+        // NEW: refresh dashboard widgets after a part is removed.
+        if (typeof window.updateDashboardParts === 'function') {
+            window.updateDashboardParts(state);
+        }
+        if (typeof window.refreshDashboard === 'function') {
+            window.refreshDashboard();
+        }
 
         window.showToast("Part removed ✓");
     } catch (err) {
@@ -196,6 +211,14 @@ export async function addPartToTask(taskId, partId, qtyUsed, currentUser, state)
         await supabase.from('parts').update({ qty: part.qty }).eq('id', partId);
 
         state.partUsage.push(usage);
+        // NEW: part quantity changed, so the "Parts Low" widget and
+        // dashboard need to reflect it.
+        if (typeof window.updateDashboardParts === 'function') {
+            window.updateDashboardParts(state);
+        }
+        if (typeof window.refreshDashboard === 'function') {
+            window.refreshDashboard();
+        }
         return { success: true, usage };
     } catch (e) { return { success: false, msg: e.message }; }
 }
@@ -223,6 +246,14 @@ export async function removePartUsage(usageId, taskId, state) {
         if (task) {
             task.cost = Math.max(0, (task.cost || 0) - (usage.line_total || 0));
             await supabase.from('tasks').update({ cost: task.cost }).eq('id', taskId);
+        }
+
+        // NEW: stock levels and task cost changed, refresh dashboard.
+        if (typeof window.updateDashboardParts === 'function') {
+            window.updateDashboardParts(state);
+        }
+        if (typeof window.refreshDashboard === 'function') {
+            window.refreshDashboard();
         }
 
         showToast("Part returned to stock ✓");
@@ -311,6 +342,10 @@ export async function saveConsumable(state) {
         
         await fetchConsumables(state); 
         closeModal('consumable-modal');
+        // NEW: refresh dashboard widgets after a consumable is saved.
+        if (typeof window.refreshDashboard === 'function') {
+            window.refreshDashboard();
+        }
         showToast("Supply item saved ✓");
         return true;
     } catch(e) {
@@ -425,7 +460,11 @@ export async function deleteConsumable() {
         if (typeof window.renderConsumablesTable === 'function') {
             window.renderConsumablesTable();
         }
-        
+        // NEW: refresh dashboard widgets after a consumable is deleted.
+        if (typeof window.refreshDashboard === 'function') {
+            window.refreshDashboard();
+        }
+
         window.showToast("Item removed ✓");
 
     } catch (e) {
