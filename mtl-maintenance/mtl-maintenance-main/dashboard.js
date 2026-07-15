@@ -1,6 +1,7 @@
 // dashboard.js - Home Screen & Analytics Rendering
 import { fmtDate, badge, isOverdue } from './utils.js';
 import { supabase } from './db.js';
+import { updateDashboardParts } from './inventory.js';
 
 // Helper: look up an equipment's display name from its ID.
 // (Was called in renderRecentTasks/renderSchedule but never defined/imported.)
@@ -171,6 +172,7 @@ export function refreshDashboard() {
     renderSchedDash();
     renderRecentTasks();
     renderRecentObsDash();
+    updateDashboardParts(window.state);
 }
 
 // NEW: Recent Observations card on the main dashboard.
