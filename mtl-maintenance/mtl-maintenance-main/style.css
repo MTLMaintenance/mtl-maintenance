@@ -439,8 +439,7 @@ input::-webkit-calendar-picker-indicator {
     opacity: 0.8;
 }
 .view-toggle,
-.tab-bar,
-.sub-toggle {
+.tab-bar, {
   display: flex;
   gap: 4px;
   padding: 4px;
@@ -494,7 +493,6 @@ input::-webkit-calendar-picker-indicator {
 }
 
 #panel-admin .tab-bar,
-#panel-equipment .sub-toggle,
 #panel-calendar .view-toggle {
   background: rgba(0,0,0,0.38) !important;
   border-color: rgba(255,255,255,0.22) !important;
