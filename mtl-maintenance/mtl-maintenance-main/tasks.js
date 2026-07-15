@@ -187,7 +187,7 @@ export async function deleteChecklistItem(taskId, index) {
     if (!confirm("Remove this item from the checklist?")) return;
 
     // 2. Find the task in local memory
-    const task = state.tasks.find(t => t.id === taskId);
+    const task = window.state.tasks.find(t => t.id === taskId);
     if (!task || !task.checklist) return;
 
     // 3. Remove the specific item from the array
@@ -203,7 +203,7 @@ export async function deleteChecklistItem(taskId, index) {
         }
 
         // 6. Refresh the modal live so the item vanishes
-        openTaskDetail(taskId);
+        if (typeof window.openTaskDetail === 'function') window.openTaskDetail(taskId);
         showToast("Item removed ✓");
 
     } catch (e) {
@@ -284,7 +284,7 @@ export async function addPartToActiveTask(taskId) {
     if (!partId) return;
 
     const qty = parseInt(prompt("How many used?")) || 1;
-    const part = state.parts.find(p => p.id === partId || p.num === partId);
+    const part = window.state.parts.find(p => p.id === partId || p.num === partId);
 
     if (!part) return alert("Part not found in inventory.");
 
@@ -294,12 +294,12 @@ export async function addPartToActiveTask(taskId) {
         part_id: part.id,
         part_name: part.name,
         qty_used: qty,
-        used_by: currentUser.name,
+        used_by: window.currentUser.name,
         used_at: new Date().toISOString()
     };
 
     // 1. Save usage
-    state.partUsage.push(usage);
+    window.state.partUsage.push(usage);
     await window._mpdb.from('part_usage').insert(usage);
 
     // 2. Update stock
@@ -307,7 +307,8 @@ export async function addPartToActiveTask(taskId) {
     await persist('parts', 'upsert', part);
 
     // 3. Refresh the modal view
-    openTaskDetail(taskId);
+    if (typeof window.openTaskDetail === 'function') window.openTaskDetail(taskId);
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     showToast("Part logged live ✓");
 }
 
@@ -333,7 +334,7 @@ export function switchPartsTab(tabType) {
 
 export function updateTotalCostDisplay() {
   const costEl = document.getElementById('t-cost');
-  const partsCost = woPartsAdded.reduce((sum,p)=>sum+(p.unit_cost||0)*p.qty_used, 0);
+  const partsCost = (window.woPartsAdded || []).reduce((sum,p)=>sum+(p.unit_cost||0)*p.qty_used, 0);
   const otherEl = document.getElementById('t-other-cost');
   const partsEl = document.getElementById('t-parts-cost');
   const totalEl = document.getElementById('t-total-cost');
