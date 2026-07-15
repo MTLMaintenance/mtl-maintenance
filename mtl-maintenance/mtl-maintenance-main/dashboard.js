@@ -161,7 +161,22 @@ export function renderDashboardObs(equipId) {
     `).join('') || '<div style="color:var(--text3); font-size:11px">No notes</div>';
 }
 
+// NEW: Single entry point to redraw the entire dashboard.
+// Call this any time data changes anywhere in the app (after saving/
+// deleting equipment, tasks, parts, observations, etc.) so the home
+// screen actually reflects the update instead of going stale.
+export function refreshDashboard() {
+    updateMetrics();
+    renderEquipListDash();
+    renderSchedDash();
+    renderRecentTasks();
+    renderRecentObsDash();
+}
 
+// NEW: Recent Observations card on the main dashboard.
+// The old renderDashboardObs() targeted #eq-obs-list-dash and required an
+// equipId — neither matches the dashboard's #recent-obs-list container,
+// which needs the latest notes across ALL equipment. This fills that gap.
 export function renderRecentObsDash() {
     const container = document.getElementById('recent-obs-list');
     if (!container) return;
