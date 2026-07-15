@@ -162,17 +162,17 @@ export async function deleteObservation(obsId, equipId) {
         await window._mpdb.from('observations').delete().eq('id', obsId);
         
         // Remove from local memory
-        state.observations = state.observations.filter(o => o.id !== obsId);
+        window.state.observations = window.state.observations.filter(o => o.id !== obsId);
         
         // Refresh UI
-        renderObservationsList(equipId);
-        renderDashboard();
+        if (typeof window.renderObservationsList === 'function') window.renderObservationsList(equipId);
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         showToast("Deleted ✓");
     } catch (e) { showToast("Delete failed"); }
 }
 
 export async function editQuickSpec(equipId, key) {
-    const e = state.equipment.find(x => x.id === equipId);
+    const e = window.state.equipment.find(x => x.id === equipId);
     if(!e || !e.custom_fields) return;
 
     const currentVal = e.custom_fields[key];
@@ -183,7 +183,7 @@ export async function editQuickSpec(equipId, key) {
 
     // Update local state and redraw
     e.custom_fields[key] = newVal.trim();
-    renderQuickSpecs(equipId);
+    if (typeof window.renderQuickSpecs === 'function') window.renderQuickSpecs(equipId);
 
     // Save to DB
     try {
@@ -405,7 +405,7 @@ export async function saveEditObservation(obsId, equipId) {
   const severity = document.getElementById('edit-obs-severity')?.value;
   if(!body) { showToast('Please enter an observation'); return; }
 
-  const obs = state.observations.find(o=>o.id===obsId);
+  const obs = window.state.observations.find(o=>o.id===obsId);
   if(!obs) return;
 
   const wasCritical = obs.severity === 'critical';
@@ -418,14 +418,15 @@ export async function saveEditObservation(obsId, equipId) {
     await window._mpdb.from('observations').update({body, severity}).eq('id', obsId);
     showToast('Observation updated ✓');
     document.getElementById('edit-obs-modal-temp')?.remove();
-    refreshObsList(equipId);
-    renderAlerts();
-    if(document.getElementById('recent-obs-list')) renderRecentObservations();
+    if (typeof window.refreshObsList === 'function') window.refreshObsList(equipId);
+    if (typeof window.renderAlerts === 'function') window.renderAlerts();
+    if (document.getElementById('recent-obs-list') && typeof window.renderRecentObservations === 'function') window.renderRecentObservations();
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
 
     // Only send email if severity just changed TO critical
     if(nowCritical && !wasCritical) {
-      await sendCriticalObsEmail(obs, equipId);
-      await autoCreateCriticalWO(obs, equipId);
+      if (typeof window.sendCriticalObsEmail === 'function') await window.sendCriticalObsEmail(obs, equipId);
+      if (typeof window.autoCreateCriticalWO === 'function') await window.autoCreateCriticalWO(obs, equipId);
       showToast('🚨 Critical — email sent and WO created');
     }
   } catch(e) {
@@ -520,5 +521,3 @@ export async function saveNewSpec() {
     }
 }
 
-export function setGroupFilter(group){activeGroupFilter=group;['all'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});renderDashboard();}
-export function setEquipGroupFilter(group){equipGroupFilter=group;['all'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});renderEquipmentTable();}
