@@ -355,7 +355,8 @@ window.verifyTaskPinAction = () => {
     verifyTaskPinAction(currentUser).then(success => {
         if(success) {
             closeModal('task-pin-modal');
-            renderTasks();
+            if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
+            if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
             showToast("Work Verified ✓");
         }
     });
@@ -372,7 +373,7 @@ window.addTaskCheckItem = (id) => {
 
 window.toggleLockout = (id, checked) => {
     toggleLockout(id, checked, currentUser).then(success => {
-        if(success) renderDashboard(); // Redraw status on home screen
+        if(success && typeof window.refreshDashboard === 'function') window.refreshDashboard(); // Redraw status on home screen
     });
 };
 window.addQuickSpec = (id) => {
@@ -636,11 +637,11 @@ async function markComplete(taskId) {
     
     // 5. UI Refresh
     closeModal('detail-modal');
-    renderDashboard();
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     
     // Ensure the task list also refreshes
-    if (typeof renderTasks === 'function') {
-        renderTasks();
+    if (typeof window.renderTasksTable === 'function') {
+        window.renderTasksTable();
     }
     
     showToast("Work Order Completed ✓");
@@ -832,8 +833,8 @@ async function autoCreateCriticalWO(obs, equipId) {
     await persist('tasks', 'upsert', wo);
     state.tasks.push(wo);
     showToast('🚨 Critical WO created — due tomorrow');
-    renderTasks && renderTasks();
-    renderDashboard();
+    if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
   } catch(e) {
     console.error('Failed to auto-create WO:', e);
   }
