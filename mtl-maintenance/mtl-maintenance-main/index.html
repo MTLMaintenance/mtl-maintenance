@@ -1752,6 +1752,40 @@
   </div>
 </div>
 <div class="panel" id="panel-machine-profile" style="display:none;"> </div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="mobile-bottom-nav">
+  <button class="mobile-nav-btn active" data-panel="dashboard" onclick="window.showPanel('dashboard')">
+    <span class="mobile-nav-icon">📊</span><span>Dashboard</span>
+  </button>
+  <button class="mobile-nav-btn" data-panel="equipment" onclick="window.showPanel('equipment')">
+    <span class="mobile-nav-icon">🚜</span><span>Equipment</span>
+  </button>
+  <button class="mobile-nav-btn" data-panel="tasks" onclick="window.showPanel('tasks')">
+    <span class="mobile-nav-icon">📋</span><span>Work Orders</span>
+  </button>
+  <button class="mobile-nav-btn" data-panel="parts" onclick="window.showPanel('parts')">
+    <span class="mobile-nav-icon">📦</span><span>Parts</span>
+  </button>
+  <button class="mobile-nav-btn" data-panel="calendar" onclick="window.showPanel('calendar')">
+    <span class="mobile-nav-icon">📅</span><span>Calendar</span>
+  </button>
+  <button class="mobile-nav-btn" onclick="window.openModal('mobile-more-drawer')">
+    <span class="mobile-nav-icon">☰</span><span>More</span>
+  </button>
+</nav>
+
+<!-- MOBILE "MORE" DRAWER -->
+<div class="modal-backdrop" id="mobile-more-drawer" style="display:none;">
+  <div class="modal" id="mobile-more-sheet">
+    <div class="modal-header" style="border-bottom: 1px solid #eee;">
+      <span class="modal-title" style="color: black !important; font-weight: 800;">More</span>
+      <button class="modal-close" onclick="closeModal('mobile-more-drawer')" style="color: black !important;">✕</button>
+    </div>
+    <div id="mobile-more-list" style="padding: 10px 20px 20px;"></div>
+  </div>
+</div>
+
  <script>
  window.state = { 
     equipment: [], tasks: [], schedules: [], parts: [], 
