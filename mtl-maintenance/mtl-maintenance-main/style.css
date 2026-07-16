@@ -127,14 +127,23 @@ html, body {
 
   .user-chip, #pc-search-wrap, .pc-only-search { display: none !important; }
 
-  /* Horizontal Swipe for Nav/Buttons */
-  #main-nav, .topbar-right {
+  /* Horizontal Swipe fallback (main-nav is hidden on mobile via the rule
+     below, but keep this as a safety net in case it's ever shown) */
+  #main-nav {
     display: flex !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     padding: 6px 12px !important;
     width: 100% !important;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Topbar action buttons collapse into the "⋮" actions sheet on mobile */
+  .topbar-right .btn.btn-primary.btn-sm {
+    display: none !important;
+  }
+  #mobile-actions-trigger {
+    display: inline-flex !important;
   }
 
 
@@ -162,6 +171,46 @@ html, body {
      equipment detail, etc.) don't feel cramped on narrow phone screens */
   .form-grid, .eq-dash-grid {
       grid-template-columns: 1fr !important;
+  }
+
+  /* Data tables become stacked cards on mobile instead of side-scrolling.
+     Requires each <td> to carry a data-label="Column Name" attribute -
+     see the render functions for each table (renderTasksTable, etc). */
+  .table-wrap {
+      overflow-x: visible !important;
+  }
+  .table-wrap table thead {
+      display: none;
+  }
+  .table-wrap table, .table-wrap table tbody, .table-wrap table tr, .table-wrap table td {
+      display: block;
+      width: 100%;
+  }
+  .table-wrap table tr {
+      border: 1px solid var(--border, #eee);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      background: var(--surface-2, #fff);
+  }
+  .table-wrap table td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 2px;
+      border: none !important;
+      text-align: right;
+  }
+  .table-wrap table td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: var(--text3, #888);
+      text-align: left;
+      flex-shrink: 0;
+  }
+  .table-wrap table td:not([data-label])::before {
+      content: none;
   }
 }
 /* ============================================================
@@ -2599,11 +2648,11 @@ html {
         display: flex !important;
     }
 
-    /* "More" drawer behaves as a bottom sheet on mobile instead of a centered modal */
-    #mobile-more-drawer {
+    /* "More" and "Actions" drawers behave as bottom sheets on mobile instead of centered modals */
+    #mobile-more-drawer, #mobile-actions-drawer {
         align-items: flex-end !important;
     }
-    #mobile-more-sheet {
+    #mobile-more-sheet, #mobile-actions-sheet {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
@@ -2646,7 +2695,7 @@ html {
 .mobile-nav-btn.active {
     color: var(--accent, #3b82f6);
 }
-#mobile-more-list button {
+#mobile-more-list button, #mobile-actions-drawer button {
     display: block;
     width: 100%;
     text-align: left;
@@ -2658,7 +2707,7 @@ html {
     color: black !important;
     cursor: pointer;
 }
-#mobile-more-list button:last-child {
+#mobile-more-list button:last-child, #mobile-actions-drawer button:last-child {
     border-bottom: none;
 }
 
