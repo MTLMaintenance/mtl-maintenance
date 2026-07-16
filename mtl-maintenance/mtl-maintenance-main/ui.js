@@ -45,6 +45,11 @@ export function showPanel(id) {
         target.style.display = ""; 
     }
 
+    // 3b. Keep the mobile bottom nav's active tab in sync
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.panel === id);
+    });
+
     // 4. Trigger the Painter for that specific room
     if (id === 'calendar' && typeof window.renderCalendar === 'function') window.renderCalendar();
     if (id === 'tools' && typeof window.renderTools === 'function') window.renderTools();
