@@ -146,6 +146,17 @@ html, body {
     display: inline-flex !important;
   }
 
+  /* Keep the profile chip and the "⋮" button on the same row, right-aligned */
+  .topbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+    gap: 8px !important;
+    padding: 4px 12px !important;
+  }
+
 
   /* Zerk Map Mobile Fixes */
   div#zerk-sidebar-container {
