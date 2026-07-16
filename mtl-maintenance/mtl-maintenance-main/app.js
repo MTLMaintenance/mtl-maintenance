@@ -905,3 +905,9 @@ async function notifyManagers(text) {
     const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
     for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
 }
+window.state.currentUser = {
+    id: 'YOUR_SUPABASE_USER_ID_HERE', // You MUST get this from your Supabase 'profiles' table
+    full_name: 'Tanner (Admin)',
+    role: 'admin',
+    status: 'Available'
+};
