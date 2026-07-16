@@ -26,6 +26,7 @@ export async function saveQuickLogHours(state, currentUser) {
 
   try {
     e.hours = val;
+    e.hours_updated_at = new Date(date).toISOString();
     await persist('equipment', 'upsert', e);
     await supabase.from('meter_history').insert({ 
         equip_id: equipId, reading: val, created_at: new Date(date).toISOString() 
@@ -34,6 +35,15 @@ export async function saveQuickLogHours(state, currentUser) {
     logAuditAction("Meter Update", `${e.name} set to ${val} hrs`, currentUser);
     closeModal('log-hours-modal');
     showToast("Hours updated ✓");
+
+    // Refresh anything showing hours: dashboard, equipment table, and the
+    // detail modal widget if this machine's popup is currently open.
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
+    if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
+    if (window._currentDetailEquipId === equipId && typeof window.openEquipDetail === 'function') {
+        window.openEquipDetail(equipId);
+    }
+
     return true;
   } catch (err) { return false; }
 }
