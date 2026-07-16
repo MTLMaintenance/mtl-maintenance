@@ -157,6 +157,12 @@ html, body {
       display: block !important;
       animation: slideUp 0.2s ease-out;
   }
+
+  /* Collapse 2-column form/widget grids to 1 column so modals (Work Order,
+     equipment detail, etc.) don't feel cramped on narrow phone screens */
+  .form-grid, .eq-dash-grid {
+      grid-template-columns: 1fr !important;
+  }
 }
 /* ============================================================
    LOGIN PIN PAD STYLING
@@ -1918,7 +1924,7 @@ html {
     flex-shrink: 0 !important;
     margin-bottom: 5px !important;
   }
-
+}
 /* -------end of pc block ----------*/
 .modern-login-card {
     background-color: rgba(255, 255, 255, 0.1) !important;
@@ -2718,10 +2724,14 @@ html {
 
 .metrics {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
     gap: 20px !important;
     width: 100% !important;
     min-height: 110px !important; /* Guaranteed height */
+}
+@media screen and (min-width: 769px) {
+.metrics {
+    grid-template-columns: repeat(4, 1fr) !important;
+}
 }
 
 .metric-card {
@@ -2733,12 +2743,16 @@ html {
     justify-content: center !important;
 }
 
-/* Force the large cards to stay in 2 columns */
+/* Force the large cards to stay in 2 columns (on desktop — see mobile override above) */
 .grid-2 {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
     gap: 20px !important;
     width: 100% !important;
+}
+@media screen and (min-width: 769px) {
+.grid-2 {
+    grid-template-columns: 1fr 1fr !important;
+}
 }
 /* Card Styling */
 .card, .metric-card {
