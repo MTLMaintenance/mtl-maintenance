@@ -905,10 +905,3 @@ async function notifyManagers(text) {
     const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
     for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
 }
-
-window.state.currentUser = {
-    id: 'e17c024b-a06f-4a07-aff3-12023fb71dea'
-    full_name: 'Tanner (Admin)',
-    role: 'admin',
-    status: 'Available'
-};
