@@ -26,23 +26,23 @@ export function renderEquipmentTable() {
 
         return `
         <tr onclick="window.openEquipDetail('${e.id}')" style="cursor:pointer; border-bottom:1px solid #eee;">
-            <td>
+            <td data-label="Equipment">
                 <div style="display:flex; align-items:center; gap:10px">
                     <div class="equip-icon-wrap">${icon}</div>
                     <div><b>${e.name}</b><br><small>${e.serial || 'N/A'}</small></div>
                 </div>
             </td>
-            <td>${badge(e.status)}</td>
-           <td><b>${(e.hours || 0).toLocaleString()}</b> hrs</td>
-            <td>
+            <td data-label="Status">${badge(e.status)}</td>
+           <td data-label="Hours"><b>${(e.hours || 0).toLocaleString()}</b> hrs</td>
+            <td data-label="Health">
                 <div class="health-bar" style="width:100px; background:#eee; height:8px; border-radius:4px; overflow:hidden;">
                     <div class="health-fill" style="width:${score}%; background:${healthColor(score)}; height:100%;"></div>
                 </div>
                 <span style="font-size:11px; color:${healthColor(score)}; font-weight:700;">${score}%</span>
             </td>
-            <td>${e.op || '—'}</td>
-            <td>${service}</td>
-            <td>—</td>
+            <td data-label="Assigned To">${e.op || '—'}</td>
+            <td data-label="Last Service">${service}</td>
+            <td data-label="Next Due">—</td>
         </tr>`;
     }).join('');
 }
@@ -69,12 +69,12 @@ export function renderPartsTable() {
 
         return `
         <tr onclick="window.editPart('${p.id}')" style="cursor:pointer;">
-            <td><b>${p.name || 'Unnamed'}</b></td>
-            <td style="font-size:12px; color:#666;">${p.num || '—'}</td>
-            <td>${typeof getSupplier === 'function' ? getSupplier(p.supplier_id) : '—'}</td>
-            <td style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${qty}</td>
-            <td>$${parseFloat(p.cost || 0).toFixed(2)}</td>
-            <td><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
+            <td data-label="Part Name"><b>${p.name || 'Unnamed'}</b></td>
+            <td data-label="Part #" style="font-size:12px; color:#666;">${p.num || '—'}</td>
+            <td data-label="Supplier">${typeof getSupplier === 'function' ? getSupplier(p.supplier_id) : '—'}</td>
+            <td data-label="In Stock" style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${qty}</td>
+            <td data-label="Cost">$${parseFloat(p.cost || 0).toFixed(2)}</td>
+            <td data-label="Status"><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
         </tr>`;
     }).join('');
 }
@@ -133,14 +133,14 @@ export function renderConsumablesTable() {
         
         return `
             <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
-                <td><b>${c.name}</b></td>
-                <td>${c.num || '—'}</td>
-                <td>${sName}</td>
-                <td style="font-weight:700; color:${isLow ? '#dc3545' : 'inherit'};">${c.qty}</td>
-                <td>${c.reorder}</td>
-                <td>$${parseFloat(c.cost || 0).toFixed(2)}</td>
-                <td>$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
-                <td><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
+                <td data-label="Item Name"><b>${c.name}</b></td>
+                <td data-label="Reference #">${c.num || '—'}</td>
+                <td data-label="Supplier">${sName}</td>
+                <td data-label="In Stock" style="font-weight:700; color:${isLow ? '#dc3545' : 'inherit'};">${c.qty}</td>
+                <td data-label="Reorder">${c.reorder}</td>
+                <td data-label="Cost">$${parseFloat(c.cost || 0).toFixed(2)}</td>
+                <td data-label="Total">$${(c.qty * (c.cost || 0)).toLocaleString()}</td>
+                <td data-label="Status"><span class="badge ${isLow ? 'bd' : 'bs'}">${isLow ? 'LOW' : 'OK'}</span></td>
             </tr>`;
     }).join('');
 }
