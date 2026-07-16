@@ -143,6 +143,40 @@ export async function enterApp(currentUser, state, canFunc) {
       }
   }
 
+  // 4b. Build the mobile "More" drawer with whatever isn't already in the
+  // bottom nav (Dashboard, Equipment, Work Orders, Parts, Calendar)
+  const moreList = document.getElementById('mobile-more-list');
+  if (moreList) {
+      moreList.innerHTML = '';
+      const promoted = ['dashboard', 'equipment', 'tasks', 'parts', 'calendar'];
+      const moreButtons = [
+        { id: 'analytics', label: 'Analytics' },
+        { id: 'chat', label: 'Chat' },
+        { id: 'checklists', label: 'Checklists' },
+        { id: 'documents', label: 'Docs' },
+        { id: 'suppliers', label: 'Suppliers' },
+        { id: 'tools', label: 'Tool Crib' }
+      ].filter(b => !promoted.includes(b.id));
+
+      moreButtons.forEach(btn => {
+          if (btn.id === 'analytics' && !check('canViewReports')) return;
+          if (btn.id === 'suppliers' && !check('canManageSuppliers')) return;
+
+          const b = document.createElement('button');
+          b.onclick = () => { window.showPanel(btn.id); window.closeModal('mobile-more-drawer'); };
+          b.innerHTML = btn.id === 'chat' ?
+            `Chat <span id="chat-unread-more" class="badge bd" style="display:none">0</span>` : btn.label;
+          moreList.appendChild(b);
+      });
+
+      if (currentUser && currentUser.role === 'admin') {
+          const adminBtn = document.createElement('button');
+          adminBtn.onclick = () => { window.showPanel('admin'); window.closeModal('mobile-more-drawer'); };
+          adminBtn.textContent = 'Admin';
+          moreList.appendChild(adminBtn);
+      }
+  }
+
   // 5. Initial Screen Renders
   if (typeof window.renderEquipmentTable === 'function') {
       window.renderEquipmentTable();
