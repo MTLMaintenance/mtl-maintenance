@@ -39,7 +39,12 @@ export function buildEquipDetailHTML(e, score, healthColor) {
             <div class="eq-widget" style="border-left: 5px solid ${healthColor(score)}">
                 <div class="widget-label">Machine Status</div>
                 <div class="bold">${badge(e.status)}</div>
-                <div class="widget-val">${e.hours.toLocaleString()} hrs</div>
+                <div class="widget-val" onclick="window.quickLogHours('${e.id}')" style="cursor:pointer;" title="Click to log new hours">
+                    ${e.hours.toLocaleString()} hrs ✏️
+                </div>
+                <div style="font-size:11px; color:var(--text3);">
+                    ${e.hours_updated_at ? `Last updated ${fmtDate(e.hours_updated_at)}` : 'Hours never logged'}
+                </div>
             </div>
             <div class="eq-widget">
                 <div class="widget-label">Quick Specs</div>
