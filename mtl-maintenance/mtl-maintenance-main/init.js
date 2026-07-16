@@ -168,6 +168,11 @@ export async function enterApp(currentUser, state, canFunc) {
   setTimeout(() => {
       if (typeof window.adjustMobileLayout === 'function') window.adjustMobileLayout();
   }, 100);
+
+  // 10. Friday hours-logging reminder
+  if (typeof window.checkFridayHoursReminder === 'function') {
+      window.checkFridayHoursReminder();
+  }
 }
 
 console.log("Forcing initial table draw...");
