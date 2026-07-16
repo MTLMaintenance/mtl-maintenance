@@ -44,11 +44,11 @@ export function renderTasksTable(containerId, filter = 'all') {
 
     container.innerHTML = tasks.map(t => `
         <tr onclick="window.openTaskDetail('${t.id}')" style="cursor:pointer;">
-            <td><b>${t.name}</b></td>
-            <td>${t.priority}</td>
-            <td style="color:${isOverdue(t.due) ? 'var(--danger)' : 'inherit'}">${fmtDate(t.due)}</td>
-            <td>${t.assign || '—'}</td>
-            <td>${badge(t.status)}</td>
+            <td data-label="Work Order"><b>${t.name}</b></td>
+            <td data-label="Priority">${t.priority}</td>
+            <td data-label="Due Date" style="color:${isOverdue(t.due) ? 'var(--danger)' : 'inherit'}">${fmtDate(t.due)}</td>
+            <td data-label="Assigned">${t.assign || '—'}</td>
+            <td data-label="Status">${badge(t.status)}</td>
         </tr>
     `).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px;">No work orders found.</td></tr>';
 }
