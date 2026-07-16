@@ -2576,11 +2576,90 @@ html {
     box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
 }
 
-/* 6. Mobile Fix: Stack everything to 1 column */
+/* 6. Mobile Fix: small glanceable tiles go 2-across, content-heavy cards stack full-width */
 @media screen and (max-width: 768px) {
-    .metrics, .grid-2 {
+    .metrics {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .grid-2 {
         grid-template-columns: 1fr !important;
     }
+
+    /* Replace the horizontal-scroll top nav with the fixed bottom nav */
+    #main-nav {
+        display: none !important;
+    }
+
+    /* Leave room at the bottom of the app so content isn't hidden behind the fixed nav */
+    #app {
+        padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    }
+
+    #mobile-bottom-nav {
+        display: flex !important;
+    }
+
+    /* "More" drawer behaves as a bottom sheet on mobile instead of a centered modal */
+    #mobile-more-drawer {
+        align-items: flex-end !important;
+    }
+    #mobile-more-sheet {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 16px 16px 0 0 !important;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+}
+
+#mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    background: var(--bg, #fff);
+    border-top: 1px solid var(--border, #eee);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-between;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+}
+.mobile-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    font-size: 10px;
+    color: var(--text3, #888);
+    cursor: pointer;
+}
+.mobile-nav-btn .mobile-nav-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+.mobile-nav-btn.active {
+    color: var(--accent, #3b82f6);
+}
+#mobile-more-list button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
+    color: black !important;
+    cursor: pointer;
+}
+#mobile-more-list button:last-child {
+    border-bottom: none;
 }
 
 #tpl-list .tpl-item {
