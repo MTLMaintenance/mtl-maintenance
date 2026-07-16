@@ -122,7 +122,6 @@ window.updateAvatarPreview = function() {
  * 3. saveUserProfile: Updates Supabase and the Local UI
  */
 window.saveUserProfile = async function() {
-    // Gather all data from the UI
     const updatedData = {
         full_name: document.getElementById('p-name').value,
         status: document.getElementById('p-status').value,
@@ -132,18 +131,26 @@ window.saveUserProfile = async function() {
         private_notes: document.getElementById('p-notes').value
     };
 
-    // Find our current user from the global state
-    const currentUser = window.state?.currentUser;
+    // 1. Try to get user from global state
+    let currentUser = window.state?.currentUser;
 
+    // 2. FALLBACK: If state is empty (hardcoded admin), try to get from Supabase Auth directly
+    if (!currentUser) {
+        console.warn("User not in state, checking Supabase Auth...");
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+            currentUser = data.user;
+        }
+    }
+
+    // 3. IF STILL NOT FOUND
     if (!currentUser || !currentUser.id) {
-        console.error("User not found in state.");
-        if (window.showToast) window.showToast("Error: No active session", "danger");
+        console.error("CRITICAL: No User ID found. Cannot save to database.");
+        alert("Error: Your account session is missing. Please log in properly or check your hardcoded Admin ID.");
         return;
     }
 
     try {
-        // Update the 'profiles' table in Supabase
-        // We assume 'supabase' is initialized globally in your app.js
         const { error } = await supabase
             .from('profiles')
             .update(updatedData)
@@ -151,31 +158,20 @@ window.saveUserProfile = async function() {
 
         if (error) throw error;
 
-        // Sync local state
+        // Sync local state so it doesn't fail next time
         window.state.currentUser = { ...currentUser, ...updatedData };
         
-        // Update Topbar UI
-        const topbarName = document.getElementById('p-topbar-name');
-        if (topbarName) topbarName.innerText = updatedData.full_name;
-
-        // Update the Status Emoji
-        const statusEmoji = document.getElementById('p-status-emoji');
-        if (statusEmoji) {
-            const emojis = {
-                "Available": "🟢",
-                "Busy": "🔴",
-                "In the Field": "🚜",
-                "At the Shop": "🔧",
-                "On Lunch": "🍔"
-            };
-            statusEmoji.innerText = emojis[updatedData.status] || "⚪";
+        // Update UI
+        if (document.getElementById('p-topbar-name')) {
+            document.getElementById('p-topbar-name').innerText = updatedData.full_name;
         }
 
         if (window.showToast) window.showToast("Settings Saved!", "success");
         window.closeModal('profile-modal');
 
     } catch (err) {
-        console.error("Failed to save profile:", err);
+        console.error("Database Update Failed:", err);
         if (window.showToast) window.showToast("Database Error", "danger");
     }
 };
+
