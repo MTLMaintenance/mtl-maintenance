@@ -27,7 +27,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, com
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal,} from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal,acknowledgeObservation,} from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc,openEditDocModal,openAddDocModal,openDocModal, handleDocUpload } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
@@ -69,7 +69,6 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
-window.addPartToWO = addPartToWO;
 window.refreshDashboard = refreshDashboard;
 window.updateMetrics = updateMetrics;
 window.renderEquipListDash = renderEquipListDash;
@@ -88,6 +87,7 @@ window.openFaultCodeDetail = openFaultCodeDetail;
 window.openSpecModal = openSpecModal;
 window.saveNewSpec = saveNewSpec;
 window.deleteEquip = deleteEquip;
+window.acknowledgeObservation = acknowledgeObservation;
 window.deleteConsumable = deleteConsumable;
 window.fetchConsumables = fetchConsumables; 
 window.switchPartsSubTab = switchPartsSubTab;
@@ -594,6 +594,50 @@ function saveOfflineQueue() {
   document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
 }
 
+// ============================================================
+// FRIDAY HOURS REMINDER
+// ============================================================
+// Shows a dismissible banner every Friday when the app loads, prompting
+// the team to log this week's equipment hours. Dismissing hides it for
+// the rest of that day only — it'll come back next Friday.
+function checkFridayHoursReminder() {
+    const today = new Date();
+    if (today.getDay() !== 5) return; // 0=Sun ... 5=Fri
+
+    const todayKey = today.toISOString().split('T')[0];
+    try {
+        if (localStorage.getItem('mp_hours_reminder_dismissed') === todayKey) return;
+    } catch(e) {}
+
+    if (document.getElementById('friday-hours-banner')) return; // already showing
+
+    const banner = document.createElement('div');
+    banner.id = 'friday-hours-banner';
+    banner.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+        background: #1a73e8; color: #fff; padding: 12px 20px;
+        display: flex; align-items: center; justify-content: center; gap: 16px;
+        font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); flex-wrap: wrap;
+    `;
+    banner.innerHTML = `
+        <span>📋 It's Friday — don't forget to log this week's equipment hours.</span>
+        <button id="friday-hours-goto" style="background:#fff; color:#1a73e8; border:none; padding:6px 12px; border-radius:6px; font-weight:600; cursor:pointer;">Go to Equipment</button>
+        <button id="friday-hours-dismiss" style="background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.6); padding:6px 12px; border-radius:6px; cursor:pointer;">Dismiss</button>
+    `;
+    document.body.prepend(banner);
+
+    const dismiss = () => {
+        try { localStorage.setItem('mp_hours_reminder_dismissed', todayKey); } catch(e) {}
+        banner.remove();
+    };
+
+    document.getElementById('friday-hours-dismiss').onclick = dismiss;
+    document.getElementById('friday-hours-goto').onclick = () => {
+        dismiss();
+        if (typeof window.showPanel === 'function') window.showPanel('equipment');
+    };
+}
+window.checkFridayHoursReminder = checkFridayHoursReminder;
 
 // ============================================================
 // HOURS AUTO-TRACKER
