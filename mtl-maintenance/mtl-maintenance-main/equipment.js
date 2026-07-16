@@ -171,6 +171,23 @@ export async function deleteObservation(obsId, equipId) {
     } catch (e) { showToast("Delete failed"); }
 }
 
+// Marks a note as "seen" so it drops off the dashboard's Recent Observations
+// card immediately, instead of waiting for the 7-day auto-expiry.
+// NOTE: requires an `acknowledged` boolean column on the `observations`
+// table in Supabase (default false) — add it if you haven't already.
+export async function acknowledgeObservation(obsId) {
+    const obs = window.state.observations.find(o => o.id === obsId);
+    if (!obs) return;
+
+    obs.acknowledged = true;
+    try {
+        await window._mpdb.from('observations').update({ acknowledged: true }).eq('id', obsId);
+    } catch (e) {
+        console.error("Failed to acknowledge observation:", e);
+    }
+    if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
+}
+
 export async function editQuickSpec(equipId, key) {
     const e = window.state.equipment.find(x => x.id === equipId);
     if(!e || !e.custom_fields) return;
