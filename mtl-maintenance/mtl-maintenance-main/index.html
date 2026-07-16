@@ -124,6 +124,7 @@
           <span id="p-status-emoji">🟢</span>
           <span id="p-topbar-name">User</span>
       </div>
+      <button id="mobile-actions-trigger" class="btn btn-primary btn-sm" style="display:none;" onclick="window.openModal('mobile-actions-drawer')">⋮</button>
       <button class="btn btn-primary btn-sm" onclick="exportPDF()">PDF</button>
     <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('task-modal'); setTimeout(populateSelects, 50);">+ WO</button>
@@ -1783,6 +1784,25 @@
       <button class="modal-close" onclick="closeModal('mobile-more-drawer')" style="color: black !important;">✕</button>
     </div>
     <div id="mobile-more-list" style="padding: 10px 20px 20px;"></div>
+  </div>
+</div>
+
+<!-- MOBILE ACTIONS DRAWER (topbar buttons, collapsed) -->
+<div class="modal-backdrop" id="mobile-actions-drawer" style="display:none;">
+  <div class="modal" id="mobile-actions-sheet">
+    <div class="modal-header" style="border-bottom: 1px solid #eee;">
+      <span class="modal-title" style="color: black !important; font-weight: 800;">Actions</span>
+      <button class="modal-close" onclick="closeModal('mobile-actions-drawer')" style="color: black !important;">✕</button>
+    </div>
+    <div style="padding: 10px 20px 20px;">
+      <button onclick="exportPDF(); closeModal('mobile-actions-drawer')">📄 Export PDF</button>
+      <button onclick="exportCSV(); closeModal('mobile-actions-drawer')">📊 Export CSV</button>
+      <button onclick="closeModal('mobile-actions-drawer'); openModal('task-modal'); setTimeout(populateSelects, 50);">➕ New work order</button>
+      <button onclick="toggleDarkMode(); closeModal('mobile-actions-drawer')">🌙 Toggle dark mode</button>
+      <button onclick="closeModal('mobile-actions-drawer'); openModal('bug-modal')">💬 Report a bug</button>
+      <button onclick="startQRScanner(); closeModal('mobile-actions-drawer')">📷 Scan QR code</button>
+      <button onclick="signOut()">↩ Sign out</button>
+    </div>
   </div>
 </div>
 
