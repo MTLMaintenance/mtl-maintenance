@@ -906,3 +906,92 @@ async function notifyManagers(text) {
     for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
 }
 
+window.setAccent = function(color) {
+    // 1. Update the CSS variable globally
+    document.documentElement.style.setProperty('--accent', color);
+    
+    // 2. Update the hidden input value so it can be saved later
+    const hiddenInput = document.getElementById('p-accent-color');
+    if (hiddenInput) hiddenInput.value = color;
+
+    // 3. Update the visual preview swatch (the rainbow picker)
+    const visualSwatch = document.getElementById('custom-swatch-visual');
+    if (visualSwatch) visualSwatch.style.background = color;
+
+    // 4. Update the Avatar Border if that style is active
+    window.updateAvatarPreview();
+    
+    console.log("Theme color updated to:", color);
+};
+
+/**
+ * 2. updateAvatarPreview: Updates the preview box in the modal live
+ */
+window.updateAvatarPreview = function() {
+    const nameInput = document.getElementById('p-name').value || "User";
+    const styleSelect = document.getElementById('p-avatar-style').value;
+    const previewBox = document.getElementById('p-preview-avatar');
+    const previewName = document.getElementById('p-preview-name');
+
+    if (!previewBox) return;
+
+    // Set the Initial (e.g., "T" for Tanner)
+    previewBox.innerText = nameInput.charAt(0).toUpperCase();
+    
+    // Set the Display Name above the role
+    if (previewName) previewName.innerText = nameInput;
+
+    // Apply the CSS classes (avatar-style-initial, etc.)
+    previewBox.className = styleSelect;
+
+    // If "Border" style is selected, force the accent color to the border
+    if (styleSelect === 'avatar-style-border') {
+        const currentAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+        previewBox.style.borderColor = currentAccent;
+        previewBox.style.color = currentAccent;
+    } else {
+        previewBox.style.borderColor = '';
+        previewBox.style.color = '';
+    }
+};
+
+/**
+ * 3. saveUserProfile: Gathers all UI data and calls the logic
+ */
+window.saveUserProfile = async function() {
+    // A. Gather data from the Modal
+    const updatedData = {
+        full_name: document.getElementById('p-name').value,
+        status: document.getElementById('p-status').value,
+        start_page: document.getElementById('p-start-page').value,
+        accent_color: document.getElementById('p-accent-color').value || '#185FA5',
+        avatar_style: document.getElementById('p-avatar-style').value,
+        private_notes: document.getElementById('p-notes').value
+    };
+
+    try {
+        // B. Call your existing logic (Assuming 'updateUserInDB' or similar exists in your state)
+        // If you are using Supabase directly:
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { error } = await supabase
+            .from('profiles')
+            .update(updatedData)
+            .eq('id', user.id);
+
+        if (error) throw error;
+
+        // C. Update Local UI
+        if (window.showToast) window.showToast("Profile Updated!", "success");
+        
+        // Update topbar name immediately
+        document.getElementById('p-topbar-name').innerText = updatedData.full_name;
+        
+        // D. Close the modal
+        window.closeModal('profile-modal');
+
+    } catch (err) {
+        console.error("Failed to save profile:", err);
+        if (window.showToast) window.showToast("Error saving profile", "danger");
+    }
+};
