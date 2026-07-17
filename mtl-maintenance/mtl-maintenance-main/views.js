@@ -42,7 +42,7 @@ export function renderEquipmentTable() {
             </td>
             <td data-label="Assigned To">${e.op || '—'}</td>
             <td data-label="Last Service">${service}</td>
-            <td data-label="Next Due">—</td>
+            <td data-label="Next Due">${typeof window.getNextDue === 'function' ? window.getNextDue(e.id) : '—'}</td>
         </tr>`;
     }).join('');
 }
@@ -73,7 +73,9 @@ export function renderPartsTable() {
             <td data-label="Part #" style="font-size:12px; color:#666;">${p.num || '—'}</td>
             <td data-label="Supplier">${typeof getSupplier === 'function' ? getSupplier(p.supplier_id) : '—'}</td>
             <td data-label="In Stock" style="font-weight:700; color:${out ? '#dc3545' : low ? '#fd7e14' : 'inherit'}">${qty}</td>
+            <td data-label="Reorder">${reorder}</td>
             <td data-label="Cost">$${parseFloat(p.cost || 0).toFixed(2)}</td>
+            <td data-label="Total">$${(qty * parseFloat(p.cost || 0)).toLocaleString()}</td>
             <td data-label="Status"><span class="badge ${out ? 'bd' : low ? 'bw' : 'bs'}">${out ? 'Out' : low ? 'Low' : 'OK'}</span></td>
         </tr>`;
     }).join('');
