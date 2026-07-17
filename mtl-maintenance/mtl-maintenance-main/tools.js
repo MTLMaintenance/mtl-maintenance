@@ -89,7 +89,7 @@ window.deleteTool = async function() {
     try {
         // 1. Delete from Supabase
         const { error } = await supabase
-            .from('tools')
+            .from('shop_tools')
             .delete()
             .eq('id', toolId);
 
