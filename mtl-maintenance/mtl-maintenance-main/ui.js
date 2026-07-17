@@ -54,6 +54,7 @@ export function showPanel(id) {
     if (id === 'calendar' && typeof window.renderCalendar === 'function') window.renderCalendar();
     if (id === 'tools' && typeof window.renderTools === 'function') window.renderTools();
     if (id === 'parts' && typeof window.renderPartsTable === 'function') window.renderPartsTable();
+    if (id === 'suppliers' && typeof window.renderSuppliersTable === 'function') window.renderSuppliersTable();
     if (id === 'tasks' && typeof window.renderTasksTable === 'function') window.renderTasksTable();
     if (id === 'dashboard' && typeof window.refreshDashboard === 'function') window.refreshDashboard();
 }
