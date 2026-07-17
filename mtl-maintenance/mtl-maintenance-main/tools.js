@@ -566,20 +566,26 @@ export async function saveWishRequest() {
         alert("Error: " + e.message); 
     }
 }
-export function renderToolDeniedHistory() {
-    const tableBody = document.getElementById('denied-table-body');
-    if (!tableBody) return;
+window.renderToolDeniedHistory = function() {
+    const list = document.getElementById('denied-table-body');
+    if (!list) return;
 
-    const denied = (window.state.tools || []).filter(t => t.status === 'denied');
+    const items = window.state.wishlist.filter(item => item.status === 'denied');
 
-    tableBody.innerHTML = denied.length ? denied.map(t => `
-        <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
-            <td data-label="Tool Name"><b>${t.tool_name}</b></td>
-            <td data-label="Category">${t.category || 'Other'}</td>
-            <td data-label="Denied Reason" style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
-            <td data-label="Status"><span class="badge bd">DENIED</span></td>
-        </tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No denied items.</td></tr>';
-}
+    if (items.length === 0) {
+        list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No history found.</td></tr>';
+        return;
+    }
+
+    list.innerHTML = items.map(item => `
+        <tr>
+            <td><b>${item.tool_name}</b></td>
+            <td>${item.category}</td>
+            <td style="color:#dc3545; font-size:12px;">${item.denial_reason || 'No reason provided'}</td>
+            <td><span class="badge bg">Denied</span></td>
+        </tr>
+    `).join('');
+};
 
 export  async function receiveOrderedTool(id) {
     if (!confirm("Confirm this tool has arrived and is now in inventory?")) return;
@@ -677,27 +683,34 @@ export async function toggleToolStatus(id) {
   renderTools();
 }  
 
-export function renderToolWishlist() {
-    const tableBody = document.getElementById('wishlist-table-body');
-    if (!tableBody) return;
+window.renderToolWishlist = function() {
+    const list = document.getElementById('wishlist-table-body');
+    if (!list) return;
 
-    const wishlist = (window.state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
+    // Use the global window.state
+    const items = window.state.wishlist.filter(item => item.status === 'pending');
+    
+    // Update the notification badge in the UI
+    const badge = document.getElementById('wish-count');
+    if (badge) {
+        badge.innerText = items.length;
+        badge.style.display = items.length > 0 ? 'inline-block' : 'none';
+    }
 
-    tableBody.innerHTML = wishlist.length ? wishlist.map(t => {
-        const statusLabel = t.status === 'ordered' 
-            ? '<span class="badge bi">📦 ON ORDER</span>' 
-            : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
+    if (items.length === 0) {
+        list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No pending requests.</td></tr>';
+        return;
+    }
 
-        return `
-            <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
-                <td data-label="Tool Name"><b>${t.tool_name}</b></td>
-                <td data-label="Category">${t.category || 'Other'}</td>
-                <td data-label="Requested By">${t.requested_by}</td>
-                <td data-label="Status">${statusLabel}</td>
-            </tr>`;
-    }).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
-}
-
+    list.innerHTML = items.map(item => `
+        <tr onclick="window.openWishlistReview('${item.id}')">
+            <td><b>${item.tool_name}</b></td>
+            <td>${item.category}</td>
+            <td>${item.user_name || 'Unknown'}</td>
+            <td><span class="badge bw">Pending Review</span></td>
+        </tr>
+    `).join('');
+};
 export async function receiveTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id) return;
