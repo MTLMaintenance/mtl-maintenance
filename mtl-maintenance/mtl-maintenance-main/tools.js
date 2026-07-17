@@ -295,16 +295,16 @@ export function renderTools() {
 
         return `
             <tr onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
-                <td><b>${name}</b></td>
-                <td>${t.category || 'Other'}</td>
-                <td>${isOrdered ? '📦 ON ORDER' : location}</td>
-                <td>
+                <td data-label="Tool Name"><b>${name}</b></td>
+                <td data-label="Category">${t.category || 'Other'}</td>
+                <td data-label="Location">${isOrdered ? '📦 ON ORDER' : location}</td>
+                <td data-label="Condition">
                     <div style="width:60px; height:8px; background:#ddd; border-radius:4px; overflow:hidden;">
                         <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
                     </div>
                 </td>
-                <td><span class="badge ${isOrdered ? 'bi' : 'bs'}">${status.toUpperCase()}</span></td>
-                <td>${t.procurement || '—'}</td>
+                <td data-label="Status"><span class="badge ${isOrdered ? 'bi' : 'bs'}">${status.toUpperCase()}</span></td>
+                <td data-label="Procurement">${t.procurement || '—'}</td>
             </tr>`;
     }).join(''); 
 }
@@ -574,10 +574,10 @@ export function renderToolDeniedHistory() {
 
     tableBody.innerHTML = denied.length ? denied.map(t => `
         <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
-            <td><b>${t.tool_name}</b></td>
-            <td>${t.category || 'Other'}</td>
-            <td style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
-            <td><span class="badge bd">DENIED</span></td>
+            <td data-label="Tool Name"><b>${t.tool_name}</b></td>
+            <td data-label="Category">${t.category || 'Other'}</td>
+            <td data-label="Denied Reason" style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
+            <td data-label="Status"><span class="badge bd">DENIED</span></td>
         </tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No denied items.</td></tr>';
 }
 
@@ -690,10 +690,10 @@ export function renderToolWishlist() {
 
         return `
             <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
-                <td><b>${t.tool_name}</b></td>
-                <td>${t.category || 'Other'}</td>
-                <td>${t.requested_by}</td>
-                <td>${statusLabel}</td>
+                <td data-label="Tool Name"><b>${t.tool_name}</b></td>
+                <td data-label="Category">${t.category || 'Other'}</td>
+                <td data-label="Requested By">${t.requested_by}</td>
+                <td data-label="Status">${statusLabel}</td>
             </tr>`;
     }).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
 }
