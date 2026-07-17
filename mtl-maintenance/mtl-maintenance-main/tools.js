@@ -80,19 +80,40 @@ export async function saveTool() {
 }
 
 // 3. Delete a Tool
-export async function deleteTool(id, state) {
+window.deleteTool = async function() {
+    const toolId = document.getElementById('tool-edit-id')?.value;
+    if (!toolId) return;
+
     if (!confirm("Are you sure you want to permanently delete this tool?")) return;
+
     try {
-        const { error } = await supabase.from('tool_requests').delete().eq('id', id);
+        // 1. Delete from Supabase
+        const { error } = await supabase
+            .from('tools')
+            .delete()
+            .eq('id', toolId);
+
         if (error) throw error;
-        state.tools = state.tools.filter(t => t.id !== id);
-        showToast("Tool deleted");
-        return true;
-    } catch (e) {
-        console.error(e);
-        return false;
+
+        // 2. Update Local State Safely
+        if (window.state && window.state.tools) {
+            window.state.tools = window.state.tools.filter(t => t.id !== toolId);
+        } else {
+            console.warn("State or tools array missing during delete. Refreshing may be needed.");
+        }
+
+        // 3. UI Cleanup
+        if (window.showToast) window.showToast("Tool deleted", "success");
+        window.closeModal('tool-modal');
+        
+        // Re-render the inventory list
+        if (window.renderTools) window.renderTools();
+
+    } catch (err) {
+        console.error("Error deleting tool:", err);
+        if (window.showToast) window.showToast("Delete failed", "danger");
     }
-}
+};
 
 // 4. Handle Tool Observations (Notes) - Merged version of your duplicates
 export async function addToolNote() {
