@@ -40,7 +40,7 @@ import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './setting
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs  } from './views.js';
-import { saveSupplier, deleteSupplier, pullEquipSuppliers } from './suppliers.js';
+import { saveSupplier, deleteSupplier, pullEquipSuppliers, renderSuppliersTable } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
 import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed,renderCostByEquip } from './analytics.js';
@@ -154,8 +154,9 @@ window.openDocDetail = openDocDetail;
 window.saveDoc = saveDoc;
 window.openEditDocModal = openEditDocModal;
 window.pullEquipSuppliers = pullEquipSuppliers;
-window.deleteSupplier = deleteSupplier;
-window.saveSupplier = saveSupplier;
+window.deleteSupplier = (id) => deleteSupplier(id, state);
+window.saveSupplier = () => saveSupplier(state);
+window.renderSuppliersTable = renderSuppliersTable;
 window.populateAdminUserSelect = populateAdminUserSelect;
 window.unblockChatUser = unblockChatUser;
 window.blockChatUser = blockChatUser;
@@ -184,6 +185,10 @@ window.saveTask = saveTask;
 window.resetTaskForm = resetTaskForm;
 window.showToast = showToast;
 window.compressImage = compressImage;
+window.uid = uid;
+window.fmtDate = fmtDate;
+window.isOverdue = isOverdue;
+window.badge = badge;
 window.deleteZerkView = deleteZerkView;
 window.renderObservationsList = renderObservationsList;
 window.renderZerkTab = renderZerkTab;
@@ -905,9 +910,4 @@ async function notifyManagers(text) {
     const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
     for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
 }
-window.state.currentUser = {
-    id: 'e17c024b-a06f-4a07-aff3-12023fb71dea',
-    full_name: 'Tanner (Admin)',
-    role: 'admin',
-    status: 'Available'
-};
+
