@@ -20,6 +20,15 @@ export async function saveSupplier(state) {
     state.suppliers.push(record);
     await persist('suppliers', 'upsert', record);
     closeModal('supplier-modal');
+
+    // Clear the form so the next "+ Add Supplier" starts fresh
+    ['sup-name', 'sup-contact', 'sup-email', 'sup-phone', 'sup-website', 'sup-notes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    if (typeof window.renderSuppliersTable === 'function') window.renderSuppliersTable();
+    showToast("Supplier added ✓");
     return true;
   } catch (e) { return false; }
 }
@@ -29,9 +38,38 @@ export async function deleteSupplier(id, state) {
     try {
         await supabase.from('suppliers').delete().eq('id', id);
         state.suppliers = state.suppliers.filter(s => s.id !== id);
+        if (typeof window.renderSuppliersTable === 'function') window.renderSuppliersTable();
         showToast("Supplier removed");
         return true;
     } catch(e) { return false; }
+}
+
+// Renders the Suppliers table (#supplier-table-body). This didn't exist
+// before, so the table was always empty regardless of how many suppliers
+// were saved.
+export function renderSuppliersTable() {
+    const container = document.getElementById('supplier-table-body');
+    if (!container) return;
+
+    const state = window.state;
+    if (!state || !state.suppliers || state.suppliers.length === 0) {
+        container.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#888;">No suppliers added yet.</td></tr>';
+        return;
+    }
+
+    container.innerHTML = state.suppliers.map(s => {
+        const partsCount = (state.parts || []).filter(p => p.supplier_id === s.id).length;
+        return `
+        <tr>
+            <td data-label="Supplier Name"><b>${s.name}</b></td>
+            <td data-label="Contact">${s.contact || '—'}</td>
+            <td data-label="Email">${s.email ? `<a href="mailto:${s.email}">${s.email}</a>` : '—'}</td>
+            <td data-label="Phone">${s.phone || '—'}</td>
+            <td data-label="Website">${s.website ? `<a href="${s.website}" target="_blank" rel="noopener">${s.website}</a>` : '—'}</td>
+            <td data-label="Parts">${partsCount}</td>
+            <td data-label="" style="text-align:right;"><button class="btn btn-danger btn-sm" onclick="window.deleteSupplier('${s.id}')">✕</button></td>
+        </tr>`;
+    }).join('');
 }
 
 // The logic that finds which suppliers provide parts for a specific machine
