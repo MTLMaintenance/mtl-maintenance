@@ -6,6 +6,7 @@ import { showPinLogin } from './auth.js';
 import { showPanel, adjustMobileLayout } from './ui.js';
 import { applyUserPreferences } from './settings.js';
 import { fetchAbsences } from './calendar.js';
+import { fetchTools } from './tools.js';
 
 console.log("🚀 System Loader: init.js Version 3.0 Booting...");
 
@@ -52,6 +53,17 @@ export async function loadState() {
     state.faults = response[13].data || [];
     
     console.log(`✅ SYNC SUCCESS: Found ${state.equipment.length} machines in database.`);
+
+    // 2b. The main fetch above pulls state.tools from a `tools` table, but
+    // the Tool Crib feature actually reads/writes a `tool_requests` table
+    // (see fetchTools in tools.js). Without this, state.tools holds the
+    // wrong data on every fresh load until a save/delete happens to
+    // overwrite it correctly for the rest of that session.
+    try {
+        await fetchTools();
+    } catch (e) {
+        console.error("Failed to fetch tool_requests:", e);
+    }
 
     // 3. Trigger UI redraws
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
