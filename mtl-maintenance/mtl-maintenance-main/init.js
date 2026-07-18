@@ -57,6 +57,8 @@ export async function loadState() {
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
     if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
+    if (typeof window.renderSuppliersTable === 'function') window.renderSuppliersTable();
+    if (typeof window.renderTools === 'function') window.renderTools();
     
     setSyncStatus('online');
     return true;
