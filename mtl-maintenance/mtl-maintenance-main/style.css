@@ -232,6 +232,17 @@ html, body {
         height: auto !important;
     }
 
+    /* These Tool Crib containers have overflow:hidden (both axes) from
+       their desktop styling, sized for the old fixed-row-height table.
+       The new taller stacked-card rows were getting clipped vertically. */
+    #panel-tools .table-wrap,
+    #tool-inventory-view,
+    #tool-wishlist-view,
+    #tool-denied-view {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+
     /* Compact variant for high-volume tables (Parts, Consumables) where a
        full label/value card per row would mean too much scrolling. Shows
        just the name and status in one line; tapping still opens the full
