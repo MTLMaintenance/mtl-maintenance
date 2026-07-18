@@ -220,9 +220,48 @@ html, body {
       text-align: left;
       flex-shrink: 0;
   }
-  .table-wrap table td:not([data-label])::before {
-      content: none;
-  }
+    .table-wrap table td:not([data-label])::before {
+        content: none;
+    }
+
+    /* This table had a fixed 45px row height from the old single-line
+       layout — it's an ID selector so it out-specifies the generic mobile
+       stacking rule above and was squeezing the taller stacked-card content,
+       causing it to spill outside its white background card. */
+    #tools-table-body tr {
+        height: auto !important;
+    }
+
+    /* Compact variant for high-volume tables (Parts, Consumables) where a
+       full label/value card per row would mean too much scrolling. Shows
+       just the name and status in one line; tapping still opens the full
+       edit view for everything else. */
+    .table-wrap.compact-mobile table tr {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px;
+        padding: 10px 12px !important;
+        margin-bottom: 6px !important;
+    }
+    .table-wrap.compact-mobile table td {
+        display: none !important;
+    }
+    .table-wrap.compact-mobile table td:first-child {
+        display: block !important;
+        flex: 1;
+        min-width: 0;
+    }
+    .table-wrap.compact-mobile table td:first-child::before {
+        content: none !important;
+    }
+    .table-wrap.compact-mobile table td:last-child {
+        display: flex !important;
+        flex-shrink: 0;
+    }
+    .table-wrap.compact-mobile table td:last-child::before {
+        content: none !important;
+    }
 }
 /* ============================================================
    LOGIN PIN PAD STYLING
