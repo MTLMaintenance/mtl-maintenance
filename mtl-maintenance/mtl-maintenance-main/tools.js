@@ -273,7 +273,8 @@ export async function handleWishDenial(id, state) {
 
 export function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
-    console.log('🔧 renderTools() called. Container found:', !!tableBody, '| Raw state.tools:', window.state.tools);
+    console.log('🔧 renderTools() called. Container found:', !!tableBody);
+    console.log('🔧 Tool statuses:', (window.state.tools || []).map(t => ({ name: t.tool_name || t.name, status: JSON.stringify(t.status) })));
     if (!tableBody) return;
 
     // Filter tools from the master state
