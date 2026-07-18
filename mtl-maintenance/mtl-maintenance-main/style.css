@@ -2952,32 +2952,3 @@ html {
     border-top: 4px solid var(--accent) !important;
 }
 
-/* 1. Allow the container to show content that overflows its strict bounds */
-.table-wrap, 
-#parts-inventory-view, 
-#tool-inventory-view {
-    overflow: visible !important;
-}
-
-/* 2. Force table cells to wrap text instead of truncating with dots (...) */
-table td {
-    white-space: normal !important; /* Allows text to wrap to next line */
-    word-break: break-word !important; /* Prevents long names from breaking layout */
-    overflow: visible !important;
-    text-overflow: clip !important; /* Removes the "..." if it was forced */
-}
-
-/* 3. Give the Name/Title columns more room to breathe */
-#parts-table-body td:first-child,
-#tools-table-body td:first-child,
-#equip-table-body td:first-child {
-    min-width: 180px !important; /* Ensures the name has a base width */
-    font-weight: 700 !important;
-    color: #1a1a1a !important;
-}
-
-/* 4. Ensure the table itself can grow as wide as needed */
-table {
-    table-layout: auto !important; /* Let the browser decide column width based on content */
-    width: 100% !important;
-}
