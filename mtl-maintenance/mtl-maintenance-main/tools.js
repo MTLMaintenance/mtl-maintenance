@@ -45,8 +45,15 @@ export async function saveTool() {
         return;
     }
 
-    // 2. Build the record
-    const toolId = (idField.value && idField.value !== "") ? idField.value : uid();
+    // 2. Build the record. New tools default to 'available' (this is a
+    // Main Inventory save, not a wishlist request) - without this, the
+    // 'tool_requests' table's own default status ('pending') was being
+    // used instead, silently routing brand-new tools into the Wishlist
+    // tab where they'd never show up in Main Inventory.
+    const isNewTool = !(idField.value && idField.value !== "");
+    const toolId = isNewTool ? uid() : idField.value;
+    const existing = isNewTool ? null : window.state.tools.find(t => t.id === toolId);
+
     const record = {
         id: toolId,
         name: nameField.value.trim(),
@@ -55,6 +62,7 @@ export async function saveTool() {
         location: locField.value.trim(),
         health: parseInt(healthField.value) || 100,
         is_lost: lostField ? lostField.checked : false,
+        status: existing ? existing.status : 'available',
         last_updated: new Date().toISOString()
     };
 
@@ -273,15 +281,12 @@ export async function handleWishDenial(id, state) {
 
 export function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
-    console.log('🔧 renderTools() called. Container found:', !!tableBody);
-    console.log('🔧 Tool statuses:', (window.state.tools || []).map(t => ({ name: t.tool_name || t.name, status: JSON.stringify(t.status) })));
     if (!tableBody) return;
 
     // Filter tools from the master state
     const inventory = (window.state.tools || []).filter(t => 
         t.status === 'available' || t.status === 'ordered' || !t.status
     );
-    console.log('🔧 After filter, inventory length:', inventory.length, inventory);
 
     if (inventory.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
@@ -310,11 +315,6 @@ export function renderTools() {
                 <td data-label="Procurement">${t.procurement || '—'}</td>
             </tr>`;
     }).join(''); 
-    console.log('🔧 renderTools() finished painting. tableBody.innerHTML length:', tableBody.innerHTML.length);
-    setTimeout(() => {
-        const check = document.getElementById('tools-table-body');
-        console.log('🔧 1 second later, tools-table-body innerHTML length:', check ? check.innerHTML.length : 'CONTAINER GONE');
-    }, 1000);
 }
 
 
