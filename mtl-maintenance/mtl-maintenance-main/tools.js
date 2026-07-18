@@ -80,40 +80,19 @@ export async function saveTool() {
 }
 
 // 3. Delete a Tool
-window.deleteTool = async function() {
-    const toolId = document.getElementById('tool-edit-id')?.value;
-    if (!toolId) return;
-
+export async function deleteTool(id, state) {
     if (!confirm("Are you sure you want to permanently delete this tool?")) return;
-
     try {
-        // 1. Delete from Supabase
-        const { error } = await supabase
-            .from('shop_tools')
-            .delete()
-            .eq('id', toolId);
-
+        const { error } = await supabase.from('tool_requests').delete().eq('id', id);
         if (error) throw error;
-
-        // 2. Update Local State Safely
-        if (window.state && window.state.tools) {
-            window.state.tools = window.state.tools.filter(t => t.id !== toolId);
-        } else {
-            console.warn("State or tools array missing during delete. Refreshing may be needed.");
-        }
-
-        // 3. UI Cleanup
-        if (window.showToast) window.showToast("Tool deleted", "success");
-        window.closeModal('tool-modal');
-        
-        // Re-render the inventory list
-        if (window.renderTools) window.renderTools();
-
-    } catch (err) {
-        console.error("Error deleting tool:", err);
-        if (window.showToast) window.showToast("Delete failed", "danger");
+        state.tools = state.tools.filter(t => t.id !== id);
+        showToast("Tool deleted");
+        return true;
+    } catch (e) {
+        console.error(e);
+        return false;
     }
-};
+}
 
 // 4. Handle Tool Observations (Notes) - Merged version of your duplicates
 export async function addToolNote() {
@@ -294,12 +273,14 @@ export async function handleWishDenial(id, state) {
 
 export function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
+    console.log('🔧 renderTools() called. Container found:', !!tableBody, '| Raw state.tools:', window.state.tools);
     if (!tableBody) return;
 
     // Filter tools from the master state
     const inventory = (window.state.tools || []).filter(t => 
         t.status === 'available' || t.status === 'ordered' || !t.status
     );
+    console.log('🔧 After filter, inventory length:', inventory.length, inventory);
 
     if (inventory.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
@@ -328,6 +309,11 @@ export function renderTools() {
                 <td data-label="Procurement">${t.procurement || '—'}</td>
             </tr>`;
     }).join(''); 
+    console.log('🔧 renderTools() finished painting. tableBody.innerHTML length:', tableBody.innerHTML.length);
+    setTimeout(() => {
+        const check = document.getElementById('tools-table-body');
+        console.log('🔧 1 second later, tools-table-body innerHTML length:', check ? check.innerHTML.length : 'CONTAINER GONE');
+    }, 1000);
 }
 
 
@@ -587,26 +573,20 @@ export async function saveWishRequest() {
         alert("Error: " + e.message); 
     }
 }
-window.renderToolDeniedHistory = function() {
-    const list = document.getElementById('denied-table-body');
-    if (!list) return;
+export function renderToolDeniedHistory() {
+    const tableBody = document.getElementById('denied-table-body');
+    if (!tableBody) return;
 
-    const items = window.state.wishlist.filter(item => item.status === 'denied');
+    const denied = (window.state.tools || []).filter(t => t.status === 'denied');
 
-    if (items.length === 0) {
-        list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No history found.</td></tr>';
-        return;
-    }
-
-    list.innerHTML = items.map(item => `
-        <tr>
-            <td><b>${item.tool_name}</b></td>
-            <td>${item.category}</td>
-            <td style="color:#dc3545; font-size:12px;">${item.denial_reason || 'No reason provided'}</td>
-            <td><span class="badge bg">Denied</span></td>
-        </tr>
-    `).join('');
-};
+    tableBody.innerHTML = denied.length ? denied.map(t => `
+        <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
+            <td data-label="Tool Name"><b>${t.tool_name}</b></td>
+            <td data-label="Category">${t.category || 'Other'}</td>
+            <td data-label="Denied Reason" style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
+            <td data-label="Status"><span class="badge bd">DENIED</span></td>
+        </tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No denied items.</td></tr>';
+}
 
 export  async function receiveOrderedTool(id) {
     if (!confirm("Confirm this tool has arrived and is now in inventory?")) return;
@@ -704,34 +684,27 @@ export async function toggleToolStatus(id) {
   renderTools();
 }  
 
-window.renderToolWishlist = function() {
-    const list = document.getElementById('wishlist-table-body');
-    if (!list) return;
+export function renderToolWishlist() {
+    const tableBody = document.getElementById('wishlist-table-body');
+    if (!tableBody) return;
 
-    // Use the global window.state
-    const items = window.state.wishlist.filter(item => item.status === 'pending');
-    
-    // Update the notification badge in the UI
-    const badge = document.getElementById('wish-count');
-    if (badge) {
-        badge.innerText = items.length;
-        badge.style.display = items.length > 0 ? 'inline-block' : 'none';
-    }
+    const wishlist = (window.state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
 
-    if (items.length === 0) {
-        list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No pending requests.</td></tr>';
-        return;
-    }
+    tableBody.innerHTML = wishlist.length ? wishlist.map(t => {
+        const statusLabel = t.status === 'ordered' 
+            ? '<span class="badge bi">📦 ON ORDER</span>' 
+            : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
 
-    list.innerHTML = items.map(item => `
-        <tr onclick="window.openWishlistReview('${item.id}')">
-            <td><b>${item.tool_name}</b></td>
-            <td>${item.category}</td>
-            <td>${item.user_name || 'Unknown'}</td>
-            <td><span class="badge bw">Pending Review</span></td>
-        </tr>
-    `).join('');
-};
+        return `
+            <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
+                <td data-label="Tool Name"><b>${t.tool_name}</b></td>
+                <td data-label="Category">${t.category || 'Other'}</td>
+                <td data-label="Requested By">${t.requested_by}</td>
+                <td data-label="Status">${statusLabel}</td>
+            </tr>`;
+    }).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
+}
+
 export async function receiveTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id) return;
