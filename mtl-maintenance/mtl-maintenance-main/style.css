@@ -297,6 +297,7 @@ html, body {
         text-overflow: ellipsis !important;
         border-bottom: 1px solid var(--border, #eee) !important;
         vertical-align: middle !important;
+        text-align: left !important;
     }
     .table-wrap.compact-mobile table td::before {
         content: none !important; /* real headers replace the stacked label */
