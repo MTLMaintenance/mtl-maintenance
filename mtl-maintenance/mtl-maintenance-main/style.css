@@ -245,8 +245,8 @@ html, body {
 
     /* Compact variant for high-volume tables (Parts, Consumables) where a
        full label/value card per row would mean too much scrolling. Shows
-       just the name and status in one line; tapping still opens the full
-       edit view for everything else. */
+       Name, In Stock, Cost, and Status in one row; tapping still opens the
+       full edit view for everything else (Supplier, Reorder, Total, etc). */
     .table-wrap.compact-mobile table tr {
         display: flex !important;
         align-items: center !important;
@@ -264,15 +264,33 @@ html, body {
         flex: 1 1 auto !important;
         min-width: 0 !important;
         max-width: none !important;
-        width: auto !important;
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        word-break: break-word !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     .table-wrap.compact-mobile table td:first-child::before {
         content: none !important;
     }
+
+    /* In Stock (4th column) and Cost (6th column) - same position in both
+       the Parts and Consumables tables, so one rule covers both. */
+    .table-wrap.compact-mobile table td:nth-child(4),
+    .table-wrap.compact-mobile table td:nth-child(6) {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        align-items: center !important;
+        gap: 4px !important;
+        white-space: nowrap !important;
+        font-size: 12px !important;
+    }
+    .table-wrap.compact-mobile table td:nth-child(4)::before,
+    .table-wrap.compact-mobile table td:nth-child(6)::before {
+        content: attr(data-label) ":" !important;
+        font-weight: 600 !important;
+        color: var(--text3, #888) !important;
+        font-size: 11px !important;
+    }
+
     .table-wrap.compact-mobile table td:last-child {
         display: flex !important;
         flex: 0 0 auto !important;
