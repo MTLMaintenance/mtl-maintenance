@@ -244,14 +244,18 @@ html, body {
     }
 
     /* Compact variant for high-volume tables (Parts, Consumables) where a
-       full label/value card per row would mean too much scrolling. Shows
-       Name, In Stock, Cost, and Status in one row; tapping still opens the
-       full edit view for everything else (Supplier, Reorder, Total, etc). */
+       full label/value card per row would mean too much scrolling. Name
+       gets its own full-width line up top; In Stock, Cost, and Status sit
+       together underneath and wrap freely if they don't all fit on one
+       line, rather than forcing everything onto a single rigid row (which
+       was overflowing/scrolling sideways). Tapping the card still opens
+       the full edit view for everything else (Supplier, Reorder, Total). */
     .table-wrap.compact-mobile table tr {
         display: flex !important;
+        flex-wrap: wrap !important;
         align-items: center !important;
-        justify-content: space-between !important;
-        gap: 10px !important;
+        row-gap: 4px !important;
+        column-gap: 10px !important;
         padding: 10px 12px !important;
         margin-bottom: 6px !important;
         width: 100% !important;
@@ -261,12 +265,13 @@ html, body {
     }
     .table-wrap.compact-mobile table td:first-child {
         display: block !important;
-        flex: 1 1 auto !important;
+        flex: 1 1 100% !important;
         min-width: 0 !important;
-        max-width: none !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        word-break: break-word !important;
+        font-weight: 700 !important;
     }
     .table-wrap.compact-mobile table td:first-child::before {
         content: none !important;
@@ -297,6 +302,7 @@ html, body {
         width: auto !important;
         max-width: none !important;
         white-space: nowrap !important;
+        margin-left: auto !important;
     }
     .table-wrap.compact-mobile table td:last-child::before {
         content: none !important;
