@@ -407,6 +407,53 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
   }
 }
 
+// Opens the QR code generator modal for a given machine. The QR encodes a
+// URL back to this app with ?equip=<id> - scanning it with the in-app
+// scanner OR a normal phone camera both land on that machine's detail card
+// (see the ?equip= check on page load, and handleQRScanSuccess in app.js).
+export function openEquipQRModal(equipId) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    const url = `${window.location.origin}${window.location.pathname}?equip=${equipId}`;
+    const canvasContainer = document.getElementById('equip-qr-canvas');
+    const nameEl = document.getElementById('equip-qr-name');
+    if (canvasContainer) canvasContainer.innerHTML = '';
+    if (nameEl) nameEl.textContent = e.name;
+
+    if (canvasContainer && typeof window.QRCode === 'function') {
+        new window.QRCode(canvasContainer, {
+            text: url,
+            width: 220,
+            height: 220,
+            correctLevel: window.QRCode.CorrectLevel.M
+        });
+    } else {
+        console.error('QRCode library not loaded');
+    }
+
+    window._currentQREquipId = equipId;
+    window.openModal('equip-qr-modal');
+}
+
+export function downloadEquipQR() {
+    const canvasContainer = document.getElementById('equip-qr-canvas');
+    const rendered = canvasContainer ? canvasContainer.querySelector('canvas, img') : null;
+    if (!rendered) return;
+
+    const e = window.state.equipment.find(x => x.id === window._currentQREquipId);
+    const safeName = (e?.name || 'equipment').replace(/[^a-z0-9]/gi, '_');
+
+    const link = document.createElement('a');
+    link.download = `${safeName}-qr.png`;
+    link.href = rendered.tagName === 'CANVAS' ? rendered.toDataURL('image/png') : rendered.src;
+    link.click();
+}
+
+export function printEquipQR() {
+    window.print();
+}
+
 export function getNextDue(id, tasks) {
   const openTasks = tasks.filter(t => (t.equipId === id || t.equip_id === id) && t.status !== 'Completed');
   if(!openTasks.length) return '—';
