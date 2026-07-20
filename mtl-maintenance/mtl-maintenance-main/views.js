@@ -25,7 +25,7 @@ export function renderEquipmentTable() {
         const icon = (e.photos && e.photos.length) ? `<img src="${e.photos[0]}" style="width:30px; height:30px; object-fit:cover; border-radius:4px"/>` : (ICONS[e.type] || '⚙');
 
         return `
-        <tr onclick="window.openEquipDetail('${e.id}')" style="cursor:pointer; border-bottom:1px solid #eee;">
+        <tr id="equip-row-${e.id}" onclick="window.openEquipDetail('${e.id}')" style="cursor:pointer; border-bottom:1px solid #eee;">
             <td data-label="Equipment">
                 <div style="display:flex; align-items:center; gap:10px">
                     <div class="equip-icon-wrap">${icon}</div>
@@ -192,7 +192,7 @@ export function renderChecklistTemplates() {
   
   // Build the HTML for the cards
   list.innerHTML = state.checklistTemplates.map(tpl => `
-    <div class="card" style="margin-bottom:10px">
+    <div class="card" id="tpl-row-${tpl.id}" style="margin-bottom:10px">
       <div class="card-header">
         <div>
           <div style="font-weight:600;font-size:14px">${tpl.name}</div>
@@ -220,7 +220,7 @@ export function renderDocuments() {
   const others = state.documents.filter(d => d.type !== 'warranty');
 
   const buildDocHTML = d => `
-    <div class="doc-item" onclick="window.openDocDetail('${d.id}')" style="cursor:pointer; padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; color:black;">
+    <div class="doc-item" id="doc-row-${d.id}" onclick="window.openDocDetail('${d.id}')" style="cursor:pointer; padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; color:black;">
       <div>
         <div style="font-weight:600;">${d.name}</div>
         <div style="font-size:11px; color:#666;">${d.type} ${d.expiry_date ? '· Expires: ' + window.fmtDate(d.expiry_date) : ''}</div>
