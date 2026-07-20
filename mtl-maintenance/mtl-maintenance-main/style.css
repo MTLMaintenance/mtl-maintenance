@@ -3028,3 +3028,25 @@ html {
 .search-highlight {
     animation: searchHighlightFlash 2s ease-in-out;
 }
+
+/* When printing an equipment QR label, hide everything except the QR
+   code + machine name - not the whole app UI */
+@media print {
+    body > *:not(#equip-qr-modal) {
+        display: none !important;
+    }
+    #equip-qr-modal {
+        position: static !important;
+        background: none !important;
+        display: block !important;
+    }
+    #equip-qr-modal .modal-header,
+    #equip-qr-modal .form-row {
+        display: none !important;
+    }
+    #equip-qr-modal .modal {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: none !important;
+    }
+}
