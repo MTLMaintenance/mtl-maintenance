@@ -60,7 +60,7 @@ export function renderSuppliersTable() {
     container.innerHTML = state.suppliers.map(s => {
         const partsCount = (state.parts || []).filter(p => p.supplier_id === s.id).length;
         return `
-        <tr>
+        <tr id="supplier-row-${s.id}">
             <td data-label="Supplier Name"><b>${s.name}</b></td>
             <td data-label="Contact">${s.contact || '—'}</td>
             <td data-label="Email">${s.email ? `<a href="mailto:${s.email}">${s.email}</a>` : '—'}</td>
