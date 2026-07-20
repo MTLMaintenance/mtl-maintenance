@@ -3019,3 +3019,12 @@ html {
         width: auto !important;
     }
 }
+
+/* Brief highlight flash for a row jumped to from search results */
+@keyframes searchHighlightFlash {
+    0%, 100% { background-color: transparent; }
+    20%, 80% { background-color: rgba(255, 214, 0, 0.35); }
+}
+.search-highlight {
+    animation: searchHighlightFlash 2s ease-in-out;
+}
