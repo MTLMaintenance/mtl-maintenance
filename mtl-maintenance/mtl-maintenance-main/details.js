@@ -51,6 +51,7 @@ export function buildEquipDetailHTML(e, score, healthColor) {
                 <div id="eq-quick-specs"></div>
             </div>
         </div>
+        <button class="btn btn-secondary" style="width:100%; justify-content:center; margin-top:12px;" onclick="window.openEquipQRModal('${e.id}')">🏷️ Generate QR Code</button>
     </div>
     
     <div id="eq-zerks" class="tab-content" style="display:none">
