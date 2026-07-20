@@ -221,6 +221,17 @@ export async function enterApp(currentUser, state, canFunc) {
   if (typeof window.checkFridayHoursReminder === 'function') {
       window.checkFridayHoursReminder();
   }
+
+  // 11. If this page load came from scanning an equipment QR code with a
+  // normal phone camera (not the in-app scanner), the URL will carry
+  // ?equip=<id> - jump straight to that machine's detail card.
+  const equipParam = new URLSearchParams(window.location.search).get('equip');
+  if (equipParam && typeof window.openEquipDetail === 'function') {
+      window.openEquipDetail(equipParam);
+      // Clean the param out of the address bar so a refresh doesn't re-open it
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+  }
 }
 
 console.log("Forcing initial table draw...");
