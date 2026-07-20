@@ -697,7 +697,7 @@ export function renderToolWishlist() {
             : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
 
         return `
-            <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
+            <tr id="wishlist-row-${t.id}" onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
                 <td data-label="Tool Name"><b>${t.tool_name}</b></td>
                 <td data-label="Category">${t.category || 'Other'}</td>
                 <td data-label="Requested By">${t.requested_by}</td>
