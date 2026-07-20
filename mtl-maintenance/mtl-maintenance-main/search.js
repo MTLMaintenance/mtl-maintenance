@@ -27,20 +27,22 @@ export function handleGlobalSearch() {
       || 'Untitled';
   }
 
-  // Each category: which state array to search, what heading to show,
-  // and the real "open this record" function for that type (confirmed
-  // against the app's window.* bindings). Only `schedules` has no known
-  // detail opener, so it falls back to jumping to the calendar panel.
+  // Each category: which state array to search, what heading to show, and
+  // what happens on click. Everywhere with a home in a real panel table/
+  // card list navigates there and highlights the matching row/card - same
+  // smooth feel throughout, rather than popping a modal straight from
+  // search results.
   //
-  // Parts/Consumables/Tools have no separate "view" - editPart/
-  // editConsumable/editTool are edit forms, not detail views - so instead
-  // of popping the edit modal straight from search, these three jump to
-  // their panel and scroll to + briefly highlight the matching row.
+  // Observations and Faults are the exception: they don't live in their
+  // own flat panel table (observations are nested per-equipment, and
+  // there's no dedicated Faults panel in this build), so there's no
+  // sensible row to scroll to - these two still open their existing
+  // detail popup directly.
   const categories = [
     { key: 'equipment', label: 'EQUIPMENT',
-      onClick: e => `window.openEquipDetail('${e.id}')` },
+      onClick: e => `window.locateSearchResult('equipment', 'equip-row-${e.id}')` },
     { key: 'tasks', label: 'WORK ORDERS',
-      onClick: t => `window.openTaskDetail('${t.id}')` },
+      onClick: t => `window.locateSearchResult('tasks', 'task-row-${t.id}')` },
     { key: 'observations', label: 'OBSERVATIONS',
       onClick: o => `window.globalEditObs('${o.id}')` },
     { key: 'faults', label: 'FAULTS',
@@ -50,15 +52,20 @@ export function handleGlobalSearch() {
     { key: 'consumables', label: 'CONSUMABLES',
       onClick: c => `window.locateSearchResult('parts', 'consumable-row-${c.id}')` },
     { key: 'suppliers', label: 'SUPPLIERS',
-      onClick: s => `window.openSupplierDetail('${s.id}')` },
+      onClick: s => `window.locateSearchResult('suppliers', 'supplier-row-${s.id}')` },
     { key: 'tools', label: 'TOOL CRIB',
+      filter: t => t.status === 'available' || t.status === 'ordered' || !t.status,
       onClick: t => `window.locateSearchResult('tools', 'tool-row-${t.id}')` },
     { key: 'documents', label: 'DOCUMENTS',
-      onClick: d => `window.openDocDetail('${d.id}')` },
+      onClick: d => `window.locateSearchResult('documents', 'doc-row-${d.id}')` },
     { key: 'checklistTemplates', label: 'CHECKLISTS',
-      onClick: c => `window.editTemplate('${c.id}')` },
-    { key: 'wishlist', label: 'WISHLIST',
-      onClick: w => `window.openWishDetailCard('${w.id}')` },
+      onClick: c => `window.locateSearchResult('checklists', 'tpl-row-${c.id}')` },
+    // NOTE: wishlist items live in state.tools (status 'requested'/'ordered'),
+    // not a separate state.wishlist array - that array is never populated
+    // anywhere, so this category previously never matched anything.
+    { key: 'tools', label: 'WISHLIST',
+      filter: t => t.status === 'requested' || t.status === 'ordered',
+      onClick: t => `window.locateSearchResult('tools', 'wishlist-row-${t.id}')` },
     { key: 'schedules', label: 'SCHEDULED MAINTENANCE',
       onClick: () => `window.showPanel('calendar')` },
   ];
@@ -66,7 +73,7 @@ export function handleGlobalSearch() {
   let html = '';
 
   categories.forEach(cat => {
-    const list = state[cat.key] || [];
+    const list = (state[cat.key] || []).filter(item => !cat.filter || cat.filter(item));
     const matches = list.filter(item => getItemText(item).includes(query)).slice(0, 5);
     if (!matches.length) return;
 
@@ -90,8 +97,8 @@ export function closeSearchResults() {
 }
 
 // Switches to the given panel, then scrolls the matching row into view and
-// briefly highlights it - used for tables (Parts, Consumables, Tools) that
-// don't have a separate detail/view popup, only an edit form.
+// briefly highlights it - used throughout search results instead of
+// popping a detail/edit modal directly, for a consistent feel everywhere.
 export function locateSearchResult(panelId, rowId) {
     if (typeof window.showPanel === 'function') window.showPanel(panelId);
 
@@ -101,6 +108,13 @@ export function locateSearchResult(panelId, rowId) {
     if (typeof window.switchPartsSubTab === 'function') {
         if (rowId.startsWith('consumable-row-')) window.switchPartsSubTab('consumables');
         else if (rowId.startsWith('part-row-')) window.switchPartsSubTab('inventory');
+    }
+
+    // Same idea for Tool Crib's Inventory/Wishlist/Denied sub-tabs
+    if (typeof window.switchToolTab === 'function') {
+        if (rowId.startsWith('wishlist-row-')) window.switchToolTab('wishlist');
+        else if (rowId.startsWith('denied-row-')) window.switchToolTab('denied');
+        else if (rowId.startsWith('tool-row-')) window.switchToolTab('inventory');
     }
 
     // Give the panel a moment to actually render before we look for the row
