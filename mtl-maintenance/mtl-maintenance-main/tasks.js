@@ -43,7 +43,7 @@ export function renderTasksTable(containerId, filter = 'all') {
     });
 
     container.innerHTML = tasks.map(t => `
-        <tr onclick="window.openTaskDetail('${t.id}')" style="cursor:pointer;">
+        <tr id="task-row-${t.id}" onclick="window.openTaskDetail('${t.id}')" style="cursor:pointer;">
             <td data-label="Work Order"><b>${t.name}</b></td>
             <td data-label="Priority">${t.priority}</td>
             <td data-label="Due Date" style="color:${isOverdue(t.due) ? 'var(--danger)' : 'inherit'}">${fmtDate(t.due)}</td>
