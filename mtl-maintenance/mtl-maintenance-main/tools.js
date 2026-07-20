@@ -302,7 +302,7 @@ export function renderTools() {
         const isOrdered = status === 'ordered';
 
         return `
-            <tr onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
+            <tr id="tool-row-${t.id}" onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
                 <td data-label="Tool Name"><b>${name}</b></td>
                 <td data-label="Category">${t.category || 'Other'}</td>
                 <td data-label="Location">${isOrdered ? '📦 ON ORDER' : location}</td>
