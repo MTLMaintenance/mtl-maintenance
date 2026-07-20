@@ -962,6 +962,24 @@
   </div>
 </div>
 
+<!-- Equipment QR Code Generator Modal -->
+<div class="modal-backdrop" id="equip-qr-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Equipment QR Code</span>
+      <button class="modal-close" onclick="closeModal('equip-qr-modal')">✕</button>
+    </div>
+    <div id="equip-qr-print-area" style="text-align:center; padding:20px 0;">
+      <div id="equip-qr-canvas" style="display:flex; justify-content:center;"></div>
+      <div id="equip-qr-name" style="font-weight:700; font-size:16px; margin-top:10px;"></div>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-secondary" style="flex:1; justify-content:center" onclick="window.downloadEquipQR()">⬇ Download</button>
+      <button class="btn btn-primary" style="flex:1; justify-content:center" onclick="window.printEquipQR()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
 <!-- Photo Viewer -->
 <div id="photo-viewer" onclick="closePhotoViewer()">
   <button id="pv-close" onclick="closePhotoViewer()">✕</button>
@@ -1821,6 +1839,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script type="module" src="app.js"></script>
  
 </body>
