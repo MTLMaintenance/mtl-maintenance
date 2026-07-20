@@ -68,7 +68,7 @@ export function renderPartsTable() {
         const low = qty <= reorder;
 
         return `
-        <tr onclick="window.editPart('${p.id}')" style="cursor:pointer;">
+        <tr id="part-row-${p.id}" onclick="window.editPart('${p.id}')" style="cursor:pointer;">
             <td data-label="Part Name"><b>${p.name || 'Unnamed'}</b></td>
             <td data-label="Part #" style="font-size:12px; color:#666;">${p.num || '—'}</td>
             <td data-label="Supplier">${typeof getSupplier === 'function' ? getSupplier(p.supplier_id) : '—'}</td>
@@ -134,7 +134,7 @@ export function renderConsumablesTable() {
         const sName = typeof window.supplierName === 'function' ? window.supplierName(c.supplier_id) : '—';
         
         return `
-            <tr onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
+            <tr id="consumable-row-${c.id}" onclick="window.editConsumable('${c.id}')" style="cursor:pointer;">
                 <td data-label="Item Name"><b>${c.name}</b></td>
                 <td data-label="Reference #">${c.num || '—'}</td>
                 <td data-label="Supplier">${sName}</td>
