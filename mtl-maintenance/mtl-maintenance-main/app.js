@@ -27,7 +27,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, com
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal,acknowledgeObservation,} from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,} from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc,openEditDocModal,openAddDocModal,openDocModal, handleDocUpload } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
@@ -88,6 +88,9 @@ window.openSpecModal = openSpecModal;
 window.saveNewSpec = saveNewSpec;
 window.deleteEquip = deleteEquip;
 window.acknowledgeObservation = acknowledgeObservation;
+window.openEquipQRModal = openEquipQRModal;
+window.downloadEquipQR = downloadEquipQR;
+window.printEquipQR = printEquipQR;
 window.deleteConsumable = deleteConsumable;
 window.fetchConsumables = fetchConsumables; 
 window.switchPartsSubTab = switchPartsSubTab;
@@ -166,8 +169,40 @@ window.denyUser = denyUser;
 window.approveUser = approveUser;
 window.renderPermissionsMatrix = renderPermissionsMatrix
 window.openProfileModal = openProfileModal; 
-window.stopQRScanner = stopQRScanner;
-window.startQRScanner = startQRScanner;
+window.startQRScanner = () => {
+    window.openModal('scan-modal');
+    const statusEl = document.getElementById('qr-status');
+    if (statusEl) statusEl.textContent = 'Point camera at the equipment QR code';
+    startQRScanner(handleQRScanSuccess);
+};
+window.stopQRScanner = () => {
+    stopQRScanner();
+    window.closeModal('scan-modal');
+};
+
+// Called when the camera successfully reads a QR code. Our generated QR
+// codes encode a URL like https://yoursite.com/?equip=<id> so a normal
+// phone camera app can also open them directly - here we just need to
+// pull the id back out and jump to that machine, no page reload needed
+// since we're already inside the app.
+function handleQRScanSuccess(decodedText) {
+    let equipId = decodedText.trim();
+    try {
+        const url = new URL(decodedText);
+        const param = url.searchParams.get('equip');
+        if (param) equipId = param;
+    } catch (e) { /* not a full URL - treat decodedText as a bare id */ }
+
+    window.closeModal('scan-modal');
+
+    const equip = state.equipment.find(e => e.id === equipId);
+    if (equip) {
+        window.openEquipDetail(equipId);
+        showToast(`Opened ${equip.name}`);
+    } else {
+        showToast("That QR code doesn't match any equipment in this app");
+    }
+}
 window.toggleDarkMode = toggleDarkMode;
 window.exportCSV = exportCSV;
 window.exportPDF = exportPDF;
