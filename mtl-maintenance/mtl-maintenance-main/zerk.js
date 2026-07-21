@@ -316,8 +316,8 @@ export function renderZerkOS(equipId) {
     container.innerHTML = `
         <div class="os-zerk-wrapper" style="background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee;">
             <!-- SUB-NAV: Views and Management -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <div style="display:flex; gap:8px;">
+            <div class="os-zerk-toolbar">
+                <div class="os-zerk-view-tabs">
                     ${e.zerk_photos.map((_, i) => {
                         const name = (e.zerk_names && e.zerk_names[i]) ? e.zerk_names[i] : `View ${i + 1}`;
                         const active = viewIdx === i ? 'background:#3b82f6; color:white;' : 'background:white; color:#666; border:1px solid #ddd;';
@@ -325,19 +325,19 @@ export function renderZerkOS(equipId) {
                                         onclick="window._currentZerkViewIdx=${i}; window.renderZerkOS('${equipId}')">${name}</button>`;
                     }).join('')}
                 </div>
-                <div style="display:flex; gap:8px;">
+                <div class="os-zerk-actions">
                     <button class="btn btn-secondary btn-sm" onclick="window.addZerkViewWithTitle()">+ Add View</button>
                     <button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">🗑 Delete View</button>
                 </div>
             </div>
 
             <!-- MAIN CONTENT: Image and Table -->
-            <div style="display:grid; grid-template-columns: 1.8fr 1fr; gap:20px; min-height:500px;">
+            <div class="os-zerk-layout">
                 
                 <!-- LEFT: IMAGE -->
-                <div id="os-zerk-map" style="position:relative; background:#111; border-radius:12px; overflow:hidden; border:2px solid #222;" 
+                <div id="os-zerk-map" class="os-zerk-map"
                      onclick="window.handleZerkMapClick(event, ${viewIdx})">
-                    <img src="${e.zerk_photos[viewIdx]}" style="width:100%; height:100%; object-fit:contain; display:block; opacity:0.9;">
+                    <img class="os-zerk-map-image" src="${e.zerk_photos[viewIdx]}" alt="Grease fitting map" style="width:100%; height:100%; object-fit:contain; display:block; opacity:0.9;">
                     <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
                         ${points.map((p, idx) => `
                             <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
@@ -347,10 +347,10 @@ export function renderZerkOS(equipId) {
                 </div>
 
                 <!-- RIGHT: LIST (Stretches to match image height) -->
-                <div style="background:white; border-radius:12px; border:1px solid #ddd; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+                <div class="os-zerk-fittings">
                     <div style="padding:15px; background:#f1f3f5; border-bottom:1px solid #e1e4e8; font-size:10px; font-weight:800; color:#888; letter-spacing:1px;">REQUIRED FITTINGS</div>
-                    <div style="flex:1; overflow-y:auto; padding:10px;">
-                        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                    <div class="os-zerk-fittings-list">
+                        <table class="os-zerk-fittings-table">
                             ${points.map((p, idx) => `
                                 <tr style="border-bottom:1px solid #f8f8f8;">
                                     <td style="padding:12px 5px; font-weight:bold; color:#3b82f6; width:30px;">#${idx + 1}</td>

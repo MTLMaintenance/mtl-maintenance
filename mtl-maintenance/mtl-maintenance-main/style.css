@@ -2664,6 +2664,106 @@ html {
     font-size: 11px;
 }
 
+/* Grease-map layout: keep the image large and the fittings list alongside it
+   on desktop.  The mobile override below turns this into a vertical flow. */
+.os-zerk-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+.os-zerk-view-tabs,
+.os-zerk-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.os-zerk-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+    gap: 20px;
+    min-height: 500px;
+}
+.os-zerk-map {
+    position: relative;
+    background: #111;
+    border: 2px solid #222;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.os-zerk-map-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    opacity: 0.9;
+}
+.os-zerk-fittings {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.os-zerk-fittings-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+.os-zerk-fittings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+@media screen and (max-width: 768px) {
+    .os-zerk-wrapper {
+        padding: 12px !important;
+        overflow-x: hidden;
+    }
+    .os-zerk-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .os-zerk-view-tabs,
+    .os-zerk-actions {
+        width: 100%;
+    }
+    .os-zerk-actions .btn {
+        flex: 1 1 0;
+        justify-content: center;
+    }
+    .os-zerk-layout {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+        gap: 14px;
+    }
+    .os-zerk-map {
+        width: 100%;
+        min-width: 0;
+    }
+    .os-zerk-map-image {
+        height: auto !important;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    .os-zerk-fittings {
+        min-width: 0;
+    }
+    .os-zerk-fittings-list {
+        overflow: visible;
+    }
+    .os-zerk-fittings-table {
+        table-layout: fixed;
+    }
+    .os-zerk-fittings-table td:nth-child(2) {
+        overflow-wrap: anywhere;
+    }
+}
+
 /* Ensure the dots stay a good size */
 .zerk-dot {
     width: 20px;
