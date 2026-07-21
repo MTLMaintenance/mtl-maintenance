@@ -17,7 +17,7 @@ export async function approveUser(id) {
         
         // This triggers a UI refresh if the function exists in your main file
         if (typeof renderAdminPanel === 'function') renderAdminPanel();
-        if (typeof renderUsersTable === 'function') renderUsersTable();
+        if (typeof window.renderUsersTable === 'function') window.renderUsersTable();
         
     } catch (e) {
         console.error("Approval error:", e);
@@ -125,9 +125,10 @@ export function renderUsersTable(state) {
     
     tableBody.innerHTML = active.map(p => `
         <tr>
-            <td><b>${p.full_name || p.username}</b></td>
+            <td><b>${p.full_name || p.username}</b>${p.group_tag ? ` <span class="badge bi" style="font-size:10px;">${p.group_tag}</span>` : ''}</td>
+            <td>${p.username || '—'}</td>
             <td><span class="badge ${rc[p.role] || 'bg'}">${p.role || 'tech'}</span></td>
-            <td>${p.group_tag ? `<span class="badge bi">${p.group_tag}</span>` : '—'}</td>
+            <td><span class="badge bs">Approved</span></td>
             <td>
               <div class="flex-gap-5">
                 <button class="btn-secondary btn-sm" onclick="window.promptResetPin('${p.id}')">🔑 PIN</button>
@@ -292,15 +293,25 @@ export async function renderAdminPanel(){
     if (!profiles) return;
     
     const pending = profiles.filter(p => p.status === 'pending');
-    const active = profiles.filter(p => p.status === 'approved');
+    const denied = profiles.filter(p => p.status === 'denied');
     document.getElementById('pending-count').textContent = pending.length || '0';
     document.getElementById('pending-list').innerHTML = pending.map(p => `
       <div class="parts-row">
         <div style="flex:1"><b>${p.full_name}</b> (${p.username})</div>
-        <button class="btn btn-success btn-sm" onclick="('${p.id}')">Approve</button>
+        <button class="btn btn-success btn-sm" onclick="window.approveUser('${p.id}')">Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="window.denyUser('${p.id}')">Deny</button>
       </div>`).join('') || 'No pending requests';
 
+    const deniedList = document.getElementById('denied-list');
+    if (deniedList) {
+        deniedList.innerHTML = denied.map(p => `
+          <div class="parts-row">
+            <div style="flex:1"><b>${p.full_name}</b> (${p.username})</div>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteUser('${p.id}')">Delete</button>
+          </div>`).join('') || 'No denied requests';
+    }
+
     // Call user table render to fill the rest
-    renderUsersTable();
+    if (typeof window.renderUsersTable === 'function') window.renderUsersTable();
   } catch(e){ console.error(e); }
 }
