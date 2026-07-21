@@ -25,29 +25,23 @@ const faultCount = window.getActiveFaultsCount(e.id);
                 <div class="os-section header" style="background:#fafafa;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
                         <div>
-                            <h1 style="margin:0; color:#1a1a1a;">${e.name || 'Unnamed Machine'}</h1>
-                            <span class="mtl-status-tag operational" style="margin-top:8px; display:inline-block;">${e.status || 'OPERATIONAL'}</span>
-                            <span class="badge bg" style="margin-left:10px;">⏱ ${(e.hours || 0).toLocaleString()} HRS</span>
+                            <h1 style="margin:0; color:#1a1a1a; cursor:pointer;" onclick="window.renameEquipment('${e.id}')" title="Click to rename">${e.name || 'Unnamed Machine'} ✏️</h1>
+                            <span class="mtl-status-tag operational" style="margin-top:8px; display:inline-block; cursor:pointer;" onclick="window.editEquipStatusInline('${e.id}')" title="Click to change status">${e.status || 'OPERATIONAL'}</span>
+                            <span class="badge bg" style="margin-left:10px; cursor:pointer;" onclick="window.quickLogHours('${e.id}')" title="Click to log new hours">⏱ ${(e.hours || 0).toLocaleString()} HRS ✏️</span>
                         </div>
                         <div style="display:flex; gap:10px;">
-                            <button class="btn btn-secondary btn-sm" onclick="window.openEquipDetailLegacy('${e.id}')">⚙️ Edit Info</button>
+                            <button class="btn btn-secondary btn-sm" onclick="window.openEquipQRModal('${e.id}')">🏷️ QR Code</button>
                             <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
                         </div>
                     </div>
                     
-                    <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(4, 1fr); gap:15px;">
-                        <div class="v-item"><span>FUEL</span><b>${e.fuel_level || 0}%</b></div>
+                    <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(2, 1fr); gap:15px;">
                         <div class="v-item"><span>HEALTH</span><b>${healthScore}%</b></div>
-                        
-                   <div class="v-item" onclick="window.openFaultList('${e.id}')" 
-   <div class="v-item" 
-     onclick="window.openFaultList('${e.id}')" 
-     style="cursor:pointer; border-bottom: 3px solid ${faultBoxColor};">
-    <span>ACTIVE FAULTS</span>
-    <b style="color: ${faultBoxColor};">
-        ${faultCount} ACTIVE
-    </b>
-</div>
+                        <div class="v-item" onclick="window.openFaultList('${e.id}')" style="cursor:pointer; border-bottom: 3px solid ${faultBoxColor};">
+                            <span>ACTIVE FAULTS</span>
+                            <b style="color: ${faultBoxColor};">${faultCount} ACTIVE</b>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- JOB HUB -->
@@ -64,7 +58,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
                 <!-- COMPONENTS -->
                 <div class="os-section">
                     <h3 class="os-label-dark">Components</h3>
-                    <div class="os-comp-scroll" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
+                    <div class="os-comp-scroll" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;">
                         <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
                         <div class="comp-card-grey" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
                         <div class="comp-card-grey" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
