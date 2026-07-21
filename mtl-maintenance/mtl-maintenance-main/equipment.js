@@ -411,6 +411,41 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
 // URL back to this app with ?equip=<id> - scanning it with the in-app
 // scanner OR a normal phone camera both land on that machine's detail card
 // (see the ?equip= check on page load, and handleQRScanSuccess in app.js).
+// Quick inline rename for the machine profile card - replaces needing to
+// open the old edit form just to change the name.
+export async function renameEquipment(equipId) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    const newName = prompt("Machine name:", e.name || '');
+    if (newName === null || newName.trim() === "") return;
+
+    e.name = newName.trim();
+    try {
+        await persist('equipment', 'upsert', e);
+        showToast("Name updated ✓");
+        if (typeof window.renderPerfectCard === 'function') window.renderPerfectCard(equipId);
+        if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
+    } catch (err) {
+        showToast("Failed to update name");
+    }
+}
+
+// Quick inline status change for the machine profile card - wraps the
+// existing updateEquipStatus with a simple prompt instead of needing the
+// old edit form.
+export async function editEquipStatusInline(equipId) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+
+    const newStatus = prompt("Status (e.g. Operational, Down, Maintenance):", e.status || 'Operational');
+    if (newStatus === null || newStatus.trim() === "") return;
+
+    const success = await updateEquipStatus(equipId, newStatus.trim(), window.state.equipment);
+    if (success && typeof window.renderPerfectCard === 'function') window.renderPerfectCard(equipId);
+}
+
 export function openEquipQRModal(equipId) {
     const e = window.state.equipment.find(x => x.id === equipId);
     if (!e) return;
