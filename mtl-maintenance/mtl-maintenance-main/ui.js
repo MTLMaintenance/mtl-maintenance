@@ -200,6 +200,14 @@ export function switchAdminTab(tab, btn) {
   if (target) target.style.display = 'block';
   btn.parentElement.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+
+  // Switching to a tab reveals its container, but nothing populates the
+  // container itself unless we trigger the right render here.
+  if (tab === 'approvals' && typeof window.renderAdminPanel === 'function') window.renderAdminPanel();
+  if (tab === 'users' && typeof window.renderUsersTable === 'function') window.renderUsersTable();
+  if (tab === 'permissions' && typeof window.renderPermissionsMatrix === 'function') window.renderPermissionsMatrix();
+  if (tab === 'deleted-msgs' && typeof window.renderDeletedMessages === 'function') window.renderDeletedMessages();
+  if (tab === 'settings' && typeof window.renderAuditLogs === 'function') window.renderAuditLogs();
 }
 
 export function populateSelects() {
