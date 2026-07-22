@@ -151,57 +151,64 @@ window.renderComponentPills = async function(machineId) {
     const container = document.getElementById('os-component-pills');
     if (!container) return;
 
-    // 1. Fetch components from DB
-    let { data: comps, error } = await supabase
-        .from('machine_components')
-        .select('*')
-        .eq('machine_id', machineId)
-        .order('created_at', { ascending: true });
+    // 1. Initialize the HTML string at the very top level
+    let html = '';
 
-    // 2. SEEDING: If this machine has 0 components, try to add defaults
-    if (!comps || comps.length === 0) {
-        const defaults = [
-            { machine_id: machineId, name: 'Engine', icon: '⚙️' },
-            { machine_id: machineId, name: 'Hydraulics', icon: '💧' },
-            { machine_id: machineId, name: 'Grease Map', icon: '⛽' },
-            { machine_id: machineId, name: 'Tracks', icon: '🚜' }
-        ];
-        
-        const { data: seeded, error: seedError } = await supabase
+    try {
+        // 2. Fetch components
+        let { data: comps, error: fetchError } = await supabase
             .from('machine_components')
-            .insert(defaults)
-            .select();
+            .select('*')
+            .eq('machine_id', machineId)
+            .order('created_at', { ascending: true });
 
-        if (seedError) {
-            console.error("Seeding failed:", seedError);
-            comps = []; // Fallback to empty array to prevent crash
-        } else {
-            comps = seeded || []; // Use seeded data or empty array
+        // 3. SEEDING logic
+        if (!comps || comps.length === 0) {
+            const defaults = [
+                { machine_id: machineId, name: 'Engine', icon: '⚙️' },
+                { machine_id: machineId, name: 'Hydraulics', icon: '💧' },
+                { machine_id: machineId, name: 'Grease Map', icon: '⛽' },
+                { machine_id: machineId, name: 'Tracks', icon: '🚜' }
+            ];
+            
+            const { data: seeded, error: seedError } = await supabase
+                .from('machine_components')
+                .insert(defaults)
+                .select();
+
+            if (seedError) {
+                console.error("Seeding failed (Check RLS):", seedError);
+                comps = []; 
+            } else {
+                comps = seeded || [];
+            }
         }
+
+        // 5. Build the Dynamic Pills
+        if (comps && Array.isArray(comps)) {
+            comps.forEach(c => {
+                const isSelected = window.currentOsComponent === c.id ? 'active-os' : '';
+                const isGrease = c.name && c.name.toLowerCase().includes('grease');
+                
+                const clickAction = isGrease 
+                    ? `window.openZerkOS('${machineId}', this)` 
+                    : `selectOsComponent('${c.id}', '${c.name.toUpperCase()}')`;
+
+                html += `
+                    <div class="comp-card-grey ${isSelected}" onclick="${clickAction}">
+                        ${c.icon || '⚙️'} ${c.name}
+                    </div>`;
+            });
+        }
+
+        // 6. Apply to the DOM
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.error("Critical error in renderComponentPills:", err);
+        container.innerHTML = `<p style="color:red">Error loading components</p>`;
     }
-
-    // 4. THE FIX: Check if comps is actually an array before looping
-    if (comps && Array.isArray(comps)) {
-        comps.forEach(c => {
-            const isSelected = window.currentOsComponent === c.id;
-            
-            // Logic to check if it's a Grease Map
-            const isGrease = c.name && c.name.toLowerCase().includes('grease');
-            
-            const clickAction = isGrease 
-                ? `window.openZerkOS('${machineId}', this)` 
-                : `selectOsComponent('${c.id}', '${c.name.toUpperCase()}')`;
-
-            html += `
-                <div class="comp-card-grey ${isSelected ? 'active-os' : ''}" onclick="${clickAction}">
-                    ${c.icon || '⚙️'} ${c.name}
-                </div>`;
-        });
-    }
-
-    container.innerHTML = html;
 };
-
 /**
  * Handles pill clicks: Updates the label and filters the specs
  */
