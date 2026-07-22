@@ -124,7 +124,7 @@ export function renderPerfectCard(equipId) {
         if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
         if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
     }, 50);
-}
+
 
 export function renderWikiSection(equipId) {
     // 1. Get the tips from the global state
