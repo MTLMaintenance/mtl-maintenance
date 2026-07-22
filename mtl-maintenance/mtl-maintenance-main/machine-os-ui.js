@@ -167,3 +167,100 @@ export function renderWikiSection(equipId) {
         </div>
     `).join('');
 }
+
+window.currentOsComponent = "all";
+
+/**
+ * Loads the pills for the machine.
+ */
+window.renderComponentPills = async function(machineId) {
+    const container = document.getElementById('os-component-pills');
+    if (!container) return;
+
+    // 1. Get components from DB for this machine
+    const { data: comps } = await supabase
+        .from('machine_components')
+        .select('*')
+        .eq('machine_id', machineId)
+        .order('created_at', { ascending: true });
+
+    // 2. Always start with the 'All' pill
+    let html = `
+        <div class="comp-card-grey ${window.currentOsComponent === 'all' ? 'active-os' : ''}" 
+             onclick="selectOsComponent('all', 'ALL')">
+            🌐 All
+        </div>`;
+
+    // 3. Add your custom/added pills
+    if (comps) {
+        comps.forEach(c => {
+            html += `
+                <div class="comp-card-grey ${window.currentOsComponent === c.id ? 'active-os' : ''}" 
+                     onclick="selectOsComponent('${c.id}', '${c.name.toUpperCase()}')">
+                    ⚙️ ${c.name}
+                </div>`;
+        });
+    }
+
+    container.innerHTML = html;
+};
+
+/**
+ * Handles pill clicks: Updates the label and filters the specs
+ */
+window.selectOsComponent = function(id, name) {
+    window.currentOsComponent = id;
+    
+    // CHANGE THE LABEL DYNAMICALLY
+    document.getElementById('os-spec-title').innerText = `SPECIFICATIONS FOR ${name}`;
+    
+    // Refresh UI
+    window.renderComponentPills(window.currentMachineId);
+    window.renderMachineSpecs(window.currentMachineId, id);
+};
+
+/**
+ * Manager: Renaming & Adding
+ */
+window.openComponentManager = async function() {
+    const list = document.getElementById('comp-manage-list');
+    const { data: comps } = await supabase.from('machine_components').select('*').eq('machine_id', window.currentMachineId);
+
+    list.innerHTML = comps?.map(c => `
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <input type="text" class="form-input" value="${c.name}" 
+                   style="border:1px solid #ddd; color:black;"
+                   onchange="renameComponent('${c.id}', this.value)">
+            <button class="btn btn-danger" onclick="deleteComponent('${c.id}')">🗑️</button>
+        </div>
+    `).join('') || '<p style="color:#999; text-align:center;">Add your first component below</p>';
+
+    window.openModal('component-manager-modal');
+};
+
+window.addNewComponent = async function() {
+    const nameInput = document.getElementById('new-comp-name');
+    if (!nameInput.value) return;
+
+    await supabase.from('machine_components').insert({
+        machine_id: window.currentMachineId,
+        name: nameInput.value
+    });
+
+    nameInput.value = '';
+    window.openComponentManager(); // Refresh Modal
+    window.renderComponentPills(window.currentMachineId); // Refresh Bar
+};
+
+window.renameComponent = async function(id, newName) {
+    await supabase.from('machine_components').update({ name: newName }).eq('id', id);
+    window.renderComponentPills(window.currentMachineId); // Updates pill names immediately
+    window.showToast("Renamed successfully", "success");
+};
+
+window.deleteComponent = async function(id) {
+    if (!confirm("Delete this component?")) return;
+    await supabase.from('machine_components').delete().eq('id', id);
+    window.openComponentManager();
+    window.renderComponentPills(window.currentMachineId);
+};
