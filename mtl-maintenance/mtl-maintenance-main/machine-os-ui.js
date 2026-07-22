@@ -2,18 +2,23 @@
 
 export function renderPerfectCard(equipId) {
     const state = window.state;
+    // Find the equipment object
     const e = state.equipment.find(x => x.id === equipId);
     
+    // If the machine doesn't exist, go back to the fleet list
     if (!e) return window.showPanel('equipment');
 
     const container = document.getElementById('panel-machine-profile');
     if (!container) return;
 
+    // Set global trackers so other files know which machine we are looking at
+    window.currentMachineId = equipId; 
+    window.currentOsComponent = 'all';
+
     const healthScore = typeof window.calcHealth === 'function' ? window.calcHealth(e.id, state.tasks, state.equipment) : 100;
-    const faultCount = window.getActiveFaultsCount ? window.getActiveFaultsCount(e.id) : 0;
+    const faultCount = typeof window.getActiveFaultsCount === 'function' ? window.getActiveFaultsCount(e.id) : 0;
     const faultBoxColor = faultCount > 0 ? '#ef4444' : '#22c55e'; 
     
-    // START OF HTML STRING
     container.innerHTML = `
         <div class="mtl-os-container" style="padding-top: 20px;">
             <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
@@ -24,19 +29,19 @@ export function renderPerfectCard(equipId) {
                 <div class="os-section header" style="background:#fafafa;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
                         <div>
-                            <h1 style="margin:0; color:#1a1a1a; cursor:pointer;" onclick="window.renameEquipment('${e.id}')" title="Click to rename">${e.name || 'Unnamed Machine'} ✏️</h1>
-                            <span class="mtl-status-tag operational" style="margin-top:8px; display:inline-block; cursor:pointer;" onclick="window.editEquipStatusInline('${e.id}')" title="Click to change status">${e.status || 'OPERATIONAL'}</span>
-                            <span class="badge bg" style="margin-left:10px; cursor:pointer;" onclick="window.quickLogHours('${e.id}')" title="Click to log new hours">⏱ ${(e.hours || 0).toLocaleString()} HRS ✏️</span>
+                            <h1 style="margin:0; color:#1a1a1a; cursor:pointer;" onclick="window.renameEquipment('${equipId}')" title="Click to rename">${e.name || 'Unnamed Machine'} ✏️</h1>
+                            <span class="mtl-status-tag operational" style="margin-top:8px; display:inline-block; cursor:pointer;" onclick="window.editEquipStatusInline('${equipId}')" title="Click to change status">${e.status || 'OPERATIONAL'}</span>
+                            <span class="badge bg" style="margin-left:10px; cursor:pointer;" onclick="window.quickLogHours('${equipId}')" title="Click to log new hours">⏱ ${(e.hours || 0).toLocaleString()} HRS ✏️</span>
                         </div>
                         <div style="display:flex; gap:10px;">
-                            <button class="btn btn-secondary btn-sm" onclick="window.openEquipQRModal('${e.id}')">🏷️ QR Code</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+                            <button class="btn btn-secondary btn-sm" onclick="window.openEquipQRModal('${equipId}')">🏷️ QR Code</button>
+                            <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${equipId}')">🗑 Delete</button>
                         </div>
                     </div>
                     
                     <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(2, 1fr); gap:15px;">
                         <div class="v-item"><span>HEALTH</span><b>${healthScore}%</b></div>
-                        <div class="v-item" onclick="window.openFaultList('${e.id}')" style="cursor:pointer; border-bottom: 3px solid ${faultBoxColor};">
+                        <div class="v-item" onclick="window.openFaultList('${equipId}')" style="cursor:pointer; border-bottom: 3px solid ${faultBoxColor};">
                             <span>ACTIVE FAULTS</span>
                             <b style="color: ${faultBoxColor};">${faultCount} ACTIVE</b>
                         </div>
@@ -47,14 +52,14 @@ export function renderPerfectCard(equipId) {
                 <div class="os-section">
                     <h3 class="os-label-dark">Job Hub</h3>
                     <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
-                        <button class="job-btn-dark" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
+                        <button class="job-btn-dark" onclick="window.openJobWorkflow('repair', '${equipId}')">🛠 Repair</button>
+                        <button class="job-btn-dark" onclick="window.openJobWorkflow('inspect', '${equipId}')">🔍 Inspect</button>
+                        <button class="job-btn-dark" onclick="window.openJobWorkflow('replace', '${equipId}')">🔄 Replace</button>
+                        <button class="job-btn-dark" onclick="window.openJobWorkflow('test', '${equipId}')">⚡ Test</button>
                     </div>
                 </div>
 
-                <!-- COMPONENTS (DYNAMIC VERSION) -->
+                <!-- COMPONENTS -->
                 <div class="os-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <h3 class="os-label-dark" style="margin:0;">Components</h3>
@@ -62,7 +67,7 @@ export function renderPerfectCard(equipId) {
                     </div>
 
                     <div id="os-component-pills" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;">
-                        <!-- Pills like "All", "Engine" etc will be injected here by window.renderComponentPills -->
+                        <!-- Pills injected by window.renderComponentPills -->
                     </div>
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
@@ -72,7 +77,7 @@ export function renderPerfectCard(equipId) {
 
                     <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
                     <div id="os-spec-list" class="os-spec-grid" style="margin-top:15px;">
-                        <!-- Specs injected here -->
+                        <!-- Specs injected by window.renderMachineSpecs -->
                     </div>
                 </div>
 
@@ -80,10 +85,10 @@ export function renderPerfectCard(equipId) {
                 <div class="os-section" style="background:#fffcf5;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <h3 class="os-label-dark" style="margin:0;">Shop Wisdom</h3>
-                        <button class="btn-add-spec" onclick="window.addWikiTip('${e.id}', 'general')">+ Add Tip</button>
+                        <button class="btn-add-spec" onclick="window.addWikiTip('${equipId}', 'general')">+ Add Tip</button>
                     </div>
                     <div id="shop-wiki-list">
-                        ${renderWikiSection(e.id)}
+                        ${renderWikiSection(equipId)}
                     </div>
                 </div>
 
@@ -106,41 +111,25 @@ export function renderPerfectCard(equipId) {
         </div>
     `; 
 
-    // TRIGGER RE-RENDERS
-    window.currentMachineId = e.id; // Global tracker
-    window.currentOsComponent = 'all'; // Reset to all
-    
+    // Trigger sub-renders after the HTML is applied to the DOM
     setTimeout(() => {
-        if (window.renderComponentPills) window.renderComponentPills(e.id);
-        if (window.renderMachineSpecs) window.renderMachineSpecs(e.id, 'all');
-        if (window.renderMachineTimeline) window.renderMachineTimeline(e.id);
-        if (window.renderDocsList) window.renderDocsList(e.id);
+        if (window.renderComponentPills) window.renderComponentPills(equipId);
+        if (window.renderMachineSpecs) window.renderMachineSpecs(equipId, 'all');
+        if (window.renderMachineTimeline) window.renderMachineTimeline(equipId);
+        if (window.renderDocsList) window.renderDocsList(equipId);
     }, 50);
 }
 
-    // Trigger sub-renders after a tiny delay
-    setTimeout(() => {
-        if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
-        if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
-        if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
-    }, 50);
-
-
 export function renderWikiSection(equipId) {
-    // 1. Get the tips from the global state
     const allTips = window.state.wiki || [];
-    
-    // 2. Filter for this machine only
     const machineTips = allTips.filter(t => t.equip_id === equipId);
     
     if (machineTips.length === 0) {
         return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for this machine yet.</p>`;
     }
 
-    // 3. Sort by newest first
     machineTips.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // 4. Build the HTML cards
     return machineTips.map(t => `
         <div class="wiki-note-card" style="background:#fffbeb; border-left:4px solid #f59e0b; padding:12px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
