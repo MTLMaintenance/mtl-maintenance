@@ -57,14 +57,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
 
                 <!-- COMPONENTS -->
                 <div class="os-section">
-                    <h3 class="os-label-dark">Components</h3>
-                    <div class="os-comp-scroll" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;">
-                        <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
-                         <div class="comp-card-grey" onclick="window.openZerkOS('${e.id}', this)">⛽ Grease Map</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('tracks', this)">🚜 Tracks</div>
-                    </div>
+                 <div class="os-comp-scroll" id="mtl-comp-chip-area" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;"></div>
                        <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
                 </div>
@@ -101,11 +94,12 @@ const faultCount = window.getActiveFaultsCount(e.id);
     `; 
 
     // Trigger sub-renders after a tiny delay
-    setTimeout(() => {
-        if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
-        if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
-        if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
-    }, 50);
+   setTimeout(() => {
+    if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
+    if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
+    if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
+    if (typeof window.renderComponentChips === 'function') window.renderComponentChips(e.id); // ADD THIS LINE
+}, 50);
 }
 
 export function renderWikiSection(equipId) {
