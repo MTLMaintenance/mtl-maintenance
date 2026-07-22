@@ -290,26 +290,65 @@ window.deleteComponent = async function(id) {
 };
 
 window.saveNewSpec = async function() {
-    const name = document.getElementById('spec-name-input').value;
-    const val = document.getElementById('spec-value-input').value;
+    console.log("Save Spec triggered..."); // Check your console (F12) to see if this appears
+
+    // A. Grab the UI elements
+    const nameInput = document.getElementById('spec-name-input');
+    const valInput = document.getElementById('spec-value-input');
     
-    // THE KEY: Check which pill is active right now
-    // If 'all' is selected, we save it as null (General)
-    const activePillId = window.currentOsComponent === 'all' ? null : window.currentOsComponent;
+    if (!nameInput || !valInput) {
+        console.error("Missing input fields in HTML!");
+        return;
+    }
 
-    if (!name || !val) return;
+    const name = nameInput.value.trim();
+    const val = valInput.value.trim();
+    
+    // B. Check for required data
+    const machineId = window.currentMachineId;
+    const activeComponentId = window.currentOsComponent; 
 
-    await supabase.from('specs').insert({
-        machine_id: window.currentMachineId,
-        component_id: activePillId, // This links it to the specific pill
-        name: name,
-        value: val
-    });
+    if (!name || !val) {
+        alert("Please enter both a property name and a value.");
+        return;
+    }
 
-    window.closeModal('spec-modal');
-    window.renderMachineSpecs(window.currentMachineId, window.currentOsComponent);
+    if (!machineId) {
+        console.error("No currentMachineId found. Make sure the machine profile is open.");
+        return;
+    }
+
+    try {
+        // C. Talk to Supabase
+        const { error } = await supabase
+            .from('specs')
+            .insert({
+                machine_id: machineId,
+                // If we are on the 'All' tab, we save as NULL so it's a general spec
+                component_id: activeComponentId === 'all' ? null : activeComponentId,
+                name: name,
+                value: val
+            });
+
+        if (error) throw error;
+
+        // D. Success!
+        console.log("Spec saved successfully!");
+        if (window.showToast) window.showToast("Specification saved!", "success");
+        
+        // Close the modal
+        window.closeModal('spec-modal');
+        
+        // E. Refresh the list immediately so you see the new item
+        if (window.renderMachineSpecs) {
+            window.renderMachineSpecs(machineId, activeComponentId);
+        }
+
+    } catch (err) {
+        console.error("Error saving spec:", err);
+        alert("Failed to save specification. Check console for details.");
+    }
 };
-
 // --- SAVING A SHOP TIP ---
 // Assuming you have a function that opens the prompt/modal for a tip
 window.saveWikiTip = async function(tipBody) {
