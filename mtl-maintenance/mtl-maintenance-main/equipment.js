@@ -576,49 +576,7 @@ export async function deleteEquip(id) {
 
 
 
-export function openSpecModal(equipId, componentName) {
-    document.getElementById('spec-equip-id').value = equipId;
-    document.getElementById('spec-component').value = componentName;
-    document.getElementById('spec-name-input').value = "";
-    document.getElementById('spec-value-input').value = "";
-    
-    document.getElementById('spec-modal-title').textContent = `Add ${componentName} Spec`;
-    
-    window.openModal('spec-modal');
-}
 
-// 2. The logic that actually sends the data to Supabase
-export async function saveNewSpec() {
-    const equipId = document.getElementById('spec-equip-id').value;
-    const componentName = document.getElementById('spec-component').value;
-    const specName = document.getElementById('spec-name-input').value.trim();
-    const specValue = document.getElementById('spec-value-input').value.trim();
-
-    if (!specName || !specValue) return alert("Please fill in both boxes.");
-
-    const e = window.state.equipment.find(x => x.id === equipId);
-    if (!e) return;
-
-    // Build the key (e.g., "Engine: Oil Filter")
-    const finalKey = (componentName === 'all') ? specName : `${componentName}: ${specName}`;
-
-    if (!e.custom_fields) e.custom_fields = {};
-    e.custom_fields[finalKey] = specValue;
-
-    try {
-        await window._mpdb.from('equipment').update({ custom_fields: e.custom_fields }).eq('id', equipId);
-        
-        window.closeModal('spec-modal');
-        window.showToast("Spec Saved ✓");
-
-        // Refresh the UI
-        if (typeof window.renderComponentSpecs === 'function') {
-            window.renderComponentSpecs(equipId, componentName);
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
 
 export function setGroupFilter(group){window.activeGroupFilter=group;['all'].forEach(g=>{const btn=document.getElementById('grp-'+g);if(!btn)return;if(g===group){btn.style.background='#fff';btn.style.color='#1a1a18';btn.style.fontWeight='700';btn.style.borderColor='#fff';}else{btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.fontWeight='500';btn.style.borderColor='rgba(255,255,255,0.6)';}});if(typeof window.refreshDashboard==='function')window.refreshDashboard();}
 export function setEquipGroupFilter(group){window.equipGroupFilter=group;['all'].forEach(g=>{const btn=document.getElementById('eq-grp-'+g);if(!btn)return;btn.classList.toggle('active',g===group);});if(typeof window.renderEquipmentTable==='function')window.renderEquipmentTable();}
