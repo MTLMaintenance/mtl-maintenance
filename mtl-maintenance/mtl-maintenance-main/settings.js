@@ -175,3 +175,45 @@ window.saveUserProfile = async function() {
     }
 };
 
+window.renderMachineSpecs = async function(machineId, compId) {
+    const container = document.getElementById('os-spec-list');
+    if (!container) return;
+
+    try {
+        // 1. Fetch specs for this machine
+        let query = supabase
+            .from('specs')
+            .select('*')
+            .eq('machine_id', machineId);
+
+        // 2. If a specific pill is selected (not 'all'), filter by that component ID
+        if (compId !== 'all') {
+            query = query.eq('component_id', compId);
+        }
+
+        const { data: specs, error } = await query;
+
+        if (error) throw error;
+
+        // 3. If no specs found, show a clean "Empty" message
+        if (!specs || specs.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #999; background: #fafafa; border-radius: 12px; border: 1px dashed #ddd;">
+                    No specifications logged for this section yet.
+                </div>`;
+            return;
+        }
+
+        // 4. Draw the spec cards
+        container.innerHTML = specs.map(s => `
+            <div class="spec-card-os">
+                <label>${s.name.toUpperCase()}</label>
+                <b>${s.value}</b>
+            </div>
+        `).join('');
+
+    } catch (err) {
+        console.error("Error rendering specs:", err);
+        container.innerHTML = `<p style="color:red">Failed to load specifications.</p>`;
+    }
+};
