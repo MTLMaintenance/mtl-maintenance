@@ -290,63 +290,67 @@ window.deleteComponent = async function(id) {
 };
 
 window.saveNewSpec = async function() {
-    console.log("Save Spec triggered..."); // Check your console (F12) to see if this appears
+    // 1. First thing: Signal that the function started
+    alert("Function started!"); 
+    console.log("DEBUG: saveNewSpec initiated");
 
-    // A. Grab the UI elements
-    const nameInput = document.getElementById('spec-name-input');
-    const valInput = document.getElementById('spec-value-input');
-    
-    if (!nameInput || !valInput) {
-        console.error("Missing input fields in HTML!");
+    // 2. Check for UI elements
+    const nameEl = document.getElementById('spec-name-input');
+    const valEl = document.getElementById('spec-value-input');
+
+    if (!nameEl || !valEl) {
+        alert("CRITICAL ERROR: Input fields not found in HTML. Check your IDs.");
         return;
     }
 
-    const name = nameInput.value.trim();
-    const val = valInput.value.trim();
+    const name = nameEl.value.trim();
+    const val = valEl.value.trim();
     
-    // B. Check for required data
-    const machineId = window.currentMachineId;
-    const activeComponentId = window.currentOsComponent; 
+    console.log("DEBUG: Input values are:", name, val);
 
     if (!name || !val) {
-        alert("Please enter both a property name and a value.");
+        alert("STOP: Name or Value is empty.");
         return;
     }
 
-    if (!machineId) {
-        console.error("No currentMachineId found. Make sure the machine profile is open.");
+    // 3. Check for Global variables
+    console.log("DEBUG: currentMachineId is:", window.currentMachineId);
+    console.log("DEBUG: currentOsComponent is:", window.currentOsComponent);
+
+    if (!window.currentMachineId) {
+        alert("STOP: No Machine ID found in memory.");
         return;
     }
 
     try {
-        // C. Talk to Supabase
+        alert("Sending to Database...");
+        
         const { error } = await supabase
             .from('specs')
             .insert({
-                machine_id: machineId,
-                // If we are on the 'All' tab, we save as NULL so it's a general spec
-                component_id: activeComponentId === 'all' ? null : activeComponentId,
+                machine_id: window.currentMachineId,
+                component_id: window.currentOsComponent === 'all' ? null : window.currentOsComponent,
                 name: name,
                 value: val
             });
 
-        if (error) throw error;
+        if (error) {
+            alert("DATABASE ERROR: " + error.message);
+            console.error(error);
+            return;
+        }
 
-        // D. Success!
-        console.log("Spec saved successfully!");
-        if (window.showToast) window.showToast("Specification saved!", "success");
+        alert("SUCCESS: Saved to Supabase!");
         
-        // Close the modal
         window.closeModal('spec-modal');
         
-        // E. Refresh the list immediately so you see the new item
         if (window.renderMachineSpecs) {
-            window.renderMachineSpecs(machineId, activeComponentId);
+            window.renderMachineSpecs(window.currentMachineId, window.currentOsComponent);
         }
 
     } catch (err) {
-        console.error("Error saving spec:", err);
-        alert("Failed to save specification. Check console for details.");
+        alert("CRASH: " + err.message);
+        console.error(err);
     }
 };
 // --- SAVING A SHOP TIP ---
