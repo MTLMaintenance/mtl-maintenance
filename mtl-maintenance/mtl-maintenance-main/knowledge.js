@@ -3,38 +3,41 @@ import { uid, showToast } from './utils.js';
 
 // 1. Function to add a new tip
 export async function addWikiTip(equipId, component = 'general') {
-    const tipBody = prompt(`Enter a Pro-Tip for this ${component}: \n(e.g., "Use a 15mm deep socket")`);
-    
-    if (!tipBody || tipBody.trim() === "") return;
+    const body = prompt("Enter Shop Wisdom / Maintenance Tip:");
+    if (!body) return;
 
-    const newTip = {
-        id: uid(),
-        equip_id: equipId,
-        component: component.toLowerCase(),
-        author: window.currentUser.name,
-        body: tipBody.trim(),
-        created_at: new Date().toISOString()
-    };
+    // THE KEY: Link it to the pill currently selected
+    // If 'all' is selected, we save it as null (General machine tip)
+    const activePillId = window.currentOsComponent === 'all' ? null : window.currentOsComponent;
 
     try {
-        const { error } = await window._mpdb.from('shop_wiki').insert([newTip]);
+        const { error } = await supabase
+            .from('wiki')
+            .insert({
+                equip_id: equipId,
+                component_id: activePillId, // This makes it specific to the pill!
+                body: body,
+                author: window.state.currentUser?.full_name || 'Staff'
+            });
+
         if (error) throw error;
 
-        // Add to local memory so it shows up instantly
-        if (!window.state.wiki) window.state.wiki = [];
-        window.state.wiki.push(newTip);
+        window.showToast("Tip added!", "success");
 
-        showToast("Knowledge saved to Shop Wiki ✓");
+        // IMPORTANT: Update your local state so the UI refreshes immediately
+        // Fetch the new list or manually push to window.state.wiki
+        if (window.fetchWiki) await window.fetchWiki(); 
         
-        // Refresh the current view
-        if (window.currentPanel === 'machine-profile') {
-            window.renderPerfectCard(equipId);
+        // Refresh the UI area
+        const wikiContainer = document.getElementById('shop-wiki-list');
+        if (wikiContainer) {
+            wikiContainer.innerHTML = renderWikiSection(equipId);
         }
-    } catch (e) {
-        console.error("Wiki Error:", e);
-        showToast("Failed to save tip");
+
+    } catch (err) {
+        console.error("Error saving tip:", err);
     }
-}
+};
 
 // 2. Function to load all wiki tips (Add this to your init.js loadState later)
 export async function fetchWiki() {
