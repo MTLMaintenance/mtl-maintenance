@@ -27,7 +27,7 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, com
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,saveNewSpec,openSpecModal,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc,openEditDocModal, handleDocUpload, renderDocsList } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
@@ -39,7 +39,7 @@ import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory 
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
-import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs,saveSpecModal,editQuickSpec,openSpecModal  } from './views.js';
+import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs,saveSpecModal,editQuickSpec,openSpecModal,saveNewSpec,renderComponentChips,openComponentManagerModal,renderComponentManageList,addNewComponent,deleteComponent,saveComponentRename    } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers, renderSuppliersTable } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
@@ -69,6 +69,13 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+
+window.deleteComponent = deleteComponent;
+window.saveComponentRename = saveComponentRename;
+window.addNewComponent = addNewComponent;
+window.renderComponentManageList = renderComponentManageList;
+window.openComponentManagerModal = openComponentManagerModal;
+window.renderComponentChips = renderComponentChips;
 window.saveSpecModal = saveSpecModal;
 window.editQuickSpec = editQuickSpec;
 window.openSpecModal = openSpecModal;
