@@ -152,13 +152,13 @@ window.renderComponentPills = async function(machineId) {
     if (!container) return;
 
     // 1. Fetch components from DB
-    let { data: comps } = await supabase
+    let { data: comps, error } = await supabase
         .from('machine_components')
         .select('*')
         .eq('machine_id', machineId)
         .order('created_at', { ascending: true });
 
-    // 2. SEEDING: If this is a new machine with 0 components, add the defaults
+    // 2. SEEDING: If this machine has 0 components, try to add defaults
     if (!comps || comps.length === 0) {
         const defaults = [
             { machine_id: machineId, name: 'Engine', icon: '⚙️' },
@@ -166,25 +166,38 @@ window.renderComponentPills = async function(machineId) {
             { machine_id: machineId, name: 'Grease Map', icon: '⛽' },
             { machine_id: machineId, name: 'Tracks', icon: '🚜' }
         ];
-        const { data: seeded } = await supabase.from('machine_components').insert(defaults).select();
-        comps = seeded;
+        
+        const { data: seeded, error: seedError } = await supabase
+            .from('machine_components')
+            .insert(defaults)
+            .select();
+
+        if (seedError) {
+            console.error("Seeding failed:", seedError);
+            comps = []; // Fallback to empty array to prevent crash
+        } else {
+            comps = seeded || []; // Use seeded data or empty array
+        }
     }
 
-    // 4. Build the Dynamic Pills
-    comps.forEach(c => {
-        const isSelected = window.currentOsComponent === c.id;
-        
-        // Check if this is the "Grease Map" (or whatever you renamed it to)
-        // We trigger the Zerk Map logic specifically for that one
-        const clickAction = c.name.toLowerCase().includes('grease') 
-            ? `window.openZerkOS('${machineId}', this)` 
-            : `selectOsComponent('${c.id}', '${c.name.toUpperCase()}')`;
+    // 4. THE FIX: Check if comps is actually an array before looping
+    if (comps && Array.isArray(comps)) {
+        comps.forEach(c => {
+            const isSelected = window.currentOsComponent === c.id;
+            
+            // Logic to check if it's a Grease Map
+            const isGrease = c.name && c.name.toLowerCase().includes('grease');
+            
+            const clickAction = isGrease 
+                ? `window.openZerkOS('${machineId}', this)` 
+                : `selectOsComponent('${c.id}', '${c.name.toUpperCase()}')`;
 
-        html += `
-            <div class="comp-card-grey ${isSelected ? 'active-os' : ''}" onclick="${clickAction}">
-                ${c.icon || '⚙️'} ${c.name}
-            </div>`;
-    });
+            html += `
+                <div class="comp-card-grey ${isSelected ? 'active-os' : ''}" onclick="${clickAction}">
+                    ${c.icon || '⚙️'} ${c.name}
+                </div>`;
+        });
+    }
 
     container.innerHTML = html;
 };
