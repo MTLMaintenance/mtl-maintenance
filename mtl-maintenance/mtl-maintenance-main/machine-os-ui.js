@@ -9,12 +9,11 @@ export function renderPerfectCard(equipId) {
     const container = document.getElementById('panel-machine-profile');
     if (!container) return;
 
-    // Use window.calcHealth since it's bridged
     const healthScore = typeof window.calcHealth === 'function' ? window.calcHealth(e.id, state.tasks, state.equipment) : 100;
-const faultCount = window.getActiveFaultsCount(e.id);
-  const faultBoxColor = faultCount > 0 ? '#ef4444' : '#22c55e'; 
+    const faultCount = window.getActiveFaultsCount ? window.getActiveFaultsCount(e.id) : 0;
+    const faultBoxColor = faultCount > 0 ? '#ef4444' : '#22c55e'; 
     
-    // START OF HTML STRING (Backtick)
+    // START OF HTML STRING
     container.innerHTML = `
         <div class="mtl-os-container" style="padding-top: 20px;">
             <button onclick="window.showPanel('equipment')" class="os-back-btn">← Back to Fleet</button>
@@ -55,73 +54,47 @@ const faultCount = window.getActiveFaultsCount(e.id);
                     </div>
                 </div>
 
-                <!-- COMPONENTS -->
-               <div class="os-section no-border">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <label class="os-label-dark">Components</label>
-        <button onclick="openComponentManager()" class="btn-add-spec" style="font-size:10px;">⚙️ Edit Components</button>
-    </div>
+                <!-- COMPONENTS (DYNAMIC VERSION) -->
+                <div class="os-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3 class="os-label-dark" style="margin:0;">Components</h3>
+                        <button onclick="window.openComponentManager()" class="btn-add-spec" style="font-size:10px;">⚙️ Edit Components</button>
+                    </div>
 
-    <!-- This is where the pills (All, Engine, etc.) will appear -->
-    <div id="os-component-pills" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
-        <!-- Injected by JS -->
-    </div>
+                    <div id="os-component-pills" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;">
+                        <!-- Pills like "All", "Engine" etc will be injected here by window.renderComponentPills -->
+                    </div>
 
-    <!-- THE DYNAMIC TITLE YOU WANTED -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
-        <label class="os-label-dark" id="os-spec-title">SPECIFICATIONS FOR ALL</label>
-        <button class="btn-add-spec" onclick="openSpecModal()">+ Add Spec</button>
-    </div>
-    
-    <div id="os-spec-list" class="os-spec-grid">
-        <!-- Specs injected by JS -->
-    </div>
-</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                        <h3 class="os-label-dark" id="os-spec-title" style="margin:0;">SPECIFICATIONS FOR ALL</h3>
+                        <button class="btn-add-spec" onclick="window.openSpecModal()">+ Add Spec</button>
+                    </div>
 
-<!-- COMPONENT MANAGER MODAL -->
-<div id="component-manager-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal" style="max-width:400px; background:white; color:black;">
-        <div class="modal-header">
-            <span class="modal-title">Edit Components</span>
-            <button class="modal-close" onclick="closeModal('component-manager-modal')">✕</button>
-        </div>
-        
-        <p style="font-size:12px; color:#666; margin-bottom:15px;">Edit names below or add new ones to this machine.</p>
-        
-        <div id="comp-manage-list" style="max-height:300px; overflow-y:auto; margin-bottom:20px;">
-            <!-- Rename inputs go here -->
-        </div>
+                    <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
+                    <div id="os-spec-list" class="os-spec-grid" style="margin-top:15px;">
+                        <!-- Specs injected here -->
+                    </div>
+                </div>
 
-        <div style="border-top:1px solid #eee; padding-top:15px;">
-            <label class="os-label-dark">Add New Component</label>
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="new-comp-name" class="form-input" placeholder="e.g. Bucket" style="border:1px solid #ddd; color:black;">
-                <button class="btn btn-primary" onclick="addNewComponent()">Add</button>
-            </div>
-        </div>
-    </div>
-</div>
+                <!-- SHOP WISDOM -->
+                <div class="os-section" style="background:#fffcf5;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 class="os-label-dark" style="margin:0;">Shop Wisdom</h3>
+                        <button class="btn-add-spec" onclick="window.addWikiTip('${e.id}', 'general')">+ Add Tip</button>
+                    </div>
+                    <div id="shop-wiki-list">
+                        ${renderWikiSection(e.id)}
+                    </div>
+                </div>
 
-                  
-                   <!-- 4. SHOP WISDOM AREA -->
-                  <div class="os-section" style="background:#fffcf5;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 class="os-label-dark" style="margin:0;">Shop Wisdom</h3>
-            <button class="btn-add-spec" onclick="window.addWikiTip('${e.id}', 'general')">+ Add Tip</button>
-        </div>
-        <div id="shop-wiki-list">
-            ${renderWikiSection(e.id)} <!-- THIS IS THE CALL -->
-        </div>
-    </div>
-
-                   <!-- 5. DOCUMENTS & MANUALS -->
-                  <div class="os-section" style="background:#f8fafc;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 class="os-label-dark" style="margin:0;">Documents & Manuals</h3>
-            <button class="btn-add-spec" onclick="window.openEditDocModal()">+ Add Document</button>
-        </div>
-        <div id="mtl-docs-list"></div>
-    </div>
+                <!-- DOCUMENTS -->
+                <div class="os-section" style="background:#f8fafc;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 class="os-label-dark" style="margin:0;">Documents & Manuals</h3>
+                        <button class="btn-add-spec" onclick="window.openEditDocModal()">+ Add Document</button>
+                    </div>
+                    <div id="mtl-docs-list"></div>
+                </div>
 
                 <!-- TIMELINE -->
                 <div class="os-section no-border">
@@ -132,6 +105,18 @@ const faultCount = window.getActiveFaultsCount(e.id);
             </div>
         </div>
     `; 
+
+    // TRIGGER RE-RENDERS
+    window.currentMachineId = e.id; // Global tracker
+    window.currentOsComponent = 'all'; // Reset to all
+    
+    setTimeout(() => {
+        if (window.renderComponentPills) window.renderComponentPills(e.id);
+        if (window.renderMachineSpecs) window.renderMachineSpecs(e.id, 'all');
+        if (window.renderMachineTimeline) window.renderMachineTimeline(e.id);
+        if (window.renderDocsList) window.renderDocsList(e.id);
+    }, 50);
+}
 
     // Trigger sub-renders after a tiny delay
     setTimeout(() => {
