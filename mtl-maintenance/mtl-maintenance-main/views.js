@@ -328,3 +328,73 @@ export function renderComponentSpecs(equipId, componentFilter = 'all') {
         </div>
     `;
 }
+
+export function openSpecModal(equipId, componentName) {
+    document.getElementById('spec-equip-id').value = equipId;
+    document.getElementById('spec-component').value = componentName;
+    document.getElementById('spec-original-key').value = ''; // '' = ADD mode
+    document.getElementById('spec-name-input').value = "";
+    document.getElementById('spec-value-input').value = "";
+ 
+    document.getElementById('spec-modal-title').textContent = `Add ${componentName} Spec`;
+ 
+    window.openModal('spec-modal');
+}
+ 
+// NEW — opens the same modal, pre-filled, in EDIT mode.
+export function editQuickSpec(equipId, fullKey) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e || !e.custom_fields || !(fullKey in e.custom_fields)) return;
+ 
+    const value = e.custom_fields[fullKey];
+ 
+    // key convention is "Component: Field Name"
+    const splitAt = fullKey.indexOf(':');
+    const componentName = splitAt >= 0 ? fullKey.slice(0, splitAt).trim() : fullKey.trim();
+    const fieldName = splitAt >= 0 ? fullKey.slice(splitAt + 1).trim() : '';
+ 
+    document.getElementById('spec-equip-id').value = equipId;
+    document.getElementById('spec-component').value = componentName;
+    document.getElementById('spec-original-key').value = fullKey; // marks EDIT mode
+    document.getElementById('spec-name-input').value = fieldName;
+    document.getElementById('spec-value-input').value = value;
+ 
+    document.getElementById('spec-modal-title').textContent = `Edit ${componentName} Spec`;
+ 
+    window.openModal('spec-modal');
+}
+ 
+// NEW — the actual save handler. Wire your modal's Save button to
+// onclick="window.saveSpecModal()".
+export function saveSpecModal() {
+    const equipId = document.getElementById('spec-equip-id').value;
+    const componentName = document.getElementById('spec-component').value.trim();
+    const originalKey = document.getElementById('spec-original-key').value;
+    const fieldName = document.getElementById('spec-name-input').value.trim();
+    const fieldValue = document.getElementById('spec-value-input').value.trim();
+ 
+    if (!fieldName) return; // don't save a spec with no name
+ 
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+ 
+    // Merge into whatever is already there — never replace the object.
+    if (!e.custom_fields) e.custom_fields = {};
+ 
+    const newKey = `${componentName}: ${fieldName}`;
+ 
+    // EDIT mode + name changed → remove the old key so we don't leave
+    // a stale duplicate sitting next to the renamed one.
+    if (originalKey && originalKey !== newKey) {
+        delete e.custom_fields[originalKey];
+    }
+ 
+    e.custom_fields[newKey] = fieldValue;
+ 
+    if (typeof window.saveState === 'function') window.saveState();
+    if (typeof window.closeModal === 'function') window.closeModal('spec-modal');
+ 
+    if (typeof window.renderComponentSpecs === 'function') {
+        window.renderComponentSpecs(equipId, componentName);
+    }
+}
