@@ -80,6 +80,16 @@ const faultCount = window.getActiveFaultsCount(e.id);
             ${renderWikiSection(e.id)} <!-- THIS IS THE CALL -->
         </div>
     </div>
+
+                   <!-- 5. DOCUMENTS & MANUALS -->
+                  <div class="os-section" style="background:#f8fafc;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 class="os-label-dark" style="margin:0;">Documents & Manuals</h3>
+            <button class="btn-add-spec" onclick="window.openEditDocModal()">+ Add Document</button>
+        </div>
+        <div id="mtl-docs-list"></div>
+    </div>
+
                 <!-- TIMELINE -->
                 <div class="os-section no-border">
                     <h3 class="os-label-dark">Machine Timeline</h3>
@@ -94,6 +104,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
     setTimeout(() => {
         if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
         if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
+        if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
     }, 50);
 }
 
