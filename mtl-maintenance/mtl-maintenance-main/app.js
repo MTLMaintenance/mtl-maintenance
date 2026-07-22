@@ -39,7 +39,7 @@ import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory 
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
-import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs  } from './views.js';
+import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs,saveSpecModal,editQuickSpec,openSpecModal  } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers, renderSuppliersTable } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
@@ -69,6 +69,9 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.saveSpecModal = saveSpecModal;
+window.editQuickSpec = editQuickSpec;
+window.openSpecModal = openSpecModal;
 window.refreshDashboard = refreshDashboard;
 window.updateMetrics = updateMetrics;
 window.renderEquipListDash = renderEquipListDash;
