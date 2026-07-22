@@ -1670,6 +1670,7 @@
     
     <input type="hidden" id="spec-equip-id">
     <input type="hidden" id="spec-component">
+    <input type="hidden" id="spec-original-key"> 
 
     <div style="margin-bottom:15px;">
         <label style="display:block; font-size:11px; font-weight:700; color:#666; margin-bottom:5px;">PROPERTY NAME</label>
@@ -1687,7 +1688,25 @@
     </div>
   </div>
 </div>
-
+<!-- COMPONENT MANAGER MODAL -->
+<div id="component-manager-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal" style="max-width:400px; background:white; color:black;">
+        <div class="modal-header">
+            <span class="modal-title" style="color:black; font-weight:bold;">Edit Components</span>
+            <button class="modal-close" onclick="window.closeModal('component-manager-modal')">✕</button>
+        </div>
+        <input type="hidden" id="comp-manager-equip-id">  
+        <div id="comp-manage-list" style="max-height:300px; overflow-y:auto; margin-bottom:20px; padding:10px;"></div>
+        <div style="border-top:1px solid #eee; padding:15px;">
+            <label class="os-label-dark" style="color:#666;">Add New Component</label>
+            <div style="display:flex; gap:8px; margin-top:5px;">
+                <input type="text" id="new-comp-name" class="form-input" placeholder="e.g. Bucket" style="border:1px solid #ddd; color:black;">
+                <button class="btn btn-primary" onclick="window.addNewComponent()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+ 
 <!-- FAULT ENTRY MODAL -->
 <div id="fault-entry-modal" class="modal-backdrop" style="display:none;">
   <div class="modal-card" style="background:white; padding:25px; border-radius:15px; width:90%; max-width:400px; color:black !important;">
@@ -1772,24 +1791,7 @@
 </div>
 <div class="panel" id="panel-machine-profile" style="display:none;"> </div>
 
-<!-- COMPONENT MANAGER MODAL -->
-<div id="component-manager-modal" class="modal-backdrop" style="display:none;">
-    <div class="modal" style="max-width:400px; background:white; color:black;">
-        <div class="modal-header">
-            <span class="modal-title" style="color:black; font-weight:bold;">Edit Components</span>
-            <button class="modal-close" onclick="closeModal('component-manager-modal')">✕</button>
-        </div>
-        <div id="comp-manage-list" style="max-height:300px; overflow-y:auto; margin-bottom:20px; padding:10px;"></div>
-        <div style="border-top:1px solid #eee; padding:15px;">
-            <label class="os-label-dark" style="color:#666;">Add New Component</label>
-            <div style="display:flex; gap:8px; margin-top:5px;">
-                <input type="text" id="new-comp-name" class="form-input" placeholder="e.g. Bucket" style="border:1px solid #ddd; color:black;">
-                <button class="btn btn-primary" onclick="addNewComponent()">Add</button>
-            </div>
-        </div>
-    </div>
-</div>
- 
+
 <!-- MOBILE BOTTOM NAV -->
 <nav id="mobile-bottom-nav">
   <button class="mobile-nav-btn active" data-panel="dashboard" onclick="window.showPanel('dashboard')">
