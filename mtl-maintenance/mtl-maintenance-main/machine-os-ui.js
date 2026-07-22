@@ -56,18 +56,51 @@ const faultCount = window.getActiveFaultsCount(e.id);
                 </div>
 
                 <!-- COMPONENTS -->
-                <div class="os-section">
-                    <h3 class="os-label-dark">Components</h3>
-                    <div class="os-comp-scroll" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;">
-                        <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
-                         <div class="comp-card-grey" onclick="window.openZerkOS('${e.id}', this)">⛽ Grease Map</div>
-                        <div class="comp-card-grey" onclick="window.filterOS('tracks', this)">🚜 Tracks</div>
-                    </div>
-                       <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
-                    <div id="mtl-component-specs" style="margin-top:15px;"></div>
-                </div>
+               <div class="os-section no-border">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <label class="os-label-dark">Components</label>
+        <button onclick="openComponentManager()" class="btn-add-spec" style="font-size:10px;">⚙️ Edit Components</button>
+    </div>
+
+    <!-- This is where the pills (All, Engine, etc.) will appear -->
+    <div id="os-component-pills" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
+        <!-- Injected by JS -->
+    </div>
+
+    <!-- THE DYNAMIC TITLE YOU WANTED -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+        <label class="os-label-dark" id="os-spec-title">SPECIFICATIONS FOR ALL</label>
+        <button class="btn-add-spec" onclick="openSpecModal()">+ Add Spec</button>
+    </div>
+    
+    <div id="os-spec-list" class="os-spec-grid">
+        <!-- Specs injected by JS -->
+    </div>
+</div>
+
+<!-- COMPONENT MANAGER MODAL -->
+<div id="component-manager-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal" style="max-width:400px; background:white; color:black;">
+        <div class="modal-header">
+            <span class="modal-title">Edit Components</span>
+            <button class="modal-close" onclick="closeModal('component-manager-modal')">✕</button>
+        </div>
+        
+        <p style="font-size:12px; color:#666; margin-bottom:15px;">Edit names below or add new ones to this machine.</p>
+        
+        <div id="comp-manage-list" style="max-height:300px; overflow-y:auto; margin-bottom:20px;">
+            <!-- Rename inputs go here -->
+        </div>
+
+        <div style="border-top:1px solid #eee; padding-top:15px;">
+            <label class="os-label-dark">Add New Component</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="new-comp-name" class="form-input" placeholder="e.g. Bucket" style="border:1px solid #ddd; color:black;">
+                <button class="btn btn-primary" onclick="addNewComponent()">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
 
                   
                    <!-- 4. SHOP WISDOM AREA -->
