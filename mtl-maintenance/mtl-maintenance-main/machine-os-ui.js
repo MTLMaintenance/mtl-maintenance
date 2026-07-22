@@ -213,14 +213,22 @@ window.renderComponentPills = async function(machineId) {
  * Handles pill clicks: Updates the label and filters the specs
  */
 window.selectOsComponent = function(id, name) {
+    // 1. Update global tracker
     window.currentOsComponent = id;
     
-    // CHANGE THE LABEL DYNAMICALLY
-    document.getElementById('os-spec-title').innerText = `SPECIFICATIONS FOR ${name}`;
+    // 2. Update the UI Title
+    const title = document.getElementById('os-spec-title');
+    if (title) title.innerText = `SPECIFICATIONS FOR ${name}`;
     
-    // Refresh UI
-    window.renderComponentPills(window.currentMachineId);
-    window.renderMachineSpecs(window.currentMachineId, id);
+    // 3. Re-draw the pills to show which one is "Blue/Active"
+    if (window.renderComponentPills) window.renderComponentPills(window.currentMachineId);
+    
+    // 4. THE FIX: Only call renderMachineSpecs if the function exists
+    if (typeof window.renderMachineSpecs === 'function') {
+        window.renderMachineSpecs(window.currentMachineId, id);
+    } else {
+        console.warn("renderMachineSpecs function is missing!");
+    }
 };
 
 /**
