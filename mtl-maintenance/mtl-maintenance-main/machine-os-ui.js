@@ -162,30 +162,40 @@ window.renderComponentPills = async function(machineId) {
     const container = document.getElementById('os-component-pills');
     if (!container) return;
 
-    // 1. Get components from DB for this machine
-    const { data: comps } = await supabase
+    // 1. Fetch components from DB
+    let { data: comps } = await supabase
         .from('machine_components')
         .select('*')
         .eq('machine_id', machineId)
         .order('created_at', { ascending: true });
 
-    // 2. Always start with the 'All' pill
-    let html = `
-        <div class="comp-card-grey ${window.currentOsComponent === 'all' ? 'active-os' : ''}" 
-             onclick="selectOsComponent('all', 'ALL')">
-            🌐 All
-        </div>`;
-
-    // 3. Add your custom/added pills
-    if (comps) {
-        comps.forEach(c => {
-            html += `
-                <div class="comp-card-grey ${window.currentOsComponent === c.id ? 'active-os' : ''}" 
-                     onclick="selectOsComponent('${c.id}', '${c.name.toUpperCase()}')">
-                    ⚙️ ${c.name}
-                </div>`;
-        });
+    // 2. SEEDING: If this is a new machine with 0 components, add the defaults
+    if (!comps || comps.length === 0) {
+        const defaults = [
+            { machine_id: machineId, name: 'Engine', icon: '⚙️' },
+            { machine_id: machineId, name: 'Hydraulics', icon: '💧' },
+            { machine_id: machineId, name: 'Grease Map', icon: '⛽' },
+            { machine_id: machineId, name: 'Tracks', icon: '🚜' }
+        ];
+        const { data: seeded } = await supabase.from('machine_components').insert(defaults).select();
+        comps = seeded;
     }
+
+    // 4. Build the Dynamic Pills
+    comps.forEach(c => {
+        const isSelected = window.currentOsComponent === c.id;
+        
+        // Check if this is the "Grease Map" (or whatever you renamed it to)
+        // We trigger the Zerk Map logic specifically for that one
+        const clickAction = c.name.toLowerCase().includes('grease') 
+            ? `window.openZerkOS('${machineId}', this)` 
+            : `selectOsComponent('${c.id}', '${c.name.toUpperCase()}')`;
+
+        html += `
+            <div class="comp-card-grey ${isSelected ? 'active-os' : ''}" onclick="${clickAction}">
+                ${c.icon || '⚙️'} ${c.name}
+            </div>`;
+    });
 
     container.innerHTML = html;
 };
