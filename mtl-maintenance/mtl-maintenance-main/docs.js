@@ -132,12 +132,38 @@ export async function saveDoc() {
     if (typeof renderDocuments === 'function') {
         renderDocuments(); 
     }
+    if (window._currentDetailEquipId && typeof window.renderDocsList === 'function') {
+        window.renderDocsList(window._currentDetailEquipId);
+    }
     
     showToast("Document Saved ✓");
   } catch (e) {
     console.error("💥 Function crashed:", e);
   }
 }
+// Renders a machine's linked documents onto its profile card. This was
+// already being called by deleteDoc() below, but never actually existed
+// anywhere - which is why per-machine documents never showed up.
+export function renderDocsList(equipId) {
+    const container = document.getElementById('mtl-docs-list');
+    if (!container) return;
+
+    const state = window.state;
+    const docs = (state.documents || []).filter(d => d.equip_id === equipId);
+
+    container.innerHTML = docs.map(d => `
+        <div class="doc-item" onclick="window.openDocDetail(${JSON.stringify(d).replace(/"/g, '&quot;')})" style="cursor:pointer; padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-weight:600; font-size:13px;">${d.name}</div>
+                <div style="font-size:11px; color:#666;">${d.type || 'Document'}${d.expiry_date ? ' · Expires: ' + fmtDate(d.expiry_date) : ''}</div>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-sm" onclick="event.stopPropagation(); window.openEditDocModal('${d.id}')">Edit</button>
+                <button class="btn-sm btn-danger" onclick="event.stopPropagation(); window.deleteDoc('${d.id}')">✕</button>
+            </div>
+        </div>`).join('') || '<div style="padding:15px; color:#999; text-align:center; font-size:13px;">No documents linked to this machine yet.</div>';
+}
+
 export function openEditDocModal(docId = null) {
   // 1. THE FIX: Use window. so the ID is saved globally
   window._currentDocEditId = docId;
@@ -174,66 +200,6 @@ export function openEditDocModal(docId = null) {
   window.openModal('doc-modal');
 }
 
-
-export function openDocModal(docId = null) {
-  _currentDocEditId = docId;
-  _tempFileData = null;
-  
-  // 1. Populate the "Linked Equipment" dropdown
-  const equipSelect = document.getElementById('d-equip');
-  equipSelect.innerHTML = '<option value="">— None —</option>' + 
-    state.equipment.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-
-  // 2. Clear form
-  document.getElementById('d-name').value = '';
-  document.getElementById('d-expiry').value = '';
-  document.getElementById('d-notes').value = '';
-  document.getElementById('doc-file-preview').innerText = '';
-
-  if (docId) {
-    // EDIT MODE: Fill data
-    const doc = state.documents.find(d => d.id === docId);
-    document.getElementById('d-name').value = doc.name;
-    document.getElementById('d-type').value = doc.type;
-    document.getElementById('d-equip').value = doc.equip_id;
-    document.getElementById('d-expiry').value = doc.expiry;
-    document.getElementById('d-notes').value = doc.notes;
-  } else if (window._currentDetailEquipId) {
-    // NEW DOC from Equipment Tab: Auto-select current machine
-    document.getElementById('d-equip').value = window._currentDetailEquipId;
-  }
-
-  openModal('doc-modal');
-}
-
-export function openAddDocModal() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,image/*,.doc,.docx';
-    
-    input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const newDoc = {
-                id: 'doc-' + Date.now(),
-                equip_id: window._currentDetailEquipId,
-                name: file.name,
-                type: file.type || 'Unknown',
-                file_data: event.target.result,
-                date_added: new Date().toISOString()
-            };
-
-            state.documents.push(newDoc);
-            renderDocsList(window._currentDetailEquipId);
-        };
-        reader.readAsDataURL(file);
-    };
-    
-    input.click();
-}
 
 export function handleDocUpload(input) {
   const file = input.files[0]; 
