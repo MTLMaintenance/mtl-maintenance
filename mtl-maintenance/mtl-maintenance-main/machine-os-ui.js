@@ -122,10 +122,21 @@ export function renderPerfectCard(equipId) {
 
 export function renderWikiSection(equipId) {
     const allTips = window.state.wiki || [];
-    const machineTips = allTips.filter(t => t.equip_id === equipId);
+    
+    // THE KEY: Filter by BOTH machine ID and the current active pill
+    const machineTips = allTips.filter(t => {
+        const matchesMachine = t.equip_id === equipId;
+        
+        if (window.currentOsComponent === 'all') {
+            return matchesMachine; // Show everything if 'All' is selected
+        } else {
+            // Show only if it matches the current pill ID
+            return matchesMachine && t.component_id === window.currentOsComponent;
+        }
+    });
     
     if (machineTips.length === 0) {
-        return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for this machine yet.</p>`;
+        return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No tips found for this section.</p>`;
     }
 
     machineTips.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -213,21 +224,22 @@ window.renderComponentPills = async function(machineId) {
  * Handles pill clicks: Updates the label and filters the specs
  */
 window.selectOsComponent = function(id, name) {
-    // 1. Update global tracker
     window.currentOsComponent = id;
     
-    // 2. Update the UI Title
-    const title = document.getElementById('os-spec-title');
-    if (title) title.innerText = `SPECIFICATIONS FOR ${name}`;
+    // 1. Update the UI Title
+    document.getElementById('os-spec-title').innerText = `SPECIFICATIONS FOR ${name}`;
     
-    // 3. Re-draw the pills to show which one is "Blue/Active"
-    if (window.renderComponentPills) window.renderComponentPills(window.currentMachineId);
+    // 2. Refresh the Pills (to show the blue active state)
+    window.renderComponentPills(window.currentMachineId);
     
-    // 4. THE FIX: Only call renderMachineSpecs if the function exists
-    if (typeof window.renderMachineSpecs === 'function') {
-        window.renderMachineSpecs(window.currentMachineId, id);
-    } else {
-        console.warn("renderMachineSpecs function is missing!");
+    // 3. REFRESH SPECS
+    window.renderMachineSpecs(window.currentMachineId, id);
+    
+    // 4. REFRESH SHOP WISDOM
+    // We update the innerHTML of the wiki container dynamically
+    const wikiContainer = document.getElementById('shop-wiki-list');
+    if (wikiContainer) {
+        wikiContainer.innerHTML = renderWikiSection(window.currentMachineId);
     }
 };
 
@@ -275,4 +287,41 @@ window.deleteComponent = async function(id) {
     await supabase.from('machine_components').delete().eq('id', id);
     window.openComponentManager();
     window.renderComponentPills(window.currentMachineId);
+};
+
+window.saveNewSpec = async function() {
+    const name = document.getElementById('spec-name-input').value;
+    const val = document.getElementById('spec-value-input').value;
+    
+    // THE KEY: Check which pill is active right now
+    // If 'all' is selected, we save it as null (General)
+    const activePillId = window.currentOsComponent === 'all' ? null : window.currentOsComponent;
+
+    if (!name || !val) return;
+
+    await supabase.from('specs').insert({
+        machine_id: window.currentMachineId,
+        component_id: activePillId, // This links it to the specific pill
+        name: name,
+        value: val
+    });
+
+    window.closeModal('spec-modal');
+    window.renderMachineSpecs(window.currentMachineId, window.currentOsComponent);
+};
+
+// --- SAVING A SHOP TIP ---
+// Assuming you have a function that opens the prompt/modal for a tip
+window.saveWikiTip = async function(tipBody) {
+    const activePillId = window.currentOsComponent === 'all' ? null : window.currentOsComponent;
+
+    await supabase.from('wiki').insert({
+        equip_id: window.currentMachineId,
+        component_id: activePillId, // Links tip to the pill (Engine, Tracks, etc)
+        body: tipBody,
+        author: window.state.currentUser?.full_name || 'Staff'
+    });
+
+    // Refresh only the tips for this view
+    window.renderWikiSection(window.currentMachineId); 
 };
