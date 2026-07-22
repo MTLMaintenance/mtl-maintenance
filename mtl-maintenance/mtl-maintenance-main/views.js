@@ -347,8 +347,6 @@ export function editQuickSpec(equipId, fullKey) {
     if (!e || !e.custom_fields || !(fullKey in e.custom_fields)) return;
  
     const value = e.custom_fields[fullKey];
- 
-    // key convention is "Component: Field Name"
     const splitAt = fullKey.indexOf(':');
     const componentName = splitAt >= 0 ? fullKey.slice(0, splitAt).trim() : fullKey.trim();
     const fieldName = splitAt >= 0 ? fullKey.slice(splitAt + 1).trim() : '';
@@ -364,27 +362,26 @@ export function editQuickSpec(equipId, fullKey) {
     window.openModal('spec-modal');
 }
  
-// NEW — the actual save handler. Wire your modal's Save button to
-// onclick="window.saveSpecModal()".
-export function saveSpecModal() {
+// NEW — renamed to saveNewSpec to match your existing
+// "Save Spec" button (onclick="window.saveNewSpec()").
+// Handles both Add and Edit through one non-destructive path.
+export function saveNewSpec() {
     const equipId = document.getElementById('spec-equip-id').value;
     const componentName = document.getElementById('spec-component').value.trim();
     const originalKey = document.getElementById('spec-original-key').value;
     const fieldName = document.getElementById('spec-name-input').value.trim();
     const fieldValue = document.getElementById('spec-value-input').value.trim();
  
-    if (!fieldName) return; // don't save a spec with no name
+    if (!fieldName) return;
  
     const e = window.state.equipment.find(x => x.id === equipId);
     if (!e) return;
  
-    // Merge into whatever is already there — never replace the object.
     if (!e.custom_fields) e.custom_fields = {};
  
     const newKey = `${componentName}: ${fieldName}`;
  
-    // EDIT mode + name changed → remove the old key so we don't leave
-    // a stale duplicate sitting next to the renamed one.
+    // EDIT + renamed → drop the old key so we don't leave a stale duplicate.
     if (originalKey && originalKey !== newKey) {
         delete e.custom_fields[originalKey];
     }
@@ -396,5 +393,173 @@ export function saveSpecModal() {
  
     if (typeof window.renderComponentSpecs === 'function') {
         window.renderComponentSpecs(equipId, componentName);
+    }
+}
+ 
+ 
+// ---------------------------------------------------------
+// COMPONENT MANAGER (add/edit/delete components THEMSELVES —
+// e.g. Engine, Hydraulics, Tracks — per machine)
+// ---------------------------------------------------------
+ 
+const DEFAULT_COMPONENTS = ['engine', 'hydraulics', 'tracks'];
+ 
+const COMPONENT_ICONS = {
+    engine: '⚙️',
+    hydraulics: '💧',
+    tracks: '🚜'
+};
+ 
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+ 
+function capitalize(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+ 
+// Lazily gives a machine its own component list, seeded from the
+// current defaults, WITHOUT overwriting anything if it already exists.
+function getComponentsForEquip(e) {
+    if (!Array.isArray(e.components)) {
+        e.components = [...DEFAULT_COMPONENTS];
+    }
+    return e.components;
+}
+ 
+// Renders the chip row. Replaces the old hardcoded 5 divs in
+// machine-os-ui.js — see the snippet provided separately for that change.
+export function renderComponentChips(equipId) {
+    const container = document.getElementById('mtl-comp-chip-area');
+    if (!container) return;
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+ 
+    const components = getComponentsForEquip(e);
+ 
+    const chipsHtml = components.map(compId => {
+        const icon = COMPONENT_ICONS[compId] || '🔧';
+        return `<div class="comp-card-grey" onclick="window.filterOS('${compId}', this)">${icon} ${capitalize(compId)}</div>`;
+    }).join('');
+ 
+    container.innerHTML = `
+        <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
+        ${chipsHtml}
+        <div class="comp-card-grey" onclick="window.openZerkOS('${equipId}', this)">⛽ Grease Map</div>
+        <div class="comp-card-grey" style="background:#e5e7eb; font-weight:bold;" onclick="window.openComponentManagerModal('${equipId}')">⚙️ Manage</div>
+    `;
+}
+ 
+export function openComponentManagerModal(equipId) {
+    document.getElementById('comp-manager-equip-id').value = equipId;
+    renderComponentManageList(equipId);
+    window.openModal('component-manager-modal');
+}
+ 
+export function renderComponentManageList(equipId) {
+    const container = document.getElementById('comp-manage-list');
+    if (!container) return;
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+ 
+    const components = getComponentsForEquip(e);
+ 
+    container.innerHTML = components.map(compId => `
+        <div style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #eee;">
+            <input type="text" value="${capitalize(compId)}"
+                   class="form-input comp-rename-input"
+                   style="flex:1; border:1px solid #ddd; padding:6px; border-radius:6px; color:black;">
+            <button class="btn btn-secondary btn-sm" onclick="window.saveComponentRename('${equipId}', '${compId}', this)">Save</button>
+            <button class="btn btn-danger btn-sm" onclick="window.deleteComponent('${equipId}', '${compId}')">Delete</button>
+        </div>
+    `).join('') || `<p class="empty-text">No components yet.</p>`;
+}
+ 
+export function addNewComponent() {
+    const equipId = document.getElementById('comp-manager-equip-id').value;
+    const input = document.getElementById('new-comp-name');
+    const raw = input.value.trim();
+    if (!raw) return;
+ 
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+ 
+    const components = getComponentsForEquip(e);
+    const newId = raw.toLowerCase();
+ 
+    if (components.some(c => c.toLowerCase() === newId)) {
+        alert(`"${raw}" already exists.`);
+        return;
+    }
+ 
+    components.push(newId);
+    input.value = '';
+ 
+    if (typeof window.saveState === 'function') window.saveState();
+    renderComponentManageList(equipId);
+    renderComponentChips(equipId);
+}
+ 
+// Non-destructive: deleting a component only removes it from the
+// chip list. Any specs already saved under it are left alone and
+// stay visible under "All".
+export function deleteComponent(equipId, compId) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+ 
+    if (!confirm(`Remove "${capitalize(compId)}" from the component list? Specs already saved under it will stay safe and remain visible under "All".`)) {
+        return;
+    }
+ 
+    const components = getComponentsForEquip(e);
+    e.components = components.filter(c => c !== compId);
+ 
+    if (typeof window.saveState === 'function') window.saveState();
+    renderComponentManageList(equipId);
+    renderComponentChips(equipId);
+}
+ 
+// Renaming migrates any specs saved under the old key prefix so
+// nothing gets orphaned (e.g. "engine: Oil Filter" -> "motor: Oil Filter").
+export function saveComponentRename(equipId, oldId, buttonEl) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+ 
+    const row = buttonEl.closest('div');
+    const input = row.querySelector('.comp-rename-input');
+    const newLabel = input.value.trim();
+    if (!newLabel) return;
+ 
+    const newId = newLabel.toLowerCase();
+    const components = getComponentsForEquip(e);
+ 
+    if (newId !== oldId && components.some(c => c.toLowerCase() === newId)) {
+        alert(`"${newLabel}" already exists.`);
+        return;
+    }
+ 
+    const idx = components.indexOf(oldId);
+    if (idx !== -1) components[idx] = newId;
+ 
+    if (e.custom_fields && newId !== oldId) {
+        const prefixRe = new RegExp('^' + escapeRegex(oldId) + '\\s*:', 'i');
+        Object.keys(e.custom_fields).forEach(key => {
+            if (prefixRe.test(key)) {
+                const fieldPart = key.slice(key.indexOf(':') + 1).trim();
+                const migratedKey = `${newId}: ${fieldPart}`;
+                if (migratedKey !== key) {
+                    e.custom_fields[migratedKey] = e.custom_fields[key];
+                    delete e.custom_fields[key];
+                }
+            }
+        });
+    }
+ 
+    if (typeof window.saveState === 'function') window.saveState();
+    renderComponentManageList(equipId);
+    renderComponentChips(equipId);
+ 
+    if (typeof window.renderComponentSpecs === 'function') {
+        window.renderComponentSpecs(equipId, newId);
     }
 }
