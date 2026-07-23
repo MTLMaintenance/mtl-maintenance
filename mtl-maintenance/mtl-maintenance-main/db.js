@@ -26,14 +26,22 @@ export async function persist(table, action, record) {
     showToast('Saved locally (Offline)');
     return;
   }
-  
+
   try {
-    if(action==='upsert') await supabase.from(table).upsert(record);
-    if(action==='delete') await supabase.from(table).delete().eq('id', recordId);
+    let error;
+    if(action==='upsert') ({ error } = await supabase.from(table).upsert(record));
+    if(action==='delete') ({ error } = await supabase.from(table).delete().eq('id', recordId));
+
+    // Supabase-js does NOT throw on RLS/permission/schema errors — it just
+    // returns { error }. Without this check, a failed write still falls
+    // through and reports "Synced" even though nothing was saved.
+    if (error) throw error;
+
     setSyncStatus('online'); 
     showToast('Synced ✓');
   } catch(e) {
     console.error("DB Error:", e);
+    showToast(`Save failed: ${e.message || 'Unknown error'}`);
     setSyncStatus('offline');
   }
 }
