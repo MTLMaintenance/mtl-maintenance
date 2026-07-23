@@ -316,6 +316,14 @@ export async function fetchWiki() {
 }
 
 export async function addWikiTip(equipId, component = 'general') {
+    // Guard: if this fires, the caller isn't passing a real equip id —
+    // check what's calling addWikiTip and what it's passing in.
+    if (!equipId) {
+        console.error("addWikiTip called with no equipId:", equipId);
+        window.showToast("Couldn't save tip: missing machine ID", "error");
+        return;
+    }
+
     const body = prompt("Enter Shop Wisdom / Maintenance Tip:");
     if (!body) return;
     // THE KEY: Link it to the pill currently selected
