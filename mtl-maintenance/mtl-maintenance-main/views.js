@@ -302,6 +302,19 @@ export function renderMachineTimeline(equipId, componentFilter = 'all') {
 // and window.fetchWiki (refreshes window.state.wiki) to exist.
 // ---------------------------------------------------------
 
+// NEW — pulls all wiki tips from Supabase into window.state.wiki.
+// Without this, tips can insert/update/delete fine in the DB but
+// never show up locally, since nothing refreshes window.state.wiki.
+export async function fetchWiki() {
+    try {
+        const { data, error } = await supabase.from('wiki').select('*');
+        if (error) throw error;
+        window.state.wiki = data || [];
+    } catch (err) {
+        console.error("Error fetching wiki tips:", err);
+    }
+}
+
 export async function addWikiTip(equipId, component = 'general') {
     const body = prompt("Enter Shop Wisdom / Maintenance Tip:");
     if (!body) return;
