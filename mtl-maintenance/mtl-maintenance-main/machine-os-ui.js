@@ -57,7 +57,14 @@ const faultCount = window.getActiveFaultsCount(e.id);
 
                 <!-- COMPONENTS -->
                 <div class="os-section">
-                 <div class="os-comp-scroll" id="mtl-comp-chip-area" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;"></div>
+                    <h3 class="os-label-dark">Components</h3>
+                    <div class="os-comp-scroll" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;">
+                        <div class="comp-card-grey" onclick="window.filterOS('all', this)">🌍 All</div>
+                        <div class="comp-card-grey" onclick="window.filterOS('engine', this)">⚙️ Engine</div>
+                        <div class="comp-card-grey" onclick="window.filterOS('hydraulics', this)">💧 Hydraulics</div>
+                         <div class="comp-card-grey" onclick="window.openZerkOS('${e.id}', this)">⛽ Grease Map</div>
+                        <div class="comp-card-grey" onclick="window.filterOS('tracks', this)">🚜 Tracks</div>
+                    </div>
                        <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
                 </div>
@@ -78,7 +85,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
                   <div class="os-section" style="background:#f8fafc;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 class="os-label-dark" style="margin:0;">Documents & Manuals</h3>
-            <button class="btn-add-spec" onclick="window.openEditDocModal(null, '${e.id}')">+ Add Document</button>
+            <button class="btn-add-spec" onclick="window.openEditDocModal()">+ Add Document</button>
         </div>
         <div id="mtl-docs-list"></div>
     </div>
@@ -94,24 +101,28 @@ const faultCount = window.getActiveFaultsCount(e.id);
     `; 
 
     // Trigger sub-renders after a tiny delay
-   setTimeout(() => {
-    if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
-    if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
-    if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
-    if (typeof window.renderComponentChips === 'function') window.renderComponentChips(e.id); // ADD THIS LINE
-}, 50);
+    setTimeout(() => {
+        if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
+        if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
+        if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
+    }, 50);
 }
 
 export function renderWikiSection(equipId) {
+    // 1. Get the tips from the global state
     const allTips = window.state.wiki || [];
+    
+    // 2. Filter for this machine only
     const machineTips = allTips.filter(t => t.equip_id === equipId);
-
+    
     if (machineTips.length === 0) {
         return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for this machine yet.</p>`;
     }
 
+    // 3. Sort by newest first
     machineTips.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+    // 4. Build the HTML cards
     return machineTips.map(t => `
         <div class="wiki-note-card" style="background:#fffbeb; border-left:4px solid #f59e0b; padding:12px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
