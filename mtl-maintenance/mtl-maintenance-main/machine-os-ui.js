@@ -101,10 +101,19 @@ const faultCount = window.getActiveFaultsCount(e.id);
     `; 
 
     // Trigger sub-renders after a tiny delay
-    setTimeout(() => {
+    setTimeout(async () => {
         if (typeof window.renderMachineTimeline === 'function') window.renderMachineTimeline(e.id);
         if (typeof window.renderComponentSpecs === 'function') window.renderComponentSpecs(e.id, 'all');
         if (typeof window.renderDocsList === 'function') window.renderDocsList(e.id);
+
+        // Fetch wiki tips fresh and re-render, since the initial
+        // renderWikiSection() call above only had whatever was
+        // already (possibly stale/empty) in window.state.wiki.
+        if (typeof window.fetchWiki === 'function') {
+            await window.fetchWiki();
+            const wikiContainer = document.getElementById('shop-wiki-list');
+            if (wikiContainer) wikiContainer.innerHTML = renderWikiSection(e.id);
+        }
     }, 50);
 }
 
