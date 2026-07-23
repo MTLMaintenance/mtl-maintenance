@@ -78,7 +78,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
                   <div class="os-section" style="background:#f8fafc;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 class="os-label-dark" style="margin:0;">Documents & Manuals</h3>
-            <button class="btn-add-spec" onclick="window.openEditDocModal()">+ Add Document</button>
+            <button class="btn-add-spec" onclick="window.openEditDocModal(null, '${e.id}')">+ Add Document</button>
         </div>
         <div id="mtl-docs-list"></div>
     </div>
@@ -103,20 +103,15 @@ const faultCount = window.getActiveFaultsCount(e.id);
 }
 
 export function renderWikiSection(equipId) {
-    // 1. Get the tips from the global state
     const allTips = window.state.wiki || [];
-    
-    // 2. Filter for this machine only
     const machineTips = allTips.filter(t => t.equip_id === equipId);
-    
+
     if (machineTips.length === 0) {
         return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for this machine yet.</p>`;
     }
 
-    // 3. Sort by newest first
     machineTips.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // 4. Build the HTML cards
     return machineTips.map(t => `
         <div class="wiki-note-card" style="background:#fffbeb; border-left:4px solid #f59e0b; padding:12px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
@@ -124,7 +119,13 @@ export function renderWikiSection(equipId) {
                 <span style="font-size:10px; color:#b45309; background:#fef3c7; padding:2px 6px; border-radius:4px; font-weight:bold; text-transform:uppercase;">${t.component}</span>
             </div>
             <div style="font-size:13px; color:#451a03; line-height:1.4;">"${t.body}"</div>
-            <div style="font-size:10px; color:#d97706; margin-top:5px; text-align:right;">${new Date(t.created_at).toLocaleDateString()}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <div style="font-size:10px; color:#d97706;">${new Date(t.created_at).toLocaleDateString()}</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-sm" onclick="window.editWikiTip('${equipId}', '${t.id}')" style="font-size:10px; padding:2px 8px;">Edit</button>
+                    <button class="btn-sm btn-danger" onclick="window.deleteWikiTip('${equipId}', '${t.id}')" style="font-size:10px; padding:2px 8px;">✕</button>
+                </div>
+            </div>
         </div>
     `).join('');
 }
