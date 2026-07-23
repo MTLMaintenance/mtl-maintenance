@@ -10,7 +10,7 @@ import {
 
 // --- INITIALIZATION BRIDGES ---
 import { openFaultCodeDetail, openAddFaultModal, saveActiveFault,openFaultList, openFaultEditor, saveFaultRecord,getActiveFaultsCount   } from './faults.js';
-import { addWikiTip, fetchWiki } from './knowledge.js';
+import { addWikiTip, fetchWiki, editWikiTip, deleteWikiTip } from './knowledge.js';
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import {  handleLogoClick,openMobileSearch } from './mobile.js';
@@ -112,6 +112,9 @@ window.buildEquipDetailHTML = buildEquipDetailHTML;
 window.renderMachineTimeline = renderMachineTimeline;
 window.renderWikiSection = renderWikiSection;
 window.addWikiTip = addWikiTip;
+window.fetchWiki = fetchWiki;
+window.editWikiTip = editWikiTip;
+window.deleteWikiTip = deleteWikiTip;
 window.openJobWorkflow = startJobWorkflow;
 window.openComponentOS = openComponentOS;
 window.renderPerfectCard = renderPerfectCard;
