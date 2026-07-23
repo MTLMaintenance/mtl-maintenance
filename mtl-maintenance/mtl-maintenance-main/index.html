@@ -921,7 +921,8 @@
   <div class="modal">
     <div class="modal-header"><span class="modal-title">Add Document / Warranty</span><button class="modal-close" onclick="closeModal('doc-modal')">✕</button></div>
     <div class="form-grid">
-      <div class="form-group full"><label class="form-label">Document Name *</label><input class="form-input" id="d-name" placeholder="e.g. Crane Certification 2025"/></div>
+     <input type="hidden" id="d-id"> 
+     <div class="form-group full"><label class="form-label">Document Name *</label><input class="form-input" id="d-name" placeholder="e.g. Crane Certification 2025"/></div>
       <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="d-type"><option value="warranty">Warranty</option><option value="certificate">Certificate</option><option value="manual">Manual</option><option value="inspection">Inspection Report</option><option value="document">Other Document</option></select></div>
       <div class="form-group"><label class="form-label">Linked Equipment</label><select class="form-select" id="d-equip"><option value="">— None —</option></select></div>
       <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-input" id="d-expiry" type="date"/></div>
@@ -930,12 +931,14 @@
         <label class="form-label">Attach File (PDF or Image)</label>
         <div class="photo-grid" id="doc-file-grid">
           <div class="photo-add" onclick="document.getElementById('doc-file-input').click()" style="font-size:14px">📎</div>
-          <input type="file" id="doc-file-input" accept=".pdf,image/*" style="display:none" onchange="handleDocUpload(this)"/>
+          <input type="file" id="doc-file-input" accept=".pdf,image/*" style="display:none" onchange="window.handleDocUpload(this)"/>
         </div>
         <div id="doc-file-preview" style="margin-top:6px;font-size:12px;color:var(--text2)"></div>
       </div>
     </div>
-    <div class="form-row"><button class="btn btn-secondary" onclick="closeModal('doc-modal')">Cancel</button><button class="btn btn-primary" onclick="saveDoc()">Save Document</button></div>
+   <button class="modal-close" onclick="window.closeModal('doc-modal')">✕</button>
+   <button class="btn btn-secondary" onclick="window.closeModal('doc-modal')">Cancel</button>
+<button class="btn btn-primary" onclick="window.saveDoc()">Save Document</button>
   </div>
 </div>
 
