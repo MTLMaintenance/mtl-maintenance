@@ -358,6 +358,23 @@ export function saveNewSpec() {
         window.renderComponentSpecs(equipId, componentName);
     }
 }
+
+// Deletes a single spec by its exact key. Only removes that one
+// key from custom_fields; everything else is untouched.
+export function deleteSpec(equipId, fullKey, componentFilter) {
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e || !e.custom_fields) return;
+
+    if (!confirm('Delete this spec? This cannot be undone.')) return;
+
+    delete e.custom_fields[fullKey];
+
+    if (typeof window.saveState === 'function') window.saveState();
+
+    if (typeof window.renderComponentSpecs === 'function') {
+        window.renderComponentSpecs(equipId, componentFilter);
+    }
+}
  
 export function renderComponentSpecs(equipId, componentFilter = 'all') {
     const container = document.getElementById('mtl-component-specs');
@@ -381,7 +398,10 @@ export function renderComponentSpecs(equipId, componentFilter = 'all') {
         </div>
         <div class="os-spec-grid">
             ${filtered.map(([key, val]) => `
-                <div class="spec-card-os">
+                <div class="spec-card-os" style="position:relative;">
+                    <button class="spec-delete-btn" title="Delete spec"
+                            onclick="window.deleteSpec('${equipId}', '${key.replace(/'/g, "\\'")}', '${componentFilter}')"
+                            style="position:absolute; top:4px; right:4px; background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer; line-height:1;">✕</button>
                     <label>${key.split(':').pop().trim().toUpperCase()}</label>
                     <b onclick="window.editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">${val}</b>
                 </div>
