@@ -314,9 +314,9 @@ export function renderZerkOS(equipId) {
     const points = (e.zerk_points || []).filter(p => p.view_index === viewIdx);
 
     container.innerHTML = `
-        <div class="os-zerk-wrapper" style="background:#f8f9fa; padding:20px; border-radius:15px; border:1px solid #eee;">
+        <div class="os-zerk-wrapper">
             <!-- SUB-NAV: Views and Management -->
-            <div class="os-zerk-toolbar">
+            <div class="os-zerk-subnav">
                 <div class="os-zerk-view-tabs">
                     ${e.zerk_photos.map((_, i) => {
                         const name = (e.zerk_names && e.zerk_names[i]) ? e.zerk_names[i] : `View ${i + 1}`;
@@ -325,17 +325,17 @@ export function renderZerkOS(equipId) {
                                         onclick="window._currentZerkViewIdx=${i}; window.renderZerkOS('${equipId}')">${name}</button>`;
                     }).join('')}
                 </div>
-                <div class="os-zerk-actions">
+                <div class="os-zerk-view-actions">
                     <button class="btn btn-secondary btn-sm" onclick="window.addZerkViewWithTitle()">+ Add View</button>
                     <button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">🗑 Delete View</button>
                 </div>
             </div>
 
             <!-- MAIN CONTENT: Image and Table -->
-            <div class="os-zerk-layout">
+            <div class="os-zerk-grid">
                 
                 <!-- LEFT: IMAGE -->
-                <div id="os-zerk-map" class="os-zerk-map"
+                <div id="os-zerk-map" class="os-zerk-image"
                      onclick="window.handleZerkMapClick(event, ${viewIdx})">
                     <img class="os-zerk-map-image" src="${e.zerk_photos[viewIdx]}" alt="Grease fitting map" style="width:100%; height:100%; object-fit:contain; display:block; opacity:0.9;">
                     <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
@@ -347,9 +347,9 @@ export function renderZerkOS(equipId) {
                 </div>
 
                 <!-- RIGHT: LIST (Stretches to match image height) -->
-                <div class="os-zerk-fittings">
-                    <div style="padding:15px; background:#f1f3f5; border-bottom:1px solid #e1e4e8; font-size:10px; font-weight:800; color:#888; letter-spacing:1px;">REQUIRED FITTINGS</div>
-                    <div class="os-zerk-fittings-list">
+                <div class="os-zerk-list">
+                    <div class="os-zerk-list-header">REQUIRED FITTINGS</div>
+                    <div class="os-zerk-list-body">
                         <table class="os-zerk-fittings-table">
                             ${points.map((p, idx) => `
                                 <tr style="border-bottom:1px solid #f8f8f8;">
