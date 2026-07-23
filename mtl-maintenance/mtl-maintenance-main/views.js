@@ -1,6 +1,6 @@
 // views.js - Table and List Renderers
 import { fmtDate, badge, isOverdue } from './utils.js';
-import { persist } from './db.js';
+import { persist, supabase } from './db.js';
 
 // 1. Render the main Equipment Table
 export function renderEquipmentTable() {
@@ -293,6 +293,99 @@ export function renderMachineTimeline(equipId, componentFilter = 'all') {
             <p>${ev.body}</p>
         </div>
     `).join('');
+}
+
+
+// ---------------------------------------------------------
+// SHOP WISDOM (wiki tips) — add/edit/delete
+// Requires window.renderWikiSection (defined in machine-os-ui.js)
+// and window.fetchWiki (refreshes window.state.wiki) to exist.
+// ---------------------------------------------------------
+
+export async function addWikiTip(equipId, component = 'general') {
+    const body = prompt("Enter Shop Wisdom / Maintenance Tip:");
+    if (!body) return;
+    // THE KEY: Link it to the pill currently selected
+    // If 'all' is selected, we save it as null (General machine tip)
+    const activePillId = window.currentOsComponent === 'all' ? null : window.currentOsComponent;
+    try {
+        const { error } = await supabase
+            .from('wiki')
+            .insert({
+                equip_id: equipId,
+                component_id: activePillId, // This makes it specific to the pill!
+                body: body,
+                author: window.state.currentUser?.full_name || 'Staff'
+            });
+        if (error) throw error;
+        window.showToast("Tip added!", "success");
+        // IMPORTANT: Update your local state so the UI refreshes immediately
+        // Fetch the new list or manually push to window.state.wiki
+        if (window.fetchWiki) await window.fetchWiki();
+
+        // Refresh the UI area
+        const wikiContainer = document.getElementById('shop-wiki-list');
+        if (wikiContainer && typeof window.renderWikiSection === 'function') {
+            wikiContainer.innerHTML = window.renderWikiSection(equipId);
+        }
+    } catch (err) {
+        console.error("Error saving tip:", err);
+        window.showToast(`Failed to save tip: ${err.message || 'Unknown error'}`, "error");
+    }
+}
+
+export async function editWikiTip(equipId, tipId) {
+    const allTips = window.state.wiki || [];
+    const tip = allTips.find(t => t.id === tipId);
+    if (!tip) return;
+
+    const newBody = prompt("Edit Shop Wisdom / Maintenance Tip:", tip.body);
+    if (newBody === null) return;      // cancelled
+    if (!newBody.trim()) return;       // ignore empty saves
+
+    try {
+        const { error } = await supabase
+            .from('wiki')
+            .update({ body: newBody })
+            .eq('id', tipId);
+        if (error) throw error;
+
+        window.showToast("Tip updated!", "success");
+
+        if (window.fetchWiki) await window.fetchWiki();
+
+        const wikiContainer = document.getElementById('shop-wiki-list');
+        if (wikiContainer && typeof window.renderWikiSection === 'function') {
+            wikiContainer.innerHTML = window.renderWikiSection(equipId);
+        }
+    } catch (err) {
+        console.error("Error updating tip:", err);
+        window.showToast(`Failed to update tip: ${err.message || 'Unknown error'}`, "error");
+    }
+}
+
+export async function deleteWikiTip(equipId, tipId) {
+    if (!confirm("Delete this tip? This cannot be undone.")) return;
+
+    try {
+        const { error } = await supabase
+            .from('wiki')
+            .delete()
+            .eq('id', tipId);
+        if (error) throw error;
+
+        window.showToast("Tip deleted", "success");
+
+        if (window.fetchWiki) await window.fetchWiki();
+
+        const wikiContainer = document.getElementById('shop-wiki-list');
+        if (wikiContainer && typeof window.renderWikiSection === 'function') {
+            wikiContainer.innerHTML = window.renderWikiSection(equipId);
+        }
+    } catch (err) {
+        console.error("Error deleting tip:", err);
+        window.showToast(`Failed to delete tip: ${err.message || 'Unknown error'}`, "error");
+    }
 }
 
 
