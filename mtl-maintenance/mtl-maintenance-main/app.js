@@ -47,6 +47,7 @@ import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTa
 import { openEquipDetail as openLegacy } from './equipment.js';
 window.openEquipDetail = (id) => {
     window._currentDetailEquipId = id;
+    window.currentOsComponent = 'all'; // reset component filter each time a card opens
     if (typeof window.showPanel === 'function') {
         window.showPanel('machine-profile'); 
     }
@@ -552,6 +553,10 @@ window.filterTimeline = (component, btn) => {
 window.filterOS = (component, btn) => {
     const id = window._currentDetailEquipId;
 
+    // Track which component pill is active — addWikiTip reads this
+    // to tag new tips, and we use it here to filter which tips show.
+    window.currentOsComponent = component;
+
     // 1. HIDE the Grease Map area
     const zerkArea = document.getElementById('mtl-zerk-os-area');
     if (zerkArea) zerkArea.style.display = 'none';
@@ -566,6 +571,12 @@ window.filterOS = (component, btn) => {
     // 3. Run the standard filters
     window.renderComponentSpecs(id, component);
     window.renderMachineTimeline(id, component);
+
+    // 3b. Filter Shop Wisdom tips to this component too
+    const wikiContainer = document.getElementById('shop-wiki-list');
+    if (wikiContainer && typeof window.renderWikiSection === 'function') {
+        wikiContainer.innerHTML = window.renderWikiSection(id, component);
+    }
 
     // 4. Highlight the active card
     const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
