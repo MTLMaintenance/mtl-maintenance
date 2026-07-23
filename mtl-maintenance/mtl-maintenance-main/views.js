@@ -1,5 +1,6 @@
 // views.js - Table and List Renderers
 import { fmtDate, badge, isOverdue } from './utils.js';
+import { persist } from './db.js';
 
 // 1. Render the main Equipment Table
 export function renderEquipmentTable() {
@@ -351,7 +352,7 @@ export function saveNewSpec() {
  
     e.custom_fields[newKey] = fieldValue;
  
-    if (typeof window.saveState === 'function') window.saveState();
+    persist('equipment', 'upsert', e);
     if (typeof window.closeModal === 'function') window.closeModal('spec-modal');
  
     if (typeof window.renderComponentSpecs === 'function') {
@@ -369,7 +370,7 @@ export function deleteSpec(equipId, fullKey, componentFilter) {
 
     delete e.custom_fields[fullKey];
 
-    if (typeof window.saveState === 'function') window.saveState();
+    persist('equipment', 'upsert', e);
 
     if (typeof window.renderComponentSpecs === 'function') {
         window.renderComponentSpecs(equipId, componentFilter);
@@ -507,7 +508,7 @@ export function addNewComponent() {
     components.push(newId);
     input.value = '';
  
-    if (typeof window.saveState === 'function') window.saveState();
+    persist('equipment', 'upsert', e);
     renderComponentManageList(equipId);
     renderComponentChips(equipId);
 }
@@ -523,7 +524,7 @@ export function deleteComponent(equipId, compId) {
     const components = getComponentsForEquip(e);
     e.components = components.filter(c => c !== compId);
  
-    if (typeof window.saveState === 'function') window.saveState();
+    persist('equipment', 'upsert', e);
     renderComponentManageList(equipId);
     renderComponentChips(equipId);
 }
@@ -564,7 +565,7 @@ export function saveComponentRename(equipId, oldId, buttonEl) {
         });
     }
  
-    if (typeof window.saveState === 'function') window.saveState();
+    persist('equipment', 'upsert', e);
     renderComponentManageList(equipId);
     renderComponentChips(equipId);
  
