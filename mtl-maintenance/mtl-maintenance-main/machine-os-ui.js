@@ -112,15 +112,22 @@ const faultCount = window.getActiveFaultsCount(e.id);
     }, 50);
 }
 
-export function renderWikiSection(equipId) {
+export function renderWikiSection(equipId, componentFilter = 'all') {
     // 1. Get the tips from the global state
     const allTips = window.state.wiki || [];
-    
-    // 2. Filter for this machine only
-    const machineTips = allTips.filter(t => t.equip_id === equipId);
-    
+
+    // 2. Filter for this machine, and (unless 'all') this exact component only —
+    // same isolation pattern as specs, so a tip added under Engine only shows
+    // under Engine, not leaking into Hydraulics/Tracks/etc.
+    const machineTips = allTips.filter(t => {
+        if (t.equip_id !== equipId) return false;
+        if (componentFilter === 'all') return true;
+        return t.component_id === componentFilter;
+    });
+
     if (machineTips.length === 0) {
-        return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for this machine yet.</p>`;
+        const label = componentFilter === 'all' ? 'this machine' : componentFilter;
+        return `<p style="color:#888; font-size:13px; font-style:italic; padding:10px 0;">No shop wisdom logged for ${label} yet.</p>`;
     }
 
     // 3. Sort by newest first
@@ -131,7 +138,7 @@ export function renderWikiSection(equipId) {
         <div class="wiki-note-card" style="background:#fffbeb; border-left:4px solid #f59e0b; padding:12px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <span style="font-weight:bold; font-size:12px; color:#92400e;">👤 ${t.author}</span>
-                <span style="font-size:10px; color:#b45309; background:#fef3c7; padding:2px 6px; border-radius:4px; font-weight:bold; text-transform:uppercase;">${t.component}</span>
+                <span style="font-size:10px; color:#b45309; background:#fef3c7; padding:2px 6px; border-radius:4px; font-weight:bold; text-transform:uppercase;">${t.component_id || 'General'}</span>
             </div>
             <div style="font-size:13px; color:#451a03; line-height:1.4;">"${t.body}"</div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
@@ -141,6 +148,9 @@ export function renderWikiSection(equipId) {
                     <button class="btn-sm btn-danger" onclick="window.deleteWikiTip('${equipId}', '${t.id}')" style="font-size:10px; padding:2px 8px;">✕</button>
                 </div>
             </div>
+        </div>
+    `).join('');
+}
         </div>
     `).join('');
 }
