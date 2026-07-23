@@ -294,40 +294,6 @@ export function renderMachineTimeline(equipId, componentFilter = 'all') {
     `).join('');
 }
 
-export function renderComponentSpecs(equipId, componentFilter = 'all') {
-    const container = document.getElementById('mtl-component-specs');
-    if (!container) return;
-
-    const e = window.state.equipment.find(x => x.id === equipId);
-    if (!e) return;
-
-    const allSpecs = Object.entries(e.custom_fields || {});
-    const filtered = allSpecs.filter(([key]) => {
-        if (componentFilter === 'all') return true;
-        return key.toLowerCase().includes(componentFilter.toLowerCase());
-    });
-
-    // --- THE UI CHANGE ---
-    // We add a header with an ADD button that knows which component we are in
-    container.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="margin:0; font-size:12px; color:#888; text-transform:uppercase;">
-                ${componentFilter} Specifications
-            </h4>
-            <button class="btn-add-spec" onclick="window.openSpecModal('${equipId}', '${componentFilter}')">
-            + Add Spec
-            </button>
-        </div>
-        <div class="os-spec-grid">
-            ${filtered.map(([key, val]) => `
-                <div class="spec-card-os">
-                    <label>${key.split(':').pop().trim().toUpperCase()}</label>
-                    <b onclick="window.editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">${val}</b>
-                </div>
-            `).join('') || `<p class="empty-text">No specs for ${componentFilter}</p>`}
-        </div>
-    `;
-}
 
 export function openSpecModal(equipId, componentName) {
     document.getElementById('spec-equip-id').value = equipId;
