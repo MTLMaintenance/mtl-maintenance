@@ -3,6 +3,14 @@ import { uid, showToast } from './utils.js';
 
 // 1. Function to add a new tip
 export async function addWikiTip(equipId, component = 'general') {
+    // Guard: if this fires, the caller isn't passing a real equip id —
+    // check what's calling addWikiTip and what it's passing in.
+    if (!equipId) {
+        console.error("addWikiTip called with no equipId:", equipId);
+        window.showToast("Couldn't save tip: missing machine ID", "error");
+        return;
+    }
+
     const body = prompt("Enter Shop Wisdom / Maintenance Tip:");
     if (!body) return;
 
@@ -42,7 +50,64 @@ export async function addWikiTip(equipId, component = 'general') {
 // 2. Function to load all wiki tips (Add this to your init.js loadState later)
 export async function fetchWiki() {
     try {
-        const { data } = await window._mpdb.from('shop_wiki').select('*');
+        // FIX: was querying 'shop_wiki', but addWikiTip inserts into 'wiki' —
+        // two different tables, so fetched data never matched what was saved.
+        const { data, error } = await window._mpdb.from('wiki').select('*');
+        if (error) throw error;
         window.state.wiki = data || [];
     } catch (e) { console.error(e); }
+}
+
+// 3. Edit an existing tip
+export async function editWikiTip(equipId, tipId) {
+    const allTips = window.state.wiki || [];
+    const tip = allTips.find(t => t.id === tipId);
+    if (!tip) return;
+
+    const newBody = prompt("Edit Shop Wisdom / Maintenance Tip:", tip.body);
+    if (newBody === null) return;      // cancelled
+    if (!newBody.trim()) return;       // ignore empty saves
+
+    try {
+        const { error } = await supabase
+            .from('wiki')
+            .update({ body: newBody })
+            .eq('id', tipId);
+        if (error) throw error;
+
+        window.showToast("Tip updated!", "success");
+
+        if (window.fetchWiki) await window.fetchWiki();
+
+        const wikiContainer = document.getElementById('shop-wiki-list');
+        if (wikiContainer) {
+            wikiContainer.innerHTML = renderWikiSection(equipId);
+        }
+    } catch (err) {
+        console.error("Error updating tip:", err);
+    }
+}
+
+// 4. Delete a tip
+export async function deleteWikiTip(equipId, tipId) {
+    if (!confirm("Delete this tip? This cannot be undone.")) return;
+
+    try {
+        const { error } = await supabase
+            .from('wiki')
+            .delete()
+            .eq('id', tipId);
+        if (error) throw error;
+
+        window.showToast("Tip deleted", "success");
+
+        if (window.fetchWiki) await window.fetchWiki();
+
+        const wikiContainer = document.getElementById('shop-wiki-list');
+        if (wikiContainer) {
+            wikiContainer.innerHTML = renderWikiSection(equipId);
+        }
+    } catch (err) {
+        console.error("Error deleting tip:", err);
+    }
 }
