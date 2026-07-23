@@ -361,10 +361,7 @@ export function editQuickSpec(equipId, fullKey) {
  
     window.openModal('spec-modal');
 }
- 
-// NEW — renamed to saveNewSpec to match your existing
-// "Save Spec" button (onclick="window.saveNewSpec()").
-// Handles both Add and Edit through one non-destructive path.
+
 export function saveNewSpec() {
     const equipId = document.getElementById('spec-equip-id').value;
     const componentName = document.getElementById('spec-component').value.trim();
@@ -394,6 +391,37 @@ export function saveNewSpec() {
     if (typeof window.renderComponentSpecs === 'function') {
         window.renderComponentSpecs(equipId, componentName);
     }
+}
+ 
+export function renderComponentSpecs(equipId, componentFilter = 'all') {
+    const container = document.getElementById('mtl-component-specs');
+    if (!container) return;
+    const e = window.state.equipment.find(x => x.id === equipId);
+    if (!e) return;
+    const allSpecs = Object.entries(e.custom_fields || {});
+    const filtered = allSpecs.filter(([key]) => {
+        if (componentFilter === 'all') return true;
+        const prefix = key.split(':')[0].trim().toLowerCase();
+        return prefix === componentFilter.toLowerCase();
+    });
+    container.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:12px; color:#888; text-transform:uppercase;">
+                ${componentFilter} Specifications
+            </h4>
+            <button class="btn-add-spec" onclick="window.openSpecModal('${equipId}', '${componentFilter}')">
+            + Add Spec
+            </button>
+        </div>
+        <div class="os-spec-grid">
+            ${filtered.map(([key, val]) => `
+                <div class="spec-card-os">
+                    <label>${key.split(':').pop().trim().toUpperCase()}</label>
+                    <b onclick="window.editQuickSpec('${equipId}', '${key.replace(/'/g, "\\'")}')">${val}</b>
+                </div>
+            `).join('') || `<p class="empty-text">No specs for ${componentFilter}</p>`}
+        </div>
+    `;
 }
  
  
@@ -427,8 +455,6 @@ function getComponentsForEquip(e) {
     return e.components;
 }
  
-// Renders the chip row. Replaces the old hardcoded 5 divs in
-// machine-os-ui.js — see the snippet provided separately for that change.
 export function renderComponentChips(equipId) {
     const container = document.getElementById('mtl-comp-chip-area');
     if (!container) return;
@@ -499,10 +525,7 @@ export function addNewComponent() {
     renderComponentManageList(equipId);
     renderComponentChips(equipId);
 }
- 
-// Non-destructive: deleting a component only removes it from the
-// chip list. Any specs already saved under it are left alone and
-// stay visible under "All".
+
 export function deleteComponent(equipId, compId) {
     const e = window.state.equipment.find(x => x.id === equipId);
     if (!e) return;
