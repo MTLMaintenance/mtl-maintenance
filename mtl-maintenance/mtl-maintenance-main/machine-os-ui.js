@@ -61,6 +61,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
                     <div class="os-comp-scroll" id="mtl-comp-chip-area" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;"></div>
                        <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
+                    <div id="mtl-component-bookmarks" style="margin-top:15px; display:none;"></div>
                 </div>
 
                   
@@ -108,6 +109,14 @@ const faultCount = window.getActiveFaultsCount(e.id);
             await window.fetchWiki();
             const wikiContainer = document.getElementById('shop-wiki-list');
             if (wikiContainer) wikiContainer.innerHTML = renderWikiSection(e.id);
+        }
+
+        // Fetch document bookmarks too. Nothing renders from this on
+        // initial load (component filter starts at 'all', where the
+        // bookmarks section stays hidden) but it needs to be loaded
+        // before switching to a component tab.
+        if (typeof window.fetchDocumentBookmarks === 'function') {
+            await window.fetchDocumentBookmarks();
         }
     }, 50);
 }
