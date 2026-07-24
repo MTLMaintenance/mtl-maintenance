@@ -165,6 +165,29 @@ export function renderDocsList(equipId) {
         </div>`).join('') || '<div style="padding:15px; color:#999; text-align:center; font-size:13px;">No documents linked to this machine yet.</div>';
 }
 
+// Lists all documents linked to a machine so the user can pick one to
+// browse and bookmark pages from, while viewing a specific component tab.
+// Unlike renderDocsList, this offers no Edit/Delete — documents can only
+// be added/edited/deleted from the "All" tab. Clicking a row opens the
+// bookmark manager directly, pre-set to the active component.
+export function renderComponentDocPicker(equipId, componentFilter) {
+    const container = document.getElementById('mtl-docs-list');
+    if (!container) return;
+
+    const docs = (window.state.documents || []).filter(d => d.equip_id === equipId);
+
+    container.innerHTML = docs.map(d => `
+        <div class="doc-item" style="cursor:pointer; padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;"
+             onclick="window.openBookmarkManager('${d.id}', '${componentFilter}')">
+            <div>
+                <div style="font-weight:600; font-size:13px;">${d.name}</div>
+                <div style="font-size:11px; color:#666;">${d.type || 'Document'}</div>
+            </div>
+            <div style="font-size:11px; color:#2563eb; font-weight:600;">🔖 Bookmark Pages</div>
+        </div>
+    `).join('') || '<div style="padding:15px; color:#999; text-align:center; font-size:13px;">No documents linked to this machine yet. Add one from the "All" tab.</div>';
+}
+
 export function openEditDocModal(docId = null) {
   // 1. THE FIX: Use window. so the ID is saved globally
   window._currentDocEditId = docId;
