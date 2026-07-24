@@ -159,6 +159,7 @@ export function renderWikiSection(equipId, componentFilter = 'all') {
             </div>
         </div>
     </div>
+    
     `).join('');
 }
 
