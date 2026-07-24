@@ -155,11 +155,11 @@ export function renderWikiSection(equipId, componentFilter = 'all') {
                 <div style="display:flex; gap:8px;">
                     <button class="btn-sm" onclick="window.editWikiTip('${equipId}', '${t.id}')" style="font-size:10px; padding:2px 8px;">Edit</button>
                     <button class="btn-sm btn-danger" onclick="window.deleteWikiTip('${equipId}', '${t.id}')" style="font-size:10px; padding:2px 8px;">✕</button>
-                </div>
+                  </div>
+                  </div>
             </div>
         </div>
     `).join('');
 }
-        </div>
-    `).join('');
-}
+      
+   
