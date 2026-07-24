@@ -158,6 +158,7 @@ export function renderDocsList(equipId) {
                 <div style="font-size:11px; color:#666;">${d.type || 'Document'}${d.expiry_date ? ' · Expires: ' + fmtDate(d.expiry_date) : ''}</div>
             </div>
             <div style="display:flex; gap:5px;">
+                <button class="btn-sm" onclick="event.stopPropagation(); window.openBookmarkManager('${d.id}')">🔖 Bookmarks</button>
                 <button class="btn-sm" onclick="event.stopPropagation(); window.openEditDocModal('${d.id}')">Edit</button>
                 <button class="btn-sm btn-danger" onclick="event.stopPropagation(); window.deleteDoc('${d.id}')">✕</button>
             </div>
