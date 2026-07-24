@@ -8,7 +8,7 @@ let bmPdfDoc = null; // pdf.js document instance, null for images
 
 // pdf.js is loaded lazily from a CDN the first time it's needed,
 // rather than requiring a <script> tag in your main HTML.
-function ensurePdfJsLoaded() {
+export function ensurePdfJsLoaded() {
     return new Promise((resolve, reject) => {
         if (window.pdfjsLib) return resolve();
         const script = document.createElement('script');
@@ -80,7 +80,7 @@ export async function openBookmarkManager(docId) {
     window.openModal('bookmark-modal');
 }
 
-async function renderBmPage() {
+export async function renderBmPage() {
     if (!bmPdfDoc) return;
     const page = await bmPdfDoc.getPage(bmCurrentPage);
     const viewport = page.getViewport({ scale: 1.2 });
@@ -128,7 +128,7 @@ export async function bmAddRangeBookmark() {
     document.getElementById('bm-page-to').value = '';
 }
 
-async function addBookmark(documentId, componentId, pageStart, pageEnd) {
+export async function addBookmark(documentId, componentId, pageStart, pageEnd) {
     const doc = (window.state.documents || []).find(d => d.id === documentId);
     if (!doc) return;
 
@@ -187,7 +187,7 @@ export async function deleteBookmark(bookmarkId) {
     }
 }
 
-function renderBookmarkList(documentId) {
+export function renderBookmarkList(documentId) {
     const container = document.getElementById('bm-bookmark-list');
     if (!container) return;
 
