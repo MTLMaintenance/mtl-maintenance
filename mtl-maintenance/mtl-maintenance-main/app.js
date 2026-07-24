@@ -354,7 +354,6 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.showPanel = showPanel;
 window.deleteDoc = deleteDoc;
-window.openBookmarkedPage = openBookmarkedPage;
 window.quickLogHours = (id) => quickLogHours(id, state);
 window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
 window.addObservation = (id) => addObservation(id, state, currentUser);
