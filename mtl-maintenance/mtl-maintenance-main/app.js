@@ -355,7 +355,6 @@ window.closeModal = closeModal;
 window.showPanel = showPanel;
 window.deleteDoc = deleteDoc;
 window.fetchDocBookmarks = fetchDocBookmarks;
-window.openBookmarkManager = openBookmarkManager;
 window.renderBookmarkPdfPage = renderBookmarkPdfPage;
 window.bookmarkNextPage = bookmarkNextPage;
 window.bookmarkPrevPage = bookmarkPrevPage;
