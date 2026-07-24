@@ -80,7 +80,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
                   <div class="os-section" style="background:#f8fafc;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 class="os-label-dark" style="margin:0;">Documents & Manuals</h3>
-            <button class="btn-add-spec" onclick="window.openEditDocModal()">+ Add Document</button>
+            <button class="btn-add-spec" id="add-doc-btn" onclick="window.openEditDocModal()">+ Add Document</button>
         </div>
         <div id="mtl-docs-list"></div>
     </div>
@@ -158,8 +158,8 @@ export function renderWikiSection(equipId, componentFilter = 'all') {
                 </div>
             </div>
         </div>
-    </div>
-    
     `).join('');
 }
-
+        </div>
+    `).join('');
+}
