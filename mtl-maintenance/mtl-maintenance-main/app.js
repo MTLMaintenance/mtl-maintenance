@@ -11,7 +11,7 @@ import {
 // --- INITIALIZATION BRIDGES ---
 import { openFaultCodeDetail, openAddFaultModal, saveActiveFault,openFaultList, openFaultEditor, saveFaultRecord,getActiveFaultsCount   } from './faults.js';
 import { addWikiTip, fetchWiki, editWikiTip, deleteWikiTip } from './knowledge.js';
-import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage,} from './bookmarks.js';
+import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage } from './bookmarks.js';
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import {  handleLogoClick,openMobileSearch } from './mobile.js';
@@ -30,7 +30,7 @@ import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMess
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs  } from './admin.js';
-import { deleteDoc, openDocDetail, saveDoc,openEditDocModal, handleDocUpload, renderDocsList, } from './docs.js';
+import { deleteDoc, openDocDetail, saveDoc, openEditDocModal, handleDocUpload, renderDocsList, renderComponentDocPicker } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO,  editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto, deleteConsumable  } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm  } from './tasks.js';
@@ -354,6 +354,16 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.showPanel = showPanel;
 window.deleteDoc = deleteDoc;
+window.fetchDocBookmarks = fetchDocBookmarks;
+window.openBookmarkManager = openBookmarkManager;
+window.renderBookmarkPdfPage = renderBookmarkPdfPage;
+window.bookmarkNextPage = bookmarkNextPage;
+window.bookmarkPrevPage = bookmarkPrevPage;
+window.bookmarkCurrentPage = bookmarkCurrentPage;
+window.saveBookmarkRange = saveBookmarkRange;
+window.deleteBookmark = deleteBookmark;
+window.renderComponentBookmarks = renderComponentBookmarks;
+window.openBookmarkedPage = openBookmarkedPage;
 window.quickLogHours = (id) => quickLogHours(id, state);
 window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
 window.addObservation = (id) => addObservation(id, state, currentUser);
@@ -605,9 +615,17 @@ window.filterOS = (component, btn) => {
         }
     }
 
-    // 3c. Show bookmarked manual pages for this component (hidden on "All")
-    if (typeof window.renderComponentBookmarks === 'function') {
-        window.renderComponentBookmarks(id, component);
+    // 3d. Documents & Manuals section itself switches modes:
+    // "All" -> full editable list with Add/Edit/Delete
+    // component tab -> read-only picker; clicking a doc opens the
+    // bookmark viewer directly, pre-set to this component
+    const addDocBtn = document.getElementById('add-doc-btn');
+    if (addDocBtn) addDocBtn.style.display = (component === 'all') ? 'inline-block' : 'none';
+
+    if (component === 'all') {
+        if (typeof window.renderDocsList === 'function') window.renderDocsList(id);
+    } else {
+        if (typeof window.renderComponentDocPicker === 'function') window.renderComponentDocPicker(id, component);
     }
 
     // 4. Highlight the active card
