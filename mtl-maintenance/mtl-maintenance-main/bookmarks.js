@@ -8,7 +8,7 @@ let bmPdfDoc = null; // pdf.js document instance, null for images
 
 // pdf.js is loaded lazily from a CDN the first time it's needed,
 // rather than requiring a <script> tag in your main HTML.
-export function ensurePdfJsLoaded() {
+function ensurePdfJsLoaded() {
     return new Promise((resolve, reject) => {
         if (window.pdfjsLib) return resolve();
         const script = document.createElement('script');
@@ -38,7 +38,7 @@ export async function fetchDocumentBookmarks() {
 // viewer (or image preview) with a "bookmark this page" button, a
 // page-range input for bulk bookmarking, and a list of existing
 // bookmarks for that doc.
-export async function openBookmarkManager(docId) {
+export async function openBookmarkManager(docId, presetComponent = null) {
     const doc = (window.state.documents || []).find(d => d.id === docId);
     if (!doc || !doc.file_data) return alert("No file attached to this document.");
 
@@ -55,6 +55,13 @@ export async function openBookmarkManager(docId) {
     compSelect.innerHTML = components
         .map(c => `<option value="${c}">${c.charAt(0).toUpperCase() + c.slice(1)}</option>`)
         .join('');
+
+    // If opened from a specific component tab, default the dropdown to
+    // that component so bookmarks made here land in the right place
+    // without an extra click — still changeable if needed.
+    if (presetComponent && presetComponent !== 'all' && components.includes(presetComponent)) {
+        compSelect.value = presetComponent;
+    }
 
     if (isPdf) {
         document.getElementById('bm-pdf-viewer').style.display = 'block';
@@ -80,7 +87,7 @@ export async function openBookmarkManager(docId) {
     window.openModal('bookmark-modal');
 }
 
-export async function renderBmPage() {
+async function renderBmPage() {
     if (!bmPdfDoc) return;
     const page = await bmPdfDoc.getPage(bmCurrentPage);
     const viewport = page.getViewport({ scale: 1.2 });
@@ -128,7 +135,7 @@ export async function bmAddRangeBookmark() {
     document.getElementById('bm-page-to').value = '';
 }
 
-export async function addBookmark(documentId, componentId, pageStart, pageEnd) {
+async function addBookmark(documentId, componentId, pageStart, pageEnd) {
     const doc = (window.state.documents || []).find(d => d.id === documentId);
     if (!doc) return;
 
@@ -187,7 +194,7 @@ export async function deleteBookmark(bookmarkId) {
     }
 }
 
-export function renderBookmarkList(documentId) {
+function renderBookmarkList(documentId) {
     const container = document.getElementById('bm-bookmark-list');
     if (!container) return;
 
