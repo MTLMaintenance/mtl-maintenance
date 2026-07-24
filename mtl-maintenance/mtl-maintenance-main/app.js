@@ -11,7 +11,7 @@ import {
 // --- INITIALIZATION BRIDGES ---
 import { openFaultCodeDetail, openAddFaultModal, saveActiveFault,openFaultList, openFaultEditor, saveFaultRecord,getActiveFaultsCount   } from './faults.js';
 import { addWikiTip, fetchWiki, editWikiTip, deleteWikiTip } from './knowledge.js';
-import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage,fetchDocBookmarks } from './bookmarks.js';
+import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage,} from './bookmarks.js';
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import {  handleLogoClick,openMobileSearch } from './mobile.js';
