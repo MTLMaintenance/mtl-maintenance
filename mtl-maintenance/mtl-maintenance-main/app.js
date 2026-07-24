@@ -11,6 +11,7 @@ import {
 // --- INITIALIZATION BRIDGES ---
 import { openFaultCodeDetail, openAddFaultModal, saveActiveFault,openFaultList, openFaultEditor, saveFaultRecord,getActiveFaultsCount   } from './faults.js';
 import { addWikiTip, fetchWiki, editWikiTip, deleteWikiTip } from './knowledge.js';
+import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage } from './bookmarks.js';
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import {  handleLogoClick,openMobileSearch } from './mobile.js';
@@ -29,7 +30,7 @@ import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMess
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs  } from './admin.js';
-import { deleteDoc, openDocDetail, saveDoc,openEditDocModal, handleDocUpload, renderDocsList } from './docs.js';
+import { deleteDoc, openDocDetail, saveDoc,openEditDocModal, handleDocUpload, renderDocsList, fetchDocBookmarks, openBookmarkManager, renderBookmarkPdfPage, bookmarkNextPage, bookmarkPrevPage, bookmarkCurrentPage, saveBookmarkRange, deleteBookmark, renderComponentBookmarks, openBookmarkedPage } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO,  editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto, deleteConsumable  } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm  } from './tasks.js';
@@ -53,6 +54,9 @@ window.openEquipDetail = (id) => {
     }
     if (typeof renderPerfectCard === 'function') {
         renderPerfectCard(id); 
+    }
+    if (typeof window.fetchDocBookmarks === 'function') {
+        window.fetchDocBookmarks();
     }
 };
 window.calDayClick = calDayClick; 
@@ -116,6 +120,15 @@ window.addWikiTip = addWikiTip;
 window.fetchWiki = fetchWiki;
 window.editWikiTip = editWikiTip;
 window.deleteWikiTip = deleteWikiTip;
+window.fetchDocumentBookmarks = fetchDocumentBookmarks;
+window.openBookmarkManager = openBookmarkManager;
+window.bmNextPage = bmNextPage;
+window.bmPrevPage = bmPrevPage;
+window.bmBookmarkCurrentPage = bmBookmarkCurrentPage;
+window.bmAddRangeBookmark = bmAddRangeBookmark;
+window.deleteBookmark = deleteBookmark;
+window.renderComponentBookmarks = renderComponentBookmarks;
+window.openDocAtPage = openDocAtPage;
 window.openJobWorkflow = startJobWorkflow;
 window.openComponentOS = openComponentOS;
 window.renderPerfectCard = renderPerfectCard;
@@ -341,6 +354,16 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.showPanel = showPanel;
 window.deleteDoc = deleteDoc;
+window.fetchDocBookmarks = fetchDocBookmarks;
+window.openBookmarkManager = openBookmarkManager;
+window.renderBookmarkPdfPage = renderBookmarkPdfPage;
+window.bookmarkNextPage = bookmarkNextPage;
+window.bookmarkPrevPage = bookmarkPrevPage;
+window.bookmarkCurrentPage = bookmarkCurrentPage;
+window.saveBookmarkRange = saveBookmarkRange;
+window.deleteBookmark = deleteBookmark;
+window.renderComponentBookmarks = renderComponentBookmarks;
+window.openBookmarkedPage = openBookmarkedPage;
 window.quickLogHours = (id) => quickLogHours(id, state);
 window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
 window.addObservation = (id) => addObservation(id, state, currentUser);
@@ -576,6 +599,25 @@ window.filterOS = (component, btn) => {
     const wikiContainer = document.getElementById('shop-wiki-list');
     if (wikiContainer && typeof window.renderWikiSection === 'function') {
         wikiContainer.innerHTML = window.renderWikiSection(id, component);
+    }
+
+    // 3c. Component-scoped manual bookmarks — hidden entirely on "All"
+    // since the full Documents & Manuals section already covers that;
+    // shown only for a specific component.
+    const bookmarksContainer = document.getElementById('mtl-component-bookmarks');
+    if (bookmarksContainer && typeof window.renderComponentBookmarks === 'function') {
+        if (component === 'all') {
+            bookmarksContainer.style.display = 'none';
+            bookmarksContainer.innerHTML = '';
+        } else {
+            bookmarksContainer.style.display = 'block';
+            bookmarksContainer.innerHTML = window.renderComponentBookmarks(id, component);
+        }
+    }
+
+    // 3c. Show bookmarked manual pages for this component (hidden on "All")
+    if (typeof window.renderComponentBookmarks === 'function') {
+        window.renderComponentBookmarks(id, component);
     }
 
     // 4. Highlight the active card
