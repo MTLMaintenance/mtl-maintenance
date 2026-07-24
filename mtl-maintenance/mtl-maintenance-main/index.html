@@ -1793,7 +1793,57 @@
   </div>
 </div>
 <div class="panel" id="panel-machine-profile" style="display:none;"> </div>
+<!-- Document Bookmark Manager Modal -->
+<div class="modal-backdrop" id="bookmark-modal">
+  <div class="modal" style="max-width:600px; background:white; color:black;">
+    <div class="modal-header">
+      <span class="modal-title" id="bookmark-modal-title" style="color:black; font-weight:bold;">Bookmark Pages</span>
+      <button class="modal-close" onclick="window.closeModal('bookmark-modal')">✕</button>
+    </div>
+    <input type="hidden" id="bm-document-id">
 
+    <!-- PDF viewer (hidden for images) -->
+    <div id="bm-pdf-viewer" style="text-align:center; margin-bottom:15px;">
+      <canvas id="bm-pdf-canvas" style="max-width:100%; border:1px solid #ddd;"></canvas>
+      <div style="margin-top:8px; display:flex; justify-content:center; align-items:center; gap:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="window.bmPrevPage()">‹ Prev</button>
+        <span id="bm-page-indicator" style="color:black;">Page 1 / 1</span>
+        <button class="btn btn-secondary btn-sm" onclick="window.bmNextPage()">Next ›</button>
+      </div>
+    </div>
+
+    <!-- Image viewer (hidden for PDFs) -->
+    <div id="bm-image-viewer" style="display:none; text-align:center; margin-bottom:15px;">
+      <img id="bm-image-preview" style="max-width:100%; max-height:300px;">
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Component</label>
+        <select class="form-select" id="bm-component" style="color:black;"></select>
+      </div>
+      <div class="form-group full">
+        <button class="btn btn-primary btn-sm" onclick="window.bmBookmarkCurrentPage()">🔖 Bookmark This Page</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Page From</label>
+        <input class="form-input" id="bm-page-from" type="number" min="1" style="color:black;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Page To (optional)</label>
+        <input class="form-input" id="bm-page-to" type="number" min="1" style="color:black;">
+      </div>
+      <div class="form-group full">
+        <button class="btn btn-secondary btn-sm" onclick="window.bmAddRangeBookmark()">+ Add Page Range</button>
+      </div>
+    </div>
+
+    <div style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+      <label class="form-label">Existing Bookmarks</label>
+      <div id="bm-bookmark-list" style="max-height:150px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- MOBILE BOTTOM NAV -->
 <nav id="mobile-bottom-nav">
