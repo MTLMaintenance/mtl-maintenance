@@ -124,6 +124,13 @@ export function updatePinDots() {
     container.innerHTML = dotHtml;
 }
 
+export function showPending() {
+    const registerView = document.getElementById('register-view');
+    const pendingView = document.getElementById('pending-view');
+    if (registerView) registerView.style.display = 'none';
+    if (pendingView) pendingView.style.display = 'block';
+}
+
 export function backToNames() {
     window.enteredPin = "";
     document.getElementById('login-stage-names').style.display = 'block';
@@ -276,3 +283,16 @@ export async function doRegister() {
   }
 }
 
+// Expose functions used by inline HTML onclick="..." handlers.
+// (Module functions are scoped to the module and are NOT global by default,
+// so without this, onclick="doRegister()" etc. throw "not defined".)
+window.doLogin = doLogin;
+window.doRegister = doRegister;
+window.pressPin = pressPin;
+window.verifyUserPin = verifyUserPin;
+window.selectUserForLogin = selectUserForLogin;
+window.backToNames = backToNames;
+window.signOut = signOut;
+window.togglePassVis = togglePassVis;
+window.can = can;
+window.showPending = showPending;
