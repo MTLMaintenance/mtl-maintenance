@@ -74,6 +74,7 @@ window.showRegister = () => {
     document.getElementById('register-view').style.display = 'grid';
     document.getElementById('auth-sub').textContent = 'Request access to MTL Maintenance';
 };
+window.showPending = showPending;
 window.doLogin = doLogin;
 window.doRegister = doRegister;
 window.verifyUserPin = verifyUserPin;
