@@ -180,6 +180,7 @@ export async function doLogin() {
     // Check password
     const hashedInput = await hashPassword(pass);
     const storedHash = profile.password_hash || '';
+    let passwordMatch = false;
     if (storedHash.length === 64) {
       passwordMatch = storedHash === hashedInput;
     } else {
@@ -209,10 +210,14 @@ export async function doLogin() {
     if (profile.status==='denied') { showErr('Access denied. Contact your administrator.'); btn.textContent='Sign In'; btn.disabled=false; return; }
 
     const isAdmin = username.toLowerCase()===ADMIN_USERNAME.toLowerCase();
-    currentUser = { id: profile.id, name: profile.full_name||username, role: isAdmin?'admin':'tech', username };
+    window.currentUser = { id: profile.id, name: profile.full_name||username, role: isAdmin?'admin':'tech', username };
     // Create secure session token
     await createSession(username, profile.id);
-    enterApp();
+    if (typeof window.enterApp === 'function') {
+      window.enterApp();
+    } else {
+      console.error("Critical: window.enterApp not found!");
+    }
   } catch(e) { showErr('Login failed. Try again.'); btn.textContent='Sign In'; btn.disabled=false; }
 }
 
@@ -270,3 +275,4 @@ export async function doRegister() {
     showErr('Registration failed. Try again.'); 
   }
 }
+
