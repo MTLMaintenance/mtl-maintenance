@@ -130,8 +130,10 @@ export function updatePinDots() {
 }
 
 export function showPending() {
+    const namesStage = document.getElementById('login-stage-names');
     const registerView = document.getElementById('register-view');
     const pendingView = document.getElementById('pending-view');
+    if (namesStage) namesStage.style.display = 'none';
     if (registerView) registerView.style.display = 'none';
     if (pendingView) pendingView.style.display = 'block';
 }
@@ -140,6 +142,10 @@ export function backToNames() {
     window.enteredPin = "";
     document.getElementById('login-stage-names').style.display = 'block';
     document.getElementById('login-stage-pin').style.display = 'none';
+    const registerView = document.getElementById('register-view');
+    const pendingView = document.getElementById('pending-view');
+    if (registerView) registerView.style.display = 'none';
+    if (pendingView) pendingView.style.display = 'none';
 }
 
 export function can(permission, currentUser) {
