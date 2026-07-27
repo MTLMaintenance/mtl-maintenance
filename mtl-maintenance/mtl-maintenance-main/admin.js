@@ -297,6 +297,12 @@ export async function renderAdminPanel(){
     
     const pending = profiles.filter(p => p.status === 'pending');
     const denied = profiles.filter(p => p.status === 'denied');
+
+    // Nothing else populates this cache, but renderUsersTable(), populateAdminUserSelect(),
+    // and syncAdminRoleSelects() all read from it — so build it here from the same fetch.
+    window.state = window.state || {};
+    window.state.users_list_cache = profiles;
+
     document.getElementById('pending-count').textContent = pending.length || '0';
     document.getElementById('pending-list').innerHTML = pending.map(p => `
       <div class="parts-row">
