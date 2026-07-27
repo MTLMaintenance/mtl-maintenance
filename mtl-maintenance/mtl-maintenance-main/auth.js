@@ -37,7 +37,12 @@ export async function showPinLogin() {
         if (error) throw error;
 
         list.innerHTML = '';
-        users.forEach(user => {
+        const approvedUsers = users.filter(u => u.status !== 'pending' && u.status !== 'denied');
+        if (approvedUsers.length === 0) {
+            list.innerHTML = '<div style="color:white; grid-column:span 2;">No approved users yet.</div>';
+            return;
+        }
+        approvedUsers.forEach(user => {
             const name = user.full_name || user.username;
             const card = document.createElement('div');
             card.style.cssText = "background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer;";
