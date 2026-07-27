@@ -181,15 +181,17 @@ export function syncAdminRoleSelects(state) {
 
     const profile = state.users_list_cache.find(u => u.username === userId || u.id === userId);
     if (profile) {
-        document.getElementById('role-select').value = profile.role || 'tech';
-        document.getElementById('group-select').value = profile.group_tag || '';
+        const roleEl = document.getElementById('role-select');
+        const groupEl = document.getElementById('group-select');
+        if (roleEl) roleEl.value = profile.role || 'tech';
+        if (groupEl) groupEl.value = profile.group_tag || '';
     }
 }
 
 export async function changeUserRole(renderUsersTableFunc, state) {
   const userId = document.getElementById('role-user-select').value;
   const newRole = document.getElementById('role-select').value;
-  const newGroup = document.getElementById('group-select').value;
+  const newGroup = document.getElementById('group-select')?.value || '';
 
   if (!userId) return showToast("Select a user first");
 
