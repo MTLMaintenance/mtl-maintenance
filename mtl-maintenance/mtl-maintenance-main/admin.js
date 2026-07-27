@@ -44,7 +44,7 @@ export async function deleteUser(id) {
         if (error) throw error;
         
         showToast('User removed');
-        if (typeof renderUsersTable === 'function') renderUsersTable();
+        if (typeof window.renderUsersTable === 'function') window.renderUsersTable();
     } catch (e) {
         console.error("Delete error:", e);
         showToast("Failed to delete user");
