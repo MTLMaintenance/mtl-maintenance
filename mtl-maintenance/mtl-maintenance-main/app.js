@@ -18,7 +18,7 @@ import {  handleLogoClick,openMobileSearch } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
 import { startApp, loadState, teleportModals, enterApp } from './init.js?v=99';
 import { handleGlobalSearch, closeSearchResults, locateSearchResult } from './search.js';
-import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister,showPending } from './auth.js';
+import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister,showPending, PERMISSIONS, PERM_LABELS } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention, openProfileModal   } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline,renderFullHistoryList, openTaskDetail } from './details.js';
