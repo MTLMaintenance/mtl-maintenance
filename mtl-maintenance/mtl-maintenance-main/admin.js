@@ -120,7 +120,10 @@ export function renderUsersTable(state) {
     const tableBody = document.getElementById('users-table-body');
     if (!tableBody) return;
 
-    const active = (state.users_list_cache || []).filter(p => p.status === 'approved');
+    // Every caller invokes this as window.renderUsersTable() with no argument,
+    // so fall back to the global state (same pattern as populateAdminUserSelect).
+    const s = state || window.state || {};
+    const active = (s.users_list_cache || []).filter(p => p.status === 'approved');
     const rc = { 'admin': 'bd', 'manager': 'bw', 'tech': 'bi', 'viewer': 'bg' };
     
     tableBody.innerHTML = active.map(p => `
