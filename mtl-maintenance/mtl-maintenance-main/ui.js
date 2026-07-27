@@ -207,6 +207,7 @@ export function switchAdminTab(tab, btn) {
   if (tab === 'approvals' && typeof window.renderAdminPanel === 'function') window.renderAdminPanel();
   if (tab === 'users' && typeof window.renderUsersTable === 'function') window.renderUsersTable();
   if (tab === 'permissions' && typeof window.renderPermissionsMatrix === 'function') window.renderPermissionsMatrix();
+  if (tab === 'permissions' && typeof window.populateAdminUserSelect === 'function') window.populateAdminUserSelect();
   if (tab === 'deleted-msgs' && typeof window.renderDeletedMessages === 'function') window.renderDeletedMessages();
   if (tab === 'settings' && typeof window.renderAuditLogs === 'function') window.renderAuditLogs();
 }
