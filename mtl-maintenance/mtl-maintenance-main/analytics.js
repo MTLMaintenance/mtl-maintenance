@@ -1,5 +1,5 @@
 // analytics.js - Charts, Graphs, and Forecasting
-import { healthColor } from './equipment.js';
+import { healthColor, calcHealth } from './equipment.js';
 
 // 1. Render the Monthly Spend chart (The blue bars)
 export function renderCostChart(monthlyCosts, MONTHS) {
@@ -132,4 +132,60 @@ export function renderCostByEquip(state) {
         <div class="stat-bar-wrap"><div class="stat-bar" style="width:${Math.round(x.cost/mc*100)}%; background:var(--accent)"></div></div>
         <div style="width:60px; text-align:right; font-weight:600">$${x.cost.toLocaleString()}</div></div>`
     ).join('');
+}
+
+// Single entry point for the whole Fleet Intelligence (Analytics) panel.
+// Nothing previously called any of the chart functions in this file for
+// this panel, and nothing set the top metric cards (#r-ytd, #r-avg, #r-inv,
+// #r-parts-used, #r-health) at all — they were hardcoded placeholders in
+// the HTML. Call this whenever the Analytics panel opens or underlying
+// data (tasks/equipment/parts/partUsage) changes.
+export async function refreshAnalytics(state) {
+    const tasks = state.tasks || [];
+    const equipment = state.equipment || [];
+    const parts = state.parts || [];
+    const partUsage = state.partUsage || [];
+
+    // YTD Spend: sum of task costs for this calendar year
+    const thisYear = new Date().getFullYear();
+    const ytdSpend = tasks
+        .filter(t => t.due && new Date(t.due).getFullYear() === thisYear)
+        .reduce((sum, t) => sum + (t.cost || 0), 0);
+    const ytdEl = document.getElementById('r-ytd');
+    if (ytdEl) ytdEl.textContent = '$' + Math.round(ytdSpend).toLocaleString();
+
+    // Avg WO Cost: average cost across tasks that actually have a cost logged
+    const costedTasks = tasks.filter(t => (t.cost || 0) > 0);
+    const avgCost = costedTasks.length ? costedTasks.reduce((sum, t) => sum + t.cost, 0) / costedTasks.length : 0;
+    const avgEl = document.getElementById('r-avg');
+    if (avgEl) avgEl.textContent = '$' + Math.round(avgCost).toLocaleString();
+
+    // Inv. Value: sum of qty * cost across all parts in stock
+    const invValue = parts.reduce((sum, p) => sum + ((parseInt(p.qty) || 0) * (parseFloat(p.cost) || 0)), 0);
+    const invEl = document.getElementById('r-inv');
+    if (invEl) invEl.textContent = '$' + Math.round(invValue).toLocaleString();
+
+    // Parts Out: total quantity of parts consumed (from part_usage records)
+    const partsOut = partUsage.reduce((sum, p) => sum + (p.qty_used || 0), 0);
+    const partsEl = document.getElementById('r-parts-used');
+    if (partsEl) partsEl.textContent = partsOut.toLocaleString();
+
+    // Fleet Health: average calcHealth() score across all equipment
+    const healthEl = document.getElementById('r-health');
+    if (healthEl) {
+        if (equipment.length) {
+            const avgHealth = Math.round(
+                equipment.reduce((sum, e) => sum + calcHealth(e.id, tasks, equipment), 0) / equipment.length
+            );
+            healthEl.textContent = avgHealth + '%';
+        } else {
+            healthEl.textContent = '—';
+        }
+    }
+
+    // Wire up the charts that already exist in this file but nothing called
+    renderCostByEquip(state);
+    renderPlannedVsUnplanned(tasks);
+    renderHealthScores(state, calcHealth);
+    await renderDowntimeStats(state); // also sets #r-uptime
 }
