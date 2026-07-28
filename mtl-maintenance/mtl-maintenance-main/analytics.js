@@ -119,7 +119,7 @@ export function renderTopPartsUsed(state) {
         </div>`).join('');
 }
 
-export function renderCostByEquip() {
+export function renderCostByEquip(state) {
     const el = document.getElementById('cost-by-equip');
     if(!el) return;
     const ec = state.equipment.map(e => {
