@@ -141,7 +141,7 @@ window.openComponentOS = openComponentOS;
 window.renderPerfectCard = renderPerfectCard;
 window.saveEditObservation = saveEditObservation;
 window.saveCalendarEntry = saveCalendarEntry;
-window.renderCostByEquip = renderCostByEquip;
+window.renderCostByEquip = () => renderCostByEquip(state);
 window.viewInvoicePhoto = viewInvoicePhoto;
 window.handleInvoiceDrop = handleInvoiceDrop;
 window.updateReportType = updateReportType;
