@@ -87,6 +87,9 @@ export async function renderDowntimeStats(state) {
     const uptimeEl = document.getElementById('r-uptime');
     if(uptimeEl) uptimeEl.textContent = uptime.toFixed(1) + '%';
 
+    const downtimeHrsEl = document.getElementById('r-downtime-hrs');
+    if (downtimeHrsEl) downtimeHrsEl.textContent = Math.round(totalDownMins / 60).toLocaleString() + 'h';
+
     const chart = document.getElementById('downtime-chart');
     if(!chart) return;
     const machineMap = {};
@@ -182,6 +185,13 @@ export async function refreshAnalytics(state) {
             healthEl.textContent = '—';
         }
     }
+
+    // Completion Rate: % of all work orders marked Completed
+    const completionRate = tasks.length
+        ? Math.round((tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length / tasks.length) * 100)
+        : 0;
+    const completionEl = document.getElementById('r-completion');
+    if (completionEl) completionEl.textContent = completionRate + '%';
 
     // Wire up the charts that already exist in this file but nothing called
     renderCostByEquip(state);
