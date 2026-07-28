@@ -167,8 +167,17 @@ export async function deletePart() {
 
         if (error) throw error;
 
+        // Cascade: remove this part's usage history too, so deleted parts
+        // don't leave orphaned part_usage rows inflating "Parts Out" forever.
+        const { error: usageError } = await window._mpdb
+            .from('part_usage')
+            .delete()
+            .eq('part_id', id);
+        if (usageError) console.error("Failed to clean up part_usage for deleted part:", usageError);
+
         // 3. Update memory
         state.parts = state.parts.filter(p => p.id !== id);
+        if (state.partUsage) state.partUsage = state.partUsage.filter(u => u.part_id !== id);
 
         // 4. Refresh UI
         if (typeof window.renderPartsTable === 'function') window.renderPartsTable();
