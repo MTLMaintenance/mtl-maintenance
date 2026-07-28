@@ -44,7 +44,7 @@ import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumab
 import { saveSupplier, deleteSupplier, pullEquipSuppliers, renderSuppliersTable } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
 import { formatDuration, getEquipDowntime, logStatusChange } from './downtime.js';
-import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed,renderCostByEquip } from './analytics.js';
+import { renderCostChart, renderHealthScores, renderPlannedVsUnplanned, renderTaskBreakdown, renderDowntimeStats, renderTopPartsUsed,renderCostByEquip, refreshAnalytics } from './analytics.js';
 import { openEquipDetail as openLegacy } from './equipment.js';
 window.openEquipDetail = (id) => {
     window._currentDetailEquipId = id;
@@ -142,6 +142,7 @@ window.renderPerfectCard = renderPerfectCard;
 window.saveEditObservation = saveEditObservation;
 window.saveCalendarEntry = saveCalendarEntry;
 window.renderCostByEquip = () => renderCostByEquip(state);
+window.refreshAnalytics = () => refreshAnalytics(state);
 window.viewInvoicePhoto = viewInvoicePhoto;
 window.handleInvoiceDrop = handleInvoiceDrop;
 window.updateReportType = updateReportType;
