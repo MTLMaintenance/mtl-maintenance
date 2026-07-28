@@ -315,9 +315,18 @@ export async function deleteTask(id) {
 
     try {
         await window._mpdb.from('tasks').delete().eq('id', id);
-        
+
+        // Cascade: remove this task's part usage history too, so deleted
+        // work orders don't leave orphaned part_usage rows behind.
+        const { error: usageError } = await window._mpdb
+            .from('part_usage')
+            .delete()
+            .eq('task_id', id);
+        if (usageError) console.error("Failed to clean up part_usage for deleted task:", usageError);
+
         // Remove from local memory
         window.state.tasks = window.state.tasks.filter(t => t.id !== id);
+        if (window.state.partUsage) window.state.partUsage = window.state.partUsage.filter(u => u.task_id !== id);
 
         // Redraw EVERYTHING
         if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
