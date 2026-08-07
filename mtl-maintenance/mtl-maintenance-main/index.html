@@ -619,7 +619,13 @@
     <div style="padding:20px">
       <div id="task-pin-user-name" style="font-weight:bold; font-size:18px; margin-bottom:5px">Tanner</div>
       <div id="task-pin-instruction" style="font-size:13px; color:var(--text2); margin-bottom:20px">Enter your PIN to sign off</div>
-      
+
+      <!-- Only shown for tech sign-off, not manager approval — see openTaskSignoff() -->
+      <div id="task-pin-root-cause-wrap" style="display:none; text-align:left; margin-bottom:16px">
+        <label class="form-label" style="color: #666 !important;">What fixed it? (optional)</label>
+        <textarea id="task-pin-root-cause" class="form-textarea" placeholder="e.g. Replaced corroded battery terminal" style="height:50px; color: black !important; border: 1px solid #ddd; width:100%;"></textarea>
+      </div>
+
       <!-- Display for entered digits -->
       <div id="task-pin-display" style="height:30px; font-size:24px; letter-spacing:8px; color:var(--accent); margin-bottom:20px"></div>
 
@@ -768,6 +774,21 @@
             <div class="form-group full">
               <label class="form-label" style="color: #666 !important;">Work Order Name *</label>
               <input class="form-input" id="t-name" placeholder="e.g. Oil filter replacement" style="color: black !important; border: 1px solid #ddd;">
+            </div>
+
+            <div class="form-group full">
+              <label class="form-label" style="color: #666 !important;">Symptom (optional)</label>
+              <select class="form-select" id="t-symptom" style="color: black !important; border: 1px solid #ddd;">
+                <option value="">-- None / Routine maintenance --</option>
+                <option value="wont_start">Won't Start</option>
+                <option value="overheating">Overheating</option>
+                <option value="leaking">Leaking</option>
+                <option value="electrical">Electrical Fault</option>
+                <option value="unusual_noise">Unusual Noise/Vibration</option>
+                <option value="loss_of_power">Loss of Power</option>
+                <option value="hydraulic_issue">Hydraulic Issue</option>
+                <option value="other">Other</option>
+              </select>
             </div>
             
             <div class="form-group">
