@@ -11,6 +11,7 @@ export function resetTaskForm() {
     const equip = document.getElementById('t-equip'); if (equip) equip.selectedIndex = 0;
     const priority = document.getElementById('t-priority'); if (priority) priority.selectedIndex = 0;
     const assign = document.getElementById('t-assign'); if (assign) assign.selectedIndex = 0;
+    const symptom = document.getElementById('t-symptom'); if (symptom) symptom.selectedIndex = 0;
 
     if (window.woPartsAdded) window.woPartsAdded.length = 0;
     const partsListEl = document.getElementById('wo-parts-list');
@@ -79,6 +80,7 @@ export async function saveTask() {
         priority: document.getElementById('t-priority').value,
         assign: document.getElementById('t-assign').value,
         notes: document.getElementById('t-notes').value,
+        symptom: document.getElementById('t-symptom')?.value || null,
         status: 'Open',
         checklist: checklist,
         created_at: new Date().toISOString()
@@ -199,13 +201,20 @@ export function openTaskSignoff(taskId, currentUser) {
     if (!task) return;
 
     document.getElementById('task-pin-user-name').textContent = currentUser.name;
-    
+
+    const rootCauseWrap = document.getElementById('task-pin-root-cause-wrap');
+    const rootCauseInput = document.getElementById('task-pin-root-cause');
+    if (rootCauseInput) rootCauseInput.value = '';
+
     if (task.status === 'Pending Approval') {
         document.getElementById('task-pin-title').textContent = "Manager Approval";
         document.getElementById('task-pin-instruction').textContent = "Manager PIN required to finalize";
+        // Root cause was already captured at tech sign-off — don't ask the manager for it too
+        if (rootCauseWrap) rootCauseWrap.style.display = 'none';
     } else {
         document.getElementById('task-pin-title').textContent = "Technician Sign-off";
         document.getElementById('task-pin-instruction').textContent = "Enter your PIN to verify work";
+        if (rootCauseWrap) rootCauseWrap.style.display = 'block';
     }
 
     // Force the PIN modal to sit on top of the detail modal
@@ -240,6 +249,10 @@ export async function verifyTaskPinAction(currentUser) {
         task.status = 'Pending Approval';
         task.tech_user_name = currentUser.name;
         task.tech_signed_at = now;
+
+        const rootCauseInput = document.getElementById('task-pin-root-cause');
+        const rootCause = rootCauseInput ? rootCauseInput.value.trim() : '';
+        if (rootCause) task.root_cause = rootCause;
     }
 
     await persist('tasks', 'upsert', task);
