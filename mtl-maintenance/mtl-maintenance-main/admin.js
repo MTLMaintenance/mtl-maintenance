@@ -324,5 +324,139 @@ export async function renderAdminPanel(){
 
     // Call user table render to fill the rest
     if (typeof window.renderUsersTable === 'function') window.renderUsersTable();
+
+    // Keep the Symptoms tab badge fresh too, even before that tab is opened
+    await ensureCustomSymptomsLoadedAdmin();
+    updateSymptomReviewBadge();
   } catch(e){ console.error(e); }
+}
+
+// ── SYMPTOM REVIEW QUEUE ─────────────────────────────────────────────
+// Custom "Other" symptoms that didn't closely match anything existing
+// land here (see resolveCustomSymptom() in tasks.js). An admin either
+// approves one as a real category, or merges it into an existing one —
+// which also relabels every task that used the old text, so ranking
+// logic downstream sees one consistent symptom instead of duplicates.
+
+const PREDEFINED_SYMPTOM_OPTIONS = [
+    ['wont_start', "Won't Start"],
+    ['overheating', "Overheating"],
+    ['leaking', "Leaking"],
+    ['electrical', "Electrical Fault"],
+    ['unusual_noise', "Unusual Noise/Vibration"],
+    ['loss_of_power', "Loss of Power"],
+    ['hydraulic_issue', "Hydraulic Issue"]
+];
+
+async function ensureCustomSymptomsLoadedAdmin() {
+    if (window.state.customSymptoms) return;
+    try {
+        const { data, error } = await supabase.from('custom_symptoms').select('*');
+        if (error) throw error;
+        window.state.customSymptoms = data || [];
+    } catch (e) {
+        console.error('Failed to load custom symptoms:', e);
+        window.state.customSymptoms = [];
+    }
+}
+
+// Keeps the small red badge on the "Symptoms" admin tab in sync, so
+// there's a visible signal a review is waiting without opening the tab.
+export function updateSymptomReviewBadge() {
+    const pending = (window.state.customSymptoms || []).filter(c => c.status === 'pending');
+    const tabBadge = document.getElementById('symptom-review-badge');
+    if (tabBadge) {
+        tabBadge.style.display = pending.length ? 'inline-block' : 'none';
+        tabBadge.textContent = pending.length;
+    }
+    const panelBadge = document.getElementById('pending-symptom-count');
+    if (panelBadge) panelBadge.textContent = pending.length;
+}
+
+export async function renderSymptomReview() {
+    const container = document.getElementById('symptom-review-list');
+    if (!container) return;
+
+    await ensureCustomSymptomsLoadedAdmin();
+    updateSymptomReviewBadge();
+
+    const pending = (window.state.customSymptoms || [])
+        .filter(c => c.status === 'pending')
+        .sort((a, b) => (b.usage_count || 0) - (a.usage_count || 0));
+
+    // Merge target options: every predefined category, plus any custom
+    // symptom already approved as its own category.
+    const approvedCustoms = (window.state.customSymptoms || []).filter(c => c.status === 'approved');
+    const mergeOptions = [
+        ...PREDEFINED_SYMPTOM_OPTIONS,
+        ...approvedCustoms.map(c => [c.normalized_text, c.raw_text])
+    ];
+
+    container.innerHTML = pending.map(c => `
+        <div class="parts-row" style="align-items:center;">
+            <div style="flex:1">
+                <b>"${c.raw_text}"</b>
+                <span class="badge bg" style="margin-left:8px;">${c.usage_count || 1}x used</span>
+            </div>
+            <select id="merge-target-${c.id}" class="form-select" style="max-width:200px; margin-right:8px;">
+                <option value="">-- Merge into... --</option>
+                ${mergeOptions.map(([val, label]) => `<option value="${val}">${label}</option>`).join('')}
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="window.mergeCustomSymptom('${c.id}')">Merge</button>
+            <button class="btn btn-success btn-sm" onclick="window.approveCustomSymptom('${c.id}')">Approve as New</button>
+        </div>
+    `).join('') || '<div style="padding:15px; text-align:center; color:var(--text3);">No custom symptoms waiting for review.</div>';
+}
+
+// Approves a pending custom symptom as its own standalone category —
+// it stays as-is and future similar text will fuzzy-match onto it.
+export async function approveCustomSymptom(id) {
+    const entry = (window.state.customSymptoms || []).find(c => c.id === id);
+    if (!entry) return;
+
+    try {
+        const { error } = await supabase.from('custom_symptoms').update({ status: 'approved' }).eq('id', id);
+        if (error) throw error;
+
+        entry.status = 'approved';
+        showToast(`"${entry.raw_text}" approved as a new symptom category ✓`);
+        renderSymptomReview();
+    } catch (e) {
+        console.error('Failed to approve symptom:', e);
+        showToast('Failed to approve');
+    }
+}
+
+// Merges a pending custom symptom into an existing category — relabels
+// every task that used the old text so historical data stays consistent.
+export async function mergeCustomSymptom(id) {
+    const entry = (window.state.customSymptoms || []).find(c => c.id === id);
+    if (!entry) return;
+
+    const targetSelect = document.getElementById(`merge-target-${id}`);
+    const targetValue = targetSelect ? targetSelect.value : '';
+    if (!targetValue) return showToast('Pick a symptom to merge into first');
+
+    if (!confirm(`Merge "${entry.raw_text}" into this symptom? Every past work order tagged "${entry.raw_text}" will be relabeled too.`)) return;
+
+    try {
+        // 1. Relabel every task that used the old (pending) normalized text
+        const { error: taskErr } = await supabase.from('tasks').update({ symptom: targetValue }).eq('symptom', entry.normalized_text);
+        if (taskErr) throw taskErr;
+
+        // 2. Mark this custom entry as merged so it stops being matchable
+        const { error: mergeErr } = await supabase.from('custom_symptoms').update({ status: 'merged', merged_into: targetValue }).eq('id', id);
+        if (mergeErr) throw mergeErr;
+
+        // 3. Update local memory to match
+        entry.status = 'merged';
+        entry.merged_into = targetValue;
+        (window.state.tasks || []).forEach(t => { if (t.symptom === entry.normalized_text) t.symptom = targetValue; });
+
+        showToast(`Merged "${entry.raw_text}" ✓`);
+        renderSymptomReview();
+    } catch (e) {
+        console.error('Failed to merge symptom:', e);
+        showToast('Failed to merge');
+    }
 }
