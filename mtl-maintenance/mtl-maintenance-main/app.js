@@ -29,11 +29,11 @@ import { supabase, persist, setSyncStatus, createSession, validateSession, destr
 import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs  } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs, updateSymptomReviewBadge, renderSymptomReview, approveCustomSymptom, mergeCustomSymptom  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc, openEditDocModal, handleDocUpload, renderDocsList, renderComponentDocPicker } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO,  editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto, deleteConsumable  } from './inventory.js';
-import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm  } from './tasks.js';
+import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs,renderRecentObsDash,refreshDashboard } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, saveCalendarEntry  } from './calendar.js'
 import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
@@ -149,6 +149,11 @@ window.updateReportType = updateReportType;
 window.submitBugReport = submitBugReport;
 window.editTemplate = editTemplate;
 window.renderAdminPanel = renderAdminPanel;
+window.updateSymptomReviewBadge = updateSymptomReviewBadge;
+window.renderSymptomReview = renderSymptomReview;
+window.approveCustomSymptom = approveCustomSymptom;
+window.mergeCustomSymptom = mergeCustomSymptom;
+window.toggleSymptomOther = toggleSymptomOther;
 window.setZerkMode = setZerkMode;
 window.highlightZerk = highlightZerk;
 window.renderZerkDots = renderZerkDots;
