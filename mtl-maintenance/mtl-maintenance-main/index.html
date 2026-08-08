@@ -428,6 +428,7 @@
     <button class="tab" onclick="switchAdminTab('permissions',this)">Permissions</button>
     <button class="tab" onclick="switchAdminTab('deleted-msgs',this)">Deleted Msgs</button>
     <button class="tab" onclick="switchAdminTab('settings',this)">Settings</button>
+    <button class="tab" onclick="switchAdminTab('symptoms',this)">Symptoms <span class="badge bd" id="symptom-review-badge" style="display:none">0</span></button>
   </div>
 
   <!-- 1. PENDING APPROVALS -->
@@ -548,6 +549,21 @@
         <button onclick="exportFullDatabase()" class="btn-primary" style="background:#007bff !important; border:none !important; padding:10px 20px !important; border-radius:8px !important; cursor:pointer !important; font-weight:700 !important; color:#fff !important;">
             Download Full Backup (.json)
         </button>
+    </div>
+  </div>
+
+  <!-- 6. SYMPTOM REVIEW (custom "Other" symptom tags awaiting approval/merge) -->
+  <div id="admin-symptoms" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Pending Custom Symptoms</span>
+        <span class="badge bd" id="pending-symptom-count">0</span>
+      </div>
+      <p style="font-size:12px; color:var(--text2); margin:0 0 12px;">
+        These were typed in as "Other" on a work order and didn't closely match an existing symptom.
+        Approve to add as a real category, or merge into one that already exists.
+      </p>
+      <div id="symptom-review-list"></div>
     </div>
   </div>
 </div>
@@ -778,7 +794,7 @@
 
             <div class="form-group full">
               <label class="form-label" style="color: #666 !important;">Symptom (optional)</label>
-              <select class="form-select" id="t-symptom" style="color: black !important; border: 1px solid #ddd;">
+              <select class="form-select" id="t-symptom" onchange="window.toggleSymptomOther(this)" style="color: black !important; border: 1px solid #ddd;">
                 <option value="">-- None / Routine maintenance --</option>
                 <option value="wont_start">Won't Start</option>
                 <option value="overheating">Overheating</option>
@@ -789,6 +805,7 @@
                 <option value="hydraulic_issue">Hydraulic Issue</option>
                 <option value="other">Other</option>
               </select>
+              <input class="form-input" id="t-symptom-other" placeholder="Describe the symptom..." style="display:none; margin-top:8px; color: black !important; border: 1px solid #ddd;">
             </div>
             
             <div class="form-group">
