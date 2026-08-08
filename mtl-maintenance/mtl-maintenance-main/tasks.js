@@ -4,6 +4,123 @@ import { uid, showToast, fmtDate, badge, isOverdue } from './utils.js';
 import { openModal, closeModal } from './ui.js';
 import { logAuditAction } from './admin.js';
 
+// ── SYMPTOM TAGGING: fuzzy auto-merge + admin review queue ──────────────
+// When someone types a custom "Other" symptom, we don't want 50 near-
+// duplicate variants ("wont start" / "won't start" / "no start") to pile
+// up. Obvious near-duplicates get auto-merged into an existing entry the
+// instant they're typed (no human involved). Anything genuinely new goes
+// into a small pending queue an admin reviews later — approve it as a
+// real category, or merge it into one that already exists.
+
+const SYMPTOM_MATCH_THRESHOLD = 0.75; // 0-1 similarity; tune if it feels too loose/strict
+
+const PREDEFINED_SYMPTOMS = {
+    wont_start: "Won't Start",
+    overheating: "Overheating",
+    leaking: "Leaking",
+    electrical: "Electrical Fault",
+    unusual_noise: "Unusual Noise/Vibration",
+    loss_of_power: "Loss of Power",
+    hydraulic_issue: "Hydraulic Issue"
+};
+
+function normalizeSymptomText(s) {
+    return (s || '').toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ');
+}
+
+// Standard Levenshtein edit distance, converted to a 0-1 similarity score.
+function symptomSimilarity(a, b) {
+    const normA = normalizeSymptomText(a);
+    const normB = normalizeSymptomText(b);
+    if (!normA && !normB) return 1;
+    if (!normA || !normB) return 0;
+
+    const m = normA.length, n = normB.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            dp[i][j] = normA[i - 1] === normB[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
+    return 1 - dp[m][n] / Math.max(m, n);
+}
+
+async function ensureCustomSymptomsLoaded() {
+    if (window.state.customSymptoms) return;
+    try {
+        const { data, error } = await window._mpdb.from('custom_symptoms').select('*');
+        if (error) throw error;
+        window.state.customSymptoms = data || [];
+    } catch (e) {
+        console.error('Failed to load custom symptoms:', e);
+        window.state.customSymptoms = [];
+    }
+}
+
+// Toggle the free-text input when "Other" is selected in the Symptom dropdown
+export function toggleSymptomOther(selectEl) {
+    const otherInput = document.getElementById('t-symptom-other');
+    if (!otherInput) return;
+    otherInput.style.display = selectEl.value === 'other' ? 'block' : 'none';
+    if (selectEl.value !== 'other') otherInput.value = '';
+}
+
+// Resolves whatever a tech typed under "Other" into a canonical symptom
+// value — reusing a predefined category or existing custom entry if one
+// matches closely enough, otherwise creating a new pending entry for
+// admin review. Returns the value that should be saved on the task.
+export async function resolveCustomSymptom(rawText) {
+    await ensureCustomSymptomsLoaded();
+    const customs = window.state.customSymptoms || [];
+
+    // 1. Check against the predefined dropdown categories first
+    for (const [value, label] of Object.entries(PREDEFINED_SYMPTOMS)) {
+        if (symptomSimilarity(rawText, label) >= SYMPTOM_MATCH_THRESHOLD) return value;
+    }
+
+    // 2. Check against existing custom entries (skip ones already merged away)
+    let best = null, bestScore = 0;
+    for (const c of customs) {
+        if (c.status === 'merged') continue;
+        const score = symptomSimilarity(rawText, c.raw_text);
+        if (score > bestScore) { bestScore = score; best = c; }
+    }
+
+    if (best && bestScore >= SYMPTOM_MATCH_THRESHOLD) {
+        best.usage_count = (best.usage_count || 1) + 1;
+        try {
+            await window._mpdb.from('custom_symptoms').update({ usage_count: best.usage_count }).eq('id', best.id);
+        } catch (e) { console.error('Failed to bump symptom usage count:', e); }
+        // If it was already approved as its own category, use that canonical
+        // text; if it's still pending, use its normalized text for now.
+        return best.status === 'approved' ? best.normalized_text : best.normalized_text;
+    }
+
+    // 3. No match anywhere — create a new pending entry for admin review
+    const normalized = normalizeSymptomText(rawText);
+    const newEntry = {
+        id: uid(),
+        raw_text: rawText.trim(),
+        normalized_text: normalized,
+        usage_count: 1,
+        status: 'pending',
+        merged_into: null,
+        created_at: new Date().toISOString()
+    };
+    try {
+        const { error } = await window._mpdb.from('custom_symptoms').insert(newEntry);
+        if (error) throw error;
+        window.state.customSymptoms = window.state.customSymptoms || [];
+        window.state.customSymptoms.push(newEntry);
+        if (typeof window.updateSymptomReviewBadge === 'function') window.updateSymptomReviewBadge();
+    } catch (e) { console.error('Failed to save new custom symptom:', e); }
+    return normalized;
+}
+
 // 1. Render the main Work Orders table
 export function resetTaskForm() {
     const ids = ['t-name', 't-due', 't-notes', 't-tools', 't-checklist', 'wo-comment-input'];
@@ -12,6 +129,7 @@ export function resetTaskForm() {
     const priority = document.getElementById('t-priority'); if (priority) priority.selectedIndex = 0;
     const assign = document.getElementById('t-assign'); if (assign) assign.selectedIndex = 0;
     const symptom = document.getElementById('t-symptom'); if (symptom) symptom.selectedIndex = 0;
+    const symptomOther = document.getElementById('t-symptom-other'); if (symptomOther) { symptomOther.value = ''; symptomOther.style.display = 'none'; }
 
     if (window.woPartsAdded) window.woPartsAdded.length = 0;
     const partsListEl = document.getElementById('wo-parts-list');
@@ -62,6 +180,14 @@ export async function saveTask() {
 
     if (!name || !equipId) return showToast("Name and Equipment required");
 
+    // Resolve the Symptom field — if "Other" was picked with custom text,
+    // run it through fuzzy-match/auto-merge before saving
+    let symptomValue = document.getElementById('t-symptom')?.value || null;
+    if (symptomValue === 'other') {
+        const customText = document.getElementById('t-symptom-other')?.value.trim();
+        symptomValue = customText ? await resolveCustomSymptom(customText) : null;
+    }
+
     // Pull checklist steps (one per line) from the Checklist tab
     const checklistRaw = document.getElementById('t-checklist')?.value || '';
     const checklist = checklistRaw.split('\n').map(line => line.trim()).filter(Boolean).map(text => ({ text, done: false }));
@@ -80,7 +206,7 @@ export async function saveTask() {
         priority: document.getElementById('t-priority').value,
         assign: document.getElementById('t-assign').value,
         notes: document.getElementById('t-notes').value,
-        symptom: document.getElementById('t-symptom')?.value || null,
+        symptom: symptomValue,
         status: 'Open',
         checklist: checklist,
         created_at: new Date().toISOString()
