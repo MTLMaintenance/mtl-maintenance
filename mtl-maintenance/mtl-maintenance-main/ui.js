@@ -254,6 +254,11 @@ export function populateSelects() {
             `<option value="${p.id}">${p.name} (Stock: ${p.qty})</option>`
         ).join('');
     }
+
+    // 6. Symptom dropdown's approved custom categories — resetTaskForm()
+    // only fires after a save, not on the initial "+ WO" open, so this
+    // is the one hook that actually runs every time the modal opens.
+    if (typeof window.populateSymptomDropdown === 'function') window.populateSymptomDropdown();
 }
 
 // 1. Mobile Sidebar Toggle
