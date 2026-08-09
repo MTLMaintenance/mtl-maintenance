@@ -3,6 +3,7 @@ import { supabase } from './db.js';
 import { uid, showToast, fmtDate } from './utils.js'; 
 import { closeModal, openModal } from './ui.js';
 import { renderDocuments } from './views.js';
+import { extractAndCacheDocumentText } from './manual-search.js';
 
 // 1. Delete a Document (Merged version of your duplicates)
 export async function deleteDoc(id) {
@@ -97,6 +98,11 @@ export async function saveDoc() {
     file_type: window._tempFileType || null // We added this in handleDocUpload
   };
 
+  // Capture this before the "keep old file on edit" fallback below can
+  // overwrite record.file_data — extraction should only run when a genuinely
+  // new file was uploaded this save, not on every unrelated edit.
+  const isNewFileUpload = !!record.file_data;
+
   console.log("🚀 Attempting to save Document:", record);
 
   try {
@@ -137,6 +143,13 @@ export async function saveDoc() {
     }
     
     showToast("Document Saved ✓");
+
+    // Fire-and-forget: extraction can take a few seconds on a long manual,
+    // and there's no reason to make the tech wait on the modal for it.
+    // extractAndCacheDocumentText shows its own toast when it finishes.
+    if (isNewFileUpload) {
+        extractAndCacheDocumentText(docId);
+    }
   } catch (e) {
     console.error("💥 Function crashed:", e);
   }
