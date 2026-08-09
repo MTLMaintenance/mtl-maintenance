@@ -61,6 +61,38 @@ async function ensureCustomSymptomsLoaded() {
     }
 }
 
+// Approved custom symptoms (from the admin review queue) never showed up
+// in the actual New Work Order dropdown — approveCustomSymptom() only
+// updated the database and the review queue UI, nothing added the new
+// category as a real <option>. This fills that gap. Injected options are
+// tagged data-custom="1" so repeated calls can clear + rebuild instead of
+// duplicating, and they're always inserted right before "Other" so that
+// stays the last option.
+export async function populateSymptomDropdown() {
+    const select = document.getElementById('t-symptom');
+    if (!select) return;
+
+    await ensureCustomSymptomsLoaded();
+
+    select.querySelectorAll('option[data-custom="1"]').forEach(opt => opt.remove());
+
+    const approved = (window.state.customSymptoms || []).filter(c => c.status === 'approved');
+    if (!approved.length) return;
+
+    const otherOption = select.querySelector('option[value="other"]');
+    approved.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.normalized_text;
+        opt.textContent = c.raw_text.charAt(0).toUpperCase() + c.raw_text.slice(1);
+        opt.dataset.custom = '1';
+        if (otherOption) {
+            select.insertBefore(opt, otherOption);
+        } else {
+            select.appendChild(opt);
+        }
+    });
+}
+
 // Toggle the free-text input when "Other" is selected in the Symptom dropdown
 export function toggleSymptomOther(selectEl) {
     const otherInput = document.getElementById('t-symptom-other');
@@ -130,6 +162,7 @@ export function resetTaskForm() {
     const assign = document.getElementById('t-assign'); if (assign) assign.selectedIndex = 0;
     const symptom = document.getElementById('t-symptom'); if (symptom) symptom.selectedIndex = 0;
     const symptomOther = document.getElementById('t-symptom-other'); if (symptomOther) { symptomOther.value = ''; symptomOther.style.display = 'none'; }
+    populateSymptomDropdown();
 
     if (window.woPartsAdded) window.woPartsAdded.length = 0;
     const partsListEl = document.getElementById('wo-parts-list');
