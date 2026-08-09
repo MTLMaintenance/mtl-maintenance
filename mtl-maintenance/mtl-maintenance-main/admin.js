@@ -421,6 +421,7 @@ export async function approveCustomSymptom(id) {
         entry.status = 'approved';
         showToast(`"${entry.raw_text}" approved as a new symptom category ✓`);
         renderSymptomReview();
+        if (typeof window.populateSymptomDropdown === 'function') window.populateSymptomDropdown();
     } catch (e) {
         console.error('Failed to approve symptom:', e);
         showToast('Failed to approve');
