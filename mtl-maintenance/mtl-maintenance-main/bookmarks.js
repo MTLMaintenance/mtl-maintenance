@@ -8,7 +8,7 @@ let bmPdfDoc = null; // pdf.js document instance, null for images
 
 // pdf.js is loaded lazily from a CDN the first time it's needed,
 // rather than requiring a <script> tag in your main HTML.
-function ensurePdfJsLoaded() {
+export function ensurePdfJsLoaded() {
     return new Promise((resolve, reject) => {
         if (window.pdfjsLib) return resolve();
         const script = document.createElement('script');
