@@ -197,6 +197,7 @@ export function switchPartsSubTab(tab) {
 }
 
 export function switchAdminTab(tab, btn) {
+  console.log('🔍 switchAdminTab called with tab:', tab);
   document.querySelectorAll('[id^="admin-"]').forEach(el => el.style.display = 'none');
   const target = document.getElementById('admin-' + tab);
   if (target) target.style.display = 'block';
@@ -211,6 +212,8 @@ export function switchAdminTab(tab, btn) {
   if (tab === 'permissions' && typeof window.populateAdminUserSelect === 'function') window.populateAdminUserSelect();
   if (tab === 'deleted-msgs' && typeof window.renderDeletedMessages === 'function') window.renderDeletedMessages();
   if (tab === 'settings' && typeof window.renderAuditLogs === 'function') window.renderAuditLogs();
+  console.log('🔍 About to check symptoms branch, tab is exactly:', JSON.stringify(tab), 'renderSymptomReview exists:', typeof window.renderSymptomReview);
+  if (tab === 'symptoms' && typeof window.renderSymptomReview === 'function') window.renderSymptomReview();
 }
 
 export function populateSelects() {
