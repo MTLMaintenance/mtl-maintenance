@@ -22,6 +22,19 @@ export async function deleteDoc(id) {
     const { error } = await window._mpdb.from('documents').delete().eq('id', id);
     if (error) throw error;
 
+    // Cascade: this doc's cached page text (and any bookmarks pointing at
+    // it) are otherwise orphaned forever — same class of leak as the
+    // part_usage/task cascade fixed earlier.
+    const { error: textErr } = await window._mpdb.from('document_page_text').delete().eq('document_id', id);
+    if (textErr) console.error("Failed to clean up document_page_text for deleted doc:", textErr);
+
+    const { error: bmErr } = await window._mpdb.from('document_bookmarks').delete().eq('document_id', id);
+    if (bmErr) console.error("Failed to clean up document_bookmarks for deleted doc:", bmErr);
+
+    if (window.state.documentBookmarks) {
+        window.state.documentBookmarks = window.state.documentBookmarks.filter(b => b.document_id !== id);
+    }
+
     // 4. WIPE FROM LOCAL MEMORY
     // This is where it was crashing because 'state' was undefined
     state.documents = state.documents.filter(d => d.id !== id);
