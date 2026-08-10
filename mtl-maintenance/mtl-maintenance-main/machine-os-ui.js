@@ -47,11 +47,12 @@ const faultCount = window.getActiveFaultsCount(e.id);
                 <!-- JOB HUB -->
                 <div class="os-section">
                     <h3 class="os-label-dark">Job Hub</h3>
-                    <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+                    <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;">
                         <button class="job-btn-dark" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
                         <button class="job-btn-dark" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
                         <button class="job-btn-dark" onclick="window.openJobWorkflow('replace', '${e.id}')">🔄 Replace</button>
                         <button class="job-btn-dark" onclick="window.openJobWorkflow('test', '${e.id}')">⚡ Test</button>
+                        <button class="job-btn-dark" onclick="window.openTroubleshootModal('${e.id}')" style="background:#7c2d12;">🧭 Troubleshoot</button>
                     </div>
                 </div>
 
