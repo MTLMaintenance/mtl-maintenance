@@ -40,7 +40,7 @@ function renderSymptomPicker(equipId) {
         <p style="color:#666; font-size:13px; margin-bottom:15px;">What's the machine doing?</p>
         <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;">
             ${options.map(([value, label]) => `
-                <button class="job-btn-dark" onclick="window.selectTroubleshootSymptom('${value}')" style="text-align:left; padding:14px;">${label}</button>
+                <button onclick="window.selectTroubleshootSymptom('${value}')" style="text-align:left; padding:14px; background:#1a1a1a !important; color:#fff !important; border:none; border-radius:8px; font-weight:600; cursor:pointer;">${label}</button>
             `).join('')}
         </div>
     `;
@@ -73,7 +73,7 @@ export function selectTroubleshootSymptom(symptomValue) {
     const totalRepairs = matches.length;
 
     container.innerHTML = `
-        <button class="btn-sm" onclick="window.openTroubleshootModal('${equipId}')" style="margin-bottom:14px;">← Back to symptoms</button>
+        <button onclick="window.openTroubleshootModal('${equipId}')" style="margin-bottom:14px; background:#f1f5f9 !important; color:#1e293b !important; border:none; border-radius:6px; padding:8px 14px; font-size:12px; cursor:pointer;">← Back to symptoms</button>
         <h4 style="margin:0 0 4px;">Likely Causes</h4>
         <p style="color:#999; font-size:11px; margin:0 0 12px;">Ranked by this machine's own repair history${totalRepairs ? ` (${totalRepairs} past repair${totalRepairs === 1 ? '' : 's'} with this symptom)` : ''}</p>
         ${ranked.length ? `
