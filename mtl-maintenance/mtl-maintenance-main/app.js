@@ -14,6 +14,7 @@ import { addWikiTip, fetchWiki, editWikiTip, deleteWikiTip } from './knowledge.j
 import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage } from './bookmarks.js';
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
+import { openTroubleshootModal, selectTroubleshootSymptom } from './troubleshoot.js';
 import {  handleLogoClick,openMobileSearch } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
 import { startApp, loadState, teleportModals, enterApp } from './init.js?v=99';
@@ -155,6 +156,8 @@ window.approveCustomSymptom = approveCustomSymptom;
 window.mergeCustomSymptom = mergeCustomSymptom;
 window.toggleSymptomOther = toggleSymptomOther;
 window.populateSymptomDropdown = populateSymptomDropdown;
+window.openTroubleshootModal = openTroubleshootModal;
+window.selectTroubleshootSymptom = selectTroubleshootSymptom;
 window.setZerkMode = setZerkMode;
 window.highlightZerk = highlightZerk;
 window.renderZerkDots = renderZerkDots;
