@@ -961,6 +961,19 @@
 </div>
 
 <!-- Document Modal -->
+<!-- TROUBLESHOOT MODAL: symptom picker + ranked likely causes from this
+     machine's own resolved repair history (root_cause tagged at sign-off).
+     Manual page-jump hooks into #troubleshoot-manual-area in a later step. -->
+<div class="modal-backdrop" id="troubleshoot-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="troubleshoot-title">Troubleshoot</span>
+      <button class="modal-close" onclick="closeModal('troubleshoot-modal')">✕</button>
+    </div>
+    <div id="troubleshoot-body" style="padding:20px; max-height:65vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="doc-modal">
   <div class="modal">
     <div class="modal-header"><span class="modal-title">Add Document / Warranty</span><button class="modal-close" onclick="closeModal('doc-modal')">✕</button></div>
