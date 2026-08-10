@@ -14,7 +14,7 @@ import { logAuditAction } from './admin.js';
 
 const SYMPTOM_MATCH_THRESHOLD = 0.75; // 0-1 similarity; tune if it feels too loose/strict
 
-const PREDEFINED_SYMPTOMS = {
+export const PREDEFINED_SYMPTOMS = {
     wont_start: "Won't Start",
     overheating: "Overheating",
     leaking: "Leaking",
