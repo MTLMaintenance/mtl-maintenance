@@ -5,6 +5,7 @@
 // (root_cause is tagged at tech sign-off - see verifyTaskPinAction in
 // tasks.js). No repair history yet just means an empty, honest list -
 // step 4 will add a manual-page fallback here for the cold-start case.
+import { findBestManualMatch } from './manual-search.js';
 import { PREDEFINED_SYMPTOMS } from './tasks.js';
 import { openModal, closeModal } from './ui.js';
 
@@ -46,7 +47,7 @@ function renderSymptomPicker(equipId) {
     `;
 }
 
-export function selectTroubleshootSymptom(symptomValue) {
+export async function selectTroubleshootSymptom(symptomValue) {
     const equipId = window._troubleshootEquipId;
     const container = document.getElementById('troubleshoot-body');
     if (!container || !equipId) return;
@@ -91,9 +92,53 @@ export function selectTroubleshootSymptom(symptomValue) {
                 <p style="color:#b45309; font-size:11px; margin:6px 0 0;">Once a work order with this symptom gets signed off with a root cause noted, it'll show up here — and future repairs will get ranked against it.</p>
             </div>
         `}
-        <div id="troubleshoot-manual-area" style="margin-top:15px;"></div>
+        <div id="troubleshoot-manual-area" style="margin-top:15px;">
+            <p style="color:#aaa; font-size:11px;">Checking linked manuals...</p>
+        </div>
     `;
 
-    // Manual page-jump (step 4) will populate #troubleshoot-manual-area here,
-    // searching this machine's linked documents for this symptom's keywords.
+    renderManualMatch(equipId, symptomValue, label);
+}
+
+// Step 4: searches this machine's linked, searchable manuals for pages
+// matching the chosen symptom, and renders whichever of three honest
+// outcomes actually applies — a real match, docs that exist but can't be
+// searched (e.g. scanned copies), or nothing attached at all. Kept as its
+// own function (rather than inline in selectTroubleshootSymptom) so the
+// ranked-causes list renders and is usable immediately, without waiting
+// on the manual search to finish first.
+async function renderManualMatch(equipId, symptomValue, label) {
+    const area = document.getElementById('troubleshoot-manual-area');
+    if (!area) return; // user already navigated away
+
+    const result = await findBestManualMatch(equipId, symptomValue, label);
+    // Bail if the modal moved on to a different symptom while this was in flight
+    if (window._troubleshootEquipId !== equipId || !document.getElementById('troubleshoot-manual-area')) return;
+
+    if (result.status === 'match') {
+        area.innerHTML = `
+            <div style="padding:12px; background:#eff6ff; border-radius:8px; border-left:3px solid #2563eb; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <div>
+                    <div style="font-size:12px; font-weight:600; color:#1e40af;">📖 Found in manual</div>
+                    <div style="font-size:12px; color:#3b5998;">${result.docName} — Page ${result.pageNumber}</div>
+                </div>
+                <button onclick="window.openDocAtPage('${result.documentId}', ${result.pageNumber})" style="background:#2563eb !important; color:#fff !important; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Open Page</button>
+            </div>
+        `;
+    } else if (result.status === 'no_match') {
+        area.innerHTML = `<p style="color:#999; font-size:11px; font-style:italic;">No matching section found in the linked manual for "${label}."</p>`;
+    } else if (result.status === 'no_searchable_docs' && result.linkedDocs && result.linkedDocs.length) {
+        // Docs are attached but none have a real text layer (scanned/paper copies)
+        const doc = result.linkedDocs[0];
+        area.innerHTML = `
+            <div style="padding:12px; background:#f8fafc; border-radius:8px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <div style="font-size:12px; color:#666;">Manual attached but not searchable (scanned copy) — you can still open and browse it.</div>
+                <button onclick="window.openDocDetail(window.state.documents.find(d => d.id === '${doc.id}'))" style="background:#f1f5f9 !important; color:#1e293b !important; border:none; border-radius:6px; padding:8px 14px; font-size:12px; cursor:pointer; white-space:nowrap;">Open Manual</button>
+            </div>
+        `;
+    } else {
+        // No documents linked to this machine at all — stay quiet rather
+        // than nag; "+ Add Document" on the machine profile already covers this.
+        area.innerHTML = '';
+    }
 }
