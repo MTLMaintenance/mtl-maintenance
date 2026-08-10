@@ -59,6 +59,7 @@ export function showPanel(id) {
     if (id === 'dashboard' && typeof window.refreshDashboard === 'function') window.refreshDashboard();
     if (id === 'analytics' && typeof window.refreshAnalytics === 'function') window.refreshAnalytics();
     if (id === 'admin' && typeof window.renderAdminPanel === 'function') window.renderAdminPanel();
+    if (id === 'documents' && typeof window.renderDocuments === 'function') window.renderDocuments();
 }
 // 4. Switch Tabs inside a modal or panel
 export function switchTab(group, tab, btn) {
