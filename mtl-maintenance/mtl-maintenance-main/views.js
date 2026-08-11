@@ -221,7 +221,7 @@ export function renderDocuments() {
   const others = state.documents.filter(d => d.type !== 'warranty');
 
   const buildDocHTML = d => `
-    <div class="doc-item" id="doc-row-${d.id}" onclick="window.openDocDetail('${d.id}')" style="cursor:pointer; padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; color:black;">
+    <div class="doc-item" id="doc-row-${d.id}" onclick="window.openDocDetail(window.state.documents.find(x=>x.id==='${d.id}'))" style="cursor:pointer; padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; color:black;">
       <div>
         <div style="font-weight:600;">${d.name}</div>
         <div style="font-size:11px; color:#666;">${d.type} ${d.expiry_date ? '· Expires: ' + window.fmtDate(d.expiry_date) : ''}</div>
