@@ -18,7 +18,16 @@ export async function deleteDoc(id) {
   }
 
   try {
-    // 3. WIPE FROM DATABASE
+    // 3. WIPE THE FILE FROM STORAGE (best-effort — a failure here shouldn't
+    // block deleting the DB row, it'd just leave an orphaned file in the
+    // bucket rather than a broken app).
+    const docBeingDeleted = state.documents.find(d => d.id === id);
+    if (docBeingDeleted && docBeingDeleted.file_path) {
+        const { error: storageErr } = await window._mpdb.storage.from('manuals').remove([docBeingDeleted.file_path]);
+        if (storageErr) console.error("Failed to remove file from storage:", storageErr);
+    }
+
+    // 4. WIPE FROM DATABASE
     const { error } = await window._mpdb.from('documents').delete().eq('id', id);
     if (error) throw error;
 
@@ -35,11 +44,11 @@ export async function deleteDoc(id) {
         window.state.documentBookmarks = window.state.documentBookmarks.filter(b => b.document_id !== id);
     }
 
-    // 4. WIPE FROM LOCAL MEMORY
+    // 5. WIPE FROM LOCAL MEMORY
     // This is where it was crashing because 'state' was undefined
     state.documents = state.documents.filter(d => d.id !== id);
 
-    // 5. UPDATE UI
+    // 6. UPDATE UI
     if (typeof window.renderDocuments === 'function') {
         window.renderDocuments();
     }
@@ -60,15 +69,20 @@ export async function deleteDoc(id) {
 
 // 2. Open a Document Detail (PDF vs Image logic)
 export function openDocDetail(doc) {
-    if (!doc.file_data) return alert("No file attached.");
+    if (!doc.file_url) return alert("No file attached.");
 
     const newWindow = window.open();
-    
+
+    // A Storage URL doesn't carry a MIME string like a base64 data URI
+    // did, so PDF detection now relies on file_type (or the extension as
+    // a fallback for older/edge-case rows).
+    const isPdf = doc.file_type === 'application/pdf' || /\.pdf($|\?)/i.test(doc.file_url);
+
     // If it's a PDF
-    if (doc.file_data.includes('application/pdf') || doc.file_type === 'application/pdf') {
+    if (isPdf) {
         newWindow.document.write(`
             <title>${doc.name}</title>
-            <body style="margin:0"><embed src="${doc.file_data}" width="100%" height="100%" type="application/pdf"></body>
+            <body style="margin:0"><embed src="${doc.file_url}" width="100%" height="100%" type="application/pdf"></body>
         `);
     } 
     // If it's an image
@@ -76,7 +90,7 @@ export function openDocDetail(doc) {
         newWindow.document.write(`
             <title>${doc.name}</title>
             <body style="margin:0; background:#222; display:flex; align-items:center; justify-content:center">
-                <img src="${doc.file_data}" style="max-width:100%; max-height:100%; object-fit:contain">
+                <img src="${doc.file_url}" style="max-width:100%; max-height:100%; object-fit:contain">
             </body>
         `);
     }
@@ -107,14 +121,15 @@ export async function saveDoc() {
     equip_id: equipId,
     expiry_date: expiry,
     notes: notes,
-    file_data: window._tempFileData || null,
+    file_url: window._tempFileUrl || null,
+    file_path: window._tempFilePath || null, // storage object path, used to delete the file later
     file_type: window._tempFileType || null // We added this in handleDocUpload
   };
 
   // Capture this before the "keep old file on edit" fallback below can
-  // overwrite record.file_data — extraction should only run when a genuinely
+  // overwrite record.file_url — extraction should only run when a genuinely
   // new file was uploaded this save, not on every unrelated edit.
-  const isNewFileUpload = !!record.file_data;
+  const isNewFileUpload = !!record.file_url;
 
   console.log("🚀 Attempting to save Document:", record);
 
@@ -132,9 +147,10 @@ export async function saveDoc() {
     if (!window.state.documents) window.state.documents = [];
     const idx = window.state.documents.findIndex(d => d.id === docId);
     if (idx !== -1) {
-        // If we are editing, and didn't upload a new file, keep the old file data
-        if (!record.file_data) {
-            record.file_data = window.state.documents[idx].file_data;
+        // If we are editing, and didn't upload a new file, keep the old file
+        if (!record.file_url) {
+            record.file_url = window.state.documents[idx].file_url;
+            record.file_path = window.state.documents[idx].file_path;
             record.file_type = window.state.documents[idx].file_type;
         }
         window.state.documents[idx] = record;
@@ -145,7 +161,9 @@ export async function saveDoc() {
     // 5. Cleanup UI
     closeModal('doc-modal'); 
     window._currentDocEditId = null;
-    window._tempFileData = null;
+    window._tempFileUrl = null;
+    window._tempFilePath = null;
+    window._tempFileType = null;
     
     // 6. Refresh the list on screen
     if (typeof renderDocuments === 'function') {
@@ -251,27 +269,49 @@ export function openEditDocModal(docId = null) {
 }
 
 
-export function handleDocUpload(input) {
-  const file = input.files[0]; 
-  if(!file) return;
+export async function handleDocUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    // 1. Save the file data and type to the global hallway (window)
-    // so that the saveDoc function can find it later.
-    window._tempFileData = e.target.result;
+  const preview = document.getElementById('doc-file-preview');
+  if (preview) preview.textContent = 'Uploading ' + file.name + '…';
+
+  try {
+    // 1. Push the raw bytes to the 'manuals' Storage bucket instead of
+    // reading them as base64 into memory. Path is unique per upload so
+    // re-uploading a file with the same name never collides.
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const path = `${uid()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('manuals')
+      .upload(path, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) throw uploadError;
+
+    // 2. Get the public URL for that path — this is what gets stored on
+    // the document row and what the viewer/bookmarking code will fetch.
+    const { data } = supabase.storage.from('manuals').getPublicUrl(path);
+
+    // 3. Save the URL, storage path, and type to the global hallway
+    // (window) so saveDoc() can find it later. file_path is kept
+    // separately (not just parsed from the URL) so deleteDoc() can
+    // remove the object cleanly.
+    window._tempFileUrl = data.publicUrl;
+    window._tempFilePath = path;
     window._tempFileType = file.type;
-    
-    // 2. Update the UI to show the user the file was received
-    const preview = document.getElementById('doc-file-preview');
-    if (preview) {
-        preview.textContent = '📎 ' + file.name;
-    }
-    
-    console.log("📄 File prepared for upload:", file.name);
-  };
-  
-  reader.readAsDataURL(file);
-  // Reset the input so the same file can be picked again if needed
-  input.value = ''; 
+
+    if (preview) preview.textContent = '📎 ' + file.name;
+    console.log("📄 File uploaded to storage:", path);
+  } catch (err) {
+    console.error("Upload failed:", err);
+    window.showToast('File upload failed: ' + (err.message || 'Unknown error'));
+    if (preview) preview.textContent = '';
+    window._tempFileUrl = null;
+    window._tempFilePath = null;
+    window._tempFileType = null;
+  } finally {
+    // Reset the input so the same file can be picked again if needed
+    input.value = '';
+  }
 }
