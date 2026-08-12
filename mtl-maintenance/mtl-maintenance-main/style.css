@@ -1331,7 +1331,7 @@ tbody tr:hover td{background:rgba(245,245,243,0.6);cursor:pointer}
 .recur-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .recur-item:last-child{border-bottom:none}
 /* TOAST */
-#toast{position:fixed;bottom:20px;right:20px;background:#1a1a18;color:#fff;border-radius:var(--radius);padding:9px 16px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast{position:fixed;bottom:20px;right:20px;background:#1a1a18;color:#fff;border-radius:var(--radius);padding:9px 16px;font-size:13px;z-index:9999999 !important;opacity:0;transition:opacity .3s;pointer-events:none}
 #toast.show{opacity:1}
 /* PHOTO VIEWER */
 #photo-viewer{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:none;align-items:center;justify-content:center}
