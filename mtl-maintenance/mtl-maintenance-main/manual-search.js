@@ -19,9 +19,10 @@ const MIN_TEXT_LENGTH_FOR_REAL_LAYER = 40;
 // opened as-is.
 export async function extractAndCacheDocumentText(documentId) {
     const doc = (window.state.documents || []).find(d => d.id === documentId);
-    if (!doc || !doc.file_data) return;
+    const source = doc?.file_url || doc?.file_data || null;
+    if (!doc || !source) return;
 
-    const isPdf = doc.file_type === 'application/pdf' || doc.file_data.includes('application/pdf');
+    const isPdf = doc.file_type === 'application/pdf' || /\.pdf($|\?)/i.test(source) || source.includes('application/pdf');
     if (!isPdf) {
         // Images have no pages/text to extract — nothing to do here.
         await markTextLayer(documentId, false);
@@ -30,7 +31,7 @@ export async function extractAndCacheDocumentText(documentId) {
 
     try {
         await ensurePdfJsLoaded();
-        const loadingTask = window.pdfjsLib.getDocument(doc.file_data);
+        const loadingTask = window.pdfjsLib.getDocument(source);
         const pdfDoc = await loadingTask.promise;
 
         let totalTextLength = 0;
