@@ -3,11 +3,25 @@ import { fmtDate } from './utils.js';
 
 export function exportCSV(tasks, equipNameFunc) {
   const rows=[['Work Order','Equipment','Assign','Priority','Due','Cost','Status','Meter','Notes']];
-  tasks.forEach(t=>rows.push([t.name, equipNameFunc(t.equipId), t.assign, t.priority, t.due, t.cost, t.status, t.meter, t.notes]));
+  tasks.forEach(t=>rows.push([t.name, equipNameFunc(t.equip_id || t.equipId), t.assign, t.priority, t.due, t.cost, t.status, t.meter, t.notes]));
   const csv = rows.map(r=>r.map(x=>`"${String(x||'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a'); 
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
   a.download = 'mtl-maintenance-' + new Date().toISOString().slice(0,10) + '.csv'; 
+  a.click();
+}
+
+
+export function exportEquipmentCSV(state) {
+  const rows = [['Equipment','Type','Manufacturer','Serial / Asset #','Status','Hours','Primary Operator','Monthly Budget','Yearly Budget','Notes']];
+  (state.equipment || []).forEach(e => rows.push([
+    e.name, e.type, e.manufacturer, e.serial, e.status, e.hours, e.op,
+    e.monthly_budget, e.yearly_budget, e.notes
+  ]));
+  const csv = rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'mtl-equipment-' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
 }
 
@@ -36,6 +50,42 @@ export function exportPDF(state, currentUser) {
   const w = window.open('','_blank');
   if(w){ w.document.write(html); w.document.close(); }
 } 
+
+
+export function exportFullDatabase(state) {
+  // Snapshot the maintenance data already loaded into the app. Deliberately
+  // excludes login credentials/session tokens while preserving operational data.
+  const snapshot = {
+    exported_at: new Date().toISOString(),
+    format: 'mtl-maintenance-snapshot-v1',
+    data: {
+      equipment: state.equipment || [],
+      tasks: state.tasks || [],
+      schedules: state.schedules || [],
+      parts: state.parts || [],
+      suppliers: state.suppliers || [],
+      documents: state.documents || [],
+      partUsage: state.partUsage || [],
+      recurrenceRules: state.recurrenceRules || [],
+      tools: state.tools || [],
+      observations: state.observations || [],
+      checklistTemplates: state.checklistTemplates || [],
+      wiki: state.wiki || [],
+      chatMessages: state.chatMessages || [],
+      consumables: state.consumables || [],
+      faults: state.faults || [],
+      staffAbsences: state.staffAbsences || [],
+      documentBookmarks: state.documentBookmarks || []
+    }
+  };
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mtl-maintenance-snapshot-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export function exportHealthCSV(state, calcHealthFunc) {
   const rows = [['Equipment', 'Hours', 'Status', 'Health Score']];
