@@ -37,7 +37,7 @@ import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTa
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, pressTaskPin, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom, populateSymptomDropdown  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs,renderRecentObsDash,refreshDashboard } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, checkDateSelection, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, setCalEntryType, toggleRecurFields, saveCalendarEntry  } from './calendar.js'
-import { exportEquipmentCSV, exportFullDatabase, exportHealthCSV, printQRCode, printMachineHistory } from './reports.js?v=20260922-1';
+import { exportCSV, exportPDF, exportEquipmentCSV, exportFullDatabase, exportHealthCSV, printQRCode, printMachineHistory } from './reports.js?v=20260922-3';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
@@ -370,11 +370,11 @@ function mtlExportPDF() {
     }
 }
 
-window.mtlExportCSV = mtlExportCSV;
-window.mtlExportPDF = mtlExportPDF;
+window.mtlExportCSV = () => exportCSV(state.tasks, id => equipName(id, state));
+window.mtlExportPDF = () => exportPDF(state, window.currentUser);
 // Preserve existing buttons elsewhere in the app/mobile drawer.
-window.exportCSV = mtlExportCSV;
-window.exportPDF = mtlExportPDF;
+window.exportCSV = window.mtlExportCSV;
+window.exportPDF = window.mtlExportPDF;
 window.exportEquipCSV = () => exportEquipmentCSV(state);
 window.exportFullDatabase = () => exportFullDatabase(state);
 window.openAddPart = openAddPart;
