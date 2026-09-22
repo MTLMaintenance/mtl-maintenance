@@ -1,12 +1,7 @@
 // init.js - Application Bootstrapping
-import { supabase, setSyncStatus,validateSession  } from './db.js';
-import { updateMetrics } from './dashboard.js';
+import { setSyncStatus, validateSession } from './db.js';
 import { fetchAllProfiles } from './profiles.js';
 import { showPinLogin } from './auth.js';
-import { showPanel, adjustMobileLayout } from './ui.js';
-import { applyUserPreferences } from './settings.js';
-import { fetchAbsences } from './calendar.js';
-import { fetchTools } from './tools.js';
 
 console.log("🚀 System Loader: init.js Version 3.0 Booting...");
 
@@ -32,7 +27,10 @@ export async function loadState() {
       window._mpdb.from('shop_wiki').select('*'),
       window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
       window._mpdb.from('consumables').select('*'),
-      window._mpdb.from('fault_logs').select('*') 
+      window._mpdb.from('fault_logs').select('*'),
+      window._mpdb.from('checklist_templates').select('*'),
+      window._mpdb.from('staff_absences').select('*'),
+      window._mpdb.from('document_bookmarks').select('*')
     ]);
 
     // 2. Save data using indices [0, 1, 2...] 
@@ -50,20 +48,14 @@ export async function loadState() {
     state.wiki            = response[10].data || [];
     state.chatMessages    = response[11].data || [];
     state.consumables     = response[12].data || [];
-    state.faults = response[13].data || [];
+    state.faults             = response[13].data || [];
+    state.checklistTemplates = response[14].data || [];
+    state.staffAbsences      = response[15].data || [];
+    state.documentBookmarks  = response[16].data || [];
     
     console.log(`✅ SYNC SUCCESS: Found ${state.equipment.length} machines in database.`);
 
-    // 2b. The main fetch above pulls state.tools from a `tools` table, but
-    // the Tool Crib feature actually reads/writes a `tool_requests` table
-    // (see fetchTools in tools.js). Without this, state.tools holds the
-    // wrong data on every fresh load until a save/delete happens to
-    // overwrite it correctly for the rest of that session.
-    try {
-        await fetchTools();
-    } catch (e) {
-        console.error("Failed to fetch tool_requests:", e);
-    }
+    // Tool Crib rows are already loaded from tool_requests above.
 
     // 3. Trigger UI redraws
     if (typeof window.renderEquipmentTable === 'function') window.renderEquipmentTable();
@@ -85,13 +77,14 @@ export async function startApp() {
     await fetchAllProfiles(); 
     const sessionData = await validateSession();
     if(sessionData) {
-      window.currentUser = sessionData.profiles;
+      window.currentUser = {
+        ...sessionData.profiles,
+        name: sessionData.profiles?.full_name || sessionData.profiles?.username
+      };
       
-      // VITAL: This 'await' makes the app stay on the loading screen 
-      // until the machines actually arrive from Supabase.
-      await loadState(); 
-      
-      window.enterApp(); 
+      // Load once, then build the interface from the populated state.
+      await loadState();
+      window.enterApp({ skipReload: true });
     } else {
       showPinLogin();
     }
@@ -100,11 +93,12 @@ export async function startApp() {
   }
 }
 
-export async function enterApp(currentUser, state, canFunc) {
+export async function enterApp(currentUser, state, canFunc, options = {}) {
   console.log("Building application interface...");
-  
-  // 1. Load data before showing anything
-  await loadState(); 
+
+  // PIN/password login enters here without a preloaded state; session restore
+  // already loaded everything in startApp(), so avoid downloading it twice.
+  if (!options.skipReload) await loadState();
 
   // 2. Hide Login, Show App
   const authScreen = document.getElementById('auth-screen');
