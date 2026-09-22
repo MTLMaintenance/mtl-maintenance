@@ -341,6 +341,50 @@ export async function saveObservationChange(state) {
     }
 }
 
+
+
+// Equipment modal custom fields. These rows are intentionally simple: they
+// collect a label/value pair and are serialized when saveEquipment() runs.
+export function addCustomField(key = '', value = '') {
+  const list = document.getElementById('custom-fields-list');
+  if (!list) return;
+  const row = document.createElement('div');
+  row.className = 'custom-field-edit-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center';
+  row.innerHTML = `
+    <input class="form-input custom-field-name" placeholder="Field name" value="${String(key).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
+    <input class="form-input custom-field-value" placeholder="Value" value="${String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
+    <button type="button" class="btn btn-danger btn-sm" title="Remove field">✕</button>`;
+  row.querySelector('button').onclick = () => row.remove();
+  list.appendChild(row);
+}
+
+export function renderCustomFields() {
+  const list = document.getElementById('custom-fields-list');
+  if (!list) return;
+  if (list.querySelector('.custom-field-edit-row')) return;
+  const existingId = document.getElementById('e-id')?.value || '';
+  const machine = (window.state.equipment || []).find(e => e.id === existingId);
+  const fields = machine?.custom_fields || window.customFieldsTemp || {};
+  list.innerHTML = '';
+  Object.entries(fields).forEach(([key, value]) => addCustomField(key, value));
+}
+
+function collectCustomFields(existingMachine, customFieldsTemp) {
+  const result = { ...(existingMachine?.custom_fields || {}), ...(customFieldsTemp || {}) };
+  const rows = document.querySelectorAll('#custom-fields-list .custom-field-edit-row');
+  if (rows.length) {
+    // Rows represent the complete set currently shown in the editor.
+    Object.keys(result).forEach(k => delete result[k]);
+    rows.forEach(row => {
+      const key = row.querySelector('.custom-field-name')?.value.trim();
+      const value = row.querySelector('.custom-field-value')?.value.trim() || '';
+      if (key) result[key] = value;
+    });
+  }
+  return result;
+}
+
 export async function saveEquipment(state, currentUser, pendingPhotos, customFieldsTemp) {
   // 1. Determine if we are EDITING or CREATING
   const idField = document.getElementById('e-id');
@@ -367,7 +411,7 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     monthly_budget: parseFloat(document.getElementById('e-budget-monthly')?.value) || 0,
     yearly_budget:  parseFloat(document.getElementById('e-budget-yearly')?.value) || 0,
     photos:         pendingPhotos.equip.slice(),
-    custom_fields:  { ...customFieldsTemp }, 
+    custom_fields:  collectCustomFields(existingMachine, customFieldsTemp), 
     health_score:   100,
     // THE VITAL FIX: Carry over existing grease map data
     zerk_photos: existingMachine?.zerk_photos || [],
@@ -392,6 +436,8 @@ export async function saveEquipment(state, currentUser, pendingPhotos, customFie
     // Cleanup
     window.pendingPhotos.equip = [];
     Object.keys(customFieldsTemp).forEach(key => delete customFieldsTemp[key]);
+    const customList = document.getElementById('custom-fields-list');
+    if (customList) customList.innerHTML = '';
 
     window.closeModal('equip-modal');
     if (window.renderEquipmentTable) window.renderEquipmentTable();
