@@ -45,10 +45,6 @@ export async function saveTpl() {
     closeModal('tpl-modal');
     showToast('Template saved ✓');
 
-     if (typeof window.renderChecklistTemplates === 'function') {
-        window.renderChecklistTemplates(); // This triggers the screen update
-    }
-    // Refresh the list on screen if you have the renderer
     if (typeof window.renderChecklistTemplates === 'function') {
         window.renderChecklistTemplates();
     }
@@ -61,7 +57,8 @@ export async function saveTpl() {
   }
 }
 // 2. Delete a Template
-export async function deleteTpl(id, state) {
+export async function deleteTpl(id) {
+    const state = window.state;
     if(!confirm('Delete this template?')) return;
     try {
         await supabase.from('checklist_templates').delete().eq('id', id);
@@ -71,8 +68,9 @@ export async function deleteTpl(id, state) {
     } catch(e) { return false; }
 }
 
-export  function editTemplate(id) {
-    const tpl = state.checklistTemplates.find(t => t.id === id);
+export function editTemplate(id) {
+    const state = window.state;
+    const tpl = (state.checklistTemplates || []).find(t => t.id === id);
     if(!tpl) return;
 
     // 1. Fill the modal
