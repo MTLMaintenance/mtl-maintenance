@@ -37,7 +37,7 @@ import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTa
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, pressTaskPin, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom, populateSymptomDropdown  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs,renderRecentObsDash,refreshDashboard } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, checkDateSelection, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, setCalEntryType, toggleRecurFields, saveCalendarEntry  } from './calendar.js'
-import { exportCSV, exportPDF, exportEquipmentCSV, exportFullDatabase, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js?v=20260922-1';
+import { exportEquipmentCSV, exportFullDatabase, exportHealthCSV, printQRCode, printMachineHistory } from './reports.js?v=20260922-1';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
@@ -250,16 +250,131 @@ function handleQRScanSuccess(decodedText) {
     }
 }
 window.toggleDarkMode = toggleDarkMode;
-window.exportCSV = () => {
-    const ok = exportCSV(state.tasks, id => equipName(id, state));
-    if (ok !== false) showToast('CSV export downloaded');
-    return ok;
-};
-window.exportPDF = () => {
-    const ok = exportPDF(state, window.currentUser);
-    if (ok !== false) showToast('PDF report opened');
-    return ok;
-};
+
+// Dedicated top-level exports. These intentionally do not depend on popup
+// windows or on another module's global bridge, so a click always either
+// produces an export or shows a visible error to the user.
+function _mtlCsvCell(value) {
+    return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function _mtlHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function mtlExportCSV() {
+    try {
+        const tasks = Array.isArray(state.tasks) ? state.tasks : [];
+        const rows = [['Work Order','Equipment','Assigned','Priority','Due','Cost','Status','Meter','Notes']];
+
+        for (const t of tasks) {
+            const equipId = t.equip_id ?? t.equipId;
+            const equip = (state.equipment || []).find(e => e.id === equipId);
+            rows.push([
+                t.name || '',
+                equip?.name || '—',
+                t.assign || t.assigned_to || '',
+                t.priority || '',
+                t.due || '',
+                t.cost ?? '',
+                t.status || '',
+                t.meter ?? '',
+                t.notes || ''
+            ]);
+        }
+
+        const csv = '\ufeff' + rows.map(row => row.map(_mtlCsvCell).join(',')).join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `mtl-maintenance-${new Date().toISOString().slice(0,10)}.csv`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        showToast('CSV downloaded');
+        return true;
+    } catch (err) {
+        console.error('MTL CSV export failed:', err);
+        alert('CSV export failed: ' + (err?.message || err));
+        return false;
+    }
+}
+
+function mtlExportPDF() {
+    try {
+        const tasks = Array.isArray(state.tasks) ? state.tasks : [];
+        const generated = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+        const userName = window.currentUser?.name || window.currentUser?.username || '—';
+        const taskRows = tasks.length
+            ? tasks.map(t => `
+                <tr>
+                    <td>${_mtlHtml(t.name || '—')}</td>
+                    <td>${_mtlHtml(fmtDate(t.due))}</td>
+                    <td>$${Number(t.cost || 0).toLocaleString()}</td>
+                    <td>${_mtlHtml(t.status || '—')}</td>
+                </tr>`).join('')
+            : '<tr><td colspan="4" style="text-align:center;color:#777;padding:18px">No work orders found.</td></tr>';
+
+        // Print from a temporary same-page iframe instead of opening a popup.
+        // This is much more reliable on Chrome/Edge and avoids popup blockers.
+        const frame = document.createElement('iframe');
+        frame.setAttribute('aria-hidden', 'true');
+        frame.style.position = 'fixed';
+        frame.style.right = '0';
+        frame.style.bottom = '0';
+        frame.style.width = '1px';
+        frame.style.height = '1px';
+        frame.style.border = '0';
+        frame.style.opacity = '0';
+        document.body.appendChild(frame);
+
+        const doc = frame.contentWindow.document;
+        doc.open();
+        doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>MTL Maintenance Report</title>
+            <style>
+                body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0;padding:28px}
+                h1{font-size:22px;margin:0 0 3px}
+                .meta{color:#666;margin-bottom:20px}
+                h2{font-size:14px;color:#185FA5;border-bottom:2px solid #185FA5;padding-bottom:4px;margin:22px 0 8px}
+                table{width:100%;border-collapse:collapse}
+                th{font-size:10px;text-align:left;text-transform:uppercase;color:#777;padding:6px 7px;border-bottom:2px solid #ddd}
+                td{padding:7px;border-bottom:1px solid #eee}
+            </style></head><body>
+            <h1>MTL Maintenance Report</h1>
+            <div class="meta">Generated ${_mtlHtml(generated)} · ${_mtlHtml(userName)}</div>
+            <h2>Work Orders</h2>
+            <table><thead><tr><th>Name</th><th>Due</th><th>Cost</th><th>Status</th></tr></thead><tbody>${taskRows}</tbody></table>
+            </body></html>`);
+        doc.close();
+
+        const cleanup = () => setTimeout(() => frame.remove(), 500);
+        frame.contentWindow.onafterprint = cleanup;
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        // Some browsers don't fire afterprint reliably. Keep a safety cleanup.
+        setTimeout(() => { if (frame.isConnected) frame.remove(); }, 30000);
+        showToast('Print / Save as PDF opened');
+        return true;
+    } catch (err) {
+        console.error('MTL PDF export failed:', err);
+        alert('PDF export failed: ' + (err?.message || err));
+        return false;
+    }
+}
+
+window.mtlExportCSV = mtlExportCSV;
+window.mtlExportPDF = mtlExportPDF;
+// Preserve existing buttons elsewhere in the app/mobile drawer.
+window.exportCSV = mtlExportCSV;
+window.exportPDF = mtlExportPDF;
 window.exportEquipCSV = () => exportEquipmentCSV(state);
 window.exportFullDatabase = () => exportFullDatabase(state);
 window.openAddPart = openAddPart;
