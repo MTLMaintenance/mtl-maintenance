@@ -114,22 +114,23 @@ export async function saveDoc() {
   // IMPORTANT: We use uid() directly now, not window.utils.uid()
   const docId = window._currentDocEditId || uid();
 
+  const existingDoc = (window.state.documents || []).find(d => d.id === docId);
+  const isNewFileUpload = !!window._tempFileUrl;
+
+  // Preserve the existing Storage file when editing metadata only. Previously
+  // null file fields were upserted first and restored only in local memory,
+  // which could silently disconnect the saved document from its file.
   const record = {
-    id: docId, 
+    id: docId,
     name: name,
     type: type,
     equip_id: equipId,
     expiry_date: expiry,
     notes: notes,
-    file_url: window._tempFileUrl || null,
-    file_path: window._tempFilePath || null, // storage object path, used to delete the file later
-    file_type: window._tempFileType || null // We added this in handleDocUpload
+    file_url: window._tempFileUrl || existingDoc?.file_url || null,
+    file_path: window._tempFilePath || existingDoc?.file_path || null,
+    file_type: window._tempFileType || existingDoc?.file_type || null
   };
-
-  // Capture this before the "keep old file on edit" fallback below can
-  // overwrite record.file_url — extraction should only run when a genuinely
-  // new file was uploaded this save, not on every unrelated edit.
-  const isNewFileUpload = !!record.file_url;
 
   console.log("🚀 Attempting to save Document:", record);
 
@@ -147,12 +148,6 @@ export async function saveDoc() {
     if (!window.state.documents) window.state.documents = [];
     const idx = window.state.documents.findIndex(d => d.id === docId);
     if (idx !== -1) {
-        // If we are editing, and didn't upload a new file, keep the old file
-        if (!record.file_url) {
-            record.file_url = window.state.documents[idx].file_url;
-            record.file_path = window.state.documents[idx].file_path;
-            record.file_type = window.state.documents[idx].file_type;
-        }
         window.state.documents[idx] = record;
     } else {
         window.state.documents.push(record);
