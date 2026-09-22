@@ -177,16 +177,24 @@ export function resetTaskForm() {
 }
 
 // 2. Render the main Work Orders table
-export function renderTasksTable(containerId, filter = 'all') {
+export function renderTasksTable(containerId = 'tasks-table-body', filter = null, equipFilter = null) {
     const container = document.getElementById(containerId);
     if (!container || !window.state.tasks) return;
 
     let tasks = [...window.state.tasks];
-    const now = new Date().toISOString().split('T')[0];
 
-    // Filter Logic
-    if (filter === 'active') tasks = tasks.filter(t => t.status !== 'Completed');
+    // If no explicit filter was passed, use the two controls on the Work
+    // Orders screen. Programmatic callers can still override either value.
+    if (filter == null) filter = document.getElementById('task-filter')?.value || 'all';
+    if (equipFilter == null) equipFilter = document.getElementById('task-equip-filter')?.value || 'all';
+
+    if (filter === 'active' || filter === 'open') tasks = tasks.filter(t => t.status !== 'Completed');
     else if (filter === 'overdue') tasks = tasks.filter(t => isOverdue(t.due) && t.status !== 'Completed');
+    else if (filter === 'completed') tasks = tasks.filter(t => t.status === 'Completed');
+
+    if (equipFilter && equipFilter !== 'all') {
+        tasks = tasks.filter(t => (t.equip_id || t.equipId) === equipFilter);
+    }
 
     // Sort: Overdue first, then Open, then Completed
     tasks.sort((a, b) => {
@@ -381,13 +389,26 @@ export function openTaskSignoff(taskId, currentUser) {
     if (pinModal) pinModal.style.display = 'flex';
 }
 
+
+export function pressTaskPin(value) {
+    if (!window.taskPinEntry) window.taskPinEntry = '';
+    if (value === 'clear') {
+        window.taskPinEntry = '';
+    } else if (window.taskPinEntry.length < 10) {
+        window.taskPinEntry += String(value);
+    }
+
+    const display = document.getElementById('task-pin-display');
+    if (display) display.textContent = '●'.repeat(window.taskPinEntry.length);
+}
+
 // 2. Verify the PIN typed for the task
 export async function verifyTaskPinAction(currentUser) {
     const task = window.state.tasks.find(t => t.id === window.currentTargetTaskId);
     const now = new Date().toISOString();
 
     // PIN SECURITY CHECK
-    if (window.taskPinEntry !== currentUser.pin_code) {
+    if (String(window.taskPinEntry) !== String(currentUser.pin_code || '')) {
         alert("Incorrect PIN for " + currentUser.name);
         window.taskPinEntry = "";
         document.getElementById('task-pin-display').textContent = "";
