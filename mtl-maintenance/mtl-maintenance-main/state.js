@@ -3,7 +3,8 @@ if (!window.state) {
     window.state = {
         equipment: [], tasks: [], schedules: [], parts: [], suppliers: [], 
         documents: [], partUsage: [], tools: [], wishlist: [], observations: [],
-        checklistTemplates: [], wiki: [], chatMessages: [], users_list_cache: [], consumables: [],faults: []
+        checklistTemplates: [], wiki: [], chatMessages: [], users_list_cache: [], consumables: [], faults: [],
+        staffAbsences: [], documentBookmarks: [], documentPageText: []
     };
 }
 
