@@ -1,5 +1,4 @@
 import { compressImage, showToast } from './utils.js';
-import { openModal } from './ui.js';
 
 // 1. Handle the actual upload and compression
 export async function handlePhotoUpload(input, key) {
@@ -49,4 +48,126 @@ export function refreshPhotoGrid(key) {
   `).join('') +
   `<div class="photo-add" onclick="document.getElementById('${key}-photo-input').click()">+</div>` +
   `<input type="file" id="${key}-photo-input" accept="image/*" multiple style="display:none" onchange="window.handlePhotoUpload(this,'${key}')"/>`;
+}
+
+
+// ---- Photo viewer / markup -------------------------------------------------
+let markupContext = null;
+let markupDrawing = false;
+let markupSource = null;
+let markupTargetKey = null;
+let markupTargetIndex = -1;
+let markupOriginalData = null;
+
+export function viewPhoto(src) {
+  const viewer = document.getElementById('photo-viewer');
+  const img = document.getElementById('pv-img');
+  if (!viewer || !img) return;
+  img.src = src;
+  viewer.classList.add('open');
+}
+
+export function closePhotoViewer(event) {
+  if (event && event.target && event.target.id === 'pv-img') return;
+  const viewer = document.getElementById('photo-viewer');
+  if (viewer) viewer.classList.remove('open');
+}
+
+function canvasPoint(canvas, event) {
+  const rect = canvas.getBoundingClientRect();
+  const point = event.touches?.[0] || event;
+  return {
+    x: (point.clientX - rect.left) * (canvas.width / rect.width),
+    y: (point.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function beginMarkup(event) {
+  if (!markupContext) return;
+  event.preventDefault();
+  markupDrawing = true;
+  const p = canvasPoint(event.currentTarget, event);
+  markupContext.beginPath();
+  markupContext.moveTo(p.x, p.y);
+}
+
+function drawMarkup(event) {
+  if (!markupDrawing || !markupContext) return;
+  event.preventDefault();
+  const p = canvasPoint(event.currentTarget, event);
+  markupContext.lineTo(p.x, p.y);
+  markupContext.stroke();
+}
+
+function endMarkup(event) {
+  if (event) event.preventDefault();
+  markupDrawing = false;
+  if (markupContext) markupContext.closePath();
+}
+
+function drawMarkupBase() {
+  const canvas = document.getElementById('markup-canvas');
+  if (!canvas || !markupOriginalData) return;
+  const img = new Image();
+  img.onload = () => {
+    const maxW = 1400;
+    const scale = Math.min(1, maxW / img.width);
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    markupContext = canvas.getContext('2d');
+    markupContext.drawImage(img, 0, 0, canvas.width, canvas.height);
+    markupContext.lineWidth = Math.max(3, canvas.width / 220);
+    markupContext.lineCap = 'round';
+    markupContext.lineJoin = 'round';
+    markupContext.strokeStyle = '#ff2d2d';
+  };
+  img.src = markupOriginalData;
+}
+
+export function initMarkup(src, key, index) {
+  markupSource = src;
+  markupOriginalData = src;
+  markupTargetKey = key;
+  markupTargetIndex = Number(index);
+
+  const modal = document.getElementById('markup-modal');
+  const canvas = document.getElementById('markup-canvas');
+  if (!modal || !canvas) return;
+
+  canvas.onpointerdown = beginMarkup;
+  canvas.onpointermove = drawMarkup;
+  canvas.onpointerup = endMarkup;
+  canvas.onpointerleave = endMarkup;
+  canvas.onpointercancel = endMarkup;
+  canvas.style.touchAction = 'none';
+
+  drawMarkupBase();
+  modal.style.display = 'flex';
+  modal.classList.add('open');
+}
+
+export function clearMarkup() {
+  drawMarkupBase();
+}
+
+export function closeMarkupModal() {
+  const modal = document.getElementById('markup-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('open');
+  }
+  markupDrawing = false;
+  markupContext = null;
+}
+
+export function saveMarkup() {
+  const canvas = document.getElementById('markup-canvas');
+  const photos = window.pendingPhotos || {};
+  if (!canvas || !markupTargetKey || markupTargetIndex < 0 || !photos[markupTargetKey]) return;
+
+  const output = canvas.toDataURL('image/jpeg', 0.9);
+  photos[markupTargetKey][markupTargetIndex] = output;
+  refreshPhotoGrid(markupTargetKey);
+  closeMarkupModal();
+  showToast('Photo markup saved ✓');
 }
