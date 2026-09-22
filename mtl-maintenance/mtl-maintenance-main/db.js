@@ -17,33 +17,121 @@ export function setSyncStatus(s) {
   else if(s === 'offline') dot.classList.add('offline');
 }
 
-// 4. The Master Persist Function (Handles saving & offline queue)
-export async function persist(table, action, record) {
-  const recordId = (typeof record === 'object' && record !== null) ? record.id : record;
+// 4. Persistence + offline queue
+const OFFLINE_QUEUE_KEY = 'mp_offline_queue';
+let offlineQueue = loadOfflineQueue();
 
-  if(!navigator.onLine) {
-    // We'll handle the offline queue in a moment, for now:
-    showToast('Saved locally (Offline)');
-    return;
+function loadOfflineQueue() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn('Could not read offline queue:', e);
+    return [];
+  }
+}
+
+function saveOfflineQueue() {
+  try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(offlineQueue)); } catch (e) {}
+  const banner = document.getElementById('offline-queue-banner');
+  if (banner) banner.style.display = offlineQueue.length ? 'block' : 'none';
+}
+
+function prepareRecordForDb(table, record) {
+  if (!record || typeof record !== 'object') return record;
+  const clean = { ...record };
+
+  // `equipId` is a legacy UI alias. Supabase tasks use `equip_id`; never
+  // send the client-only alias as an extra database column.
+  if (table === 'tasks') {
+    if (!clean.equip_id && clean.equipId) clean.equip_id = clean.equipId;
+    delete clean.equipId;
+  }
+
+  return clean;
+}
+
+function enqueueOfflineChange(table, action, record) {
+  offlineQueue.push({ table, action, record, queued_at: new Date().toISOString() });
+  saveOfflineQueue();
+}
+
+export async function persist(table, action, record) {
+  const dbRecord = action === 'upsert' ? prepareRecordForDb(table, record) : record;
+  const recordId = (typeof dbRecord === 'object' && dbRecord !== null) ? dbRecord.id : dbRecord;
+
+  if (!navigator.onLine) {
+    enqueueOfflineChange(table, action, dbRecord);
+    setSyncStatus('offline');
+    showToast('Saved locally — will sync when online');
+    return true;
   }
 
   try {
-    let error;
-    if(action==='upsert') ({ error } = await supabase.from(table).upsert(record));
-    if(action==='delete') ({ error } = await supabase.from(table).delete().eq('id', recordId));
+    let error = null;
+    if (action === 'upsert') ({ error } = await supabase.from(table).upsert(dbRecord));
+    else if (action === 'delete') ({ error } = await supabase.from(table).delete().eq('id', recordId));
+    else throw new Error(`Unknown persist action: ${action}`);
 
-    // Supabase-js does NOT throw on RLS/permission/schema errors — it just
-    // returns { error }. Without this check, a failed write still falls
-    // through and reports "Synced" even though nothing was saved.
     if (error) throw error;
 
-    setSyncStatus('online'); 
+    setSyncStatus('online');
     showToast('Synced ✓');
-  } catch(e) {
-    console.error("DB Error:", e);
+    return true;
+  } catch (e) {
+    console.error('DB Error:', e);
     showToast(`Save failed: ${e.message || 'Unknown error'}`);
     setSyncStatus('offline');
+    return false;
   }
+}
+
+export async function syncOfflineQueue() {
+  if (!offlineQueue.length) {
+    saveOfflineQueue();
+    return true;
+  }
+  if (!navigator.onLine) {
+    setSyncStatus('offline');
+    return false;
+  }
+
+  showToast(`Syncing ${offlineQueue.length} changes...`);
+  const failed = [];
+
+  for (const item of offlineQueue) {
+    try {
+      if (!item || !item.record) continue;
+      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
+      let error = null;
+
+      if (item.action === 'upsert') {
+        ({ error } = await supabase.from(item.table).upsert(item.record));
+      } else if (item.action === 'delete') {
+        ({ error } = await supabase.from(item.table).delete().eq('id', recordId));
+      } else {
+        throw new Error(`Unknown queued action: ${item.action}`);
+      }
+
+      if (error) throw error;
+    } catch (e) {
+      console.error('Offline sync failed for item:', item, e);
+      failed.push(item);
+    }
+  }
+
+  offlineQueue = failed;
+  saveOfflineQueue();
+
+  if (!failed.length) {
+    setSyncStatus('online');
+    showToast('All changes synced ✓');
+    return true;
+  }
+
+  setSyncStatus('offline');
+  showToast(`${failed.length} item${failed.length === 1 ? '' : 's'} failed to sync`);
+  return false;
 }
 
 // 5. Session Helpers
@@ -70,56 +158,6 @@ export async function validateSession() {
     return { ...session, profiles: profile };
   } catch(e) { return null; }
 }
-export async function syncOfflineQueue() {
-  if (!offlineQueue || !offlineQueue.length) {
-    const banner = document.getElementById('offline-queue-banner');
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-  
-  showToast(`Syncing ${offlineQueue.length} changes...`);
-  const failed = [];
-
-  for (const item of offlineQueue) {
-    try {
-      // Safety: Skip if item or record is missing
-      if (!item || !item.record) continue;
-
-      // Extract ID correctly
-      const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
-
-      if (item.action === 'upsert') {
-        await window._mpdb.from(item.table).upsert(item.record);
-        console.log(`Sync Upsert for ${item.table}: ${recordId} SUCCESS`);
-      } 
-      else if (item.action === 'delete') {
-        const { error, count } = await window._mpdb
-          .from(item.table)
-          .delete({ count: 'exact' })
-          .eq('id', recordId);
-        
-        if (error) throw error;
-        console.log(`Sync Delete for ${item.table}: ${recordId} - ${count} rows removed`);
-      }
-    } catch (e) { 
-      console.error("Sync failed for item:", item, e);
-      failed.push(item); 
-    }
-  }
-  
-  offlineQueue = failed;
-  saveOfflineQueue();
-  
-  if (failed.length === 0) {
-    setSyncStatus('online');
-    showToast('All changes synced ✓');
-    const banner = document.getElementById('offline-queue-banner');
-    if (banner) banner.style.display = 'none';
-  } else {
-    showToast(`${failed.length} items failed to sync`);
-  }
-}
-
 export async function destroySession() {
   const token = localStorage.getItem('mp_session_token');
   if(token) {
