@@ -15,13 +15,13 @@ import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bm
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import { openTroubleshootModal, selectTroubleshootSymptom } from './troubleshoot.js';
-import {  handleLogoClick,openMobileSearch } from './mobile.js';
-import { handlePhotoUpload, refreshPhotoGrid } from './photos.js';
+import { handleLogoClick, openMobileSearch, toggleMobileChatMenu } from './mobile.js';
+import { handlePhotoUpload, refreshPhotoGrid, viewPhoto, closePhotoViewer, initMarkup, clearMarkup, closeMarkupModal, saveMarkup } from './photos.js';
 import { startApp, loadState, teleportModals, enterApp } from './init.js?v=99';
 import { handleGlobalSearch, closeSearchResults, locateSearchResult } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister,showPending, PERMISSIONS, PERM_LABELS } from './auth.js';
 import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention, openProfileModal   } from './profiles.js';
-import { runRecurrenceEngine, createBulkWO } from './automation.js';
+import { runRecurrenceEngine, createBulkWO, toggleBulkWO, submitBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline,renderFullHistoryList, openTaskDetail } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools, checkAndSendOverdueEmails,updateReportType  } from './services.js';
@@ -29,15 +29,15 @@ import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, com
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
 import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
 import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
-import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
+import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, addCustomField, renderCustomFields, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
 import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs, updateSymptomReviewBadge, renderSymptomReview, approveCustomSymptom, mergeCustomSymptom  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc, openEditDocModal, handleDocUpload, renderDocsList, renderComponentDocPicker } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO,  editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto, deleteConsumable  } from './inventory.js';
-import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom, populateSymptomDropdown  } from './tasks.js';
+import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, pressTaskPin, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom, populateSymptomDropdown  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs,renderRecentObsDash,refreshDashboard } from './dashboard.js';
-import { fetchAbsences, renderCalendar, saveAbsence, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, saveCalendarEntry  } from './calendar.js'
-import { exportCSV, exportPDF, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
+import { fetchAbsences, renderCalendar, saveAbsence, checkDateSelection, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, setCalEntryType, toggleRecurFields, saveCalendarEntry  } from './calendar.js'
+import { exportCSV, exportPDF, exportEquipmentCSV, exportFullDatabase, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
@@ -168,6 +168,7 @@ window.openUserPermissions = openUserPermissions;
 window.permanentDeleteMessage = permanentDeleteMessage;
 window.deleteChatMessage = deleteChatMessage;
 window.openMobileSearch = openMobileSearch;
+window.toggleMobileChatMenu = toggleMobileChatMenu;
 window. updateTotalCostDisplay = updateTotalCostDisplay;
 window. receiveTool = receiveTool; 
 window.renderToolWishlist = renderToolWishlist;
@@ -249,17 +250,26 @@ function handleQRScanSuccess(decodedText) {
     }
 }
 window.toggleDarkMode = toggleDarkMode;
-window.exportCSV = exportCSV;
-window.exportPDF = exportPDF;
+window.exportCSV = () => exportCSV(state.tasks, id => equipName(id, state));
+window.exportPDF = () => exportPDF(state, window.currentUser);
+window.exportEquipCSV = () => exportEquipmentCSV(state);
+window.exportFullDatabase = () => exportFullDatabase(state);
 window.openAddPart = openAddPart;
 window.switchToolModalTab = switchToolModalTab;
 window.sendChatMessage = sendChatMessage;
 window.chatKeyDown = chatKeyDown;
-window.openAbsenceModal= openAbsenceModal;
+window.openAbsenceModal = openAbsenceModal;
+window.saveAbsence = saveAbsence;
+window.checkDateSelection = checkDateSelection;
+window.setAbsenceType = setAbsenceType;
+window.deleteAbsence = deleteAbsence;
 window.switchCalendarView = switchCalendarView;
+window.setCalEntryType = setCalEntryType;
+window.toggleRecurFields = toggleRecurFields;
 window.switchTaskTab = switchTaskTab 
 window.deleteTask = deleteTask;
 window.renderTasksTable = () => renderTasksTable('tasks-table-body');
+window.renderTasks = () => renderTasksTable('tasks-table-body');
 window.populateSelects = populateSelects;
 window.saveTask = saveTask; 
 window.resetTaskForm = resetTaskForm;
@@ -293,9 +303,9 @@ window.state = state;
 window.renderEquipmentTable = renderEquipmentTable;
 window.logAuditAction = logAuditAction;
 window.customFieldsTemp = customFieldsTemp;
+window.addCustomField = addCustomField;
+window.renderCustomFields = renderCustomFields;
 window.pendingPhotos = pendingPhotos; 
-window.renderAssignUsers
-window.renderCustomFields
 window.switchTab = switchTab;
 window.switchWOTab = switchWOTab;
 window.closeAbsenceModal = closeAbsenceModal;
@@ -314,20 +324,25 @@ window.renderDeniedList = renderDeniedList;
 window.renderWishlist = renderWishlist;
 window.renderTools = renderTools;
 window.openPartsCatalog = (id) => openPartsCatalog(id, state);
-window.enterApp = () => enterApp(window.currentUser, state, can);
 window.toggleChatSidebar = toggleChatSidebar;
 window.adjustMobileLayout = adjustMobileLayout;
 window.handlePhotoUpload = (input, key) => handlePhotoUpload(input, key, pendingPhotos, refreshPhotoGrid);
 window.refreshPhotoGrid = (key) => refreshPhotoGrid(key, pendingPhotos);
+window.viewPhoto = viewPhoto;
+window.closePhotoViewer = closePhotoViewer;
+window.initMarkup = initMarkup;
+window.clearMarkup = clearMarkup;
+window.closeMarkupModal = closeMarkupModal;
+window.saveMarkup = saveMarkup;
 window.showMentionDropdown = showMentionDropdown;
 window.hideMentionDropdown = hideMentionDropdown;
 window.insertMention = insertMention;
-window.renderDmList = () => renderDmList(currentUser, state);
+window.renderDmList = () => renderDmList(window.currentUser, state);
 window.handleChatInput = (el) => handleChatInput(el, state, window.showMentionDropdown, window.hideMentionDropdown);
 window.renderUsersTable = () => renderUsersTable(state);
 window.openPermissionsCard = (id) => openPermissionsCard(id); // Ensure this is in admin.js
 window.togglePermission = (role, key, val) => togglePermission(role, key, val);
-window.openAbsenceDetail = (id) => openAbsenceDetail(id, currentUser, state);
+window.openAbsenceDetail = (id) => openAbsenceDetail(id, window.currentUser, state);
 window.togglePrivateReason = togglePrivateReason;
 window.openSupplierDetail = (id) => openSupplierDetail(id, state);
 window.deleteInvoice = deleteInvoice;
@@ -338,10 +353,8 @@ window.switchAdminTab = switchAdminTab;
 window.fetchAllProfiles = () => fetchAllProfiles(state);
 window.globalEditObs = (id) => globalEditObs(id, state);
 window.saveObservationChange = () => saveObservationChange(state);
-window.loadState = () => loadState(state);
-window.enterApp = () => {
-    return enterApp(window.currentUser, state, window.can);
-};
+window.loadState = loadState;
+window.enterApp = (options = {}) => enterApp(window.currentUser, state, window.can, options);
 window.switchToolTab = switchToolTab;
 window.updatePinDots = updatePinDots;
 window.pressPin = pressPin;
@@ -365,21 +378,24 @@ window.deleteDoc = deleteDoc;
 window.openBookmarkManager = openBookmarkManager;
 window.renderComponentBookmarks = renderComponentBookmarks;
 window.quickLogHours = (id) => quickLogHours(id, state);
-window.saveQuickLogHours = () => saveQuickLogHours(state, currentUser);
-window.addObservation = (id) => addObservation(id, state, currentUser);
-window.runRecurrenceEngine = () => runRecurrenceEngine(state);
+window.saveQuickLogHours = () => saveQuickLogHours(state, window.currentUser);
+window.addObservation = (id) => addObservation(id, state, window.currentUser);
+window.runRecurrenceEngine = runRecurrenceEngine;
 window.exportHealthCSV = () => exportHealthCSV(state, calcHealth);
-window.createBulkWO = createBulkWO;
-window.can = (permission) => can(permission, currentUser);
+window.createBulkWO = (...args) => createBulkWO(...args, state);
+window.toggleBulkWO = toggleBulkWO;
+window.submitBulkWO = submitBulkWO;
+window.can = (permission) => can(permission, window.currentUser);
 window.printQRCode = (id) => printQRCode(id, state);
 window.printMachineHistory = (id) => printMachineHistory(id, state);
 window.signOut = () => { destroySession(); location.reload(); };
 window.startApp = startApp;
+window.syncOfflineQueue = syncOfflineQueue;
 window.clearAuditFilters = clearAuditFilters;
 window.renderAuditLogs = renderAuditLogs;
 window.renderDowntimeStats = () => renderDowntimeStats(state);
 window.renderTopPartsUsed = () => renderTopPartsUsed(state);
-window.saveGeminiKey = () => saveGeminiKey(currentUser);
+window.saveGeminiKey = () => saveGeminiKey(window.currentUser);
 window.suggestTools = () => suggestTools(document.getElementById('t-name').value, document.getElementById('t-equip').value, state, equipName);
 window.syncAdminRoleSelects = () => syncAdminRoleSelects(state);
 window.changeUserRole = () => changeUserRole(renderUsersTable, state);
@@ -387,11 +403,8 @@ window.renderEquipTimeline = (id) => renderEquipTimeline(id, state, fmtDate);
 window.renderMiniTimeline = (id) => renderMiniTimeline(id, state, fmtDate, badge);
 window.handleWishApproval = (id) => handleWishApproval(id, state).then(() => window.renderWishlist());
 window.handleWishDenial = (id) => handleWishDenial(id, state).then(() => window.renderWishlist());
-window.refreshObsList = (id) => refreshObsList(id, state, currentUser);
+window.refreshObsList = (id) => refreshObsList(id, state, window.currentUser);
 window.renderRecentObservations = () => renderRecentObservations(state, equipName);
-window.startApp = startApp; 
-
-
 window.switchChannel = (channel, btn) => {
     window.currentChannel = channel;
     loadChatMessages(channel); 
@@ -414,7 +427,8 @@ window.removePartUsage = (usageId, taskId) => {
 
 window.openTaskDetail = function(id) { openTaskDetail(id, window.state); };
 window.editPart = (id) => editPart(id, state);
-window.openTaskSignoff = (id) => openTaskSignoff(id, currentUser);
+window.openTaskSignoff = (id) => openTaskSignoff(id, window.currentUser);
+window.pressTaskPin = pressTaskPin;
 window.triggerAddEntryFromCal = () => triggerAddEntryFromCal(window.lastClickedDate);
 window.triggerAbsenceFromCal = () => triggerAbsenceFromCal(window.lastClickedDate);
 window.deleteSched = deleteSched;
@@ -437,7 +451,7 @@ window.calToday = () => {
 
 
 window.verifyTaskPinAction = () => {
-    verifyTaskPinAction(currentUser).then(success => {
+    verifyTaskPinAction(window.currentUser).then(success => {
         if(success) {
             closeModal('task-pin-modal');
             if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
@@ -457,7 +471,7 @@ window.addTaskCheckItem = (id) => {
 };
 
 window.toggleLockout = (id, checked) => {
-    toggleLockout(id, checked, currentUser).then(success => {
+    toggleLockout(id, checked, window.currentUser).then(success => {
         if(success && typeof window.refreshDashboard === 'function') window.refreshDashboard(); // Redraw status on home screen
     });
 };
@@ -471,7 +485,7 @@ window.deleteQuickSpec = (id, key) => {
 window.addTaskComment = (id) => {
     const input = document.getElementById('dt-comment-input-large');
     if (input) {
-        addTaskComment(id, input.value, currentUser).then(success => {
+        addTaskComment(id, input.value, window.currentUser).then(success => {
             if (success) {
                 input.value = '';
                 window.openTaskDetail(id); // Refresh the popup
@@ -705,10 +719,6 @@ function renderDowntimeTab(equipId) {
 
 async function deleteRecurRule(id){ if(!confirm('Delete this recurrence rule?'))return; state.recurrenceRules=state.recurrenceRules.filter(r=>r.id!==id); await persist('recurrence_rules','delete',{id}); renderCalendar(); }
 
-function saveOfflineQueue() {
-  try { localStorage.setItem('mp_offline_queue', JSON.stringify(offlineQueue)); } catch(e) {}
-  document.getElementById('offline-queue-banner').style.display = offlineQueue.length ? 'block' : 'none';
-}
 
 // ============================================================
 // FRIDAY HOURS REMINDER
@@ -860,7 +870,7 @@ async function quickRoleChange(userId, newRole) {
         if (error) throw error;
         showToast("Role updated ✓");
         // Update local currentUser if you just edited yourself
-        if (currentUser.id === userId) currentUser.role = newRole;
+        if (window.currentUser?.id === userId) window.currentUser.role = newRole;
     } catch(e) {
         showToast("Update failed");
         renderUsersTable(); // Revert UI on failure
@@ -926,6 +936,7 @@ function markChannelRead(channel) {
     updateUnreadBadge();
 }
 function updateUnreadBadge() {
+    let totalUnread = 0;
     const channels = ['general', 'outside', 'production'];
 
     channels.forEach(ch => {
@@ -933,7 +944,7 @@ function updateUnreadBadge() {
         const unreadCount = (state.chatMessages || []).filter(m => 
             m.channel === ch && 
             new Date(m.created_at) > lastRead && 
-            m.author !== currentUser?.username
+            m.author !== window.currentUser?.username
         ).length;
         
         totalUnread += unreadCount;
@@ -952,12 +963,13 @@ function updateUnreadBadge() {
 }
 
 
-window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
+window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');syncOfflineQueue();if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
 window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
 
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
   const sec=document.getElementById('alert-section');if(!sec)return;
+  let h='';
   const od=state.tasks.filter(t=>t.status!=='Completed'&&isOverdue(t.due));
   const lp=state.parts.filter(p=>p.qty<=p.reorder_qty&&p.reorder_qty>0);
   const exp=state.documents.filter(d=>d.expiry_date&&new Date(d.expiry_date)<=new Date(Date.now()+30*24*60*60*1000));
@@ -981,7 +993,7 @@ async function autoCreateCriticalWO(obs, equipId) {
   const wo = {
     id: uid(),
     name: '🚨 Critical — ' + (equip?.name||'Equipment') + ': ' + obs.body.slice(0,60),
-    equipId: equipId,
+    equip_id: equipId,
     type: 'Repair',
     priority: 'High',
     status: 'Open',
@@ -996,8 +1008,9 @@ async function autoCreateCriticalWO(obs, equipId) {
     created_at: new Date().toISOString(),
   };
   try {
-    await persist('tasks', 'upsert', wo);
-    state.tasks.push(wo);
+    const saved = await persist('tasks', 'upsert', wo);
+    if (saved === false) throw new Error('Work order save failed');
+    state.tasks.push({ ...wo, equipId: wo.equip_id });
     showToast('🚨 Critical WO created — due tomorrow');
     if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
     if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
@@ -1019,6 +1032,12 @@ async function sendCriticalObsEmail(obs, equipId) {
 
 async function notifyManagers(text) {
     const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
-    for (const u of m) { if (u.username !== currentUser.username) await sendDMToUsername(u.username, text); }
+    for (const u of m) { if (u.username !== window.currentUser?.username) await sendDMToUsername(u.username, text); }
 }
 
+
+// Legacy hooks still called conditionally by equipment.js.
+window.renderAlerts = renderAlerts;
+window.autoCreateCriticalWO = autoCreateCriticalWO;
+window.sendCriticalObsEmail = sendCriticalObsEmail;
+window.notifyManagers = notifyManagers;
