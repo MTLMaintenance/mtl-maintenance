@@ -4,6 +4,8 @@ import { fmtDate, showToast, uid } from './utils.js';
 import { openModal, closeModal } from './ui.js';
 import { MONTHS } from './state.js';
 
+let currentCalEntryType = 'one-time';
+
 
 // 2. Fetch all absences from Supabase
 export async function fetchAbsences() {
@@ -70,15 +72,60 @@ export async function renderCalendar() {
 
 
 // 4. Save a Time-Off Request
-export async function saveAbsence(record) {
+export async function saveAbsence(record = null) {
+    // The Time Off modal calls saveAbsence() with no argument, while code can
+    // still pass a prepared record directly. Keep both paths supported.
+    if (!record) {
+        const start = document.getElementById('abs-start-date')?.value || '';
+        const end = document.getElementById('abs-end-date')?.value || start;
+        const publicReason = document.getElementById('abs-public')?.value.trim() || '';
+        const privateReason = document.getElementById('abs-private')?.value.trim() || '';
+        const isPrivate = !!document.getElementById('abs-is-private')?.checked;
+        const partialTime = document.getElementById('abs-time')?.value || null;
+        const user = window.currentUser;
+
+        if (!start) { showToast('Select a start date'); return false; }
+        if (!user) { showToast('Please sign in again'); return false; }
+
+        record = {
+            id: uid(),
+            user_id: String(user.id),
+            user_name: user.name || user.full_name || user.username,
+            author: user.username,
+            start_date: start,
+            end_date: end || start,
+            is_all_day: window.selectedAbsenceType !== 'partial',
+            partial_time: window.selectedAbsenceType === 'partial' ? partialTime : null,
+            reason_public: publicReason,
+            reason_private: isPrivate ? privateReason : null,
+            created_at: new Date().toISOString()
+        };
+    }
+
     try {
         const { error } = await supabase.from('staff_absences').insert(record);
         if (error) throw error;
+        window.state.staffAbsences = window.state.staffAbsences || [];
+        window.state.staffAbsences.push(record);
+        closeAbsenceModal();
+        if (typeof window.renderCalendar === 'function') window.renderCalendar();
         showToast("Request submitted ✓");
         return true;
     } catch (e) {
         console.error("Absence save error:", e);
+        showToast('Could not submit request');
         return false;
+    }
+}
+
+export function checkDateSelection(value) {
+    const options = document.getElementById('abs-options');
+    if (options) options.style.display = value ? 'block' : 'none';
+
+    const end = document.getElementById('abs-end-date');
+    if (end) {
+        end.min = value || '';
+        if (value && end.value && end.value < value) end.value = value;
     }
 }
 export function setAbsenceType(type) {
@@ -122,7 +169,7 @@ export function openAbsenceDetail(id, currentUser, state) {
     document.getElementById('det-time').textContent = abs.is_all_day ? "All Day" : (abs.partial_time || "Scheduled");
 
     const isOwner = (abs.author === currentUser.username || abs.user_id === String(currentUser.id));
-    const isAdmin = (currentUser.role === 'Admin');
+    const isAdmin = (currentUser.role || '').toLowerCase() === 'admin';
 
     const delBtn = document.getElementById('det-delete-btn');
     if (delBtn) delBtn.style.display = (isOwner || isAdmin) ? 'block' : 'none';
@@ -314,54 +361,76 @@ export function switchCalendarView(view) {
     }
 }
 
-export async function saveCalendarEntry() {
-    const name = document.getElementById('ce-name').value.trim();
-    if(!name) return;
 
-    const equipId = document.getElementById('ce-equip').value;
-    const date = document.getElementById('ce-date').value;
+export function setCalEntryType(type) {
+    currentCalEntryType = type === 'recurring' ? 'recurring' : 'one-time';
+    const oneBtn = document.getElementById('cal-type-one');
+    const recurBtn = document.getElementById('cal-type-recur');
+    const oneGroup = document.getElementById('ce-group-one');
+    const recurGroup = document.getElementById('ce-group-recur');
+    if (oneBtn) oneBtn.classList.toggle('active', currentCalEntryType === 'one-time');
+    if (recurBtn) recurBtn.classList.toggle('active', currentCalEntryType === 'recurring');
+    if (oneGroup) oneGroup.style.display = currentCalEntryType === 'one-time' ? 'contents' : 'none';
+    if (recurGroup) recurGroup.style.display = currentCalEntryType === 'recurring' ? 'block' : 'none';
+    if (currentCalEntryType === 'recurring') toggleRecurFields();
+}
+
+export function toggleRecurFields() {
+    const type = document.getElementById('ce-recur-type')?.value || 'calendar';
+    const calendarWrap = document.getElementById('ce-recur-val-wrap');
+    const hoursWrap = document.getElementById('ce-recur-hrs-wrap');
+    if (calendarWrap) calendarWrap.style.display = type === 'calendar' ? 'block' : 'none';
+    if (hoursWrap) hoursWrap.style.display = type === 'hours' ? 'block' : 'none';
+}
+
+export async function saveCalendarEntry() {
+    const name = document.getElementById('ce-name')?.value.trim() || '';
+    if (!name) return showToast('Enter a job name');
+
+    const state = window.state;
+    const equipId = document.getElementById('ce-equip')?.value || null;
+    const assign = document.getElementById('ce-assign')?.value || '';
+    const date = document.getElementById('ce-date')?.value || new Date().toISOString().slice(0,10);
+    const notes = document.getElementById('ce-notes')?.value || '';
 
     try {
         if (currentCalEntryType === 'one-time') {
             const record = {
-                id: uid(),
-                name: name,
-                equip_id: equipId,
-                due: date,
-                status: 'Open',
-                priority: 'Medium',
-                meter: '0',
+                id: uid(), name, equip_id: equipId, assign, due: date,
+                status: 'Open', priority: 'Medium', meter: '0', notes,
                 created_at: new Date().toISOString()
             };
 
             const { error } = await window._mpdb.from('tasks').insert(record);
             if (error) throw error;
-
             state.tasks.push({ ...record, equipId: record.equip_id });
         } else {
-            // Recurring logic
+            const recurType = document.getElementById('ce-recur-type')?.value || 'calendar';
             const record = {
-                id: uid(),
-                name: name,
-                equip_id: equipId,
-                active: true,
+                id: uid(), name, equip_id: equipId, active: true,
+                type: recurType,
                 next_due: date,
-                interval_unit: document.getElementById('ce-unit').value,
-                interval_value: parseInt(document.getElementById('ce-interval').value) || 1,
+                interval_unit: recurType === 'calendar' ? (document.getElementById('ce-unit')?.value || 'month') : null,
+                interval_value: recurType === 'calendar' ? (parseInt(document.getElementById('ce-interval')?.value, 10) || 1) : null,
+                runtime_hours: recurType === 'hours' ? (parseInt(document.getElementById('ce-runtime')?.value, 10) || 500) : null,
+                notes,
+                priority: 'Medium'
             };
-            await window._mpdb.from('recurrence_rules').insert(record);
+            const { error } = await window._mpdb.from('recurrence_rules').insert(record);
+            if (error) throw error;
             state.recurrenceRules.push(record);
         }
 
         closeModal('calendar-entry-modal');
-        updateMetrics(); 
-        renderCalendar();
-        renderTasks();
-        renderDashboard();
-        showToast("Added successfully ✓");
-
+        if (typeof window.updateMetrics === 'function') window.updateMetrics();
+        if (typeof window.renderCalendar === 'function') window.renderCalendar();
+        if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
+        if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
+        showToast('Added successfully ✓');
+        return true;
     } catch (err) {
-        console.error("Calendar save error:", err);
-        showToast("Failed to add entry");
+        console.error('Calendar save error:', err);
+        showToast('Failed to add entry');
+        return false;
     }
 }
