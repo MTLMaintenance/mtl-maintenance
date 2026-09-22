@@ -37,7 +37,7 @@ import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTa
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, pressTaskPin, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom, populateSymptomDropdown  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs,renderRecentObsDash,refreshDashboard } from './dashboard.js';
 import { fetchAbsences, renderCalendar, saveAbsence, checkDateSelection, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, setCalEntryType, toggleRecurFields, saveCalendarEntry  } from './calendar.js'
-import { exportCSV, exportPDF, exportEquipmentCSV, exportFullDatabase, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js';
+import { exportCSV, exportPDF, exportEquipmentCSV, exportFullDatabase, exportHealthCSV,printQRCode, printMachineHistory } from './reports.js?v=20260922-1';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
 import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
@@ -250,8 +250,16 @@ function handleQRScanSuccess(decodedText) {
     }
 }
 window.toggleDarkMode = toggleDarkMode;
-window.exportCSV = () => exportCSV(state.tasks, id => equipName(id, state));
-window.exportPDF = () => exportPDF(state, window.currentUser);
+window.exportCSV = () => {
+    const ok = exportCSV(state.tasks, id => equipName(id, state));
+    if (ok !== false) showToast('CSV export downloaded');
+    return ok;
+};
+window.exportPDF = () => {
+    const ok = exportPDF(state, window.currentUser);
+    if (ok !== false) showToast('PDF report opened');
+    return ok;
+};
 window.exportEquipCSV = () => exportEquipmentCSV(state);
 window.exportFullDatabase = () => exportFullDatabase(state);
 window.openAddPart = openAddPart;
