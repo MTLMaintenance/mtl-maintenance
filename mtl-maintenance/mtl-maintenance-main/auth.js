@@ -97,6 +97,7 @@ export async function verifyUserPin() {
         console.log("PIN Correct! Setting user...");
         window.currentUser = { ...data, name: data.full_name || data.username };
         localStorage.setItem('mp_session', JSON.stringify(window.currentUser));
+        await createSession(data.username, data.id);
 
         // 2. Run success logic
         if (typeof applyUserPreferences === 'function') applyUserPreferences(window.currentUser);
@@ -149,9 +150,18 @@ export function backToNames() {
 }
 
 export function can(permission, currentUser) {
-  if(!currentUser) return false;
-  const role = currentUser.role || 'viewer';
-  return !!(PERMISSIONS[role]?.[permission]);
+  if (!currentUser) return false;
+  const role = (currentUser.role || 'viewer').toLowerCase();
+  const defaults = PERMISSIONS[role] || PERMISSIONS.viewer;
+  const overrides = currentUser.permissions && typeof currentUser.permissions === 'object'
+    ? currentUser.permissions
+    : {};
+
+  // A saved per-user permission explicitly overrides the role default.
+  if (Object.prototype.hasOwnProperty.call(overrides, permission)) {
+    return !!overrides[permission];
+  }
+  return !!defaults[permission];
 }
 
 export function togglePassVis(inputId, btnId) {
@@ -227,8 +237,13 @@ export async function doLogin() {
     if (profile.status==='pending') { showErr('Your account is pending admin approval.'); btn.textContent='Sign In'; btn.disabled=false; return; }
     if (profile.status==='denied') { showErr('Access denied. Contact your administrator.'); btn.textContent='Sign In'; btn.disabled=false; return; }
 
-    const isAdmin = username.toLowerCase()===ADMIN_USERNAME.toLowerCase();
-    window.currentUser = { id: profile.id, name: profile.full_name||username, role: isAdmin?'admin':'tech', username };
+    const isAdmin = username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
+    window.currentUser = {
+      ...profile,
+      name: profile.full_name || username,
+      role: isAdmin ? 'admin' : (profile.role || 'tech'),
+      username: profile.username || username
+    };
     // Create secure session token
     await createSession(username, profile.id);
     if (typeof window.enterApp === 'function') {
