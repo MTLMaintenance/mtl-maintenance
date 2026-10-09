@@ -2,7 +2,6 @@
 import { supabase, createSession } from './db.js';
 import { logAuditAction } from './admin.js';
 import { applyUserPreferences } from './settings.js';
-import { fetchAbsences } from './calendar.js';
 
 export const PERMISSIONS = {
   admin:   {canCreate:true,canEdit:true,canDelete:true,canViewReports:true,canManageUsers:true,canManageParts:true,canManageEquip:true,canManageSuppliers:true,canViewCosts:true,canManageTools:true},
