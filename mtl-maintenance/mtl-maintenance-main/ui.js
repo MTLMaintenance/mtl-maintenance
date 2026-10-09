@@ -210,7 +210,6 @@ export function switchAdminTab(tab, btn) {
   if (tab === 'users' && typeof window.renderUsersTable === 'function') window.renderUsersTable();
   if (tab === 'permissions' && typeof window.renderPermissionsMatrix === 'function') window.renderPermissionsMatrix();
   if (tab === 'permissions' && typeof window.populateAdminUserSelect === 'function') window.populateAdminUserSelect();
-  if (tab === 'deleted-msgs' && typeof window.renderDeletedMessages === 'function') window.renderDeletedMessages();
   if (tab === 'settings' && typeof window.renderAuditLogs === 'function') window.renderAuditLogs();
   if (tab === 'symptoms' && typeof window.renderSymptomReview === 'function') window.renderSymptomReview();
 }
@@ -263,30 +262,6 @@ export function populateSelects() {
 }
 
 // 1. Mobile Sidebar Toggle
-export function toggleChatSidebar() {
-    const s = document.getElementById('chat-sidebar');
-    const o = document.getElementById('chat-sidebar-overlay');
-    if (!s) return;
-    const isOpen = s.classList.contains('open');
-    if (isOpen) {
-        s.classList.remove('open');
-        if (o) o.style.display = 'none';
-    } else {
-        s.classList.add('open');
-        if (o) o.style.display = 'block';
-    }
-}
-
-export function closeChatSidebarMobile() {
-    if (window.innerWidth <= 768) {
-        const s = document.getElementById('chat-sidebar');
-        const o = document.getElementById('chat-sidebar-overlay');
-        if (s) s.classList.remove('open');
-        if (o) o.style.display = 'none';
-    }
-}
-
-// 2. Adjust Layout for Mobile (Calculates topbar height)
 export function adjustMobileLayout() {
     if (window.innerWidth <= 768) {
         const topbar = document.querySelector('.topbar');
@@ -415,38 +390,6 @@ export function switchToolModalTab(tab) {
     // Highlighting the buttons
     document.getElementById('btn-tool-details')?.classList.toggle('active', tab === 'details');
     document.getElementById('btn-tool-obs')?.classList.toggle('active', tab === 'observations');
-}
-
-export function switchChannel(channel, btn) {
-    console.log("🔌 Switching to channel:", channel);
-    window.currentChannel = channel;
-
-    // 1. Update the UI: Active button highlight
-    document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-
-    // 2. Update the Header Title
-    const title = document.getElementById('chat-header-title');
-    if (title) {
-        if (channel.startsWith('dm-')) {
-            // Find the other person's name for the header
-            const parts = channel.replace('dm-', '').split('-');
-            const otherUser = parts.find(u => u !== window.currentUser.username);
-            title.textContent = `@ ${otherUser}`;
-        } else {
-            title.textContent = `# ${channel}`;
-        }
-    }
-
-    // 3. Load the history for this specific channel
-    if (typeof window.loadChatMessages === 'function') {
-        window.loadChatMessages(channel);
-    }
-    
-    // 4. Close mobile sidebar if open
-    if (window.innerWidth <= 768 && typeof window.toggleChatSidebar === 'function') {
-        window.toggleChatSidebar();
-    }
 }
 
 export async function fetchConsumables() {
