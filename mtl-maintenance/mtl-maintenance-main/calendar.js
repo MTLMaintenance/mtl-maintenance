@@ -1,4 +1,4 @@
-// calendar.js - Calendar Grid, Absences, and Scheduling
+// calendar.js - Calendar Grid and Maintenance Scheduling
 import { supabase, persist } from './db.js';
 import { fmtDate, showToast, uid } from './utils.js';
 import { openModal, closeModal } from './ui.js';
@@ -6,19 +6,6 @@ import { MONTHS } from './state.js';
 
 let currentCalEntryType = 'one-time';
 
-
-// 2. Fetch all absences from Supabase
-export async function fetchAbsences() {
-    try {
-        const { data, error } = await supabase.from('staff_absences').select('*');
-        if (error) throw error;
-        window.state.staffAbsences = data || [];
-        return data;
-    } catch (e) {
-        console.error("Absence sync failed:", e);
-        return [];
-    }
-}
 
 export async function renderCalendar() {
     const date = window.calDate || new Date();
@@ -53,11 +40,9 @@ export async function renderCalendar() {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
         const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
-        const dayAbs = (window.state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
 
         const eventsHtml = [
-            ...dayTasks.map(t => `<div class="cal-event work-order">${t.name}</div>`),
-            ...dayAbs.map(a => `<div class="cal-event absence">👤 ${a.user_name} Out</div>`)
+            ...dayTasks.map(t => `<div class="cal-event work-order">${t.name}</div>`)
         ].join('');
 
         cells += `
@@ -71,126 +56,6 @@ export async function renderCalendar() {
 
 
 
-// 4. Save a Time-Off Request
-export async function saveAbsence(record = null) {
-    // The Time Off modal calls saveAbsence() with no argument, while code can
-    // still pass a prepared record directly. Keep both paths supported.
-    if (!record) {
-        const start = document.getElementById('abs-start-date')?.value || '';
-        const end = document.getElementById('abs-end-date')?.value || start;
-        const publicReason = document.getElementById('abs-public')?.value.trim() || '';
-        const privateReason = document.getElementById('abs-private')?.value.trim() || '';
-        const isPrivate = !!document.getElementById('abs-is-private')?.checked;
-        const partialTime = document.getElementById('abs-time')?.value || null;
-        const user = window.currentUser;
-
-        if (!start) { showToast('Select a start date'); return false; }
-        if (!user) { showToast('Please sign in again'); return false; }
-
-        record = {
-            id: uid(),
-            user_id: String(user.id),
-            user_name: user.name || user.full_name || user.username,
-            author: user.username,
-            start_date: start,
-            end_date: end || start,
-            is_all_day: window.selectedAbsenceType !== 'partial',
-            partial_time: window.selectedAbsenceType === 'partial' ? partialTime : null,
-            reason_public: publicReason,
-            reason_private: isPrivate ? privateReason : null,
-            created_at: new Date().toISOString()
-        };
-    }
-
-    try {
-        const { error } = await supabase.from('staff_absences').insert(record);
-        if (error) throw error;
-        window.state.staffAbsences = window.state.staffAbsences || [];
-        window.state.staffAbsences.push(record);
-        closeAbsenceModal();
-        if (typeof window.renderCalendar === 'function') window.renderCalendar();
-        showToast("Request submitted ✓");
-        return true;
-    } catch (e) {
-        console.error("Absence save error:", e);
-        showToast('Could not submit request');
-        return false;
-    }
-}
-
-export function checkDateSelection(value) {
-    const options = document.getElementById('abs-options');
-    if (options) options.style.display = value ? 'block' : 'none';
-
-    const end = document.getElementById('abs-end-date');
-    if (end) {
-        end.min = value || '';
-        if (value && end.value && end.value < value) end.value = value;
-    }
-}
-export function setAbsenceType(type) {
-    window.selectedAbsenceType = type;
-    document.getElementById('btn-all-day').classList.toggle('active', type === 'all');
-    document.getElementById('btn-partial').classList.toggle('active', type === 'partial');
-    document.getElementById('abs-time-container').style.display = type === 'partial' ? 'block' : 'none';
-}
-
-export async function deleteAbsence() {
-    if (!window.currentDetailId) return;
-    if (!confirm("Are you sure you want to cancel this request?")) return;
-
-    try {
-        const { error } = await window._mpdb.from('staff_absences').delete().eq('id', window.currentDetailId);
-        if (error) throw error;
-
-        window.state.staffAbsences = window.state.staffAbsences.filter(a => a.id !== window.currentDetailId);
-        document.getElementById('absence-detail-modal').style.display = 'none';
-        
-        // This is important: trigger the redraw
-        if (typeof renderCalendar === 'function') renderCalendar(window.calDate); 
-        window.showToast("Request deleted ✓");
-    } catch (e) { alert("Error: " + e.message); }
-}
-
-
-export function closeAbsenceModal() {
-    const modal = document.getElementById('absence-modal');
-    if (modal) modal.style.display = 'none';
-}
-
-export function openAbsenceDetail(id, currentUser, state) {
-    const abs = (state.staffAbsences || []).find(a => a.id === id);
-    if (!abs) return;
-    
-    window.currentDetailId = id; 
-
-    document.getElementById('det-user').textContent = `👤 ${abs.user_name}`;
-    document.getElementById('det-reason').textContent = abs.reason_public || "No reason provided.";
-    document.getElementById('det-time').textContent = abs.is_all_day ? "All Day" : (abs.partial_time || "Scheduled");
-
-    const isOwner = (abs.author === currentUser.username || abs.user_id === String(currentUser.id));
-    const isAdmin = (currentUser.role || '').toLowerCase() === 'admin';
-
-    const delBtn = document.getElementById('det-delete-btn');
-    if (delBtn) delBtn.style.display = (isOwner || isAdmin) ? 'block' : 'none';
-
-    const privBox = document.getElementById('det-private-section');
-    if (privBox && isAdmin) {
-        privBox.style.display = 'block';
-        document.getElementById('det-private-text').textContent = abs.reason_private || "None";
-    }
-
-    const modal = document.getElementById('absence-detail-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        modal.classList.add('active'); 
-    }
-}
-
-export function togglePrivateReason(show) {
-    const privBox = document.getElementById('priv-box');
-    if (privBox) privBox.style.display = show ? 'block' : 'none';
-}
 export function triggerAddEntryFromCal() {
     // 1. Close the small day card
     const actionModal = document.getElementById('cal-action-modal');
@@ -216,16 +81,6 @@ export function triggerAddEntryFromCal() {
 
     // 5. Ensure dropdowns (Equipment/Users) are filled
     if (typeof window.populateSelects === 'function') window.populateSelects();
-}
-
-export function triggerAbsenceFromCal(lastClickedDate) {
-    window.closeModal('cal-action-modal');
-
-    // Pre-fill the date in the Time Off modal
-    const startInp = document.getElementById('abs-start-date');
-    if (startInp) startInp.value = lastClickedDate;
-
-    window.openModal('absence-modal'); 
 }
 
 export function renderRecurList(state, equipNameFunc) {
@@ -263,32 +118,11 @@ export async function deleteSched(id) {
         console.error("Delete schedule error:", e);
     }
 }
-export function isUserOutOnDate(absence, targetDateStr) {
-    if (!absence.start_date || !absence.end_date) return false;
-    const target = targetDateStr.substring(0, 10);
-    const start = absence.start_date.substring(0, 10);
-    const end = absence.end_date.substring(0, 10);
-    return target >= start && target <= end;
-}
-
-export function openAbsenceModal() {
-    console.log("Attempting to open absence modal...");
-    const modal = document.getElementById('absence-modal');
-    if (modal) {
-        // Use 'flex' if your modal is centered, or 'block' if standard
-        modal.style.setProperty('display', 'flex', 'important');
-        modal.classList.add('active');
-        console.log("Modal opened ✓");
-    } else {
-        alert("HTML Error: Could not find id='absence-modal'");
-    }
-}
-
 export function calDayClick(dateStr) {
     console.log("📅 Calendar Logic Firing for:", dateStr); // Should see this in F12
     window.lastClickedDate = dateStr;
 
-    const state = window.state || { tasks: [], staffAbsences: [] };
+    const state = window.state || { tasks: [] };
 
     // 1. Set the Title
     const titleEl = document.getElementById('action-modal-readable');
@@ -300,8 +134,6 @@ export function calDayClick(dateStr) {
     // 2. Filter Work Orders
     const dayTasks = (state.tasks || []).filter(t => t.due && t.due.substring(0, 10) === dateStr);
     
-    // 3. Filter Absences
-    const dayAbs = (state.staffAbsences || []).filter(a => isUserOutOnDate(a, dateStr));
 
     const listContainer = document.getElementById('day-items-list');
     if (listContainer) {
@@ -314,11 +146,6 @@ export function calDayClick(dateStr) {
                 <div>🛠️ ${t.name}</div>
                 <button class="btn-sm" onclick="window.closeModal('cal-action-modal'); window.openTaskDetail('${t.id}')">View</button>
             </div>`;
-        });
-
-        // Add Absences to list
-        dayAbs.forEach(a => {
-            html += `<div class="day-card-item" style="border-left:4px solid #ff9800; padding:10px;">👤 ${a.user_name} Out</div>`;
         });
 
         listContainer.innerHTML = html || `<div style="color:#888; padding:20px; text-align:center;">Nothing scheduled.</div>`;
