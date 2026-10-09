@@ -28,7 +28,6 @@ export async function loadState() {
       window._mpdb.from('consumables').select('*'),
       window._mpdb.from('fault_logs').select('*'),
       window._mpdb.from('checklist_templates').select('*'),
-      window._mpdb.from('staff_absences').select('*'),
       window._mpdb.from('document_bookmarks').select('*')
     ]);
 
@@ -48,8 +47,7 @@ export async function loadState() {
     state.consumables     = response[11].data || [];
     state.faults             = response[12].data || [];
     state.checklistTemplates = response[13].data || [];
-    state.staffAbsences      = response[14].data || [];
-    state.documentBookmarks  = response[15].data || [];
+    state.documentBookmarks  = response[14].data || [];
     
     console.log(`✅ SYNC SUCCESS: Found ${state.equipment.length} machines in database.`);
 
@@ -225,7 +223,7 @@ if (typeof window.renderEquipmentTable === 'function') {
 }
 
 export function teleportModals() {
-    const modalIds = ['user-perms-modal', 'cal-action-modal', 'absence-detail-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
+    const modalIds = ['user-perms-modal', 'cal-action-modal', 'part-modal', 'tool-modal','review-modal','consumable-modal'];
     modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
