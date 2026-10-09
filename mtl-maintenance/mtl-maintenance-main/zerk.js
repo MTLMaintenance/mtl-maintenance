@@ -1,366 +1,168 @@
-// zerk.js - Interactive Grease Map Logic
-import { supabase, persist } from './db.js';
-import { uid, showToast,compressImage  } from './utils.js';
+// Zerk / grease map: photo views and their synchronized fitting tables.
+import { uid, showToast, compressImage } from './utils.js';
 
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const machine = () => window.state?.equipment?.find(e => String(e.id) === String(window._currentDetailEquipId));
+const photos = e => Array.isArray(e.zerk_photos) ? e.zerk_photos : [];
+const points = e => Array.isArray(e.zerk_points) ? e.zerk_points : [];
+const names = e => Array.isArray(e.zerk_names) ? e.zerk_names : [];
+function activeIndex(e) {
+    const idx = Number(window._currentZerkViewIdx) || 0;
+    const result = photos(e).length ? Math.max(0, Math.min(idx, photos(e).length - 1)) : 0;
+    window._currentZerkViewIdx = result;
+    return result;
+}
+function refresh() {
+    const e = machine(); if (!e) return;
+    if (document.getElementById('mtl-zerk-os-area')) renderZerkOS(e.id);
+    if (document.getElementById('tab-content-zerk')) renderZerkTab(e.id);
+}
+// Serialize map edits so quick successive clicks cannot save outdated arrays over newer ones.
+let saveQueue = Promise.resolve();
+function updateMap(changes) {
+    const e = machine(); if (!e) return Promise.resolve(false);
+    const id = e.id;
+    saveQueue = saveQueue.catch(() => {}).then(async () => {
+        const target = window.state?.equipment?.find(x => String(x.id) === String(id));
+        if (!target) return false;
+        const patch = typeof changes === 'function' ? changes(target) : changes;
+        if (!patch) return false;
+        const previous = Object.fromEntries(Object.keys(patch).map(k => [k, target[k]]));
+        Object.assign(target, patch);
+        refresh();
+        try {
+            if (!navigator.onLine) throw new Error('Internet connection is unavailable');
+            const { error } = await window._mpdb.from('equipment').update(patch).eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            Object.assign(target, previous);
+            refresh();
+            console.error('Zerk save failed:', error);
+            showToast(`Grease map not saved: ${error.message || 'Try again'}`);
+            return false;
+        }
+    });
+    return saveQueue;
+}
 
-export async function handleZerkMapClick(event, viewIdx) {
-    const equipId = window._currentDetailEquipId;
-    const e = window.state.equipment.find(x => x.id === equipId);
-    
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-
-    const note = prompt("Instructions:");
+export function handleZerkMapClick(event, viewIdx) {
+    const e = machine();
+    if (!e || !photos(e)[viewIdx] || event.target.closest('.zerk-dot')) return;
+    const image = event.currentTarget.querySelector('img');
+    if (!image) return;
+    // The wrapper follows the displayed image size; coordinates remain correct when resized.
+    const rect = image.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = (event.clientX - rect.left) / rect.width * 100;
+    const y = (event.clientY - rect.top) / rect.height * 100;
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
+    const note = prompt('Instructions for this fitting:');
     if (note === null) return;
-
-    // A. Update local memory immediately
-    if (!e.zerk_points) e.zerk_points = [];
-    e.zerk_points.push({ id: uid(), x: x.toFixed(2), y: y.toFixed(2), note, view_index: viewIdx });
-
-    // B. REDRAW THE SCREEN NOW (Instant)
-    renderZerkOS(equipId);
-
-    // C. Save to cloud in background
-    await window._mpdb.from('equipment').update({ zerk_points: e.zerk_points }).eq('id', equipId);
+    return updateMap(current => ({ zerk_points: [...points(current), {
+        id: uid(), x: Number(x.toFixed(2)), y: Number(y.toFixed(2)),
+        note: note.trim(), view_index: viewIdx
+    }] }));
 }
-
-export async function deleteZerk(pointId) {
-    const equipId = window._currentDetailEquipId;
-    const e = window.state.equipment.find(x => x.id === equipId);
-    
-    if (!confirm("Delete this point?")) return;
-
-    // A. Update memory immediately
-    e.zerk_points = e.zerk_points.filter(p => p.id !== pointId);
-
-    // B. Redraw instantly
-    renderZerkOS(equipId);
-
-    // C. Save in background
-    await window._mpdb.from('equipment').update({ zerk_points: e.zerk_points }).eq('id', equipId);
+export function deleteZerk(pointId) {
+    const e = machine();
+    if (!e || !points(e).some(p => String(p.id) === String(pointId))) return;
+    if (!confirm('Delete this grease point?')) return;
+    return updateMap(current => ({ zerk_points: points(current).filter(p => String(p.id) !== String(pointId)) }));
 }
-
-// 3. Rename a Photo View
+export function editZerkNote(pointId) {
+    const e = machine();
+    const p = e && points(e).find(p => String(p.id) === String(pointId));
+    if (!p) return;
+    const note = prompt('Edit fitting instructions:', p.note || '');
+    if (note === null) return;
+    return updateMap(current => ({ zerk_points: points(current).map(item => String(item.id) === String(pointId) ? {...item, note: note.trim()} : item) }));
+}
 export async function renameZerkView(idx) {
-    const state = window.state;
-    const equipId = window._currentDetailEquipId;
-    const equip = state.equipment.find(x => x.id === equipId);
-    if (!equip) return;
-
-    const currentName = (equip.zerk_names && equip.zerk_names[idx]) ? equip.zerk_names[idx] : `View ${idx + 1}`;
-    const newName = prompt("Rename this view:", currentName);
-
-    if (newName && newName.trim() !== "") {
-        equip.zerk_names = equip.zerk_names || [];
-        equip.zerk_names[idx] = newName.trim();
-        await persist('equipment', 'upsert', equip);
-        renderZerkTab(equipId);
-        showToast("Renamed ✓");
-    }
+    const e = machine(); if (!e || !photos(e)[idx]) return;
+    const name = prompt('Rename this view:', names(e)[idx] || `View ${idx+1}`);
+    if (!name?.trim()) return;
+    const ok = await updateMap(current => {
+        const updated = [...names(current)]; updated[idx] = name.trim();
+        return { zerk_names: updated };
+    });
+    if (ok) showToast('View renamed');
 }
-export async function addZerkViewWithTitle() {
-    const equipId = window._currentDetailEquipId;
-    const equip = window.state.equipment.find(x => x.id === equipId);
-
-    const viewName = prompt("View Name (e.g. Boom):");
-    if (!viewName) return;
-
+export function addZerkViewWithTitle() {
+    const e = machine(); if (!e) return;
+    const name = prompt('View name (e.g. Boom):');
+    if (!name?.trim()) return;
     const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = () => {
+        const file = input.files?.[0]; if (!file) return;
         const reader = new FileReader();
-        reader.onload = async (event) => {
-            const compressed = await compressImage(event.target.result, 1200, 0.8);
-            
-            // A. Update memory
-            equip.zerk_photos = equip.zerk_photos || [];
-            equip.zerk_names = equip.zerk_names || [];
-            equip.zerk_photos.push(compressed);
-            equip.zerk_names.push(viewName);
-
-            // B. Switch to new view and Redraw
-            window._currentZerkViewIdx = equip.zerk_photos.length - 1;
-            renderZerkOS(equipId);
-
-            // C. Save
-            await window._mpdb.from('equipment').update({ zerk_photos: equip.zerk_photos, zerk_names: equip.zerk_names }).eq('id', equipId);
+        reader.onerror = () => showToast('Could not read selected image');
+        reader.onload = async () => {
+            try {
+                const image = await compressImage(reader.result, 1200, 0.8);
+                const ok = await updateMap(current => ({
+                    zerk_photos: [...photos(current), image],
+                    zerk_names: [...names(current), name.trim()]
+                }));
+                if (ok) {
+                    window._currentZerkViewIdx = photos(machine()).length - 1;
+                    refresh();
+                }
+            } catch (error) { console.error(error); showToast('Could not process this image'); }
         };
         reader.readAsDataURL(file);
     };
     input.click();
 }
-
-
-
-// 2. Delete the current photo view and all its points
 export async function deleteZerkView() {
-    const equipId = window._currentDetailEquipId;
-    const idx = window._currentZerkViewIdx;
-    const e = window.state.equipment.find(x => x.id === equipId);
-
-    if (!confirm("Delete this entire map view?")) return;
-
-    // A. Update local arrays
-    e.zerk_photos.splice(idx, 1);
-    e.zerk_names.splice(idx, 1);
-    e.zerk_points = e.zerk_points.filter(p => p.view_index !== idx);
-
-    // B. Reset index and redraw
-    window._currentZerkViewIdx = 0;
-    renderZerkOS(equipId);
-
-    // C. Save
-    await window._mpdb.from('equipment').update({ 
-        zerk_photos: e.zerk_photos, 
-        zerk_names: e.zerk_names, 
-        zerk_points: e.zerk_points 
-    }).eq('id', equipId);
-}
-// 3. Edit instructions for a specific dot
-export async function editZerkNote(pointId) {
-    const equipId = window._currentDetailEquipId;
-    const e = window.state.equipment.find(x => x.id === equipId);
-    const point = e.zerk_points.find(p => p.id === pointId);
-    
-    const newNote = prompt("Edit instructions:", point.note || "");
-    if (newNote === null) return;
-
-    // A. Update memory
-    point.note = newNote;
-
-    // B. Redraw instantly
-    renderZerkOS(equipId);
-
-    // C. Save in background
-    await window._mpdb.from('equipment').update({ zerk_points: e.zerk_points }).eq('id', equipId);
+    const e = machine(); if (!e || !photos(e).length) return;
+    const idx = activeIndex(e);
+    if (!confirm(`Delete view "${names(e)[idx] || `View ${idx+1}`}" and all its grease points?`)) return;
+    const ok = await updateMap(current => ({
+        zerk_photos: photos(current).filter((_, i) => i !== idx),
+        zerk_names: names(current).filter((_, i) => i !== idx),
+        // Move subsequent view indexes back one, preserving their matching table rows.
+        zerk_points: points(current).filter(p => Number(p.view_index) !== idx)
+            .map(p => Number(p.view_index) > idx ? {...p, view_index: Number(p.view_index)-1} : p)
+    }));
+    if (ok) { window._currentZerkViewIdx = 0; refresh(); }
 }
 
-export function renderZerkTab(equipId) {
-    const equip = window.state.equipment.find(x => x.id === equipId);
-    // These IDs must exist in your index.html or the detail card builder
-    const switcher = document.getElementById('zerk-view-switcher');
-    const container = document.getElementById('tab-content-zerk');
-
-    if (!equip || !container) return;
-
-    const viewIdx = window._currentZerkViewIdx || 0;
-
-    // 1. BUILD THE VIEW SWITCHER (Tabs at the top of the map)
-    if (switcher) {
-        let viewButtons = (equip.zerk_photos || []).map((_, i) => {
-            const name = (equip.zerk_names && equip.zerk_names[i]) ? equip.zerk_names[i] : `View ${i + 1}`;
-            const activeClass = viewIdx === i ? 'btn-primary' : 'btn-secondary';
-            return `<button class="btn ${activeClass} btn-sm" onclick="window._currentZerkViewIdx=${i}; window.renderZerkTab('${equipId}')">${name}</button>`;
-        }).join('');
-
-        // THE "+" BUTTON: Restored here!
-        switcher.innerHTML = `
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                ${viewButtons}
-                <button class="btn btn-outline-primary btn-sm" onclick="window.addZerkViewWithTitle()" title="Add New Map">+</button>
-            </div>
-        `;
-    }
-
-    // 2. CHECK FOR CONTENT
-    if (!equip.zerk_photos || equip.zerk_photos.length === 0) {
-        container.innerHTML = `
-            <div style="text-align:center; padding:50px; color:#888; border:2px dashed #ddd; border-radius:12px; margin-top:15px">
-                <p>No grease maps added for this machine.</p>
-                <button class="btn btn-primary" onclick="window.addZerkViewWithTitle()">+ Add First Map View</button>
-            </div>`;
-        return;
-    }
-
-    // 3. DRAW THE ACTIVE MAP
-    const currentPhoto = equip.zerk_photos[viewIdx];
-    const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
-
-    container.innerHTML = `
-    <div class="zerk-main-layout">
-        <div id="zerk-map-container" style="position:relative; background:#000; border-radius:8px; overflow:hidden" onclick="window.handleZerkMapClick(event, ${viewIdx})">
-            <img src="${currentPhoto}" style="width:100%; display:block; opacity:0.9">
-            <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
-                ${points.map((p, idx) => `
-                    <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" 
-                         onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
-                        ${idx + 1}
-                    </div>`).join('')}
-            </div>
-        </div>
-
-        <div id="zerk-sidebar-container">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-                <h4 style="margin:0; font-size:14px;">Grease Points</h4>
-                <!-- THE DELETE VIEW BUTTON: Restored here! -->
-                <button class="btn btn-outline-danger btn-sm" style="font-size:10px" onclick="window.deleteZerkView()">Delete View</button>
-            </div>
-            <table class="zerk-sidebar-table">
-                <thead><tr><th>#</th><th>Instructions</th><th></th></tr></thead>
-                <tbody>
-                    ${points.map((p, idx) => `
-                        <tr>
-                            <td><div class="zerk-num-list">${idx + 1}</div></td>
-                            <td onclick="window.editZerkNote('${p.id}')" style="cursor:pointer">${p.note || 'Click to add note...'}</td>
-                            <td><button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:red; cursor:pointer">✕</button></td>
-                        </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:20px; color:#aaa">Click map to add points</td></tr>'}
-                </tbody>
-            </table>
-        </div>
-    </div>`;
+function renderView(e, layout) {
+    const idx = activeIndex(e);
+    const views = photos(e);
+    const active = points(e).filter(p => Number(p.view_index ?? 0) === idx);
+    const nav = views.map((_, i) => `<button class="btn btn-sm ${i === idx ? 'btn-primary' : 'btn-secondary'}" onclick="window._currentZerkViewIdx=${i};window.${layout === 'os' ? 'renderZerkOS' : 'renderZerkTab'}(window._currentDetailEquipId)">${esc(names(e)[i] || `View ${i+1}`)}</button>`).join('');
+    const actions = `<div class="os-zerk-subnav"><div class="os-zerk-view-tabs">${nav}</div><div class="os-zerk-view-actions"><button class="btn btn-secondary btn-sm" onclick="window.addZerkViewWithTitle()">+ Add View</button>${views.length ? `<button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">Delete View</button><button class="btn btn-secondary btn-sm" onclick="window.renameZerkView(${idx})">Rename View</button>` : ''}</div></div>`;
+    if (!views.length) return `<div class="os-zerk-wrapper">${actions}<p>No grease maps for this equipment yet. Add a photo to start marking fittings.</p></div>`;
+    const dots = active.map((p, i) => {
+        const x = Math.min(100, Math.max(0, Number(p.lx ?? p.x) || 0));
+        const y = Math.min(100, Math.max(0, Number(p.ly ?? p.y) || 0));
+        return `<button class="zerk-dot" type="button" title="${esc(p.note || 'Edit fitting')}" style="left:${x}%;top:${y}%" onclick="event.stopPropagation();window.editZerkNote('${esc(p.id)}')">${i+1}</button>`;
+    }).join('');
+    const rows = active.map((p,i) => `<tr><td style="width:40px;font-weight:bold;color:#3b82f6">#${i+1}</td><td style="cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere" onclick="window.editZerkNote('${esc(p.id)}')">${esc(p.note || 'Click to add instructions')}</td><td><button class="btn btn-sm" title="Delete grease point" onclick="window.deleteZerk('${esc(p.id)}')">✕</button></td></tr>`).join('') || '<tr><td colspan="3">Click the photo to add a fitting.</td></tr>';
+    return `<div class="os-zerk-wrapper">${actions}<div class="os-zerk-grid">
+      <div class="zerk-photo-column"><div class="zerk-image-boundary" onclick="window.handleZerkMapClick(event,${idx})">
+        <img src="${esc(views[idx])}" alt="Grease fitting map" draggable="false"><div class="zerk-photo-overlay">${dots}</div>
+      </div></div>
+      <div class="os-zerk-list"><div class="os-zerk-list-header">GREASE POINTS — ${active.length}</div><div class="os-zerk-list-body"><table class="os-zerk-fittings-table"><thead><tr><th>#</th><th>Instructions</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
+    </div></div>`;
 }
-
-export function showZerkInfo(event, zerkId) {
-    event.stopPropagation(); // Prevents adding a new dot when clicking an existing one
-     window.activeZerkId = zerkId; 
-    // Find the specific dot data
-    const z = allMachineZerks.find(x => x.id === zerkId);
-    if(!z) return;
-
-    const box = document.getElementById('zerk-detail-box');
-    if(!box) return;
-    
-    // Fill the text
-    document.getElementById('zerk-label').textContent = z.label;
-    document.getElementById('zerk-instr').textContent = z.instructions || "No special instructions.";
-    
-    // Setup the Delete button
-    const delBtn = document.getElementById('zerk-delete-btn');
-    if(delBtn) {
-        // Only show delete button for Admins/Managers
-        delBtn.style.display = (currentUser.role === 'admin' || currentUser.role === 'manager') ? 'block' : 'none';
-        
-        // This connects the button to the function we just added
-        delBtn.onclick = () => deleteZerk(z.id);
-    }
-    
-    box.style.display = 'block';
-}
-
-
-export function renderZerkDots() {
-    const equip = state.equipment.find(x => x.id === window._currentDetailEquipId);
-    const viewIdx = window._currentZerkViewIdx || 0;
-    const overlay = document.getElementById('zerk-dots-overlay');
-    const sidebar = document.getElementById('zerk-sidebar-container');
-
-    // Filter points belonging ONLY to this specific photo
-    const points = (equip.zerk_points || []).filter(p => p.view_index === viewIdx);
-
-    // Draw the Numbers on the Image
-    if (overlay) {
-        overlay.innerHTML = points.map((p, idx) => `
-            <div class="zerk-dot" style="left:${p.x}%; top:${p.y}%" onclick="event.stopPropagation(); editZerkNote(${idx})">
-                ${idx + 1}
-            </div>
-        `).join('');
-    }
-
-    // Draw the Instruction Table on the Right
-    if (sidebar) {
-        sidebar.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-                <h4 style="margin:0; font-size:14px;">Grease Points</h4>
-                <button class="btn btn-danger btn-sm" onclick="deleteZerkView()">Delete View</button>
-            </div>
-            <table class="zerk-sidebar-table">
-                <thead><tr><th style="width:40px">#</th><th>Instructions</th></tr></thead>
-                <tbody>
-                    ${points.map((p, idx) => `
-                        <tr onclick="editZerkNote(${idx})">
-                            <td style="color:#ffec00; font-weight:bold">#${idx + 1}</td>
-                            <td>${p.note || '<span style="opacity:0.4">No instructions</span>'}</td>
-                        </tr>
-                    `).join('') || '<tr><td colspan="2" style="text-align:center; padding:20px; opacity:0.5">Click map to add points</td></tr>'}
-                </tbody>
-            </table>
-        `;
-    }
-}
-
-export function highlightZerk(id, shouldHighlight) {
-    const line = document.getElementById(`line-${id}`);
-    const dot = document.querySelector(`.zerk-dot[data-id="${id}"]`); // Add data-id to your dots
-    
-    if (line) {
-        if (shouldHighlight) {
-            line.classList.add('highlight');
-            line.style.opacity = "1";
-        } else {
-            line.classList.remove('highlight');
-            line.style.opacity = window.showZerkLines ? "0.3" : "0";
-        }
-    }
-}
-window.highlightZerk = highlightZerk;
-
-export function setZerkMode(mode) {
-    zerkPinMode = mode;
-    zerkDrawingStep = 1; // Reset steps
-    document.getElementById('mode-dot')?.classList.toggle('active', mode === 'dot');
-    document.getElementById('mode-line')?.classList.toggle('active', mode === 'line');
-    renderZerkDots(); // Clear any temp dots
-}
-
 export function renderZerkOS(equipId) {
-    const e = window.state.equipment.find(x => x.id === equipId);
-    const container = document.getElementById('mtl-zerk-os-area');
-    if (!e || !container) return;
-
-    const viewIdx = window._currentZerkViewIdx || 0;
-    const points = (e.zerk_points || []).filter(p => p.view_index === viewIdx);
-
-    container.innerHTML = `
-        <div class="os-zerk-wrapper">
-            <!-- SUB-NAV: Views and Management -->
-            <div class="os-zerk-subnav">
-                <div class="os-zerk-view-tabs">
-                    ${e.zerk_photos.map((_, i) => {
-                        const name = (e.zerk_names && e.zerk_names[i]) ? e.zerk_names[i] : `View ${i + 1}`;
-                        const active = viewIdx === i ? 'background:#3b82f6; color:white;' : 'background:white; color:#666; border:1px solid #ddd;';
-                        return `<button class="btn-sm" style="${active} padding:6px 15px; border-radius:8px; cursor:pointer; font-weight:600;" 
-                                        onclick="window._currentZerkViewIdx=${i}; window.renderZerkOS('${equipId}')">${name}</button>`;
-                    }).join('')}
-                </div>
-                <div class="os-zerk-view-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="window.addZerkViewWithTitle()">+ Add View</button>
-                    <button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">🗑 Delete View</button>
-                </div>
-            </div>
-
-            <!-- MAIN CONTENT: Image and Table -->
-            <div class="os-zerk-grid">
-                
-                <!-- LEFT: IMAGE -->
-                <div id="os-zerk-map" class="os-zerk-image"
-                     onclick="window.handleZerkMapClick(event, ${viewIdx})">
-                    <img class="os-zerk-map-image" src="${e.zerk_photos[viewIdx]}" alt="Grease fitting map" style="width:100%; height:100%; object-fit:contain; display:block; opacity:0.9;">
-                    <div id="zerk-dots-overlay" style="position:absolute; inset:0;">
-                        ${points.map((p, idx) => `
-                            <div class="zerk-dot" style="left:${p.lx || p.x}%; top:${p.ly || p.y}%" onclick="event.stopPropagation(); window.editZerkNote('${p.id}')">
-                                ${idx + 1}
-                            </div>`).join('')}
-                    </div>
-                </div>
-
-                <!-- RIGHT: LIST (Stretches to match image height) -->
-                <div class="os-zerk-list">
-                    <div class="os-zerk-list-header">REQUIRED FITTINGS</div>
-                    <div class="os-zerk-list-body">
-                        <table class="os-zerk-fittings-table">
-                            ${points.map((p, idx) => `
-                                <tr style="border-bottom:1px solid #f8f8f8;">
-                                    <td style="padding:12px 5px; font-weight:bold; color:#3b82f6; width:30px;">#${idx + 1}</td>
-                                    <td style="padding:12px 5px; color:#333; cursor:pointer;" onclick="window.editZerkNote('${p.id}')">${p.note || 'Grease fitting'}</td>
-                                    <td style="text-align:right;"><button onclick="window.deleteZerk('${p.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:18px;">✕</button></td>
-                                </tr>`).join('') || '<tr><td colspan="3" style="text-align:center; padding:40px; color:#bbb;">Click the map image to mark a grease fitting</td></tr>'}
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    const e = window.state?.equipment?.find(x => String(x.id) === String(equipId));
+    const el = document.getElementById('mtl-zerk-os-area');
+    if (e && el) el.innerHTML = renderView(e, 'os');
 }
+export function renderZerkTab(equipId) {
+    const e = window.state?.equipment?.find(x => String(x.id) === String(equipId));
+    const el = document.getElementById('tab-content-zerk');
+    if (e && el) el.innerHTML = renderView(e, 'tab');
+}
+// Legacy hooks retained for compatibility with other modules.
+export function renderZerkDots() { refresh(); }
+export function showZerkInfo(event, id) { event?.stopPropagation(); return editZerkNote(id); }
+export function highlightZerk(id, active) {
+    document.querySelectorAll('.zerk-dot').forEach(dot => dot.classList.toggle('highlight', active && dot.dataset.id === String(id)));
+}
+export function setZerkMode(mode) { window.zerkPinMode = mode; }
