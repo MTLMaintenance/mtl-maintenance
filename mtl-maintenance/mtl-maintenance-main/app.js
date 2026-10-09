@@ -164,7 +164,6 @@ window.showZerkInfo = showZerkInfo;
 window.renderDashboardObs = renderDashboardObs;
 window.renderSchedule = renderSchedule;
 window.openUserPermissions = openUserPermissions;
-window.permanentDeleteMessage = permanentDeleteMessage;
 window.openMobileSearch = openMobileSearch;
 window. updateTotalCostDisplay = updateTotalCostDisplay;
 window. receiveTool = receiveTool; 
