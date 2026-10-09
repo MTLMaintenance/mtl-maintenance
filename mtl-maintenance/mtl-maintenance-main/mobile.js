@@ -47,7 +47,4 @@ export function openMobileSearch() {
     }
 }
 
-export function toggleMobileChatMenu(event) {
-  if (event?.stopPropagation) event.stopPropagation();
-  if (typeof window.toggleChatSidebar === 'function') window.toggleChatSidebar();
-}
+
