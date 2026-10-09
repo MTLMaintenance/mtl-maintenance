@@ -1,5 +1,5 @@
 import { 
-    chatSub, chatChannel, currentEditingToolId, selectedLoginUser, 
+    currentEditingToolId, selectedLoginUser, 
     enteredPin, lastClickedDate, currentDetailId, selectedAbsenceType, 
     staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
@@ -15,22 +15,21 @@ import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bm
 import { openComponentOS } from './components.js';
 import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
 import { openTroubleshootModal, selectTroubleshootSymptom } from './troubleshoot.js';
-import { handleLogoClick, openMobileSearch, toggleMobileChatMenu } from './mobile.js';
+import { handleLogoClick, openMobileSearch, } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid, viewPhoto, closePhotoViewer, initMarkup, clearMarkup, closeMarkupModal, saveMarkup } from './photos.js';
 import { startApp, loadState, teleportModals, enterApp } from './init.js?v=99';
 import { handleGlobalSearch, closeSearchResults, locateSearchResult } from './search.js';
 import { showPinLogin, selectUserForLogin, pressPin, verifyUserPin, updatePinDots, backToNames, can, togglePassVis, signOut,doLogin, doRegister,showPending, PERMISSIONS, PERM_LABELS } from './auth.js';
-import { updateLastSeen, renderDmList, renderOnlineUsers, updateAvatarPreview, fetchAllProfiles, handleChatInput,  showMentionDropdown, hideMentionDropdown, insertMention, openProfileModal   } from './profiles.js';
+import { updateLastSeen, updateAvatarPreview, fetchAllProfiles, openProfileModal   } from './profiles.js';
 import { runRecurrenceEngine, createBulkWO, toggleBulkWO, submitBulkWO } from './automation.js';
 import { buildEquipDetailHTML, buildTaskDetailHTML, renderObservationsList,renderEquipTimeline, renderMiniTimeline,renderFullHistoryList, openTaskDetail } from './details.js';
 import { quickLogHours, saveQuickLogHours } from './meter.js';
 import { scanInvoiceWithAI, submitBugReport, saveGeminiKey, suggestTools, checkAndSendOverdueEmails,updateReportType  } from './services.js';
 import { uid, fmtDate, isOverdue, badge, showToast, equipName, supplierName, compressImage  } from './utils.js';
 import { supabase, persist, setSyncStatus, createSession, validateSession, destroySession,syncOfflineQueue,SUPABASE_URL, SUPABASE_KEY, } from './db.js';
-import { initChat, sendChatMessage, buildChatMsgHtml,chatKeyDown, renderChatMessages, sendDM, sendDMToUsername,loadChatMessages,renderChat,appendChatMessage,deleteChatMessage,permanentDeleteMessage } from './chat.js';
-import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, toggleChatSidebar, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchChannel,switchPartsSubTab, fetchConsumables } from './ui.js';
+import { openModal, closeModal, showPanel, switchTab, refreshAllDropdowns, showMobileZerkCard, closeMobileZerkCard,switchDetailTab,populateSelects, switchAdminTab, adjustMobileLayout, initLazyImages,switchToolTab, switchWOTab, switchTaskTab, switchToolModalTab, switchPartsSubTab, fetchConsumables } from './ui.js';
 import {  healthColor, calcHealth, getLastService, updateEquipStatus, uploadZerkView, openEquipDetail, addObservation, toggleLockout, addQuickSpec, deleteQuickSpec, addCustomField, renderCustomFields, globalEditObs, saveObservationChange,saveEquipment, getNextDue, saveEditObservation, deleteEquip,acknowledgeObservation,openEquipQRModal,downloadEquipQR,printEquipQR,renameEquipment,editEquipStatusInline,} from './equipment.js';
-import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, blockChatUser, unblockChatUser,populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs, updateSymptomReviewBadge, renderSymptomReview, approveCustomSymptom, mergeCustomSymptom  } from './admin.js';
+import { approveUser, denyUser, deleteUser, logAuditAction,  autoCleanupAuditLogs, populateAdminUserSelect,renderUsersTable, renderPermissionsMatrix,clearAuditFilters,syncAdminRoleSelects, changeUserRole, resetUserPassword, unlockUser,saveUserPerms, resetUserPerms, openUserPermissions, renderAdminPanel, renderAuditLogs, updateSymptomReviewBadge, renderSymptomReview, approveCustomSymptom, mergeCustomSymptom  } from './admin.js';
 import { deleteDoc, openDocDetail, saveDoc, openEditDocModal, handleDocUpload, renderDocsList, renderComponentDocPicker } from './docs.js';
 import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, handleWishAction, editToolObservation, processReview, handleWishApproval, handleWishDenial, renderTools, renderWishlist, renderDeniedList,resetToolForm, editTool, renderToolObsList, saveWishRequest, renderToolDeniedHistory, receiveOrderedTool,deleteWishItem,openWishDetailCard,toggleToolStatus,renderToolWishlist, receiveTool } from './tools.js';
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO,  editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto, deleteConsumable  } from './inventory.js';
@@ -166,9 +165,7 @@ window.renderDashboardObs = renderDashboardObs;
 window.renderSchedule = renderSchedule;
 window.openUserPermissions = openUserPermissions;
 window.permanentDeleteMessage = permanentDeleteMessage;
-window.deleteChatMessage = deleteChatMessage;
 window.openMobileSearch = openMobileSearch;
-window.toggleMobileChatMenu = toggleMobileChatMenu;
 window. updateTotalCostDisplay = updateTotalCostDisplay;
 window. receiveTool = receiveTool; 
 window.renderToolWishlist = renderToolWishlist;
@@ -186,19 +183,13 @@ window.handleDocUpload = handleDocUpload;
 window.renderDocsList = renderDocsList;
 window.deletePart = deletePart;
 window.renderToolObsList = renderToolObsList;
-window.initChat = initChat;
-window.appendChatMessage = appendChatMessage;
 window.processReview = processReview;
 window.editToolObservation = editToolObservation; 
 window.handleWishAction = handleWishAction;
 window.addToolNote = addToolNote;
 window.deleteToolObservation = deleteToolObservation;
 window.deleteTool = deleteTool;
-window.renderChat = renderChat;
-window.loadChatMessages = loadChatMessages;
 window.saveTool = saveTool;
-window.sendDM = sendDM;
-window.sendDMToUsername = sendDMToUsername;
 window.openDocDetail = openDocDetail;
 window.saveDoc = saveDoc;
 window.openEditDocModal = openEditDocModal;
@@ -207,8 +198,6 @@ window.deleteSupplier = (id) => deleteSupplier(id, state);
 window.saveSupplier = () => saveSupplier(state);
 window.renderSuppliersTable = renderSuppliersTable;
 window.populateAdminUserSelect = populateAdminUserSelect;
-window.unblockChatUser = unblockChatUser;
-window.blockChatUser = blockChatUser;
 window.autoCleanupAuditLogs = autoCleanupAuditLogs;
 window.deleteUser = deleteUser;
 window.denyUser = denyUser;
@@ -380,8 +369,6 @@ window.exportEquipCSV = () => exportEquipmentCSV(state);
 window.exportFullDatabase = () => exportFullDatabase(state);
 window.openAddPart = openAddPart;
 window.switchToolModalTab = switchToolModalTab;
-window.sendChatMessage = sendChatMessage;
-window.chatKeyDown = chatKeyDown;
 window.openAbsenceModal = openAbsenceModal;
 window.saveAbsence = saveAbsence;
 window.checkDateSelection = checkDateSelection;
@@ -448,7 +435,6 @@ window.renderDeniedList = renderDeniedList;
 window.renderWishlist = renderWishlist;
 window.renderTools = renderTools;
 window.openPartsCatalog = (id) => openPartsCatalog(id, state);
-window.toggleChatSidebar = toggleChatSidebar;
 window.adjustMobileLayout = adjustMobileLayout;
 window.handlePhotoUpload = (input, key) => handlePhotoUpload(input, key, pendingPhotos, refreshPhotoGrid);
 window.refreshPhotoGrid = (key) => refreshPhotoGrid(key, pendingPhotos);
@@ -458,11 +444,6 @@ window.initMarkup = initMarkup;
 window.clearMarkup = clearMarkup;
 window.closeMarkupModal = closeMarkupModal;
 window.saveMarkup = saveMarkup;
-window.showMentionDropdown = showMentionDropdown;
-window.hideMentionDropdown = hideMentionDropdown;
-window.insertMention = insertMention;
-window.renderDmList = () => renderDmList(window.currentUser, state);
-window.handleChatInput = (el) => handleChatInput(el, state, window.showMentionDropdown, window.hideMentionDropdown);
 window.renderUsersTable = () => renderUsersTable(state);
 window.openPermissionsCard = (id) => openPermissionsCard(id); // Ensure this is in admin.js
 window.togglePermission = (role, key, val) => togglePermission(role, key, val);
@@ -529,14 +510,6 @@ window.handleWishApproval = (id) => handleWishApproval(id, state).then(() => win
 window.handleWishDenial = (id) => handleWishDenial(id, state).then(() => window.renderWishlist());
 window.refreshObsList = (id) => refreshObsList(id, state, window.currentUser);
 window.renderRecentObservations = () => renderRecentObservations(state, equipName);
-window.switchChannel = (channel, btn) => {
-    window.currentChannel = channel;
-    loadChatMessages(channel); 
-    document.querySelectorAll('.chat-channel-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-};
-
-
 window.acceptToolSuggestion = () => {
     const field = document.getElementById('t-tools');
     if(field) field.value = window._lastToolSuggestion;
@@ -1038,57 +1011,8 @@ async function saveUserPermissions() {
     }
 }
 
-const CHANNEL_DESCS={general:'General team chat',outside:'Outside crew channel',production:'Production team channel'};
-(function(){try{lastReadAt=JSON.parse(localStorage.getItem('mp_chat_read')||'{}');}catch(e){}})();
-
-function populateChatTagSelects(){
-  const esel=document.getElementById('tag-equip-select');const tsel=document.getElementById('tag-task-select');
-  if(esel)esel.innerHTML='<option value="">+ Equipment</option>'+state.equipment.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-  if(tsel)tsel.innerHTML='<option value="">+ Work Order</option>'+state.tasks.filter(t=>t.status!=='Completed').map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
-}
-function tagEquip(id){if(!id)return;chatTagEquipId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-equip-name');const w=document.getElementById('chat-tag-equip');if(b)b.style.display='flex';if(n)n.textContent='🔧 '+equipName(id);if(w)w.style.display='inline-flex';document.getElementById('tag-equip-select').value='';}
-function tagTask(id){if(!id)return;chatTagTaskId=id;const b=document.getElementById('chat-tag-bar');const n=document.getElementById('chat-tag-task-name');const w=document.getElementById('chat-tag-task');const t=state.tasks.find(x=>x.id===id);if(b)b.style.display='flex';if(n)n.textContent='📋 '+(t?.name||'Work Order');if(w)w.style.display='inline-flex';document.getElementById('tag-task-select').value='';}
-function clearTag(type){if(type==='equip'){chatTagEquipId=null;const w=document.getElementById('chat-tag-equip');if(w)w.style.display='none';}if(type==='task'){chatTagTaskId=null;const w=document.getElementById('chat-tag-task');if(w)w.style.display='none';}if(!chatTagEquipId&&!chatTagTaskId){const b=document.getElementById('chat-tag-bar');if(b)b.style.display='none';}}
-async function handleChatPhoto(input){const file=input.files[0];if(!file)return;const compressed=await compressImage(await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);}),600,0.7);chatPhotoData=compressed;document.getElementById('chat-photo-preview').textContent='📎 Photo attached';input.value='';}
-function markChannelRead(channel) {
-    lastReadAt[channel] = new Date().toISOString();
-    try {
-        localStorage.setItem('mp_chat_read', JSON.stringify(lastReadAt));
-    } catch(e) {}
-    
-    // Refresh the counts immediately
-    updateUnreadBadge();
-}
-function updateUnreadBadge() {
-    let totalUnread = 0;
-    const channels = ['general', 'outside', 'production'];
-
-    channels.forEach(ch => {
-        const lastRead = lastReadAt[ch] ? new Date(lastReadAt[ch]) : new Date(0);
-        const unreadCount = (state.chatMessages || []).filter(m => 
-            m.channel === ch && 
-            new Date(m.created_at) > lastRead && 
-            m.author !== window.currentUser?.username
-        ).length;
-        
-        totalUnread += unreadCount;
-
-        // Force hide/show dots on Sidebar
-        const dot = document.getElementById(`dot-ch-${ch}`) || document.getElementById(`dot-dm-${ch}`);
-        if (dot) dot.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-    });
-
-    // Update Topbar Global Badge
-    const topBadge = document.getElementById('chat-unread-top');
-    if (topBadge) {
-        topBadge.textContent = totalUnread;
-        topBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
-    }
-}
-
-
-window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='none';setSyncStatus('online');syncOfflineQueue();if(document.getElementById('panel-chat')?.classList.contains('active'))renderChat();});
-window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';const cb=document.getElementById('chat-offline-banner');if(cb)cb.style.display='block';setSyncStatus('offline');});
+window.addEventListener('online',()=>{document.getElementById('offline-banner').style.display='none';setSyncStatus('online');syncOfflineQueue();});
+window.addEventListener('offline',()=>{document.getElementById('offline-banner').style.display='block';setSyncStatus('offline');});
 
 // ── OVERRIDDEN renderAlerts ───────────────────────────────────
 function renderAlerts(){
@@ -1154,10 +1078,7 @@ async function sendCriticalObsEmail(obs, equipId) {
   } catch(e) { console.log('Email failed:', e); }
 }
 
-async function notifyManagers(text) {
-    const { data: m } = await window._mpdb.from('profiles').select('username').in('role', ['admin', 'manager']);
-    for (const u of m) { if (u.username !== window.currentUser?.username) await sendDMToUsername(u.username, text); }
-}
+async function notifyManagers(text) { }
 
 
 // Legacy hooks still called conditionally by equipment.js.
