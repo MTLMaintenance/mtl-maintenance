@@ -50,7 +50,7 @@ export function handleZerkMapClick(event, viewIdx) {
     const e = machine();
     if (!e || !photos(e)[viewIdx] || event.target.closest('.zerk-dot')) return;
     const image = event.currentTarget.querySelector('img');
-    if (!image) return;
+    if (!image || !image.complete || !image.naturalWidth) return;
     // The wrapper follows the displayed image size; coordinates remain correct when resized.
     const rect = image.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -88,32 +88,41 @@ export async function renameZerkView(idx) {
     });
     if (ok) showToast('View renamed');
 }
-export function addZerkViewWithTitle() {
+// Called from a real file input after a user chooses an image. Keeping the input
+// in the rendered toolbar avoids browsers blocking a file picker opened after prompt().
+export async function addZerkViewWithTitle(input) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    input.value = ''; // Allow choosing the same file again after cancel or failure.
+    if (!file.type.startsWith('image/')) { showToast('Please select an image file'); return; }
     const e = machine(); if (!e) return;
-    const name = prompt('View name (e.g. Boom):');
+    const equipmentId = e.id;
+    const suggested = `View ${photos(e).length + 1}`;
+    const name = prompt('Name this photo view (e.g. Boom):', suggested);
     if (!name?.trim()) return;
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = () => {
-        const file = input.files?.[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onerror = () => showToast('Could not read selected image');
-        reader.onload = async () => {
-            try {
-                const image = await compressImage(reader.result, 1200, 0.8);
-                const ok = await updateMap(current => ({
-                    zerk_photos: [...photos(current), image],
-                    zerk_names: [...names(current), name.trim()]
-                }));
-                if (ok) {
-                    window._currentZerkViewIdx = photos(machine()).length - 1;
-                    refresh();
-                }
-            } catch (error) { console.error(error); showToast('Could not process this image'); }
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
+    try {
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Could not read selected image'));
+            reader.readAsDataURL(file);
+        });
+        const image = await compressImage(dataUrl, 1200, 0.8);
+        if (!image?.startsWith('data:image/')) throw new Error('Image processing failed');
+        if (String(machine()?.id) !== String(equipmentId)) throw new Error('Equipment changed during upload; please try again');
+        const ok = await updateMap(current => ({
+            zerk_photos: [...photos(current), image],
+            zerk_names: [...names(current), name.trim()]
+        }));
+        if (ok) {
+            window._currentZerkViewIdx = photos(machine()).length - 1;
+            refresh();
+            showToast('Photo view added');
+        }
+    } catch (error) {
+        console.error('Grease map photo upload failed:', error);
+        showToast(error.message || 'Could not process this image');
+    }
 }
 export async function deleteZerkView() {
     const e = machine(); if (!e || !photos(e).length) return;
@@ -134,7 +143,7 @@ function renderView(e, layout) {
     const views = photos(e);
     const active = points(e).filter(p => Number(p.view_index ?? 0) === idx);
     const nav = views.map((_, i) => `<button class="btn btn-sm ${i === idx ? 'btn-primary' : 'btn-secondary'}" onclick="window._currentZerkViewIdx=${i};window.${layout === 'os' ? 'renderZerkOS' : 'renderZerkTab'}(window._currentDetailEquipId)">${esc(names(e)[i] || `View ${i+1}`)}</button>`).join('');
-    const actions = `<div class="os-zerk-subnav"><div class="os-zerk-view-tabs">${nav}</div><div class="os-zerk-view-actions"><button class="btn btn-secondary btn-sm" onclick="window.addZerkViewWithTitle()">+ Add View</button>${views.length ? `<button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">Delete View</button><button class="btn btn-secondary btn-sm" onclick="window.renameZerkView(${idx})">Rename View</button>` : ''}</div></div>`;
+    const actions = `<div class="os-zerk-subnav"><div class="os-zerk-view-tabs">${nav}</div><div class="os-zerk-view-actions"><input type="file" accept="image/*" style="display:none" aria-label="Select grease map photo" onchange="window.addZerkViewWithTitle(this)"><button type="button" class="btn btn-secondary btn-sm" onclick="this.previousElementSibling.click()">+ Add View</button>${views.length ? `<button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">Delete View</button><button class="btn btn-secondary btn-sm" onclick="window.renameZerkView(${idx})">Rename View</button>` : ''}</div></div>`;
     if (!views.length) return `<div class="os-zerk-wrapper">${actions}<p>No grease maps for this equipment yet. Add a photo to start marking fittings.</p></div>`;
     const dots = active.map((p, i) => {
         const x = Math.min(100, Math.max(0, Number(p.lx ?? p.x) || 0));
@@ -144,7 +153,7 @@ function renderView(e, layout) {
     const rows = active.map((p,i) => `<tr><td style="width:40px;font-weight:bold;color:#3b82f6">#${i+1}</td><td style="cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere" onclick="window.editZerkNote('${esc(p.id)}')">${esc(p.note || 'Click to add instructions')}</td><td><button class="btn btn-sm" title="Delete grease point" onclick="window.deleteZerk('${esc(p.id)}')">✕</button></td></tr>`).join('') || '<tr><td colspan="3">Click the photo to add a fitting.</td></tr>';
     return `<div class="os-zerk-wrapper">${actions}<div class="os-zerk-grid">
       <div class="zerk-photo-column"><div class="zerk-image-boundary" onclick="window.handleZerkMapClick(event,${idx})">
-        <img src="${esc(views[idx])}" alt="Grease fitting map" draggable="false"><div class="zerk-photo-overlay">${dots}</div>
+        <img src="${esc(views[idx])}" alt="Grease fitting map" draggable="false" onerror="this.style.display='none';this.parentElement.classList.add('zerk-image-missing');this.parentElement.querySelector('.zerk-image-error').hidden=false"><span class="zerk-image-error" hidden>Photo unavailable. Delete this view and add the photo again.</span><div class="zerk-photo-overlay">${dots}</div>
       </div></div>
       <div class="os-zerk-list"><div class="os-zerk-list-header">GREASE POINTS — ${active.length}</div><div class="os-zerk-list-body"><table class="os-zerk-fittings-table"><thead><tr><th>#</th><th>Instructions</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
     </div></div>`;
