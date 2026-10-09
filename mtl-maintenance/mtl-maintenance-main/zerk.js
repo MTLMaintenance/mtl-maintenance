@@ -57,10 +57,20 @@ function bindDragListeners() {
     document.addEventListener('pointermove', handleDragMove);
     document.addEventListener('pointerup', handleDragEnd);
     document.addEventListener('pointercancel', handleDragEnd);
+    // A pointerup after a drag may generate a click on the photo container.
+    document.addEventListener('click', guardDraggedPhotoClick, true);
+}
+function guardDraggedPhotoClick(event) {
+    if (!window.__zerkIgnorePhotoClickUntil || Date.now() > window.__zerkIgnorePhotoClickUntil) return;
+    if (event.target.closest?.('.zerk-image-boundary')) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.__zerkIgnorePhotoClickUntil = 0;
+    }
 }
 function handleDragMove(event) {
     const drag = window.__zerkDragState;
-    if (!drag) return;
+    if (!drag || (drag.pointerId !== undefined && event.pointerId !== drag.pointerId)) return;
     const image = drag.boundary?.querySelector('img');
     if (!image || !image.complete || !image.naturalWidth) return;
     const rect = image.getBoundingClientRect();
@@ -72,6 +82,8 @@ function handleDragMove(event) {
     drag.lx = Number(nextX.toFixed(2));
     drag.ly = Number(nextY.toFixed(2));
     if (drag.calloutEl) {
+        drag.calloutEl.dataset.lx = String(drag.lx);
+        drag.calloutEl.dataset.ly = String(drag.ly);
         drag.calloutEl.style.left = `${drag.lx}%`;
         drag.calloutEl.style.top = `${drag.ly}%`;
         drag.calloutEl.classList.add('dragging');
@@ -81,10 +93,11 @@ function handleDragMove(event) {
         drag.lineEl.setAttribute('y2', `${drag.ly}%`);
     }
 }
-function handleDragEnd() {
+function handleDragEnd(event) {
     const drag = window.__zerkDragState;
-    if (!drag) return;
+    if (!drag || (drag.pointerId !== undefined && event.pointerId !== drag.pointerId)) return;
     if (drag.calloutEl) drag.calloutEl.classList.remove('dragging');
+    if (drag.moved) window.__zerkIgnorePhotoClickUntil = Date.now() + 600;
     window.__zerkDragState = null;
     if (!drag.moved) return;
     window.__zerkSuppressPointClick = { id: drag.pointId, until: Date.now() + 350 };
@@ -102,6 +115,7 @@ export function startZerkCalloutDrag(event, pointId) {
     bindDragListeners();
     window.__zerkDragState = {
         pointId,
+        pointerId: event.pointerId,
         boundary,
         calloutEl: event.currentTarget,
         lineEl: boundary.querySelector(`.zerk-line[data-id="${String(pointId).replace(/"/g, '&quot;')}"]`),
@@ -111,7 +125,6 @@ export function startZerkCalloutDrag(event, pointId) {
         lx: Number(event.currentTarget.dataset.lx) || 0,
         ly: Number(event.currentTarget.dataset.ly) || 0
     };
-    event.preventDefault();
     event.stopPropagation();
 }
 export function handleZerkCalloutClick(event, pointId) {
@@ -133,6 +146,7 @@ export function resetZerkCallout(pointId) {
 
 export function handleZerkMapClick(event, viewIdx) {
     const e = machine();
+    if (Date.now() < (window.__zerkIgnorePhotoClickUntil || 0)) return;
     if (!e || !photos(e)[viewIdx] || event.target.closest('.zerk-callout') || event.target.closest('.zerk-dot-anchor')) return;
     const image = event.currentTarget.querySelector('img');
     if (!image || !image.complete || !image.naturalWidth) return;
@@ -250,11 +264,11 @@ function renderView(e, layout) {
         const ly = labelY(p);
         return `
             <span class="zerk-dot-anchor" style="left:${x}%;top:${y}%" title="Fitting #${i+1}"></span>
-            <button class="zerk-callout" data-id="${esc(p.id)}" data-lx="${lx}" data-ly="${ly}" type="button" title="${esc(p.note || 'Edit fitting')}" style="left:${lx}%;top:${ly}%" onpointerdown="window.startZerkCalloutDrag(event,'${esc(p.id)}')" onclick="window.handleZerkCalloutClick(event,'${esc(p.id)}')">${i+1}</button>`;
+            <button class="zerk-callout" aria-label="Grease fitting ${i+1}; drag to move label" data-id="${esc(p.id)}" data-lx="${lx}" data-ly="${ly}" type="button" title="${esc(p.note || 'Edit fitting')}" style="left:${lx}%;top:${ly}%" onpointerdown="window.startZerkCalloutDrag(event,'${esc(p.id)}')" onclick="window.handleZerkCalloutClick(event,'${esc(p.id)}')">${i+1}</button>`;
     }).join('');
-    const rows = active.map((p,i) => `<tr><td style="width:40px;font-weight:bold;color:#3b82f6">#${i+1}</td><td style="cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere" onclick="window.editZerkNote('${esc(p.id)}')">${esc(p.note || 'Click to add instructions')}</td><td style="white-space:nowrap"><button class="btn btn-sm" title="Reset label position" onclick="window.resetZerkCallout('${esc(p.id)}')">↺</button> <button class="btn btn-sm" title="Delete grease point" onclick="window.deleteZerk('${esc(p.id)}')">✕</button></td></tr>`).join('') || '<tr><td colspan="3">Click the photo to add a fitting.</td></tr>';
+    const rows = active.map((p,i) => `<tr><td style="width:40px;font-weight:bold;color:#3b82f6">#${i+1}</td><td style="cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere" onclick="window.editZerkNote('${esc(p.id)}')">${esc(p.note || 'Click to add instructions')}</td><td style="white-space:nowrap"><button class="btn btn-sm" title="Move label back beside the fitting" onclick="window.resetZerkCallout('${esc(p.id)}')">Reset</button> <button class="btn btn-sm" title="Delete grease point" onclick="window.deleteZerk('${esc(p.id)}')">✕</button></td></tr>`).join('') || '<tr><td colspan="3">Click the photo to add a fitting.</td></tr>';
     return `<div class="os-zerk-wrapper">${actions}<div class="os-zerk-grid">
-      <div class="zerk-photo-column"><div class="zerk-helper-text">Click the photo to add a fitting. Drag a numbered badge to pull it away from crowded spots.</div><div class="zerk-image-boundary" onclick="window.handleZerkMapClick(event,${idx})">
+      <div class="zerk-photo-column"><div class="zerk-helper-text">Click the photo to add a fitting. Drag numbered labels to move them; leader lines stay attached to the fitting.</div><div class="zerk-image-boundary" onclick="window.handleZerkMapClick(event,${idx})">
         <img src="${esc(views[idx])}" alt="Grease fitting map" draggable="false" onerror="this.style.display='none';this.parentElement.classList.add('zerk-image-missing');this.parentElement.querySelector('.zerk-image-error').hidden=false"><span class="zerk-image-error" hidden>Photo unavailable. Delete this view and add the photo again.</span><div class="zerk-photo-overlay"><svg class="zerk-lines-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>${markers}</div>
       </div></div>
       <div class="os-zerk-list"><div class="os-zerk-list-header">GREASE POINTS — ${active.length}</div><div class="os-zerk-list-body"><table class="os-zerk-fittings-table"><thead><tr><th>#</th><th>Instructions</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
