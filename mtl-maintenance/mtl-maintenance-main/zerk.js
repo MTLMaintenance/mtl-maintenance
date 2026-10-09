@@ -2,10 +2,15 @@
 import { uid, showToast, compressImage } from './utils.js';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
 const machine = () => window.state?.equipment?.find(e => String(e.id) === String(window._currentDetailEquipId));
 const photos = e => Array.isArray(e.zerk_photos) ? e.zerk_photos : [];
 const points = e => Array.isArray(e.zerk_points) ? e.zerk_points : [];
 const names = e => Array.isArray(e.zerk_names) ? e.zerk_names : [];
+const defaultLabelX = p => clamp((Number(p.x) || 0) + 4.5, 4, 96);
+const defaultLabelY = p => clamp((Number(p.y) || 0) - 4.5, 4, 96);
+const labelX = p => clamp(p.lx ?? defaultLabelX(p), 4, 96);
+const labelY = p => clamp(p.ly ?? defaultLabelY(p), 4, 96);
 function activeIndex(e) {
     const idx = Number(window._currentZerkViewIdx) || 0;
     const result = photos(e).length ? Math.max(0, Math.min(idx, photos(e).length - 1)) : 0;
@@ -46,9 +51,89 @@ function updateMap(changes) {
     return saveQueue;
 }
 
+function bindDragListeners() {
+    if (window.__zerkDragListenersBound) return;
+    window.__zerkDragListenersBound = true;
+    document.addEventListener('pointermove', handleDragMove);
+    document.addEventListener('pointerup', handleDragEnd);
+    document.addEventListener('pointercancel', handleDragEnd);
+}
+function handleDragMove(event) {
+    const drag = window.__zerkDragState;
+    if (!drag) return;
+    const image = drag.boundary?.querySelector('img');
+    if (!image || !image.complete || !image.naturalWidth) return;
+    const rect = image.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const nextX = clamp(((event.clientX - rect.left) / rect.width) * 100, 4, 96);
+    const nextY = clamp(((event.clientY - rect.top) / rect.height) * 100, 4, 96);
+    const movedEnough = Math.hypot(event.clientX - drag.startClientX, event.clientY - drag.startClientY) > 4;
+    if (movedEnough) drag.moved = true;
+    drag.lx = Number(nextX.toFixed(2));
+    drag.ly = Number(nextY.toFixed(2));
+    if (drag.calloutEl) {
+        drag.calloutEl.style.left = `${drag.lx}%`;
+        drag.calloutEl.style.top = `${drag.ly}%`;
+        drag.calloutEl.classList.add('dragging');
+    }
+    if (drag.lineEl) {
+        drag.lineEl.setAttribute('x2', `${drag.lx}%`);
+        drag.lineEl.setAttribute('y2', `${drag.ly}%`);
+    }
+}
+function handleDragEnd() {
+    const drag = window.__zerkDragState;
+    if (!drag) return;
+    if (drag.calloutEl) drag.calloutEl.classList.remove('dragging');
+    window.__zerkDragState = null;
+    if (!drag.moved) return;
+    window.__zerkSuppressPointClick = { id: drag.pointId, until: Date.now() + 350 };
+    updateMap(current => ({
+        zerk_points: points(current).map(point => String(point.id) === String(drag.pointId)
+            ? { ...point, lx: drag.lx, ly: drag.ly }
+            : point)
+    }));
+}
+
+export function startZerkCalloutDrag(event, pointId) {
+    if (event.button !== undefined && event.button !== 0) return;
+    const boundary = event.currentTarget.closest('.zerk-image-boundary');
+    if (!boundary) return;
+    bindDragListeners();
+    window.__zerkDragState = {
+        pointId,
+        boundary,
+        calloutEl: event.currentTarget,
+        lineEl: boundary.querySelector(`.zerk-line[data-id="${String(pointId).replace(/"/g, '&quot;')}"]`),
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        moved: false,
+        lx: Number(event.currentTarget.dataset.lx) || 0,
+        ly: Number(event.currentTarget.dataset.ly) || 0
+    };
+    event.preventDefault();
+    event.stopPropagation();
+}
+export function handleZerkCalloutClick(event, pointId) {
+    event?.stopPropagation();
+    const suppress = window.__zerkSuppressPointClick;
+    if (suppress && String(suppress.id) === String(pointId) && Date.now() < suppress.until) return;
+    return editZerkNote(pointId);
+}
+export function resetZerkCallout(pointId) {
+    const e = machine();
+    const p = e && points(e).find(item => String(item.id) === String(pointId));
+    if (!p) return;
+    return updateMap(current => ({
+        zerk_points: points(current).map(item => String(item.id) === String(pointId)
+            ? Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'lx' && key !== 'ly'))
+            : item)
+    }));
+}
+
 export function handleZerkMapClick(event, viewIdx) {
     const e = machine();
-    if (!e || !photos(e)[viewIdx] || event.target.closest('.zerk-dot')) return;
+    if (!e || !photos(e)[viewIdx] || event.target.closest('.zerk-callout') || event.target.closest('.zerk-dot-anchor')) return;
     const image = event.currentTarget.querySelector('img');
     if (!image || !image.complete || !image.naturalWidth) return;
     // The wrapper follows the displayed image size; coordinates remain correct when resized.
@@ -59,10 +144,16 @@ export function handleZerkMapClick(event, viewIdx) {
     if (x < 0 || x > 100 || y < 0 || y > 100) return;
     const note = prompt('Instructions for this fitting:');
     if (note === null) return;
-    return updateMap(current => ({ zerk_points: [...points(current), {
-        id: uid(), x: Number(x.toFixed(2)), y: Number(y.toFixed(2)),
-        note: note.trim(), view_index: viewIdx
-    }] }));
+    const point = {
+        id: uid(),
+        x: Number(x.toFixed(2)),
+        y: Number(y.toFixed(2)),
+        lx: Number(defaultLabelX({ x }).toFixed(2)),
+        ly: Number(defaultLabelY({ y }).toFixed(2)),
+        note: note.trim(),
+        view_index: viewIdx
+    };
+    return updateMap(current => ({ zerk_points: [...points(current), point] }));
 }
 export function deleteZerk(pointId) {
     const e = machine();
@@ -145,15 +236,26 @@ function renderView(e, layout) {
     const nav = views.map((_, i) => `<button class="btn btn-sm ${i === idx ? 'btn-primary' : 'btn-secondary'}" onclick="window._currentZerkViewIdx=${i};window.${layout === 'os' ? 'renderZerkOS' : 'renderZerkTab'}(window._currentDetailEquipId)">${esc(names(e)[i] || `View ${i+1}`)}</button>`).join('');
     const actions = `<div class="os-zerk-subnav"><div class="os-zerk-view-tabs">${nav}</div><div class="os-zerk-view-actions"><input type="file" accept="image/*" style="display:none" aria-label="Select grease map photo" onchange="window.addZerkViewWithTitle(this)"><button type="button" class="btn btn-secondary btn-sm" onclick="this.previousElementSibling.click()">+ Add View</button>${views.length ? `<button class="btn btn-danger btn-sm" onclick="window.deleteZerkView()">Delete View</button><button class="btn btn-secondary btn-sm" onclick="window.renameZerkView(${idx})">Rename View</button>` : ''}</div></div>`;
     if (!views.length) return `<div class="os-zerk-wrapper">${actions}<p>No grease maps for this equipment yet. Add a photo to start marking fittings.</p></div>`;
-    const dots = active.map((p, i) => {
-        const x = Math.min(100, Math.max(0, Number(p.lx ?? p.x) || 0));
-        const y = Math.min(100, Math.max(0, Number(p.ly ?? p.y) || 0));
-        return `<button class="zerk-dot" type="button" title="${esc(p.note || 'Edit fitting')}" style="left:${x}%;top:${y}%" onclick="event.stopPropagation();window.editZerkNote('${esc(p.id)}')">${i+1}</button>`;
+    const lines = active.map(p => {
+        const x = clamp(Number(p.x) || 0, 0, 100);
+        const y = clamp(Number(p.y) || 0, 0, 100);
+        const lx = labelX(p);
+        const ly = labelY(p);
+        return `<line class="zerk-line" data-id="${esc(p.id)}" x1="${x}%" y1="${y}%" x2="${lx}%" y2="${ly}%"></line>`;
     }).join('');
-    const rows = active.map((p,i) => `<tr><td style="width:40px;font-weight:bold;color:#3b82f6">#${i+1}</td><td style="cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere" onclick="window.editZerkNote('${esc(p.id)}')">${esc(p.note || 'Click to add instructions')}</td><td><button class="btn btn-sm" title="Delete grease point" onclick="window.deleteZerk('${esc(p.id)}')">✕</button></td></tr>`).join('') || '<tr><td colspan="3">Click the photo to add a fitting.</td></tr>';
+    const markers = active.map((p, i) => {
+        const x = clamp(Number(p.x) || 0, 0, 100);
+        const y = clamp(Number(p.y) || 0, 0, 100);
+        const lx = labelX(p);
+        const ly = labelY(p);
+        return `
+            <span class="zerk-dot-anchor" style="left:${x}%;top:${y}%" title="Fitting #${i+1}"></span>
+            <button class="zerk-callout" data-id="${esc(p.id)}" data-lx="${lx}" data-ly="${ly}" type="button" title="${esc(p.note || 'Edit fitting')}" style="left:${lx}%;top:${ly}%" onpointerdown="window.startZerkCalloutDrag(event,'${esc(p.id)}')" onclick="window.handleZerkCalloutClick(event,'${esc(p.id)}')">${i+1}</button>`;
+    }).join('');
+    const rows = active.map((p,i) => `<tr><td style="width:40px;font-weight:bold;color:#3b82f6">#${i+1}</td><td style="cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere" onclick="window.editZerkNote('${esc(p.id)}')">${esc(p.note || 'Click to add instructions')}</td><td style="white-space:nowrap"><button class="btn btn-sm" title="Reset label position" onclick="window.resetZerkCallout('${esc(p.id)}')">↺</button> <button class="btn btn-sm" title="Delete grease point" onclick="window.deleteZerk('${esc(p.id)}')">✕</button></td></tr>`).join('') || '<tr><td colspan="3">Click the photo to add a fitting.</td></tr>';
     return `<div class="os-zerk-wrapper">${actions}<div class="os-zerk-grid">
-      <div class="zerk-photo-column"><div class="zerk-image-boundary" onclick="window.handleZerkMapClick(event,${idx})">
-        <img src="${esc(views[idx])}" alt="Grease fitting map" draggable="false" onerror="this.style.display='none';this.parentElement.classList.add('zerk-image-missing');this.parentElement.querySelector('.zerk-image-error').hidden=false"><span class="zerk-image-error" hidden>Photo unavailable. Delete this view and add the photo again.</span><div class="zerk-photo-overlay">${dots}</div>
+      <div class="zerk-photo-column"><div class="zerk-helper-text">Click the photo to add a fitting. Drag a numbered badge to pull it away from crowded spots.</div><div class="zerk-image-boundary" onclick="window.handleZerkMapClick(event,${idx})">
+        <img src="${esc(views[idx])}" alt="Grease fitting map" draggable="false" onerror="this.style.display='none';this.parentElement.classList.add('zerk-image-missing');this.parentElement.querySelector('.zerk-image-error').hidden=false"><span class="zerk-image-error" hidden>Photo unavailable. Delete this view and add the photo again.</span><div class="zerk-photo-overlay"><svg class="zerk-lines-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>${markers}</div>
       </div></div>
       <div class="os-zerk-list"><div class="os-zerk-list-header">GREASE POINTS — ${active.length}</div><div class="os-zerk-list-body"><table class="os-zerk-fittings-table"><thead><tr><th>#</th><th>Instructions</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
     </div></div>`;
@@ -172,6 +274,6 @@ export function renderZerkTab(equipId) {
 export function renderZerkDots() { refresh(); }
 export function showZerkInfo(event, id) { event?.stopPropagation(); return editZerkNote(id); }
 export function highlightZerk(id, active) {
-    document.querySelectorAll('.zerk-dot').forEach(dot => dot.classList.toggle('highlight', active && dot.dataset.id === String(id)));
+    document.querySelectorAll('.zerk-callout').forEach(dot => dot.classList.toggle('highlight', active && dot.dataset.id === String(id)));
 }
 export function setZerkMode(mode) { window.zerkPinMode = mode; }
