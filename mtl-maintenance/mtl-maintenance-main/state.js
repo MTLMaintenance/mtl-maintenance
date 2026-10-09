@@ -4,7 +4,7 @@ if (!window.state) {
         equipment: [], tasks: [], schedules: [], parts: [], suppliers: [], 
         documents: [], partUsage: [], tools: [], wishlist: [], observations: [],
         checklistTemplates: [], wiki: [], users_list_cache: [], consumables: [], faults: [],
-        staffAbsences: [], documentBookmarks: [], documentPageText: []
+        documentBookmarks: [], documentPageText: []
     };
 }
 
@@ -17,8 +17,6 @@ export let selectedLoginUser = null;
 export let enteredPin = "";
 export let lastClickedDate = "";
 export let currentDetailId = null;
-export let selectedAbsenceType = 'all'; 
-export let staffAbsences = [];
 export let zerkPinMode = 'dot'; 
 export let zerkDrawingStep = 1; 
 export let currentWOTab = 'details'; 
