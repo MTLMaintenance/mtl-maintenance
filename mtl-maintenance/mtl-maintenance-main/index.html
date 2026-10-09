@@ -106,7 +106,6 @@
     <nav class="nav" id="main-nav">
       <button class="nav-btn" onclick="showPanel('analytics')">Analytics</button>
       <button class="nav-btn" onclick="showPanel('calendar')">Calendar</button>
-      <button class="nav-btn" id="chat-nav-btn" onclick="showPanel('chat')">Chat</button>
       <button class="nav-btn" onclick="showPanel('checklists')">Checklists</button>
       <button class="nav-btn active" onclick="showPanel('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showPanel('documents')">Docs</button>
@@ -315,48 +314,7 @@
     </div>
   </div>
 </div>
-  <!-- CLEAN CHAT PANEL -->
-<div class="panel" id="panel-chat">
-  <div class="section-header"><span class="section-title">Team Chat</span></div>
-  <div class="chat-layout" style="display:flex; gap:15px; height:calc(100vh - 70px); min-height:780px; align-items: stretch;">
- 
-    
-    <!-- SIDEBAR -->
-    <div id="chat-sidebar">
-      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:8px">Channels</div>
-      <button class="chat-channel-btn active" id="btn-ch-general" onclick="switchChannel('general', this)">
-        # general <span class="unread-dot" id="dot-ch-general" style="display:none"></span>
-      </button>
-      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-top:20px; margin-bottom:8px">Direct Messages</div>
-      <div id="dm-list"></div>
-    </div>
 
-    <!-- MAIN CHAT WINDOW -->
-    <div class="main-chat-window" style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.94); border-radius:var(--radius-lg); border:1px solid var(--border); overflow:hidden">
-     <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; gap:10px; position:relative">
-  <!-- MOBILE MENU BUTTON (Hidden on desktop) -->
-  <button id="chat-mobile-toggle" onclick="toggleChatSidebar()" style="display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text2)">☰</button>
-  
-  <div style="font-weight:700; font-size:15px" id="chat-header-title"># general</div>
-  <button id="chat-channel-menu-btn" onclick="toggleMobileChatMenu(event)" style="display:none">
-    <span style="font-size:15px;line-height:1">☰</span>
-    <span id="chat-channel-menu-label"># general</span>
-  </button>
-  <div id="chat-channel-mobile-menu"></div>
-</div>
-      
-      <div id="chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px"></div>
-      
-      <div style="padding:15px; border-top:1px solid var(--border); background:var(--bg); position:relative">
-        <div id="mention-dropdown" style="display:none; position:absolute; bottom:100%; left:15px; right:15px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); z-index:1001; max-height:150px; overflow-y:auto; margin-bottom:5px"></div>
-        <div style="display:flex; gap:10px; align-items:flex-end">
-          <textarea class="form-textarea" id="chat-input" placeholder="Type a message..." oninput="handleChatInput(this)" onkeydown="chatKeyDown(event)" style="flex:1; min-height:45px; max-height:120px; resize:none; border-radius: 20px; padding: 12px 20px;"></textarea>
-          <button class="btn btn-primary" onclick="sendChatMessage()" style="border-radius: 50%; width: 45px; height: 45px; display:flex; align-items:center; justify-content:center; padding:0">➔</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
   <!-- ANALYTICS -->
 <div class="panel" id="panel-analytics">
@@ -426,7 +384,6 @@
     <button class="tab active" onclick="switchAdminTab('approvals',this)">Pending Approvals</button>
     <button class="tab" onclick="switchAdminTab('users',this)">Active Users</button>
     <button class="tab" onclick="switchAdminTab('permissions',this)">Permissions</button>
-    <button class="tab" onclick="switchAdminTab('deleted-msgs',this)">Deleted Msgs</button>
     <button class="tab" onclick="switchAdminTab('settings',this)">Settings</button>
     <button class="tab" onclick="switchAdminTab('symptoms',this)">Symptoms <span class="badge bd" id="symptom-review-badge" style="display:none">0</span></button>
   </div>
@@ -501,8 +458,6 @@
 </div>
 
   <!-- 4. DELETED MESSAGES -->
-  <div id="admin-deleted-msgs" style="display:none">
-    <div class="card"><div class="card-header"><span class="card-title">Deleted Messages</span></div><div id="deleted-msgs-list"></div></div>
     <div class="card" style="margin-top:12px"><div class="card-header"><span class="card-title">Blocked Users</span></div><div id="blocked-users-list"></div></div>
   </div>
 
@@ -708,7 +663,7 @@
           <select class="form-select" id="p-start-page" style="color: black !important; border: 1px solid #ddd;">
               <option value="analytics">Analytics</option>
               <option value="calendar">Calendar</option>
-              <option value="chat">Chat</option>
+              
               <option value="checklists">Checklists</option>
               <option value="dashboard">Dashboard</option>
               <option value="documents">Docs</option>
@@ -1105,7 +1060,7 @@
       </div>
       <div class="form-group full" id="bug-title-wrap"><label class="form-label" id="bug-title-label">What were you trying to do? *</label><input class="form-input" id="bug-title" placeholder="e.g. Adding a new work order"/></div>
       <div class="form-group full"><label class="form-label" id="bug-desc-label">What happened? *</label><textarea class="form-textarea" id="bug-desc" placeholder="Describe what went wrong..." style="min-height:90px"></textarea></div>
-      <div class="form-group" id="bug-page-wrap"><label class="form-label">Which page?</label><select class="form-select" id="bug-page"><option>Dashboard</option><option>Equipment</option><option>Work Orders</option><option>Schedule</option><option>Parts</option><option>Suppliers</option><option>Documents</option><option>Analytics</option><option>Checklists</option><option>Chat</option><option>Admin</option><option>Other</option></select></div>
+      <div class="form-group" id="bug-page-wrap"><label class="form-label">Which page?</label><select class="form-select" id="bug-page"><option>Dashboard</option><option>Equipment</option><option>Work Orders</option><option>Schedule</option><option>Parts</option><option>Suppliers</option><option>Documents</option><option>Analytics</option><option>Checklists</option><option>Admin</option><option>Other</option></select></div>
       <div class="form-group" id="bug-severity-wrap"><label class="form-label">Severity</label><select class="form-select" id="bug-severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
       <div class="form-group full" id="bug-steps-wrap"><label class="form-label" id="bug-steps-label">Steps to reproduce (optional)</label><textarea class="form-textarea" id="bug-steps" style="min-height:60px" placeholder="1. Go to...&#10;2. Click..."></textarea></div>
     </div>
