@@ -595,7 +595,21 @@ input::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
 }
+.btn-absence {
+    background: #000 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
 
+.btn-absence:hover {
+    opacity: 0.8;
+}
 .view-toggle,
 .tab-bar, {
   display: flex;
@@ -796,7 +810,13 @@ body.dark-mode .modal * {
 .cal-event.work-order.completed { background: #e6ffed !important; color: #28a745 !important; border-left: 3px solid #28a745 !important; }
 .cal-event.work-order.pending { background: #fff4e6 !important; color: #fd7e14 !important; border-left: 3px solid #fd7e14 !important; }
 
-
+/* Staff Absence Color (Yellow) */
+.cal-event.staff-absence { 
+    background: #fff3cd !important; 
+    color: #856404 !important; 
+    border-left: 3px solid #ffc107 !important;
+    font-weight: 600;
+}
 
 /* Forecast/Adaptive Color */
 .cal-event.forecast { background: #f3f0ff !important; color: #6f42c1 !important; border-left: 3px solid #6f42c1 !important; border-style: dashed !important; }
@@ -1433,7 +1453,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 /* BACKGROUND CALENDAR BOX COLORS */
 .cal-event.work-order { background: #007bff !important; color: white !important; border-radius: 4px; }
-
+.cal-event.staff-absence { background: #ffc107 !important; color: #856404 !important; font-weight: 700; border-radius: 4px; }
 
 /* POPUP LIST STYLING */
 .cal-list-item {
@@ -1446,7 +1466,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     margin-bottom: 8px;
 }
 .work-order-border { border-left: 4px solid #007bff; }
-
+.absence-border { border-left: 4px solid #ffc107; }
 
 .cal-edit-btn {
     background: #333;
@@ -1458,7 +1478,21 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     cursor: pointer;
 }
 .cal-edit-btn:hover { background: #555; }
+#absence-detail-modal {
+    display: none;
+    position: fixed !important;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000001 !important; /* One layer higher than the action card */
+    justify-content: center;
+    align-items: center;
+}
 
+/* Ensure it shows as flex when opened */
+#absence-detail-modal[style*="display: block"],
+#absence-detail-modal[style*="display: flex"] {
+    display: flex !important;
+}
 
 
 /* Ensure the Day Action card is slightly lower */
@@ -1468,7 +1502,9 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 #calendar-entry-modal {
     z-index: 2000006 !important; 
 }
-
+#absence-modal {
+    z-index: 2000005 !important;
+}
 
 /* --- SMALL HIGH-CONTRAST SCHEDULE ITEM --- */
 .sched-item {
@@ -3104,11 +3140,120 @@ html {
     }
 }
 
-/* Zerk map: keep overlay exactly aligned to rendered photo at any aspect ratio. */
-.zerk-photo-column { min-width: 0; align-self: start; }
-.zerk-image-boundary { position: relative; width: 100%; line-height: 0; background: #111; border-radius: 10px; overflow: hidden; cursor: crosshair; }
-.zerk-image-boundary > img { display: block; width: 100%; height: auto; max-width: 100%; object-fit: initial; user-select: none; }
-.zerk-photo-overlay { position: absolute; inset: 0; pointer-events: none; }
-.zerk-photo-overlay .zerk-dot { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
-.os-zerk-fittings-table { width: 100%; border-collapse: collapse; }
-.os-zerk-fittings-table th, .os-zerk-fittings-table td { padding: 10px 7px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+
+/* Zerk callout / leader-line enhancements */
+.zerk-photo-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.zerk-helper-text {
+    font-size: 12px;
+    color: #6b7280;
+    padding: 0 2px;
+}
+.zerk-image-boundary {
+    position: relative;
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #222;
+    cursor: crosshair;
+    line-height: 0;
+}
+.zerk-image-boundary img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.zerk-photo-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.zerk-lines-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+.zerk-line {
+    stroke: #f59e0b;
+    stroke-width: 0.45;
+    stroke-linecap: round;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35));
+}
+.zerk-dot-anchor {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #f59e0b;
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    pointer-events: none;
+}
+.zerk-callout {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+    cursor: grab;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+}
+.zerk-callout:hover {
+    filter: brightness(1.08);
+}
+.zerk-callout.dragging {
+    cursor: grabbing;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+}
+.zerk-callout.highlight {
+    outline: 3px solid rgba(245, 158, 11, 0.45);
+}
+.zerk-image-error {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    background: rgba(0,0,0,0.7);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.4;
+}
+.zerk-image-boundary.zerk-image-missing {
+    min-height: 320px;
+}
+@media screen and (max-width: 768px) {
+    .zerk-helper-text {
+        font-size: 11px;
+    }
+    .zerk-callout {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+    .zerk-dot-anchor {
+        width: 10px;
+        height: 10px;
+    }
+}
