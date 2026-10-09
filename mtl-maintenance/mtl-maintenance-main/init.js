@@ -25,7 +25,6 @@ export async function loadState() {
       window._mpdb.from('tool_requests').select('*'),
       window._mpdb.from('observations').select('*').order('created_at', { ascending: false }),
       window._mpdb.from('shop_wiki').select('*'),
-      window._mpdb.from('chat_messages').select('*').order('created_at', { ascending: true }),
       window._mpdb.from('consumables').select('*'),
       window._mpdb.from('fault_logs').select('*'),
       window._mpdb.from('checklist_templates').select('*'),
@@ -46,12 +45,11 @@ export async function loadState() {
     state.tools           = response[8].data  || [];
     state.observations    = response[9].data  || [];
     state.wiki            = response[10].data || [];
-    state.chatMessages    = response[11].data || [];
-    state.consumables     = response[12].data || [];
-    state.faults             = response[13].data || [];
-    state.checklistTemplates = response[14].data || [];
-    state.staffAbsences      = response[15].data || [];
-    state.documentBookmarks  = response[16].data || [];
+    state.consumables     = response[11].data || [];
+    state.faults             = response[12].data || [];
+    state.checklistTemplates = response[13].data || [];
+    state.staffAbsences      = response[14].data || [];
+    state.documentBookmarks  = response[15].data || [];
     
     console.log(`✅ SYNC SUCCESS: Found ${state.equipment.length} machines in database.`);
 
@@ -117,7 +115,6 @@ export async function enterApp(currentUser, state, canFunc, options = {}) {
       const buttons = [
         { id: 'analytics', label: 'Analytics' },
         { id: 'calendar', label: 'Calendar' },
-        { id: 'chat', label: 'Chat' },
         { id: 'checklists', label: 'Checklists' },
         { id: 'dashboard', label: 'Dashboard' },
         { id: 'documents', label: 'Docs' },
@@ -137,8 +134,7 @@ export async function enterApp(currentUser, state, canFunc, options = {}) {
         const b = document.createElement('button');
         b.className = 'nav-btn';
         b.onclick = () => window.showPanel(btn.id);
-        b.innerHTML = btn.id === 'chat' ? 
-          `Chat <span id="chat-unread-top" class="badge bd" style="display:none">0</span>` : btn.label;
+        b.textContent = btn.label;
         nav.appendChild(b);
       });
 
@@ -159,7 +155,6 @@ export async function enterApp(currentUser, state, canFunc, options = {}) {
       const promoted = ['dashboard', 'equipment', 'tasks', 'parts', 'calendar'];
       const moreButtons = [
         { id: 'analytics', label: 'Analytics' },
-        { id: 'chat', label: 'Chat' },
         { id: 'checklists', label: 'Checklists' },
         { id: 'documents', label: 'Docs' },
         { id: 'suppliers', label: 'Suppliers' },
@@ -172,8 +167,7 @@ export async function enterApp(currentUser, state, canFunc, options = {}) {
 
           const b = document.createElement('button');
           b.onclick = () => { window.showPanel(btn.id); window.closeModal('mobile-more-drawer'); };
-          b.innerHTML = btn.id === 'chat' ?
-            `Chat <span id="chat-unread-more" class="badge bd" style="display:none">0</span>` : btn.label;
+          b.textContent = btn.label;
           moreList.appendChild(b);
       });
 
@@ -202,9 +196,6 @@ export async function enterApp(currentUser, state, canFunc, options = {}) {
   }
 
   // 8. Background Services
-  if (typeof window.initChat === 'function') {
-      window.initChat();
-  }
 
   // 9. Force layout snap
   setTimeout(() => {
