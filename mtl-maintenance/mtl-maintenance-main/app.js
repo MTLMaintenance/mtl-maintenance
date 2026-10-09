@@ -38,7 +38,7 @@ import { renderCalendar, triggerAddEntryFromCal, deleteSched, calDayClick, switc
 import { exportEquipmentCSV, exportFullDatabase, exportHealthCSV, printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
-import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS   } from './zerk.js';
+import { renderZerkTab, handleZerkMapClick, deleteZerk, renameZerkView, addZerkViewWithTitle, editZerkNote, deleteZerkView,showZerkInfo,renderZerkDots,highlightZerk,setZerkMode,renderZerkOS, startZerkCalloutDrag, handleZerkCalloutClick, resetZerkCallout } from './zerk.js';
 import { renderEquipmentTable, renderPartsTable, renderQuickSpecs,renderConsumablesTable, refreshObsList, renderRecentObservations,renderChecklistTemplates,renderDocuments,renderMachineTimeline,renderComponentSpecs,editQuickSpec,openSpecModal,saveNewSpec,renderComponentChips,openComponentManagerModal,renderComponentManageList,addNewComponent,deleteComponent,saveComponentRename,deleteSpec    } from './views.js';
 import { saveSupplier, deleteSupplier, pullEquipSuppliers, renderSuppliersTable } from './suppliers.js';
 import { startQRScanner, stopQRScanner } from './scanner.js';
@@ -391,6 +391,9 @@ window.deleteZerk = deleteZerk;
 window.renameZerkView = renameZerkView;
 window.addZerkViewWithTitle = addZerkViewWithTitle;
 window.editZerkNote = editZerkNote;
+window.startZerkCalloutDrag = startZerkCalloutDrag;
+window.handleZerkCalloutClick = handleZerkCalloutClick;
+window.resetZerkCallout = resetZerkCallout;
 window.renderFullHistoryList = (id) => renderFullHistoryList(id, state);
 window.renderQuickSpecs = (id) => renderQuickSpecs(id);
 window.healthColor = healthColor;
