@@ -1,7 +1,6 @@
 import { 
     currentEditingToolId, selectedLoginUser, 
-    enteredPin, lastClickedDate, currentDetailId, selectedAbsenceType, 
-    staffAbsences, zerkPinMode, zerkDrawingStep, currentWOTab, 
+    enteredPin, lastClickedDate, currentDetailId, zerkPinMode, zerkDrawingStep, currentWOTab, 
     woPartsTemp, currentZerkView, allMachineZerks, tempZerkCoords, 
     calDate, MONTHS, currentCalEntryType, _currentDocEditId, 
     _tempFileData, taskPinEntry, currentTargetTaskId,ICONS,  state, pendingPhotos, woPartsAdded,customFieldsTemp
@@ -35,7 +34,7 @@ import { fetchTools, saveTool, deleteTool, addToolNote, deleteToolObservation, h
 import { openAddPart, resetPartForm, editPart, savePart, deletePart, addPartToTask, removePartUsage, updateDashboardParts,addPartToWO,  editConsumable, saveConsumable,openSupplierDetail, deleteInvoice, openPartsCatalog,handleInvoiceDrop, viewInvoicePhoto, deleteConsumable  } from './inventory.js';
 import { renderTasksTable, saveTask, toggleChecklistItem, finalizeTask, openTaskSignoff, pressTaskPin, verifyTaskPinAction, addTaskCheckItem, addTaskComment, deleteTaskComment, deleteChecklistItem,deleteTask,addPartToActiveTask,switchPartsTab,updateTotalCostDisplay,startJobWorkflow,resetTaskForm, toggleSymptomOther, resolveCustomSymptom, populateSymptomDropdown  } from './tasks.js';
 import { updateMetrics, renderEquipListDash, renderSchedDash, getAdaptivePrediction, renderRecentTasks,renderSchedule,renderDashboardObs,renderRecentObsDash,refreshDashboard } from './dashboard.js';
-import { fetchAbsences, renderCalendar, saveAbsence, checkDateSelection, isUserOutOnDate, setAbsenceType, deleteAbsence, openAbsenceModal,closeAbsenceModal,openAbsenceDetail, togglePrivateReason, triggerAddEntryFromCal, deleteSched, calDayClick, triggerAbsenceFromCal, switchCalendarView, setCalEntryType, toggleRecurFields, saveCalendarEntry  } from './calendar.js'
+import { renderCalendar, triggerAddEntryFromCal, deleteSched, calDayClick, switchCalendarView, setCalEntryType, toggleRecurFields, saveCalendarEntry } from './calendar.js'
 import { exportEquipmentCSV, exportFullDatabase, exportHealthCSV, printQRCode, printMachineHistory } from './reports.js';
 import { applyUserPreferences, saveUserProfile, toggleDarkMode } from './settings.js';
 import { saveTpl, deleteTpl,editTemplate } from './checklists.js';
@@ -368,11 +367,6 @@ window.exportEquipCSV = () => exportEquipmentCSV(state);
 window.exportFullDatabase = () => exportFullDatabase(state);
 window.openAddPart = openAddPart;
 window.switchToolModalTab = switchToolModalTab;
-window.openAbsenceModal = openAbsenceModal;
-window.saveAbsence = saveAbsence;
-window.checkDateSelection = checkDateSelection;
-window.setAbsenceType = setAbsenceType;
-window.deleteAbsence = deleteAbsence;
 window.switchCalendarView = switchCalendarView;
 window.setCalEntryType = setCalEntryType;
 window.toggleRecurFields = toggleRecurFields;
@@ -418,9 +412,7 @@ window.renderCustomFields = renderCustomFields;
 window.pendingPhotos = pendingPhotos; 
 window.switchTab = switchTab;
 window.switchWOTab = switchWOTab;
-window.closeAbsenceModal = closeAbsenceModal;
 window.triggerAddEntryFromCal = triggerAddEntryFromCal;
-window.triggerAbsenceFromCal = triggerAbsenceFromCal;
 window.calDate = calDate;
 window.renderCalendar = renderCalendar;
 window.saveUserPerms = saveUserPerms;
@@ -446,8 +438,6 @@ window.saveMarkup = saveMarkup;
 window.renderUsersTable = () => renderUsersTable(state);
 window.openPermissionsCard = (id) => openPermissionsCard(id); // Ensure this is in admin.js
 window.togglePermission = (role, key, val) => togglePermission(role, key, val);
-window.openAbsenceDetail = (id) => openAbsenceDetail(id, window.currentUser, state);
-window.togglePrivateReason = togglePrivateReason;
 window.openSupplierDetail = (id) => openSupplierDetail(id, state);
 window.deleteInvoice = deleteInvoice;
 window.equipName = (id) => equipName(id, state);
@@ -526,7 +516,6 @@ window.editPart = (id) => editPart(id, state);
 window.openTaskSignoff = (id) => openTaskSignoff(id, window.currentUser);
 window.pressTaskPin = pressTaskPin;
 window.triggerAddEntryFromCal = () => triggerAddEntryFromCal(window.lastClickedDate);
-window.triggerAbsenceFromCal = () => triggerAbsenceFromCal(window.lastClickedDate);
 window.deleteSched = deleteSched;
 
 
