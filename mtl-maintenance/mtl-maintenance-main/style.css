@@ -595,21 +595,7 @@ input::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
 }
-.btn-absence {
-    background: #000 !important;
-    color: #fff !important;
-    border: none !important;
-    padding: 6px 12px !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
 
-.btn-absence:hover {
-    opacity: 0.8;
-}
 .view-toggle,
 .tab-bar, {
   display: flex;
@@ -810,13 +796,7 @@ body.dark-mode .modal * {
 .cal-event.work-order.completed { background: #e6ffed !important; color: #28a745 !important; border-left: 3px solid #28a745 !important; }
 .cal-event.work-order.pending { background: #fff4e6 !important; color: #fd7e14 !important; border-left: 3px solid #fd7e14 !important; }
 
-/* Staff Absence Color (Yellow) */
-.cal-event.staff-absence { 
-    background: #fff3cd !important; 
-    color: #856404 !important; 
-    border-left: 3px solid #ffc107 !important;
-    font-weight: 600;
-}
+
 
 /* Forecast/Adaptive Color */
 .cal-event.forecast { background: #f3f0ff !important; color: #6f42c1 !important; border-left: 3px solid #6f42c1 !important; border-style: dashed !important; }
@@ -1453,7 +1433,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 
 /* BACKGROUND CALENDAR BOX COLORS */
 .cal-event.work-order { background: #007bff !important; color: white !important; border-radius: 4px; }
-.cal-event.staff-absence { background: #ffc107 !important; color: #856404 !important; font-weight: 700; border-radius: 4px; }
+
 
 /* POPUP LIST STYLING */
 .cal-list-item {
@@ -1466,7 +1446,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     margin-bottom: 8px;
 }
 .work-order-border { border-left: 4px solid #007bff; }
-.absence-border { border-left: 4px solid #ffc107; }
+
 
 .cal-edit-btn {
     background: #333;
@@ -1478,21 +1458,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
     cursor: pointer;
 }
 .cal-edit-btn:hover { background: #555; }
-#absence-detail-modal {
-    display: none;
-    position: fixed !important;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.85);
-    z-index: 2000001 !important; /* One layer higher than the action card */
-    justify-content: center;
-    align-items: center;
-}
 
-/* Ensure it shows as flex when opened */
-#absence-detail-modal[style*="display: block"],
-#absence-detail-modal[style*="display: flex"] {
-    display: flex !important;
-}
 
 
 /* Ensure the Day Action card is slightly lower */
@@ -1502,9 +1468,7 @@ body.dark-mode .btn-secondary{color:#e8e6de;border-color:#555}
 #calendar-entry-modal {
     z-index: 2000006 !important; 
 }
-#absence-modal {
-    z-index: 2000005 !important;
-}
+
 
 /* --- SMALL HIGH-CONTRAST SCHEDULE ITEM --- */
 .sched-item {
