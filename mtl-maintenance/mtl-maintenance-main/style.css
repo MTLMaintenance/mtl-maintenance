@@ -3103,3 +3103,12 @@ html {
         max-height: 320px !important;
     }
 }
+
+/* Zerk map: keep overlay exactly aligned to rendered photo at any aspect ratio. */
+.zerk-photo-column { min-width: 0; align-self: start; }
+.zerk-image-boundary { position: relative; width: 100%; line-height: 0; background: #111; border-radius: 10px; overflow: hidden; cursor: crosshair; }
+.zerk-image-boundary > img { display: block; width: 100%; height: auto; max-width: 100%; object-fit: initial; user-select: none; }
+.zerk-photo-overlay { position: absolute; inset: 0; pointer-events: none; }
+.zerk-photo-overlay .zerk-dot { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
+.os-zerk-fittings-table { width: 100%; border-collapse: collapse; }
+.os-zerk-fittings-table th, .os-zerk-fittings-table td { padding: 10px 7px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
