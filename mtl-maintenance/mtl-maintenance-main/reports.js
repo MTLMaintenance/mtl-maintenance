@@ -217,7 +217,7 @@ export function exportFullDatabase(stateArg) {
       partUsage: state.partUsage || [], recurrenceRules: state.recurrenceRules || [], tools: state.tools || [],
       observations: state.observations || [], checklistTemplates: state.checklistTemplates || [], wiki: state.wiki || [],
       chatMessages: state.chatMessages || [], consumables: state.consumables || [], faults: state.faults || [],
-      staffAbsences: state.staffAbsences || [], documentBookmarks: state.documentBookmarks || []
+      documentBookmarks: state.documentBookmarks || []
     }
   };
   downloadTextFile('mtl-maintenance-snapshot-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(snapshot, null, 2), 'application/json;charset=utf-8');
