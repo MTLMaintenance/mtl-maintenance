@@ -3,7 +3,7 @@ if (!window.state) {
     window.state = {
         equipment: [], tasks: [], schedules: [], parts: [], suppliers: [], 
         documents: [], partUsage: [], tools: [], wishlist: [], observations: [],
-        checklistTemplates: [], wiki: [], chatMessages: [], users_list_cache: [], consumables: [], faults: [],
+        checklistTemplates: [], wiki: [], users_list_cache: [], consumables: [], faults: [],
         staffAbsences: [], documentBookmarks: [], documentPageText: []
     };
 }
@@ -12,8 +12,6 @@ if (!window.state) {
 export const state = window.state;
 
 // 3. EXPORT ALL UI VARIABLES
-export let chatSub = null;
-export let chatChannel = 'general';
 export let currentEditingToolId = null;
 export let selectedLoginUser = null;
 export let enteredPin = "";
