@@ -20,6 +20,7 @@ export function setSyncStatus(s) {
 // 4. Persistence + offline queue
 const OFFLINE_QUEUE_KEY = 'mp_offline_queue';
 let offlineQueue = loadOfflineQueue();
+let offlineSyncPromise = null;
 
 function loadOfflineQueue() {
   try {
@@ -86,7 +87,17 @@ export async function persist(table, action, record) {
   }
 }
 
-export async function syncOfflineQueue() {
+export function syncOfflineQueue() {
+  // One replay at a time. Multiple online events or manual retries must not
+  // send the same queued operation twice or overwrite newly queued writes.
+  if (offlineSyncPromise) return offlineSyncPromise;
+  offlineSyncPromise = replayOfflineQueue().finally(() => {
+    offlineSyncPromise = null;
+  });
+  return offlineSyncPromise;
+}
+
+async function replayOfflineQueue() {
   if (!offlineQueue.length) {
     saveOfflineQueue();
     return true;
@@ -96,15 +107,19 @@ export async function syncOfflineQueue() {
     return false;
   }
 
-  showToast(`Syncing ${offlineQueue.length} changes...`);
+  const batch = offlineQueue.splice(0);
+  // Persist the in-progress batch until it has been acknowledged by Supabase.
+  // This keeps a browser refresh from silently losing pending changes.
+  offlineQueue.unshift(...batch);
+  saveOfflineQueue();
+  showToast(`Syncing ${batch.length} changes...`);
   const failed = [];
 
-  for (const item of offlineQueue) {
+  for (const item of batch) {
     try {
-      if (!item || !item.record) continue;
+      if (!item || !item.record) throw new Error('Malformed offline queue item');
       const recordId = (typeof item.record === 'object') ? item.record.id : item.record;
       let error = null;
-
       if (item.action === 'upsert') {
         ({ error } = await supabase.from(item.table).upsert(item.record));
       } else if (item.action === 'delete') {
@@ -112,7 +127,6 @@ export async function syncOfflineQueue() {
       } else {
         throw new Error(`Unknown queued action: ${item.action}`);
       }
-
       if (error) throw error;
     } catch (e) {
       console.error('Offline sync failed for item:', item, e);
@@ -120,17 +134,17 @@ export async function syncOfflineQueue() {
     }
   }
 
-  offlineQueue = failed;
+  // The first batch.length records belong to this replay; any records appended
+  // during network awaits remain queued in their original order.
+  offlineQueue = [...failed, ...offlineQueue.slice(batch.length)];
   saveOfflineQueue();
-
-  if (!failed.length) {
+  if (!offlineQueue.length) {
     setSyncStatus('online');
     showToast('All changes synced ✓');
     return true;
   }
-
   setSyncStatus('offline');
-  showToast(`${failed.length} item${failed.length === 1 ? '' : 's'} failed to sync`);
+  showToast(`${offlineQueue.length} item${offlineQueue.length === 1 ? '' : 's'} still waiting to sync`);
   return false;
 }
 
