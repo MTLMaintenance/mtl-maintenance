@@ -31,6 +31,22 @@ export async function loadState() {
       window._mpdb.from('document_bookmarks').select('*')
     ]);
 
+    // Supabase often returns { data: null, error } rather than throwing.
+    // Fail closed on essential collections: do not overwrite loaded state with
+    // empty arrays or show a false "SYNC SUCCESS" when reads fail.
+    const collections = [
+      'equipment', 'tasks', 'schedules', 'parts', 'suppliers', 'documents',
+      'part_usage', 'recurrence_rules', 'tool_requests', 'observations',
+      'shop_wiki', 'consumables', 'fault_logs', 'checklist_templates',
+      'document_bookmarks'
+    ];
+    const failedReads = response.flatMap((result, i) => result.error
+      ? [{ table: collections[i], error: result.error }] : []);
+    if (failedReads.length) {
+      console.error('State load failed; existing records were retained:', failedReads);
+      throw new Error(`Unable to load ${failedReads.map(item => item.table).join(', ')}`);
+    }
+
     // 2. Save data using indices [0, 1, 2...] 
     // This is 100% safe from "Variable not defined" errors.
     state.equipment       = response[0].data  || [];
