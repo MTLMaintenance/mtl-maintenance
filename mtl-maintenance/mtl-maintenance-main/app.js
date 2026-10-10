@@ -638,27 +638,25 @@ window.setupSpecModalEnter = () => {
 
 window.openZerkOS = (id, btn) => {
     window._currentDetailEquipId = id;
-
-    // 1. HIDE the standard sections to make room
-    document.getElementById('mtl-component-specs').style.display = 'none';
-    
-    // Hide the Wisdom and Timeline sections specifically
-    const sections = document.querySelectorAll('.os-section');
-    // We keep index 0 (Header) and index 1 (Job Hub) but hide the rest
-    sections.forEach((sec, index) => {
-        if (index > 2) sec.style.display = 'none'; 
-    });
-
-    // 2. SHOW and DRAW the Grease Map
-    const zerkArea = document.getElementById('mtl-zerk-os-area');
-    if (zerkArea) zerkArea.style.display = 'block';
-    
+    // Only swap content inside the Components section. The old index-based
+    // hiding logic hid the Components section itself after the card redesign.
+    const panel = document.getElementById('panel-machine-profile');
+    const zerkArea = panel?.querySelector('#mtl-zerk-os-area');
+    if (!zerkArea) {
+        console.error('Grease Map container is missing from the equipment card');
+        return;
+    }
+    for (const selector of ['#mtl-component-specs', '#mtl-component-bookmarks']) {
+        const el = panel.querySelector(selector);
+        if (el) el.style.display = 'none';
+    }
+    zerkArea.style.display = 'block';
     window.renderZerkOS(id);
-
-    // 3. Highlight the Grease Map card
-    const cards = btn.parentElement.querySelectorAll('.comp-card-grey');
-    cards.forEach(c => c.style.border = '1px solid #eee');
-    btn.style.border = '2px solid var(--accent)';
+    // Scope highlighting to component chips, never the whole equipment card.
+    const chips = panel.querySelectorAll('#mtl-comp-chip-area .comp-card-grey');
+    chips.forEach(chip => chip.style.border = '1px solid #eee');
+    if (btn) btn.style.border = '2px solid var(--accent)';
+    zerkArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 window.filterTimeline = (component, btn) => {
@@ -686,12 +684,10 @@ window.filterOS = (component, btn) => {
     const zerkArea = document.getElementById('mtl-zerk-os-area');
     if (zerkArea) zerkArea.style.display = 'none';
 
-    // 2. SHOW the standard OS sections (Specs, Wisdom, Timeline)
-    // We target the 'os-section' containers to hide the whole blocks
-    document.getElementById('mtl-component-specs').style.display = 'block';
-    document.querySelectorAll('.os-section').forEach(section => {
-        section.style.display = 'block'; 
-    });
+    // Restore component information without changing the visibility of other
+    // sections (Needs Attention, Mechanic Actions, Shop Wisdom, and Timeline).
+    const specs = document.getElementById('mtl-component-specs');
+    if (specs) specs.style.display = 'block';
 
     // 3. Run the standard filters
     window.renderComponentSpecs(id, component);
