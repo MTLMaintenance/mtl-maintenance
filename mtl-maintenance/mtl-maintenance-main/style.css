@@ -3268,3 +3268,33 @@ html {
 .mechanic-quick-dialog input[readonly] {background:#f1f5f9}
 .mechanic-quick-actions {display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 @media(max-width:768px) {.mechanic-summary-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.mechanic-summary-grid>div:last-child {grid-column:1/-1}.mechanic-open-jobs button {flex-direction:column;align-items:flex-start}}
+
+/* ============================================================
+   GLOBAL SEARCH DROPDOWN — ALWAYS CENTERED UNDER SEARCH BAR
+   ============================================================ */
+#pc-search-wrap {
+    position: relative !important;
+}
+
+#search-results {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    top: calc(100% + 6px) !important;
+    width: min(350px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+}
+
+/* Keep the same centering behavior on phones/tablets. */
+@media screen and (max-width: 768px) {
+    #search-results {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        top: calc(100% + 6px) !important;
+        width: calc(100% - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+    }
+}
+
