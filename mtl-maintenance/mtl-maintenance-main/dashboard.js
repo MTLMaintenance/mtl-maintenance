@@ -13,10 +13,10 @@ function equipName(equipId) {
 // 1. Update the big numbers at the top (Open, Overdue, Total)
 export function updateMetrics() {
     const tasks = window.state.tasks || [];
-    const now = new Date().toISOString().split('T')[0];
+    const now = new Date(); now.setHours(0,0,0,0);
 
-    const openTasks = tasks.filter(t => (t.status || "").toLowerCase() !== "completed");
-    const overdueTasks = openTasks.filter(t => t.due && t.due < now);
+    const openTasks = tasks.filter(attentionOpen);
+    const overdueTasks = openTasks.filter(t => { const due = attentionDate(t.due || t.due_date); return due && due < now; });
 
     const openEl = document.getElementById('m-open');
     const overdueEl = document.getElementById('m-overdue');
@@ -53,7 +53,7 @@ export function renderSchedDash() {
   if (!el) return;
 
   const combined = [...window.state.tasks]
-    .filter(t => t.status !== 'Completed' && t.due)
+    .filter(t => attentionOpen(t) && (t.due || t.due_date))
     .sort((a, b) => new Date(a.due) - new Date(b.due))
     .slice(0, 6);
 
@@ -208,7 +208,9 @@ const attentionEscape = value => String(value ?? '').replace(/[&<>"']/g, ch => (
 const attentionOpen = task => !['completed','closed','cancelled','canceled','done','approved'].includes(String(task.status || '').toLowerCase());
 const attentionDate = value => {
     if (!value) return null;
-    const date = new Date(String(value).slice(0,10) + 'T12:00:00');
+    const raw = String(value).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+    const date = new Date(raw + 'T00:00:00');
     return Number.isNaN(date.getTime()) ? null : date;
 };
 export function renderNeedsAttention() {
@@ -220,7 +222,7 @@ export function renderNeedsAttention() {
     const overdue = tasks.filter(t => { const d = attentionDate(t.due || t.due_date); return d && d < today; });
     const criticalEquipment = (state.equipment || []).filter(e => e.is_locked || ['down','out of service','out-of-service'].includes(String(e.status || '').toLowerCase()));
     const activeFaults = (state.faults || []).filter(f => String(f.status || '').toLowerCase() === 'active');
-    const parts = (state.parts || []).filter(p => Number(p.qty || 0) <= Number(p.reorder || 0));
+    const parts = (state.parts || []).filter(p => { const threshold = Number(p.reorder_qty ?? p.reorder ?? 0); return threshold > 0 && Number(p.qty ?? 0) <= threshold; });
     const tools = (state.tools || []).filter(t => ['available','in shop','checked out',''].includes(String(t.status ?? '').toLowerCase()));
     const badTools = tools.filter(t => t.is_lost || Number(t.health ?? 100) < 75);
     const pending = (state.tools || []).filter(t => ['pending','requested'].includes(String(t.status || '').toLowerCase()));
@@ -228,7 +230,7 @@ export function renderNeedsAttention() {
         {key:'overdue',title:'Overdue Work Orders',count:overdue.length,panel:'tasks',items:overdue.map(t => ({label:t.name || 'Work order',detail:`Due ${String(t.due || t.due_date).slice(0,10)}`,id:t.id,kind:'task'}))},
         {key:'equipment',title:'Equipment Down / Locked',count:criticalEquipment.length,panel:'equipment',items:criticalEquipment.map(e => ({label:e.name || 'Equipment',detail:e.status || 'Locked',id:e.id,kind:'equipment'}))},
         {key:'faults',title:'Active Faults',count:activeFaults.length,panel:'equipment',items:activeFaults.map(f => ({label:(state.equipment || []).find(e => String(e.id) === String(f.equip_id))?.name || 'Equipment fault',detail:f.description || f.code || 'Active fault',id:f.equip_id,kind:'equipment'}))},
-        {key:'parts',title:'Parts to Reorder',count:parts.length,panel:'parts',items:parts.map(p => ({label:p.name || 'Part',detail:`${Number(p.qty || 0)} in stock · reorder at ${Number(p.reorder || 0)}`}))},
+        {key:'parts',title:'Parts to Reorder',count:parts.length,panel:'parts',items:parts.map(p => ({label:p.name || 'Part',detail:`${Number(p.qty || 0)} in stock · reorder at ${Number(p.reorder_qty ?? p.reorder ?? 0)}`}))},
         {key:'tools',title:'Tools Needing Attention',count:badTools.length,panel:'tools',items:badTools.map(t => ({label:t.name || t.tool_name || 'Tool',detail:t.is_lost ? 'Missing' : Number(t.health ?? 100) <= 0 ? 'Out of service' : 'Needs repair'}))},
         {key:'requests',title:'Pending Tool Requests',count:pending.length,panel:'tools',items:pending.map(t => ({label:t.name || t.tool_name || 'Tool request',detail:t.request_reason || t.notes || 'Awaiting review'}))}
     ];
