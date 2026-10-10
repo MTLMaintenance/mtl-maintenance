@@ -1,3 +1,4 @@
+import { openPartMovement, closePartMovement, updatePartMovementStock, submitPartMovement, loadPartMovementHistory, showPartsHistory } from './parts-movements.js';
 import { 
     currentEditingToolId, selectedLoginUser, 
     enteredPin, lastClickedDate, currentDetailId, zerkPinMode, zerkDrawingStep, currentWOTab, 
@@ -1079,3 +1080,16 @@ window.renderAlerts = renderAlerts;
 window.autoCreateCriticalWO = autoCreateCriticalWO;
 window.sendCriticalObsEmail = sendCriticalObsEmail;
 window.notifyManagers = notifyManagers;
+
+Object.assign(window, { openPartMovement, closePartMovement, updatePartMovementStock, submitPartMovement, loadPartMovementHistory, showPartsHistory });
+
+// Restore the regular Parts tabs when leaving Movement History.
+const originalPartsSubTab = window.switchPartsSubTab;
+if (typeof originalPartsSubTab === 'function') {
+  window.switchPartsSubTab = (...args) => {
+    const historyPanel = document.getElementById('parts-history-view');
+    if (historyPanel) historyPanel.style.display = 'none';
+    document.getElementById('btn-parts-history')?.classList.remove('active');
+    return originalPartsSubTab(...args);
+  };
+}
