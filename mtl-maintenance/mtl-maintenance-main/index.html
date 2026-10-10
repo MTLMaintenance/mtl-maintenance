@@ -203,10 +203,17 @@
     </div>
   </div>
 
+  <div class="parts-action-bar">
+    <button class="btn btn-primary" onclick="openPartMovement('out')">− Take Parts</button>
+    <button class="btn btn-secondary" onclick="openPartMovement('in')">+ Receive Parts</button>
+    <span class="parts-action-hint">Record quantities without opening the Edit Part form.</span>
+  </div>
+
   <!-- SUB-TABS FOR PARTS -->
  <div id="parts-subtab-bar" class="tab-bar">
     <button class="tab active" id="btn-parts-inv" onclick="switchPartsSubTab('inventory')">Main Inventory</button>
     <button class="tab" id="btn-parts-cons" onclick="switchPartsSubTab('consumables')">Consumables</button>
+    <button class="tab" id="btn-parts-history" onclick="showPartsHistory(true)">Movement History</button>
 </div>
 
   <!-- VIEW 1: MAIN INVENTORY -->
@@ -219,6 +226,11 @@
     </div>
   </div>
 
+  <div id="parts-history-view" style="display:none">
+    <div class="parts-history-bar"><strong>Recent Parts Movements</strong><button class="btn btn-secondary btn-sm" onclick="loadPartMovementHistory()">Refresh</button></div>
+    <div class="table-wrap"><table><thead><tr><th>When</th><th>Part</th><th>Action</th><th>Qty</th><th>By</th><th>Equipment</th><th>Notes</th></tr></thead><tbody id="parts-history-body"></tbody></table></div>
+  </div>
+
   <!-- VIEW 2: CONSUMABLES (The New Section) -->
   <div id="parts-consumables-view" style="display:none;">
     <div class="table-wrap compact-mobile">
@@ -228,6 +240,21 @@
       </table>
     </div>
   </div>
+</div>
+
+<div id="part-movement-dialog" class="parts-movement-backdrop" style="display:none" onclick="if(event.target===this)closePartMovement()">
+  <form class="parts-movement-card" onsubmit="submitPartMovement(event)">
+    <div class="parts-movement-header"><h2 id="part-movement-title">Take Parts</h2><button type="button" class="btn btn-secondary btn-sm" onclick="closePartMovement()">✕</button></div>
+    <input type="hidden" id="part-movement-mode" value="out">
+    <label>Part *</label><select id="part-movement-part" required onchange="updatePartMovementStock()"></select>
+    <div id="part-movement-stock" class="parts-movement-hint">Select a part.</div>
+    <label>Quantity *</label><input type="number" id="part-movement-qty" min="1" step="1" required value="1">
+    <label>Equipment (optional)</label><select id="part-movement-equipment"></select>
+    <label>Work order (optional)</label><select id="part-movement-task"></select>
+    <label>Notes (optional)</label><textarea id="part-movement-notes" rows="2" placeholder="Why or where the part was used"></textarea>
+    <div id="part-movement-error" class="parts-movement-error" role="alert"></div>
+    <div class="parts-movement-footer"><button type="button" class="btn btn-secondary" onclick="closePartMovement()">Cancel</button><button type="submit" id="part-movement-submit" class="btn btn-primary">Take From Stock</button></div>
+  </form>
 </div>
 
 <div class="panel" id="panel-tools">
@@ -1859,7 +1886,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=20261010-2"></script>
+<script type="module" src="app.js?v=20261010-parts-1"></script>
  
 </body>
 </html>
