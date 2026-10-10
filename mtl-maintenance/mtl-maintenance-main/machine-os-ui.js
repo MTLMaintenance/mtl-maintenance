@@ -2,7 +2,7 @@
 
 export function renderPerfectCard(equipId) {
     const state = window.state;
-    const e = state.equipment.find(x => x.id === equipId);
+    const e = state.equipment.find(x => String(x.id) === String(equipId));
     
     if (!e) return window.showPanel('equipment');
 
@@ -11,7 +11,14 @@ export function renderPerfectCard(equipId) {
 
     // Use window.calcHealth since it's bridged
     const healthScore = typeof window.calcHealth === 'function' ? window.calcHealth(e.id, state.tasks, state.equipment) : 100;
-const faultCount = window.getActiveFaultsCount(e.id);
+const faultCount = typeof window.getActiveFaultsCount === 'function' ? window.getActiveFaultsCount(e.id) : 0;
+    const related = (state.tasks || []).filter(t => String(t.equip_id || t.equipId) === String(e.id));
+    const isOpen = t => !['Completed', 'Cancelled'].includes(t.status);
+    const pending = related.filter(isOpen);
+    const overdue = pending.filter(t => t.due && new Date(`${t.due}T23:59:59`) < new Date());
+    const nextJob = pending.filter(t => t.due).sort((a,b) => new Date(a.due) - new Date(b.due))[0];
+    const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const actionJobs = pending.slice().sort((a,b) => new Date(a.due || '9999-12-31') - new Date(b.due || '9999-12-31')).slice(0, 4);
   const faultBoxColor = faultCount > 0 ? '#ef4444' : '#22c55e'; 
     
     // START OF HTML STRING (Backtick)
@@ -31,10 +38,11 @@ const faultCount = window.getActiveFaultsCount(e.id);
                         </div>
                         <div style="display:flex; gap:10px;">
                             <button class="btn btn-secondary btn-sm" onclick="window.openEquipQRModal('${e.id}')">🏷️ QR Code</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete</button>
+                            <button class="btn btn-secondary btn-sm" onclick="window.toggleMachineManagerActions()" title="Equipment settings">⚙ Settings</button>
                         </div>
                     </div>
                     
+                    <div id="machine-manager-actions" hidden class="mechanic-settings"><button class="btn btn-danger btn-sm" onclick="window.deleteEquip('${e.id}')">🗑 Delete equipment</button></div>
                     <div class="mtl-vitals" style="margin-top:25px; display:grid; grid-template-columns: repeat(2, 1fr); gap:15px;">
                         <div class="v-item"><span>HEALTH</span><b>${healthScore}%</b></div>
                         <div class="v-item" onclick="window.openFaultList('${e.id}')" style="cursor:pointer; border-bottom: 3px solid ${faultBoxColor};">
@@ -44,9 +52,22 @@ const faultCount = window.getActiveFaultsCount(e.id);
                     </div>
                 </div>
 
+                <!-- MACHINE WORK QUEUE -->
+                <div class="os-section mechanic-work-queue">
+                    <h3 class="os-label-dark">Needs Attention</h3>
+                    <div class="mechanic-summary-grid">
+                        <div><span>OPEN WORK ORDERS</span><strong>${pending.length}</strong></div>
+                        <div><span>OVERDUE</span><strong class="${overdue.length ? 'mechanic-alert' : ''}">${overdue.length}</strong></div>
+                        <div><span>NEXT SCHEDULED JOB</span><strong class="mechanic-next">${nextJob ? escapeHtml(nextJob.due) : 'None scheduled'}</strong></div>
+                    </div>
+                    <div class="mechanic-open-jobs">${actionJobs.length ? actionJobs.map(t => `<button type="button" onclick="window.openTaskDetail('${escapeHtml(t.id)}')"><span>${escapeHtml(t.name)}</span><small>${escapeHtml(t.status || 'Open')}${t.due ? ' · ' + escapeHtml(t.due) : ''}</small></button>`).join('') : '<p>No open work orders for this machine.</p>'}</div>
+                </div>
+
                 <!-- JOB HUB -->
                 <div class="os-section">
-                    <h3 class="os-label-dark">Job Hub</h3>
+                    <h3 class="os-label-dark">Mechanic Actions</h3>
+                    <p class="mechanic-hint">Start a work order for a planned job, or quickly record a repair already finished.</p>
+                    <button type="button" class="mechanic-quick-btn" onclick="window.openQuickRepairLog('${e.id}')">✓ Quick Repair Log — Completed Job</button>
                     <div class="os-job-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;">
                         <button class="job-btn-dark" onclick="window.openJobWorkflow('repair', '${e.id}')">🛠 Repair</button>
                         <button class="job-btn-dark" onclick="window.openJobWorkflow('inspect', '${e.id}')">🔍 Inspect</button>
@@ -58,7 +79,7 @@ const faultCount = window.getActiveFaultsCount(e.id);
 
                 <!-- COMPONENTS -->
                 <div class="os-section">
-                    <h3 class="os-label-dark">Components</h3>
+                    <h3 class="os-label-dark">Components & Machine Reference</h3>
                     <div class="os-comp-scroll" id="mtl-comp-chip-area" style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:10px;"></div>
                        <div id="mtl-zerk-os-area" style="display:none; margin-top:20px;"></div>
                     <div id="mtl-component-specs" style="margin-top:15px;"></div>
@@ -164,3 +185,79 @@ export function renderWikiSection(equipId, componentFilter = 'all') {
 }
       
    
+
+
+// Small, already-finished fixes enter the existing approval queue, rather than
+// bypassing the mechanic sign-off / manager approval workflow.
+export function openQuickRepairLog(equipId) {
+    const equip = (window.state?.equipment || []).find(e => String(e.id) === String(equipId));
+    if (!equip) return;
+    let modal = document.getElementById('mechanic-quick-log-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'mechanic-quick-log-modal';
+        modal.className = 'mechanic-quick-modal';
+        modal.innerHTML = `<form id="mechanic-quick-form" class="mechanic-quick-dialog">
+            <h2>Quick Repair Log</h2>
+            <p>For a repair that's already finished. Sends it to manager approval.</p>
+            <label>Equipment<input id="mql-machine" readonly></label>
+            <label>What was repaired? <span>*</span><input id="mql-title" maxlength="200" required placeholder="e.g. Replaced broken grease fitting"></label>
+            <label>Work performed <span>*</span><textarea id="mql-notes" rows="4" required placeholder="Describe the repair and result"></textarea></label>
+            <label>Date completed<input type="date" id="mql-date" required></label>
+            <div class="mechanic-quick-actions"><button type="button" class="btn btn-secondary" id="mql-cancel">Cancel</button><button type="submit" class="btn btn-primary" id="mql-submit">Submit for Approval</button></div>
+        </form>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#mql-cancel').onclick = () => { modal.hidden = true; };
+        modal.addEventListener('click', event => { if (event.target === modal) modal.hidden = true; });
+        modal.querySelector('form').addEventListener('submit', saveQuickRepairLog);
+    }
+    modal.dataset.equipmentId = equip.id;
+    modal.querySelector('#mql-machine').value = equip.name || 'Equipment';
+    modal.querySelector('#mql-title').value = '';
+    modal.querySelector('#mql-notes').value = '';
+    modal.querySelector('#mql-date').value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+    modal.hidden = false;
+    modal.querySelector('#mql-title').focus();
+}
+
+async function saveQuickRepairLog(event) {
+    event.preventDefault();
+    const modal = document.getElementById('mechanic-quick-log-modal');
+    if (!modal || modal.hidden) return;
+    const equipId = modal.dataset.equipmentId;
+    const equip = (window.state?.equipment || []).find(e => String(e.id) === String(equipId));
+    const title = modal.querySelector('#mql-title').value.trim();
+    const notes = modal.querySelector('#mql-notes').value.trim();
+    const date = modal.querySelector('#mql-date').value;
+    if (!equip || !title || !notes || !date) return;
+    const button = modal.querySelector('#mql-submit');
+    button.disabled = true;
+    try {
+        if (!window._mpdb) throw new Error('Database is not connected');
+        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `qr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const record = {
+            id, name: `REPAIR: ${title}`, equip_id: equip.id,
+            due: date, priority: 'Low',
+            assign: window.currentUser?.name || 'Unassigned',
+            notes: `Completed on ${date} by ${window.currentUser?.name || 'Mechanic'}.\n${notes}`,
+            status: 'Pending Approval', checklist: [], created_at: new Date().toISOString()
+        };
+        const {error} = await window._mpdb.from('tasks').insert(record);
+        if (error) throw error;
+        window.state.tasks = window.state.tasks || [];
+        window.state.tasks.push({...record, equipId: equip.id});
+        modal.hidden = true;
+        if (typeof window.renderPerfectCard === 'function') window.renderPerfectCard(equip.id);
+        if (typeof window.renderTasksTable === 'function') window.renderTasksTable();
+        if (typeof window.updateMetrics === 'function') window.updateMetrics();
+        if (typeof window.showToast === 'function') window.showToast('Quick repair sent for approval');
+    } catch (error) {
+        console.error('Quick repair save failed', error);
+        if (typeof window.showToast === 'function') window.showToast(`Could not save repair: ${error.message || 'Please retry'}`);
+    } finally { button.disabled = false; }
+}
+
+export function toggleMachineManagerActions() {
+    const node = document.getElementById('machine-manager-actions');
+    if (node) node.hidden = !node.hidden;
+}
