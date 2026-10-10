@@ -12,7 +12,7 @@ import { openFaultCodeDetail, openAddFaultModal, saveActiveFault,openFaultList, 
 import { addWikiTip, fetchWiki, editWikiTip, deleteWikiTip } from './knowledge.js';
 import { fetchDocumentBookmarks, openBookmarkManager, bmNextPage, bmPrevPage, bmBookmarkCurrentPage, bmAddRangeBookmark, deleteBookmark, renderComponentBookmarks, openDocAtPage } from './bookmarks.js';
 import { openComponentOS } from './components.js';
-import { renderPerfectCard, renderWikiSection} from './machine-os-ui.js';
+import { renderPerfectCard, renderWikiSection, openQuickRepairLog, toggleMachineManagerActions } from './machine-os-ui.js';
 import { openTroubleshootModal, selectTroubleshootSymptom } from './troubleshoot.js';
 import { handleLogoClick, openMobileSearch, } from './mobile.js';
 import { handlePhotoUpload, refreshPhotoGrid, viewPhoto, closePhotoViewer, initMarkup, clearMarkup, closeMarkupModal, saveMarkup } from './photos.js';
@@ -138,6 +138,8 @@ window.openDocAtPage = openDocAtPage;
 window.openJobWorkflow = startJobWorkflow;
 window.openComponentOS = openComponentOS;
 window.renderPerfectCard = renderPerfectCard;
+window.openQuickRepairLog = openQuickRepairLog;
+window.toggleMachineManagerActions = toggleMachineManagerActions;
 window.saveEditObservation = saveEditObservation;
 window.saveCalendarEntry = saveCalendarEntry;
 window.renderCostByEquip = () => renderCostByEquip(state);
