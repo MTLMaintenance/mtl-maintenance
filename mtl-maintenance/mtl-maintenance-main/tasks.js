@@ -313,7 +313,7 @@ export async function saveTask() {
         if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         
         showToast("Work Order Saved ✓");
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast('Could not save work order'); }
 }
 // 3. Checklist Logic: Toggle an item
 export async function toggleChecklistItem(taskId, index) {
@@ -334,24 +334,22 @@ export async function toggleChecklistItem(taskId, index) {
 // 4. Finalize/Sign-off Logic
 export async function finalizeTask(taskId, currentUser) {
     const task = window.state.tasks.find(t => t.id === taskId);
-    if (!task) return;
-
+    if (!task || !currentUser) return false;
     const isManager = currentUser.role === 'admin' || currentUser.role === 'manager';
-
-    if (task.status === 'Pending Approval') {
-        if (!isManager) {
-            alert("Only a manager can finalize this task.");
-            return false;
-        }
-        task.status = 'Completed';
-        await logAuditAction("WO Approved", `Finalized: ${task.name}`, currentUser);
-    } else {
-        task.status = 'Pending Approval';
-        await logAuditAction("WO Sign-off", `Tech completed: ${task.name}`, currentUser);
+    if (task.status === 'Completed') return false;
+    if (task.status === 'Pending Approval' && !isManager) {
+        alert('Only a manager can finalize this task.');
+        return false;
     }
-
-    await persist('tasks', 'upsert', task);
-    showToast("Status Updated ✓");
+    const nextStatus = task.status === 'Pending Approval' ? 'Completed' : 'Pending Approval';
+    const ok = await persist('tasks', 'upsert', { ...task, status: nextStatus });
+    if (!ok) return false;
+    task.status = nextStatus;
+    try {
+        await logAuditAction(nextStatus === 'Completed' ? 'WO Approved' : 'WO Sign-off',
+            `${nextStatus === 'Completed' ? 'Finalized' : 'Tech completed'}: ${task.name}`, currentUser);
+    } catch (error) { console.error('Work order audit log failed:', error); }
+    showToast('Status Updated ✓');
     if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     return true;
 }
@@ -405,37 +403,36 @@ export function pressTaskPin(value) {
 // 2. Verify the PIN typed for the task
 export async function verifyTaskPinAction(currentUser) {
     const task = window.state.tasks.find(t => t.id === window.currentTargetTaskId);
-    const now = new Date().toISOString();
-
-    // PIN SECURITY CHECK
-    if (String(window.taskPinEntry) !== String(currentUser.pin_code || '')) {
-        alert("Incorrect PIN for " + currentUser.name);
-        window.taskPinEntry = "";
-        document.getElementById('task-pin-display').textContent = "";
+    if (!task || !currentUser) { showToast('Work order or user not found'); return false; }
+    if (task.status === 'Completed') { showToast('This work order is already completed'); return false; }
+    if (!window.taskPinEntry || !currentUser.pin_code ||
+        String(window.taskPinEntry) !== String(currentUser.pin_code)) {
+        alert('Incorrect PIN for ' + currentUser.name);
+        window.taskPinEntry = '';
+        const display = document.getElementById('task-pin-display');
+        if (display) display.textContent = '';
         return false;
     }
-
+    const now = new Date().toISOString();
+    const patch = { ...task };
     if (task.status === 'Pending Approval') {
-        // Manager Approval Flow
         if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-            alert("Access Denied: Only a Manager can approve this task.");
+            alert('Access Denied: Only a Manager can approve this task.');
             return false;
         }
-        task.status = 'Completed';
-        task.manager_user_name = currentUser.name;
-        task.manager_signed_at = now;
+        patch.status = 'Completed';
+        patch.manager_user_name = currentUser.name;
+        patch.manager_signed_at = now;
     } else {
-        // Technician Sign-off Flow
-        task.status = 'Pending Approval';
-        task.tech_user_name = currentUser.name;
-        task.tech_signed_at = now;
-
-        const rootCauseInput = document.getElementById('task-pin-root-cause');
-        const rootCause = rootCauseInput ? rootCauseInput.value.trim() : '';
-        if (rootCause) task.root_cause = rootCause;
+        patch.status = 'Pending Approval';
+        patch.tech_user_name = currentUser.name;
+        patch.tech_signed_at = now;
+        const rootCause = document.getElementById('task-pin-root-cause')?.value.trim() || '';
+        if (rootCause) patch.root_cause = rootCause;
     }
-
-    await persist('tasks', 'upsert', task);
+    const saved = await persist('tasks', 'upsert', patch);
+    if (!saved) return false;
+    Object.assign(task, patch);
     if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
     return true;
 }
@@ -507,7 +504,8 @@ export async function deleteTask(id) {
     if (!confirm("Delete this work order?")) return;
 
     try {
-        await window._mpdb.from('tasks').delete().eq('id', id);
+        const { error: deleteError } = await window._mpdb.from('tasks').delete().eq('id', id);
+        if (deleteError) throw deleteError;
 
         // Cascade: remove this task's part usage history too, so deleted
         // work orders don't leave orphaned part_usage rows behind.
@@ -527,7 +525,7 @@ export async function deleteTask(id) {
         if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
         
         showToast("Work Order Removed");
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast('Could not delete work order'); }
 }
 
 export async function deleteTaskComment(commentId, taskId) {
@@ -559,10 +557,14 @@ export async function addPartToActiveTask(taskId) {
     const partId = prompt("Enter Part ID or Scan QR:"); // You can replace this with a dropdown later
     if (!partId) return;
 
-    const qty = parseInt(prompt("How many used?")) || 1;
+    const qtyInput = prompt('How many used?');
+    if (qtyInput === null) return;
+    const qty = Number(qtyInput);
+    if (!Number.isSafeInteger(qty) || qty <= 0) return showToast('Enter a valid positive quantity');
     const part = window.state.parts.find(p => p.id === partId || p.num === partId);
 
-    if (!part) return alert("Part not found in inventory.");
+    if (!part) return alert('Part not found in inventory.');
+    if (qty > Number(part.qty || 0)) return showToast('Not enough parts available');
 
     const usage = {
         id: uid(),
@@ -574,13 +576,22 @@ export async function addPartToActiveTask(taskId) {
         used_at: new Date().toISOString()
     };
 
-    // 1. Save usage
+    // Save stock first. If the usage log cannot be written, restore stock.
+    // NOTE: this is not a database transaction; inventory RPC should replace
+    // this workflow when linked work-order usage is supported there.
+    const originalQty = Number(part.qty || 0);
+    const newQty = originalQty - qty;
+    if (!await persist('parts', 'upsert', { ...part, qty: newQty })) return;
+    const { error: usageError } = await window._mpdb.from('part_usage').insert(usage);
+    if (usageError) {
+        console.error('Could not log work order parts:', usageError);
+        await persist('parts', 'upsert', { ...part, qty: originalQty });
+        showToast('Part usage not recorded; check stock before retrying');
+        return;
+    }
+    part.qty = newQty;
+    window.state.partUsage = window.state.partUsage || [];
     window.state.partUsage.push(usage);
-    await window._mpdb.from('part_usage').insert(usage);
-
-    // 2. Update stock
-    part.qty = Math.max(0, part.qty - qty);
-    await persist('parts', 'upsert', part);
 
     // 3. Refresh the modal view
     if (typeof window.openTaskDetail === 'function') window.openTaskDetail(taskId);
