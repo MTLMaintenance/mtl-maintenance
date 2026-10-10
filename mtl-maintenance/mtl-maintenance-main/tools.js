@@ -52,7 +52,7 @@ export async function saveTool() {
     // tab where they'd never show up in Main Inventory.
     const isNewTool = !(idField.value && idField.value !== "");
     const toolId = isNewTool ? uid() : idField.value;
-    const existing = isNewTool ? null : window.state.tools.find(t => t.id === toolId);
+    const existing = isNewTool ? null : window.state.tools.find(t => String(t.id) === String(toolId));
 
     const record = {
         id: toolId,
@@ -60,9 +60,9 @@ export async function saveTool() {
         tool_name: nameField.value.trim(), // Support both column names
         category: catField.value,
         location: locField.value.trim(),
-        health: parseInt(healthField.value) || 100,
-        is_lost: lostField ? lostField.checked : false,
-        status: existing ? existing.status : 'available',
+        health: ({good: 100, repair: 40, out: 0, missing: 0})[document.getElementById('tool-condition')?.value] ?? 100,
+        is_lost: document.getElementById('tool-condition')?.value === 'missing',
+        status: 'available',
         last_updated: new Date().toISOString()
     };
 
@@ -73,7 +73,7 @@ export async function saveTool() {
 
         // 4. Update Local Memory
         const idx = window.state.tools.findIndex(t => t.id === toolId);
-        if (idx !== -1) window.state.tools[idx] = record;
+        if (idx !== -1) window.state.tools[idx] = {...window.state.tools[idx], ...record};
         else window.state.tools.push(record);
 
         // 5. Cleanup
@@ -88,13 +88,15 @@ export async function saveTool() {
 }
 
 // 3. Delete a Tool
-export async function deleteTool(id, state) {
+export async function deleteTool(id = document.getElementById('tool-edit-id')?.value, state = window.state) {
+    if (!id) return;
     if (!confirm("Are you sure you want to permanently delete this tool?")) return;
     try {
         const { error } = await supabase.from('tool_requests').delete().eq('id', id);
         if (error) throw error;
         state.tools = state.tools.filter(t => t.id !== id);
         showToast("Tool deleted");
+        closeModal('tool-modal'); renderTools();
         return true;
     } catch (e) {
         console.error(e);
@@ -279,42 +281,82 @@ export async function handleWishDenial(id, state) {
     showToast("Request denied");
 }
 
+const htmlEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function conditionOf(tool) {
+    if (tool.is_lost) return { label: 'Missing', key: 'missing' };
+    const health = Number(tool.health ?? 100);
+    if (health <= 0) return { label: 'Out of Service', key: 'out' };
+    if (health < 75) return { label: 'Needs Repair', key: 'repair' };
+    return { label: 'Good', key: 'good' };
+}
+const inventoryTool = t => ['available','In Shop','Checked Out',''].includes(t.status ?? '');
+function renderToolSummary() {
+    const el = document.getElementById('tool-summary');
+    if (!el) return;
+    const all = (window.state?.tools || []).filter(inventoryTool);
+    const attention = all.filter(t => conditionOf(t).key !== 'good').length;
+    const pending = (window.state?.tools || []).filter(t => ['requested','pending'].includes(t.status)).length;
+    el.innerHTML = `<span><b>${all.length}</b> tools listed</span><span><b>${attention}</b> need attention</span><span><b>${pending}</b> wishlist requests pending</span>`;
+}
+export function filterToolInventory() { renderTools(); }
+export function prepareNewWish() {
+    document.getElementById('wish-edit-id').value = '';
+    document.getElementById('wish-name').value = '';
+    document.getElementById('wish-reason').value = '';
+    document.getElementById('wish-modal-title').textContent = 'Suggest a Tool';
+    document.getElementById('wish-submit-btn').textContent = 'Submit';
+    const del = document.getElementById('btn-delete-wish'); if (del) del.style.display = 'none';
+    openModal('wishlist-modal');
+}
+export async function remindToolWish(id) {
+    const request = (window.state?.tools || []).find(t => String(t.id) === String(id));
+    if (!request || !['requested','pending'].includes(request.status)) return;
+    if (!confirm(`Mark "${request.tool_name || request.name}" as still needed?`)) return;
+    try {
+        const timestamp = new Date().toISOString();
+        const { error } = await supabase.from('tool_requests').update({last_updated: timestamp}).eq('id',id);
+        if (error) throw error;
+        request.last_updated = timestamp;
+        renderToolWishlist(); showToast('Request marked still needed ✓');
+    } catch(e) { console.error(e); alert('Could not update reminder: ' + e.message); }
+}
+export async function reviewToolWish(id, action) {
+    if (!['ordered','denied'].includes(action)) return;
+    const req = (window.state?.tools || []).find(t => String(t.id) === String(id));
+    if (!req || !['requested','pending'].includes(req.status)) return;
+    if (!['admin','manager'].includes(window.currentUser?.role)) { showToast('Manager approval required'); return; }
+    const reason = action === 'denied' ? prompt('Reason for denial:') : '';
+    if (action === 'denied' && (reason === null || !reason.trim())) return;
+    if (action === 'ordered' && !confirm(`Approve and mark "${req.tool_name || req.name}" as on order?`)) return;
+    const patch = {status: action, denial_reason: action === 'denied' ? reason.trim() : null, last_updated: new Date().toISOString()};
+    try {
+        const {error} = await supabase.from('tool_requests').update(patch).eq('id',id);
+        if(error) throw error;
+        Object.assign(req,patch);
+        renderToolWishlist(); renderToolDeniedHistory(); renderToolSummary();
+        showToast(action === 'ordered' ? 'Request approved / on order ✓' : 'Request denied ✓');
+    } catch(e) { console.error(e); alert('Review failed: ' + e.message); }
+}
 export function renderTools() {
     const tableBody = document.getElementById('tools-table-body');
     if (!tableBody) return;
-
-    // Filter tools from the master state
-    const inventory = (window.state.tools || []).filter(t => 
-        t.status === 'available' || t.status === 'ordered' || !t.status
-    );
-
-    if (inventory.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No tools in inventory.</td></tr>';
-        return;
-    }
-
-    // Map through the filtered 'inventory' list
-    tableBody.innerHTML = inventory.map(t => {
-        const name = t.tool_name || t.name || 'Unnamed';
-        const health = t.health || 100;
-        const status = t.status || 'available';
-        const location = t.location || '—';
-        const isOrdered = status === 'ordered';
-
-        return `
-            <tr id="tool-row-${t.id}" onclick="window.editTool('${t.id}')" style="cursor:pointer; ${isOrdered ? 'background:rgba(0,123,255,0.05);' : ''}">
-                <td data-label="Tool Name"><b>${name}</b></td>
-                <td data-label="Category">${t.category || 'Other'}</td>
-                <td data-label="Location">${isOrdered ? '📦 ON ORDER' : location}</td>
-                <td data-label="Condition">
-                    <div style="width:60px; height:8px; background:#ddd; border-radius:4px; overflow:hidden;">
-                        <div style="width:${health}%; height:100%; background:${health > 40 ? '#28a745' : '#dc3545'};"></div>
-                    </div>
-                </td>
-                <td data-label="Status"><span class="badge ${isOrdered ? 'bi' : 'bs'}">${status.toUpperCase()}</span></td>
-                <td data-label="Procurement">${t.procurement || '—'}</td>
-            </tr>`;
-    }).join(''); 
+    renderToolSummary();
+    const query = (document.getElementById('tool-inventory-search')?.value || '').trim().toLowerCase();
+    const condition = document.getElementById('tool-condition-filter')?.value || 'all';
+    const inventory = (window.state?.tools || []).filter(inventoryTool).filter(t => {
+        const matchesQuery = [t.tool_name,t.name,t.category,t.location].some(value => String(value || '').toLowerCase().includes(query));
+        return matchesQuery && (condition === 'all' || conditionOf(t).key === condition);
+    });
+    tableBody.innerHTML = inventory.length ? inventory.map(t => {
+        const status = conditionOf(t);
+        return `<tr id="tool-row-${htmlEscape(t.id)}" onclick="window.editTool('${htmlEscape(t.id)}')" style="cursor:pointer">
+            <td data-label="Tool Name"><b>${htmlEscape(t.tool_name || t.name || 'Unnamed')}</b></td>
+            <td data-label="Category">${htmlEscape(t.category || 'Other')}</td>
+            <td data-label="Location">${htmlEscape(t.location || '—')}</td>
+            <td data-label="Condition"><span class="tool-condition-pill tool-condition-${status.key}">${status.label}</span></td>
+            <td data-label="Action">Edit ›</td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;padding:24px;color:#777">No matching tools.</td></tr>';
 }
 
 
@@ -371,74 +413,26 @@ export function renderDeniedList() {
 }
 
 export function resetToolForm() {
-    console.log("Resetting Tool Form Safely...");
-    
-    // 1. Reset the Title so it doesn't say "Edit" when adding a new tool
-    const titleEl = document.getElementById('tool-modal-title');
-    if (titleEl) titleEl.textContent = 'Add New Tool';
-
-    // 2. THE FIX: Hide the delete button when adding new
-    const deleteBtn = document.getElementById('tool-delete-btn');
-    if (deleteBtn) deleteBtn.style.display = 'none'; 
-
-    // 3. List of IDs based on your HTML
-    const fieldIds = [
-        'tool-edit-id', // Clears the hidden ID
-        'tool-name', 
-        'tool-cat',     // Matches HTML
-        'tool-loc',     // Matches HTML
-        'tool-health'   // Matches HTML
-    ];
-
-    fieldIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = (id === 'tool-health') ? '100' : ''; 
-    });
-
-    // Reset health text
-    const condVal = document.getElementById('cond-val');
-    if (condVal) condVal.textContent = '100%';
-
-    // Reset checkbox
-    const lostCheck = document.getElementById('tool-lost');
-    if (lostCheck) lostCheck.checked = false;
+    document.getElementById('tool-edit-id').value = '';
+    document.getElementById('tool-modal-title').textContent = 'Add New Tool';
+    document.getElementById('tool-name').value = '';
+    document.getElementById('tool-cat').value = 'Hand Tool';
+    document.getElementById('tool-loc').value = '';
+    document.getElementById('tool-condition').value = 'good';
+    const del = document.getElementById('tool-delete-btn'); if(del) del.style.display = 'none';
 }
- export async function editTool(id) {
-    console.log("Editing Tool ID:", id);
-
-    // 1. Find the specific tool in your Master State
-    const tool = window.state.tools.find(x => x.id === id);
-
-    // 2. SAFETY CHECK: If it can't find it, stop before crashing
-    if (!tool) {
-        console.error("Could not find tool with ID:", id);
-        return;
-     const idInput = document.getElementById('tool-edit-id');
-    if (idInput) idInput.value = tool.id; 
-    }
-
-    // 3. Open the Modal UI
-    window.openModal('tool-modal');
-    if (typeof window.switchToolModalTab === 'function') window.switchToolModalTab('details');
-
-    // 4. Populate the Form Fields (Using the IDs from your HTML)
-    const idInput = document.getElementById('tool-edit-id');
-    if (idInput) idInput.value = tool.id;
-
+export async function editTool(id) {
+    const tool = (window.state?.tools || []).find(x => String(x.id) === String(id));
+    if(!tool) return;
+    openModal('tool-modal');
+    if(typeof window.switchToolModalTab === 'function') window.switchToolModalTab('details');
+    document.getElementById('tool-edit-id').value = tool.id;
     document.getElementById('tool-modal-title').textContent = 'Edit: ' + (tool.tool_name || tool.name);
     document.getElementById('tool-name').value = tool.tool_name || tool.name || '';
     document.getElementById('tool-cat').value = tool.category || 'Other';
     document.getElementById('tool-loc').value = tool.location || '';
-    document.getElementById('tool-health').value = tool.health || 100;
-    
-    const condVal = document.getElementById('cond-val');
-    if (condVal) condVal.textContent = (tool.health || 100) + '%';
-    
-    document.getElementById('tool-lost').checked = !!tool.is_lost;
-
-    // 5. Show the Delete Button
-    const delBtn = document.getElementById('tool-delete-btn');
-    if (delBtn) delBtn.style.display = 'block';
+    document.getElementById('tool-condition').value = conditionOf(tool).key;
+    const del = document.getElementById('tool-delete-btn'); if(del) del.style.display = 'block';
 }
 export async function editToolObservation(obsId) {
     // 1. Find the existing note in your Master State
@@ -530,78 +524,55 @@ export async function saveWishRequest() {
     const editId = document.getElementById('wish-edit-id').value;
     const rawName = document.getElementById('wish-name').value.trim();
     const reason = document.getElementById('wish-reason').value.trim();
-
-    if (!rawName || !reason) return alert("Fill in name and reason.");
-
-    const existing = editId ? state.tools.find(t => t.id === editId) : null;
-    const isEdit = !!existing;
-
+    if(!rawName || !reason) return alert('Enter the tool name and reason.');
+    const existing = editId ? (window.state?.tools || []).find(t => String(t.id) === String(editId)) : null;
+    if (existing && !['requested','pending'].includes(existing.status)) return alert('Only pending requests may be edited.');
+    const user = window.currentUser || {};
     const req = {
-        id: (editId && editId !== "") ? editId : uid(),
-        name: rawName,
-        tool_name: rawName,
-        request_reason: reason, 
-        notes: reason,
-        requested_by: existing ? existing.requested_by : (currentUser.full_name || currentUser.username),
-        author_id: existing ? existing.author_id : String(currentUser.id), 
-        status: 'requested',
-        created_at: existing ? existing.created_at : new Date().toISOString()
+        ...(existing || {}),
+        id: existing?.id || uid(),
+        name: rawName, tool_name: rawName, request_reason: reason, notes: reason,
+        requested_by: existing?.requested_by || user.full_name || user.name || user.username || 'Unknown',
+        author_id: existing?.author_id || String(user.id || ''),
+        status: existing?.status || 'requested',
+        created_at: existing?.created_at || new Date().toISOString(),
+        last_updated: new Date().toISOString()
     };
-
+    // Only send known writable fields: fetched records may contain generated DB fields.
+    const allowed = ['id','name','tool_name','request_reason','notes','requested_by','author_id','status','created_at','last_updated'];
+    const payload = Object.fromEntries(allowed.filter(k => k in req).map(k => [k,req[k]]));
     try {
-        const { error } = await window._mpdb.from('tool_requests').upsert([req]);
-        if (error) throw error;
-
-        // --- ACCOUNTABILITY LOGGING ---
-        if (typeof logAuditAction === 'function') {
-            const action = isEdit ? "Updated Wishlist Item" : "New Wishlist Request";
-            const details = `Tool: "${req.name}", Reason: "${req.request_reason}" (Requested by: ${req.requested_by})`;
-            
-            await logAuditAction(action, details);
-        }
-        // ------------------------------
-
-        showToast("Saved successfully ✓");
+        const { error } = await window._mpdb.from('tool_requests').upsert(payload);
+        if(error) throw error;
+        showToast('Tool request saved ✓');
         closeModal('wishlist-modal');
-        
-        await fetchTools();
-        renderToolWishlist();
-        
-        document.getElementById('wish-edit-id').value = "";
-
-    } catch (e) { 
-        console.error("Wishlist Error:", e);
-        alert("Error: " + e.message); 
-    }
+        await fetchTools(); renderToolWishlist(); renderToolSummary();
+    } catch(e) { console.error('Wishlist error', e); alert('Could not save request: ' + e.message); }
 }
 export function renderToolDeniedHistory() {
-    const tableBody = document.getElementById('denied-table-body');
-    if (!tableBody) return;
-
-    const denied = (window.state.tools || []).filter(t => t.status === 'denied');
-
-    tableBody.innerHTML = denied.length ? denied.map(t => `
-        <tr onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
-            <td data-label="Tool Name"><b>${t.tool_name}</b></td>
-            <td data-label="Category">${t.category || 'Other'}</td>
-            <td data-label="Denied Reason" style="color:#dc3545; font-size:12px;">${t.denial_reason || '—'}</td>
-            <td data-label="Status"><span class="badge bd">DENIED</span></td>
-        </tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No denied items.</td></tr>';
+    const body = document.getElementById('denied-table-body');
+    if (!body) return;
+    const items = (window.state?.tools || []).filter(t => t.status === 'denied' || (t.status === 'available' && !!t.requested_by));
+    body.innerHTML = items.length ? items.map(t => `<tr>
+        <td data-label="Tool Name"><b>${htmlEscape(t.tool_name || t.name)}</b></td>
+        <td data-label="Requested By">${htmlEscape(t.requested_by || '—')}</td>
+        <td data-label="Reason / Outcome">${htmlEscape(t.status === 'denied' ? (t.denial_reason || 'Denied') : 'Purchased / received into inventory')}</td>
+        <td data-label="Status"><span class="tool-condition-pill ${t.status === 'denied' ? 'tool-condition-out':'tool-condition-good'}">${t.status === 'denied' ? 'Denied' : 'Received'}</span></td>
+    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;padding:20px;color:#888">No completed wishlist requests yet.</td></tr>';
 }
 
-export  async function receiveOrderedTool(id) {
-    if (!confirm("Confirm this tool has arrived and is now in inventory?")) return;
-
-    await window._mpdb.from('tool_requests').update({ 
-        status: 'available', 
-        location: 'Main Crib', 
-        health: 100 
-    }).eq('id', id);
-
-    await fetchTools();
-    renderTools();
-    renderToolWishlist();
-    showToast("Tool checked in ✓");
+export async function receiveOrderedTool(id) {
+    const item = (window.state?.tools || []).find(t => String(t.id) === String(id));
+    if(!item || item.status !== 'ordered') return;
+    if(!['admin','manager'].includes(window.currentUser?.role)) return alert('Manager approval required.');
+    if(!confirm('Confirm this ordered tool has arrived and add it to inventory?')) return;
+    try {
+        const patch={status:'available', location:'Main Tool Crib', health:100, is_lost:false, last_updated:new Date().toISOString()};
+        const {error}=await window._mpdb.from('tool_requests').update(patch).eq('id', id);
+        if(error) throw error;
+        Object.assign(item,patch);
+        renderTools(); renderToolWishlist(); showToast('Tool received into inventory ✓');
+    } catch(e) {console.error(e); alert('Could not receive tool: '+e.message);}
 }
 
 export  async function deleteWishItem(id) {
@@ -671,41 +642,28 @@ export function openWishDetailCard(id) {
     }
 }; 
 
-export async function toggleToolStatus(id) {
-  const t = state.tools.find(x => x.id === id);
-  if (t.status === 'In Shop') {
-    t.status = 'Checked Out';
-    t.checked_out_by = currentUser.name;
-  } else {
-    t.status = 'In Shop';
-    t.checked_out_by = null;
-  }
-  t.last_updated = new Date().toISOString();
-  await persist('shop_tools', 'upsert', t);
-  renderTools();
-}  
+// Legacy compatibility: checkout tracking is intentionally disabled.
+export function toggleToolStatus() { showToast('Use the tool condition field to update shared tools.'); }
 
 export function renderToolWishlist() {
-    const tableBody = document.getElementById('wishlist-table-body');
-    if (!tableBody) return;
-
-    const wishlist = (window.state.tools || []).filter(t => t.status === 'requested' || t.status === 'ordered');
-
-    tableBody.innerHTML = wishlist.length ? wishlist.map(t => {
-        const statusLabel = t.status === 'ordered' 
-            ? '<span class="badge bi">📦 ON ORDER</span>' 
-            : '<span class="badge" style="background:#eee; color:#666;">Requested</span>';
-
-        return `
-            <tr id="wishlist-row-${t.id}" onclick="openWishDetailCard('${t.id}')" style="cursor:pointer;">
-                <td data-label="Tool Name"><b>${t.tool_name}</b></td>
-                <td data-label="Category">${t.category || 'Other'}</td>
-                <td data-label="Requested By">${t.requested_by}</td>
-                <td data-label="Status">${statusLabel}</td>
-            </tr>`;
-    }).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">No pending requests.</td></tr>';
+    const body = document.getElementById('wishlist-table-body'); if(!body) return;
+    renderToolSummary();
+    const user=window.currentUser||{};
+    const manager=['admin','manager'].includes(user.role);
+    const items=(window.state?.tools||[]).filter(t=>['requested','pending','ordered','approved'].includes(t.status));
+    body.innerHTML = items.length ? items.map(t=> {
+        const isPending=['requested','pending'].includes(t.status);
+        const by=htmlEscape(t.requested_by||'—');
+        const reminder=t.last_updated ? new Date(t.last_updated).toLocaleDateString() : '—';
+        const actions=isPending ? `<button class="btn btn-sm" onclick="event.stopPropagation();window.remindToolWish('${htmlEscape(t.id)}')">Still Needed</button> ${manager ? `<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();window.reviewToolWish('${htmlEscape(t.id)}','ordered')">Approve / Order</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();window.reviewToolWish('${htmlEscape(t.id)}','denied')">Deny</button>` : ''}` : (t.status==='ordered' ? `<button class="btn btn-sm" onclick="event.stopPropagation();window.receiveOrderedTool('${htmlEscape(t.id)}')">Received</button>` : '—');
+        return `<tr style="cursor:${isPending?'pointer':'default'}" ${isPending?`onclick="window.openWishDetailCard('${htmlEscape(t.id)}')"`:''}>
+         <td data-label="Tool Name"><b>${htmlEscape(t.tool_name||t.name)}</b><div style="font-size:11px;color:#777">${htmlEscape(t.request_reason||t.notes||'')}</div></td>
+         <td data-label="Requested By">${by}</td>
+         <td data-label="Status"><span class="tool-condition-pill">${isPending?'Pending':t.status==='ordered'?'On Order':'Approved'}</span></td>
+         <td data-label="Last Activity">${htmlEscape(reminder)}</td>
+         <td data-label="Actions">${actions}</td></tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px">No outstanding requests.</td></tr>';
 }
-
 export async function receiveTool() {
     const id = document.getElementById('tool-edit-id').value;
     if(!id) return;
