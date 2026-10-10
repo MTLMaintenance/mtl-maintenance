@@ -173,6 +173,7 @@ export function refreshDashboard() {
     renderRecentTasks();
     renderRecentObsDash();
     updateDashboardParts(window.state);
+    renderNeedsAttention();
 }
 
 // NEW: Recent Observations card on the main dashboard.
@@ -199,3 +200,45 @@ export function renderRecentObsDash() {
     `).join('') || '<div style="color:var(--text3); font-size:11px; padding:8px 0">No observations yet.</div>';
 }
     
+
+
+// Central read-only action queue. Uses existing in-memory data and existing navigation.
+// No extra queries or database migrations required.
+const attentionEscape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const attentionOpen = task => !['completed','closed','cancelled','canceled','done','approved'].includes(String(task.status || '').toLowerCase());
+const attentionDate = value => {
+    if (!value) return null;
+    const date = new Date(String(value).slice(0,10) + 'T12:00:00');
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+export function renderNeedsAttention() {
+    const root = document.getElementById('needs-attention-dashboard');
+    if (!root) return;
+    const state = window.state || {};
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tasks = (state.tasks || []).filter(attentionOpen);
+    const overdue = tasks.filter(t => { const d = attentionDate(t.due || t.due_date); return d && d < today; });
+    const criticalEquipment = (state.equipment || []).filter(e => e.is_locked || ['down','out of service','out-of-service'].includes(String(e.status || '').toLowerCase()));
+    const activeFaults = (state.faults || []).filter(f => String(f.status || '').toLowerCase() === 'active');
+    const parts = (state.parts || []).filter(p => Number(p.qty || 0) <= Number(p.reorder || 0));
+    const tools = (state.tools || []).filter(t => ['available','in shop','checked out',''].includes(String(t.status ?? '').toLowerCase()));
+    const badTools = tools.filter(t => t.is_lost || Number(t.health ?? 100) < 75);
+    const pending = (state.tools || []).filter(t => ['pending','requested'].includes(String(t.status || '').toLowerCase()));
+    const groups = [
+        {key:'overdue',title:'Overdue Work Orders',count:overdue.length,panel:'tasks',items:overdue.map(t => ({label:t.name || 'Work order',detail:`Due ${String(t.due || t.due_date).slice(0,10)}`,id:t.id,kind:'task'}))},
+        {key:'equipment',title:'Equipment Down / Locked',count:criticalEquipment.length,panel:'equipment',items:criticalEquipment.map(e => ({label:e.name || 'Equipment',detail:e.status || 'Locked',id:e.id,kind:'equipment'}))},
+        {key:'faults',title:'Active Faults',count:activeFaults.length,panel:'equipment',items:activeFaults.map(f => ({label:(state.equipment || []).find(e => String(e.id) === String(f.equip_id))?.name || 'Equipment fault',detail:f.description || f.code || 'Active fault',id:f.equip_id,kind:'equipment'}))},
+        {key:'parts',title:'Parts to Reorder',count:parts.length,panel:'parts',items:parts.map(p => ({label:p.name || 'Part',detail:`${Number(p.qty || 0)} in stock · reorder at ${Number(p.reorder || 0)}`}))},
+        {key:'tools',title:'Tools Needing Attention',count:badTools.length,panel:'tools',items:badTools.map(t => ({label:t.name || t.tool_name || 'Tool',detail:t.is_lost ? 'Missing' : Number(t.health ?? 100) <= 0 ? 'Out of service' : 'Needs repair'}))},
+        {key:'requests',title:'Pending Tool Requests',count:pending.length,panel:'tools',items:pending.map(t => ({label:t.name || t.tool_name || 'Tool request',detail:t.request_reason || t.notes || 'Awaiting review'}))}
+    ];
+    const count = groups.reduce((sum,g) => sum + g.count,0);
+    const totalEl = document.getElementById('needs-attention-total');
+    if (totalEl) totalEl.textContent = `${count} item${count === 1 ? '' : 's'} requiring attention`;
+    root.innerHTML = groups.map(g => `<section class="attention-group" data-attention="${g.key}">
+      <button type="button" class="attention-group-heading" onclick="window.showPanel('${g.panel === 'tasks' ? 'tasks' : g.panel}')">
+        <span>${attentionEscape(g.title)}</span><strong class="${g.count ? 'attention-has-items' : ''}">${g.count}</strong>
+      </button>
+      ${g.count ? `<div class="attention-entries">${g.items.slice(0,4).map(item => `<button type="button" class="attention-entry" ${item.id && item.kind ? `onclick="window.showPanel('${g.panel === 'tasks' ? 'tasks' : g.panel}');${item.kind==='task' ? `window.openTaskDetail?.('${String(item.id).replace(/[^a-zA-Z0-9_-]/g, '')}')` : `window.openEquipDetail?.('${String(item.id).replace(/[^a-zA-Z0-9_-]/g, '')}')`}"` : `onclick="window.showPanel('${g.panel === 'tasks' ? 'tasks' : g.panel}')"`}><span>${attentionEscape(item.label)}</span><small>${attentionEscape(item.detail)}</small></button>`).join('')}${g.count > 4 ? `<div class="attention-more">+${g.count-4} more — open ${attentionEscape(g.title)}</div>` : ''}</div>` : '<div class="attention-empty">Nothing needs attention</div>'}
+    </section>`).join('');
+}
