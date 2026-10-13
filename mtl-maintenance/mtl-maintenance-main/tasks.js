@@ -254,38 +254,39 @@ export async function saveTask() {
     };
 
     try {
-        const { error } = await window._mpdb.from('tasks').insert(record);
-        if (error) throw error;
-
-        // 1. Update State
-        window.state.tasks.push({ ...record, equipId: record.equip_id });
-
-        // 2. Carry over any parts staged during creation
-        if (partsToLog.length) {
-            for (const p of partsToLog) {
-                const part = window.state.parts.find(x => x.id === p.part_id);
-                const usage = {
-                    id: uid(),
-                    task_id: record.id,
-                    part_id: p.part_id,
-                    part_name: p.part_name,
-                    qty_used: p.qty_used,
-                    unit_cost: p.unit_cost || 0,
-                    line_total: (p.unit_cost || 0) * p.qty_used,
-                    used_by: window.currentUser?.name || 'Unknown',
-                    used_at: new Date().toISOString()
-                };
-                try {
-                    await window._mpdb.from('part_usage').insert(usage);
-                    window.state.partUsage = window.state.partUsage || [];
-                    window.state.partUsage.push(usage);
-                    if (part) {
-                        part.qty = Math.max(0, (part.qty || 0) - p.qty_used);
-                        await persist('parts', 'upsert', part);
-                    }
-                } catch (err) { console.error("Failed to carry over part usage:", err); }
-            }
+        // The RPC creates the task, deducts stock, logs part_usage and movement
+        // history in one PostgreSQL transaction. Any failure rolls it all back.
+        const staged = partsToLog.map(p => ({
+            part_id: String(p.part_id),
+            qty_used: Number(p.qty_used),
+            usage_id: uid()
+        }));
+        if (staged.some(p => !p.part_id || !Number.isSafeInteger(p.qty_used) || p.qty_used <= 0)) {
+            showToast('Invalid part quantity in work order');
+            return;
         }
+        // Don't silently save a work order if the parts-sync RPC is unavailable.
+        const { data: movements, error } = await window._mpdb.rpc('mtl_create_work_order_with_parts', {
+            p_task: record,
+            p_parts: staged,
+            p_actor: String(window.currentUser?.name || window.currentUser?.username || 'Unknown')
+        });
+        if (error) throw error;
+        window.state.tasks.push({ ...record, equipId: record.equip_id });
+        window.state.partUsage = window.state.partUsage || [];
+        (movements || []).forEach(m => {
+            const matched = partsToLog.find(p => String(p.part_id) === String(m.part_id));
+            const part = window.state.parts.find(p => String(p.id) === String(m.part_id));
+            if (part) part.qty = Number(m.new_qty);
+            window.state.partUsage.push({
+                id: m.usage_id, task_id: record.id, part_id: m.part_id,
+                part_name: part?.name || matched?.part_name || '',
+                qty_used: m.qty_used, unit_cost: Number(part?.cost ?? matched?.unit_cost ?? 0),
+                line_total: Number(part?.cost ?? matched?.unit_cost ?? 0) * m.qty_used,
+                used_by: window.currentUser?.name || 'Unknown',
+                used_at: new Date().toISOString()
+            });
+        });
 
         // 3. Carry over the initial comment, if one was written
         if (initialComment) {
@@ -576,20 +577,24 @@ export async function addPartToActiveTask(taskId) {
         used_at: new Date().toISOString()
     };
 
-    // Save stock first. If the usage log cannot be written, restore stock.
-    // NOTE: this is not a database transaction; inventory RPC should replace
-    // this workflow when linked work-order usage is supported there.
-    const originalQty = Number(part.qty || 0);
-    const newQty = originalQty - qty;
-    if (!await persist('parts', 'upsert', { ...part, qty: newQty })) return;
-    const { error: usageError } = await window._mpdb.from('part_usage').insert(usage);
-    if (usageError) {
-        console.error('Could not log work order parts:', usageError);
-        await persist('parts', 'upsert', { ...part, qty: originalQty });
-        showToast('Part usage not recorded; check stock before retrying');
+    // One atomic DB operation: stock deduction + part_usage + movement history.
+    if (!navigator.onLine) return showToast('Internet required to record work-order parts');
+    const { data: newQty, error } = await window._mpdb.rpc('mtl_log_work_order_part', {
+        p_task_id: String(taskId),
+        p_part_id: String(part.id),
+        p_quantity: qty,
+        p_actor: String(window.currentUser?.name || window.currentUser?.username || 'Unknown'),
+        p_usage_id: usage.id,
+        p_equipment_id: String(window.state.tasks.find(t => String(t.id) === String(taskId))?.equip_id || '') || null
+    });
+    if (error) {
+        console.error('Work-order part transaction failed:', error);
+        showToast(`Part not recorded: ${error.message || 'database error'}`);
         return;
     }
-    part.qty = newQty;
+    part.qty = Number(newQty);
+    usage.unit_cost = Number(part.cost || 0);
+    usage.line_total = usage.unit_cost * qty;
     window.state.partUsage = window.state.partUsage || [];
     window.state.partUsage.push(usage);
 
